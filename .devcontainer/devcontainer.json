@@ -1,0 +1,24 @@
+{
+  "name": "Swift 6.2 nightly",
+  "image": "swiftlang/swift:nightly-main-noble@sha256:8d045ec1049d1b05c31563e8aa7224fefe20dbee88642ce77770ff8266296de1",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.lldb-dap",
+        "swiftlang.swift-vscode",
+        "esbenp.prettier-vscode",
+        "usernamehw.errorlens",
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "lldb.library": "/usr/lib/liblldb.so",
+        "swift.path": "/usr/bin",
+        "swift.swiftEnvironmentVariables": {
+          "DEVELOPER_DIR": "${localWorkspaceFolder}"
+        }
+      }
+    }
+  }
+}
