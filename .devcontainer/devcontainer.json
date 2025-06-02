@@ -1,6 +1,9 @@
 {
-  "name": "Swift 6.2 nightly",
-  "image": "swiftlang/swift:nightly-main-noble@sha256:8d045ec1049d1b05c31563e8aa7224fefe20dbee88642ce77770ff8266296de1",
+  "name": "swift-6.2-DEVELOPMENT-SNAPSHOT-2025-05-15-a",
+  "image": "docker.io/swiftlang/swift@sha256:2528fbd1509cdc8ebb1fd8013f2bb74ec37272a392add3abe949ed9e18917d8b",
+  "mounts": [
+    "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -10,7 +13,8 @@
         "usernamehw.errorlens",
         "github.vscode-github-actions",
         "GitHub.vscode-pull-request-github",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "vadimcn.vscode-lldb"
       ],
       "settings": {
         "lldb.library": "/usr/lib/liblldb.so",

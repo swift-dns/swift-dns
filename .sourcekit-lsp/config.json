@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/swiftlang/sourcekit-lsp/main/config.schema.json",
+  "backgroundIndexing": true,
+  "backgroundPreparationMode": "enabled",
+  "experimentalFeatures": ["on-type-formatting", "structured-logs"],
+  "logging": {
+    "level": "debug",
+    "privacyLevel": "private"
+  }
+}

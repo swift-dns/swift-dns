@@ -1,0 +1,46 @@
+package import struct NIOCore.ByteBuffer
+
+/// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
+///
+/// ```text
+/// 3.3.9. MX RDATA format
+///
+///     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+///     |                  PREFERENCE                   |
+///     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+///     /                   EXCHANGE                    /
+///     /                                               /
+///     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+///
+/// MX records cause type A additional section processing for the host
+/// specified by EXCHANGE.  The use of MX RRs is explained in detail in
+/// [RFC-974].
+///
+/// ```
+public struct MX: Sendable {
+    public var preference: UInt16
+    public var exchange: Name
+
+    public init(preference: UInt16, exchange: Name) {
+        self.preference = preference
+        self.exchange = exchange
+    }
+}
+
+extension MX {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.preference =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("MX.preference", buffer)
+            }()
+        self.exchange = try Name(from: &buffer)
+    }
+}
+
+extension MX {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        buffer.writeInteger(self.preference)
+        try self.exchange.encode(into: &buffer)
+    }
+}
