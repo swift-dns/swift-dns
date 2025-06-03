@@ -6,17 +6,17 @@ public import struct DNSModels.Message
 
 public struct Client {
     public static func query(message: Message) async throws -> Message {
-        let connectionFactory = ConnectionFactory(
+        let queryPool = QueryPool()
+        // FIXME: catch connection target to socket address translation errors
+        let connectionFactory = try ConnectionFactory(
+            queryPool: queryPool,
             connectionTarget: .domain(
                 name: "8.8.4.4",
                 port: 53
             )
         )
         let logger = Logger(label: "DNSClient")
-        // FIXME: use async channel
-        let queryPool = QueryPool()
         let channel = try await connectionFactory.makeChannel(
-            queryPool: queryPool,
             deadline: .now() + .seconds(10),
             eventLoop: MultiThreadedEventLoopGroup.singleton.next(),
             logger: logger

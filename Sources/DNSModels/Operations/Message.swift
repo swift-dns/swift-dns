@@ -1,3 +1,5 @@
+import DNSCore
+
 package import struct NIOCore.ByteBuffer
 
 /// The basic request and response data structure, used for all DNS protocols.
@@ -67,6 +69,8 @@ public struct Message: Sendable {
     }
 }
 
+// FIXME: read and write using a dedicated reader/writer
+
 extension Message {
     package init(from buffer: inout ByteBuffer) throws {
         self.header = try Header(from: &buffer)
@@ -110,8 +114,11 @@ extension Message {
     package consuming func encode(into buffer: inout ByteBuffer) throws {
         debugOnly {
             if let edns = self.edns {
-                /// Assert EDNS RCODE is the same as the response code.
-                assert(self.header.responseCode.high == edns.rcodeHigh)
+                /// Assert EDNS RCODE is the same as the response code high.
+                assert(
+                    self.header.responseCode.high == edns.rcodeHigh,
+                    "eds.rcodeHigh '\(edns.rcodeHigh)' must match responseCode.high '\(self.header.responseCode.high)'"
+                )
             }
         }
         /// TODO: assert/throws on header-count-properties mismatch with the actual counts?

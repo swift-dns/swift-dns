@@ -5,7 +5,7 @@
 /// https://forums.swift.org/t/support-debug-only-code/11037 for a discussion.
 /// Copied from https://github.com/apple/swift-nio/Sources/NIOPosix/Utilities.swift
 @inlinable
-internal func debugOnly(_ body: () -> Void) {
+package func debugOnly(_ body: () -> Void) {
     assert(
         {
             body()

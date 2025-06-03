@@ -17,6 +17,7 @@ let package = Package(
         .target(
             name: "DNSModels",
             dependencies: [
+                "DNSCore",
                 .product(name: "Collections", package: "swift-collections"),
                 .product(name: "NIOCore", package: "swift-nio"),
             ],

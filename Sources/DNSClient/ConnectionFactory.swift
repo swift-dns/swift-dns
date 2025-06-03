@@ -3,22 +3,25 @@ import NIOCore
 import NIOPosix
 
 struct ConnectionFactory {
-    let connectionTarget: ConnectionTarget
+    let queryPool: QueryPool
+    let socketAddress: SocketAddress
+
+    init(queryPool: QueryPool, connectionTarget: ConnectionTarget) throws {
+        self.queryPool = queryPool
+        self.socketAddress = try connectionTarget.asSocketAddress()
+    }
 
     func makeChannel(
-        queryPool: QueryPool,
         deadline: NIODeadline,
         eventLoop: any EventLoop,
         logger: Logger
     ) -> EventLoopFuture<any Channel> {
-        let channelFuture: EventLoopFuture<any Channel> = self.makePlainChannel(
-            queryPool: queryPool,
+        self.makePlainChannel(
             deadline: deadline,
             eventLoop: eventLoop
-        )
+        ).flatMapErrorThrowing { error throws -> any Channel in
+            // FIXME: map `ChannelError.connectTimeout` into a `DNSClientError.connectTimeout` or smth
 
-        // FIXME: map `ChannelError.connectTimeout` into a `DNSClientError.connectTimeout` or smth
-        return channelFuture.flatMapErrorThrowing { error throws -> any Channel in
             // switch error {
             // case ChannelError.connectTimeout:
             //     throw HTTPClientError.connectTimeout
@@ -29,7 +32,6 @@ struct ConnectionFactory {
     }
 
     private func makePlainBootstrap(
-        queryPool: QueryPool,
         deadline: NIODeadline,
         eventLoop: any EventLoop
     ) -> DatagramBootstrap {
@@ -51,18 +53,17 @@ struct ConnectionFactory {
                     value: 1
                 )
                 .channelInitializer { channel in
-                    let socketAddress: SocketAddress
-                    do {
-                        socketAddress = try self.connectionTarget.asSocketAddress()
-                    } catch {
-                        return channel.eventLoop.makeFailedFuture(error)
+                    channel.eventLoop.makeCompletedFuture {
+                        try channel.pipeline.syncOperations.addHandler(
+                            AddressedEnvelopeInboundChannelHandler()
+                        )
+                        try channel.pipeline.syncOperations.addHandler(
+                            AddressedEnvelopeOutboundChannelHandler(address: self.socketAddress)
+                        )
+                        try channel.pipeline.syncOperations.addHandler(
+                            DNSChannelHandler(queryPool: queryPool)
+                        )
                     }
-                    return channel.pipeline.addHandlers(
-                        AddressedEnvelopeInboundChannelHandler(),
-                        DNSDecoderChannelHandler(queryPool: queryPool),
-                        AddressedEnvelopeOutboundChannelHandler(address: socketAddress),
-                        DNSEncoderChannelHandler(queryPool: queryPool)
-                    )
                 }
         }
 
@@ -70,23 +71,15 @@ struct ConnectionFactory {
     }
 
     private func makePlainChannel(
-        queryPool: QueryPool,
         deadline: NIODeadline,
         eventLoop: any EventLoop
     ) -> EventLoopFuture<any Channel> {
         // FIXME: some things are commented out for now
         // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
-        let socketAddress: SocketAddress
-        do {
-            socketAddress = try self.connectionTarget.asSocketAddress()
-        } catch {
-            return eventLoop.makeFailedFuture(error)
-        }
-        return self.makePlainBootstrap(
-            queryPool: queryPool,
+        self.makePlainBootstrap(
             deadline: deadline,
             eventLoop: eventLoop
-        ).connect(to: socketAddress)
+        ).connect(to: self.socketAddress)
     }
 }
 

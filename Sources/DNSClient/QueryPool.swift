@@ -13,6 +13,12 @@ final class QueryPool: @unchecked Sendable /* Protected by Mutex */ {
         }
     }
 
+    func contains(_ message: borrowing Message) -> Bool {
+        queries.withLock { queries in
+            queries[message.header.id] != nil
+        }
+    }
+
     // FIXME: consuming?
     func succeed(with message: /*consuming*/ Message) {
         queries.withLock { queries in
