@@ -1,3 +1,5 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 4034](https://tools.ietf.org/html/rfc4034#section-2), DNSSEC Resource Records, March 2005
 ///
 /// ```text
@@ -47,10 +49,58 @@
 public struct DNSKEY: Sendable {
     /// An owned variant of PublicKey
     public struct PublicKey: Sendable {
-        public let keyBuf: [UInt8]
-        public let algorithm: DNSSECAlgorithm
+        public var algorithm: DNSSECAlgorithm
+        public var key: [UInt8]
+
+        public init(algorithm: DNSSECAlgorithm, key: [UInt8]) {
+            self.algorithm = algorithm
+            self.key = key
+        }
     }
 
-    public let flags: UInt16
-    public let publicKey: PublicKey
+    public var flags: UInt16
+    public var publicKey: PublicKey
+
+    public init(flags: UInt16, publicKey: PublicKey) {
+        self.flags = flags
+        self.publicKey = publicKey
+    }
+}
+
+extension DNSKEY {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.flags =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("DNSKEY.flags", buffer)
+            }()
+        let proto = buffer.readInteger(as: UInt8.self)
+        guard proto == 3 else {
+            throw ProtocolError.failedToValidate("DNSKEY.protocol", buffer)
+        }
+        self.publicKey = try PublicKey(from: &buffer)
+    }
+}
+
+extension DNSKEY {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.flags)
+        buffer.writeInteger(3 as UInt8)
+        self.publicKey.encode(into: &buffer)
+    }
+}
+
+extension DNSKEY.PublicKey {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.algorithm = try DNSSECAlgorithm(from: &buffer)
+        self.key = [UInt8](buffer: buffer)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    }
+}
+
+extension DNSKEY.PublicKey {
+    package func encode(into buffer: inout ByteBuffer) {
+        self.algorithm.encode(into: &buffer)
+        buffer.writeBytes(self.key)
+    }
 }

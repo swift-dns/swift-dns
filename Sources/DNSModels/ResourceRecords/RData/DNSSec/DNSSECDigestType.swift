@@ -66,3 +66,9 @@ extension DNSSECDigestType {
         self.init(rawValue)
     }
 }
+
+extension DNSSECDigestType {
+    func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
+    }
+}

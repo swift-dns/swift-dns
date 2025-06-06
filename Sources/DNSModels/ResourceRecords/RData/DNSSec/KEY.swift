@@ -1,6 +1,8 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3), Domain Name System Security Extensions, March 1999
 ///
-/// ```text
+/// text
 /// 3. The KEY Resource Record
 ///
 ///    The KEY resource record (RR) is used to store a public key that is
@@ -17,14 +19,14 @@
 ///
 /// 3.1 KEY RDATA format
 ///
-///    The RDATA for a KEY RR consists of flags, a protocol octet, the
+///    The RDATA for a KEY RR consists of flags, a Proto octet, the
 ///    algorithm number octet, and the public key itself.  The format is as
 ///    follows:
 ///
 ///                         1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 ///     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///    |             flags             |    protocol   |   algorithm   |
+///    |             flags             |    Proto   |   algorithm   |
 ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///    |                                                               /
 ///    /                          public key                           /
@@ -35,7 +37,7 @@
 ///    certificate RR has been developed for that purpose, defined in [RFC
 ///    2538].
 ///
-///    The meaning of the KEY RR owner name, flags, and protocol octet are
+///    The meaning of the KEY RR owner name, flags, and Proto octet are
 ///    described in Sections 3.1.1 through 3.1.5 below.  The flags and
 ///    algorithm must be examined before any data following the algorithm
 ///    octet as they control the existence and format of any following data.
@@ -75,7 +77,7 @@
 ///            00: Use of the key for authentication and/or confidentiality
 ///                is permitted. Note that DNS security makes use of keys
 ///                for authentication only. Confidentiality use flagging is
-///                provided for use of keys in other protocols.
+///                provided for use of keys in other Protos.
 ///                Implementations not intended to support key distribution
 ///                for confidentiality MAY require that the confidentiality
 ///                use prohibited bit be on for keys they serve.
@@ -106,7 +108,7 @@
 ///                host.subdomain.example could have a public key associated
 ///                through a KEY RR with name
 ///                j_random_user.host.subdomain.example.  It could be used
-///                in a security protocol where authentication of a user was
+///                in a security Proto where authentication of a user was
 ///                desired.  This key might be useful in IP or other
 ///                security for a user level service such a telnet, ftp,
 ///                rlogin, etc.
@@ -122,7 +124,7 @@
 ///                number [RFC 1530] or numeric IP address.  This is the
 ///                public key used in connection with DNS request and
 ///                transaction authentication services.  It could also be
-///                used in an IP-security protocol where authentication at
+///                used in an IP-security Proto where authentication at
 ///                the host, rather than user, level was desired, such as
 ///                routing, NTP, etc.
 ///            11: reserved.
@@ -134,7 +136,7 @@
 ///               dynamic update [RFC 2137].  Note that zone keys (see bits
 ///               6 and 7 above) always have authority to sign any RRs in
 ///               the zone regardless of the value of the signatory field.
-/// ```
+///
 public struct KEY: Sendable {
     /// Specifies in what contexts this key may be trusted for use
     public enum KeyTrust: Sendable {
@@ -162,7 +164,7 @@ public struct KEY: Sendable {
 
     /// [RFC 2137](https://tools.ietf.org/html/rfc2137#section-3.1), Secure Domain Name System Dynamic Update, April 1997
     ///
-    /// ```text
+    /// text
     /// 3.1.1 Update Key Name Scope
     ///
     ///    The owner name of any update authorizing KEY RR must (1) be the same
@@ -242,47 +244,54 @@ public struct KEY: Sendable {
     ///    All the signatory bit update authorizations described above only
     ///    apply if the update is within the name and class scope as per
     ///    sections 3.1.1 and 3.1.2.
-    /// ```
+    ///
     ///
     /// [RFC 3007](https://tools.ietf.org/html/rfc3007#section-1.5), Secure Dynamic Update, November 2000
     ///
-    /// ```text
+    /// text
     ///    [RFC2535, section 3.1.2] defines the signatory field of a key as the
     ///    final 4 bits of the flags field, but does not define its value.  This
     ///    proposal leaves this field undefined.  Updating [RFC2535], this field
     ///    SHOULD be set to 0 in KEY records, and MUST be ignored.
     ///
-    /// ```
+    ///
     public struct UpdateScope: Sendable {
         /// this key is authorized to attach,
         ///   detach, and move zones by creating and deleting NS, glue A, and
         ///   zone KEY RR(s)
-        public let zone: Bool
+        public var zone: Bool
         /// this key is authorized to add and
         ///   delete RRs even if there are other RRs with the same owner name
         ///   and class that are authenticated by a SIG signed with a
         ///   different dynamic update KEY
-        public let strong: Bool
+        public var strong: Bool
         /// this key is authorized to add and update RRs for only a single owner name
-        public let unique: Bool
+        public var unique: Bool
         /// The general update signatory field bit has no special meaning, (true if the others are false)
-        public let general: Bool
+        public var general: Bool
+
+        public init(zone: Bool, strong: Bool, unique: Bool, general: Bool) {
+            self.zone = zone
+            self.strong = strong
+            self.unique = unique
+            self.general = general
+        }
     }
 
     /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3.1.3), Domain Name System Security Extensions, March 1999
     ///
-    /// ```text
-    /// 3.1.3 The Protocol Octet
+    /// text
+    /// 3.1.3 The Proto Octet
     ///
     ///    It is anticipated that keys stored in DNS will be used in conjunction
-    ///    with a variety of Internet protocols.  It is intended that the
-    ///    protocol octet and possibly some of the currently unused (must be
+    ///    with a variety of Internet Protos.  It is intended that the
+    ///    Proto octet and possibly some of the currently unused (must be
     ///    zero) bits in the KEY RR flags as specified in the future will be
-    ///    used to indicate a key's validity for different protocols.
+    ///    used to indicate a key's validity for different Protos.
     ///
-    ///    The following values of the Protocol Octet are reserved as indicated:
+    ///    The following values of the Proto Octet are reserved as indicated:
     ///
-    ///         VALUE   Protocol
+    ///         VALUE   Proto
     ///
     ///           0      -reserved
     ///           1     TLS
@@ -295,60 +304,86 @@ public struct KEY: Sendable {
     ///    In more detail:
     ///         1 is reserved for use in connection with TLS.
     ///         2 is reserved for use in connection with email.
-    ///         3 is used for DNS security.  The protocol field SHOULD be set to
+    ///         3 is used for DNS security.  The Proto field SHOULD be set to
     ///           this value for zone keys and other keys used in DNS security.
     ///           Implementations that can determine that a key is a DNS
     ///           security key by the fact that flags label it a zone key or the
     ///           signatory flag field is non-zero are NOT REQUIRED to check the
-    ///           protocol field.
-    ///         4 is reserved to refer to the Oakley/IPSEC [RFC 2401] protocol
+    ///           Proto field.
+    ///         4 is reserved to refer to the Oakley/IPSEC [RFC 2401] Proto
     ///           and indicates that this key is valid for use in conjunction
     ///           with that security standard.  This key could be used in
     ///           connection with secured communication on behalf of an end
     ///           entity or user whose name is the owner name of the KEY RR if
     ///           the entity or user flag bits are set.  The presence of a KEY
-    ///           resource with this protocol value is an assertion that the
+    ///           resource with this Proto value is an assertion that the
     ///           host speaks Oakley/IPSEC.
     ///         255 indicates that the key can be used in connection with any
-    ///           protocol for which KEY RR protocol octet values have been
+    ///           Proto for which KEY RR Proto octet values have been
     ///           defined.  The use of this value is discouraged and the use of
-    ///           different keys for different protocols is encouraged.
-    /// ```
+    ///           different keys for different Protos is encouraged.
+    ///
     ///
     /// [RFC3445](https://tools.ietf.org/html/rfc3445#section-4), Limiting the KEY Resource Record (RR), December 2002
     ///
-    /// ```text
-    /// All Protocol Octet values except DNSSEC (3) are eliminated
-    /// ```
-    public enum `Protocol`: Sendable {
+    /// text
+    /// All Proto Octet values except DNSSEC (3) are eliminated
+    ///
+    public enum Proto: Sendable {
         /// Not in use
         // Deprecated by RFC3445
         case reserved
         /// Reserved for use with TLS
         // Deprecated by RFC3445
-        case TLS
+        case tls
         /// Reserved for use with email
         // Deprecated by RFC3445
-        case Email
+        case email
         /// Reserved for use with DNSSEC
-        case DNSSEC
+        case dnssec
         /// Reserved to refer to the Oakley/IPSEC
         // Deprecated by RFC3445
-        case IPSec
+        case ipsec
         /// Undefined
         // Deprecated by RFC3445
         case other(UInt8)
-        /// the key can be used in connection with any protocol
+        /// the key can be used in connection with any Proto
         // Deprecated by RFC3445
         case all
     }
 
-    public let keyTrust: KeyTrust
-    public let keyUsage: KeyUsage
-    public let signatory: UpdateScope
-    public let `protocol`: Protocol
-    public let algorithm: DNSSECAlgorithm
-    public let publicKey: [UInt8]
+    public var keyTrust: KeyTrust
+    public var keyUsage: KeyUsage
+    public var signatory: UpdateScope
+    public var Proto: Proto
+    public var algorithm: DNSSECAlgorithm
+    public var publicKey: [UInt8]
+
+    var flags: UInt16 {
+        var flags: UInt16 = 0
+
+        flags |= self.keyTrust.rawValue
+        flags |= self.keyUsage.rawValue
+        flags |= self.signatory.rawValue
+
+        return flags
+    }
+
+    public init(
+        keyTrust: KeyTrust,
+        keyUsage: KeyUsage,
+        signatory: UpdateScope,
+        Proto: Proto,
+        algorithm: DNSSECAlgorithm,
+        publicKey: [UInt8]
+    ) {
+        self.keyTrust = keyTrust
+        self.keyUsage = keyUsage
+        self.signatory = signatory
+        self.Proto = Proto
+        self.algorithm = algorithm
+        self.publicKey = publicKey
+    }
 }
 
 extension KEY.KeyTrust: RawRepresentable {
@@ -373,7 +408,7 @@ extension KEY.KeyTrust: RawRepresentable {
         }
     }
 
-    public init(rawValue: UInt16) {
+    public init?(rawValue: UInt16) {
         self.init(rawValue)
     }
 
@@ -392,6 +427,67 @@ extension KEY.KeyTrust: RawRepresentable {
         case .doNotTrust:
             return 0b1100_0000_0000_0000
         }
+    }
+}
+
+extension KEY {
+    package init(from buffer: inout ByteBuffer) throws {
+        let flags =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("KEY.flags", buffer)
+            }()
+        /// Bits 2 is reserved and must be zero.
+        /// Bits 4-5 are reserved and must be zero.
+        /// Bits 8-11 are reserved and must be zero.
+        guard flags & 0b0010_1100_1111_0000 == 0 else {
+            throw ProtocolError.failedToValidate("KEY.flags", ByteBuffer(integer: flags))
+        }
+        guard (flags & 0b0001_0000_0000_0000) == 0 else {
+            /// extended flags unsupported for now
+            throw ProtocolError.failedToValidate("KEY.flags", ByteBuffer(integer: flags))
+        }
+        self.keyTrust = KEY.KeyTrust(flags)
+        self.keyUsage = KEY.KeyUsage(flags)
+        self.signatory = KEY.UpdateScope(flags)
+
+        self.Proto = try KEY.Proto(from: &buffer)
+        self.algorithm = try DNSSECAlgorithm(from: &buffer)
+        self.publicKey = try buffer.readLengthPrefixedString(
+            name: "KEY.publicKey",
+            decodeLengthAs: UInt16.self
+        )
+    }
+}
+
+extension KEY {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        buffer.writeInteger(self.flags)
+        self.Proto.encode(into: &buffer)
+        self.algorithm.encode(into: &buffer)
+        try buffer.writeLengthPrefixedString(
+            name: "KEY.publicKey",
+            bytes: self.publicKey,
+            maxLength: .max,
+            fitLengthInto: UInt16.self
+        )
+    }
+}
+
+extension KEY.KeyTrust {
+    package init(from buffer: inout ByteBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("KEY.keyTrust", buffer)
+            }()
+        self.init(rawValue)
+    }
+}
+
+extension KEY.KeyTrust {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
     }
 }
 
@@ -417,7 +513,7 @@ extension KEY.KeyUsage: RawRepresentable {
         }
     }
 
-    public init(rawValue: UInt16) {
+    public init?(rawValue: UInt16) {
         self.init(rawValue)
     }
 
@@ -439,19 +535,90 @@ extension KEY.KeyUsage: RawRepresentable {
     }
 }
 
-extension KEY.`Protocol`: RawRepresentable {
+extension KEY.KeyUsage {
+    package init(from buffer: inout ByteBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("KEY.keyUsage", buffer)
+            }()
+        self.init(rawValue)
+    }
+}
+
+extension KEY.KeyUsage {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
+    }
+}
+
+extension KEY.UpdateScope: RawRepresentable {
+    public init(_ rawValue: UInt16) {
+        self.init(
+            zone: rawValue & 0b0000_0000_0000_1000 != 0,
+            strong: rawValue & 0b0000_0000_0000_0100 != 0,
+            unique: rawValue & 0b0000_0000_0000_0010 != 0,
+            general: rawValue & 0b0000_0000_0000_0001 != 0
+        )
+    }
+
+    public init?(rawValue: UInt16) {
+        self.init(rawValue)
+    }
+
+    public var rawValue: UInt16 {
+        var flags: UInt16 = 0
+
+        if self.zone {
+            flags |= 0b0000_0000_0000_1000
+        }
+
+        if self.strong {
+            flags |= 0b0000_0000_0000_0100
+        }
+
+        if self.unique {
+            flags |= 0b0000_0000_0000_0010
+        }
+
+        if self.general {
+            flags |= 0b0000_0000_0000_0001
+        }
+
+        return flags
+    }
+}
+
+extension KEY.UpdateScope {
+    package init(from buffer: inout ByteBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("KEY.updateScope", buffer)
+            }()
+        self.init(rawValue)
+    }
+}
+
+extension KEY.UpdateScope {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
+    }
+}
+
+extension KEY.Proto: RawRepresentable {
     init(_ rawValue: UInt8) {
         switch rawValue {
         case 0:
             self = .reserved
         case 1:
-            self = .TLS
+            self = .tls
         case 2:
-            self = .Email
+            self = .email
         case 3:
-            self = .DNSSEC
+            self = .dnssec
         case 4:
-            self = .IPSec
+            self = .ipsec
         case 255:
             self = .all
         default:
@@ -459,7 +626,7 @@ extension KEY.`Protocol`: RawRepresentable {
         }
     }
 
-    public init(rawValue: UInt8) {
+    public init?(rawValue: UInt8) {
         self.init(rawValue)
     }
 
@@ -467,18 +634,35 @@ extension KEY.`Protocol`: RawRepresentable {
         switch self {
         case .reserved:
             return 0
-        case .TLS:
+        case .tls:
             return 1
-        case .Email:
+        case .email:
             return 2
-        case .DNSSEC:
+        case .dnssec:
             return 3
-        case .IPSec:
+        case .ipsec:
             return 4
         case .all:
             return 255
         case .other(let field):
             return field
         }
+    }
+}
+
+extension KEY.Proto {
+    package init(from buffer: inout ByteBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("KEY.Proto", buffer)
+            }()
+        self.init(rawValue)
+    }
+}
+
+extension KEY.Proto {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
     }
 }

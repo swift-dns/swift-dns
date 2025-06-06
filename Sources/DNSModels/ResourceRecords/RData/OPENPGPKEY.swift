@@ -18,7 +18,7 @@ public struct OPENPGPKEY: Sendable {
 extension OPENPGPKEY {
     package init(from buffer: inout ByteBuffer) throws {
         self.publicKey = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.publicKey.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     }
 }
 

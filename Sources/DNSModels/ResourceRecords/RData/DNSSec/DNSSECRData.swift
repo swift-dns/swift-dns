@@ -536,14 +536,35 @@ extension DNSSECRData {
     }
 }
 
-extension DNSSECRData {
-    package init(from buffer: inout ByteBuffer) throws {
-        fatalError("\(#function) is not implemented")
-    }
-}
+/// No init(from:). Read using `RData`
 
 extension DNSSECRData {
     package func encode(into buffer: inout ByteBuffer) throws {
-        fatalError("\(#function) is not implemented")
+        switch self {
+        case .CDNSKEY(let cdnskey):
+            cdnskey.encode(into: &buffer)
+        case .CDS(let cds):
+            cds.encode(into: &buffer)
+        case .DS(let ds):
+            ds.encode(into: &buffer)
+        case .KEY(let key):
+            try key.encode(into: &buffer)
+        case .DNSKEY(let dnskey):
+            dnskey.encode(into: &buffer)
+        case .NSEC(let nsec):
+            try nsec.encode(into: &buffer)
+        case .NSEC3(let nsec3):
+            try nsec3.encode(into: &buffer)
+        case .NSEC3PARAM(let nsec3param):
+            try nsec3param.encode(into: &buffer)
+        case .SIG(let sig):
+            try sig.encode(into: &buffer)
+        case .RRSIG(let rrsig):
+            try rrsig.encode(into: &buffer)
+        case .TSIG(let tsig):
+            try tsig.encode(into: &buffer)
+        case .unknown(_, let null):
+            try null.encode(into: &buffer)
+        }
     }
 }

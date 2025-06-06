@@ -208,17 +208,10 @@ extension TSIG {
             ?? {
                 throw ProtocolError.failedToRead("TSIG.fudge", buffer)
             }()
-        guard let macLength = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("TSIG.macLength", buffer)
-        }
-        guard macLength + 6 <= buffer.readableBytes else {
-            throw ProtocolError.failedToValidate("TSIG.fudge", buffer)
-        }
-        self.mac =
-            try buffer.readBytes(length: Int(macLength))
-            ?? {
-                throw ProtocolError.failedToRead("TSIG.mac", buffer)
-            }()
+        self.mac = try buffer.readLengthPrefixedString(
+            name: "TSIG.mac",
+            decodeLengthAs: UInt16.self
+        )
         self.oid =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -229,14 +222,39 @@ extension TSIG {
             ?? {
                 throw ProtocolError.failedToRead("TSIG.error", buffer)
             }()
-        guard let otherLength = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("TSIG.otherLength", buffer)
-        }
-        self.other =
-            try buffer.readBytes(length: Int(otherLength))
+        self.other = try buffer.readLengthPrefixedString(
+            name: "TSIG.other",
+            decodeLengthAs: UInt16.self
+        )
+    }
+}
+
+extension TSIG {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        try self.algorithm.encode(into: &buffer)
+        let shiftedTime =
+            try UInt16(exactly: self.time >> 32)
             ?? {
-                throw ProtocolError.failedToRead("TSIG.other", buffer)
+                throw ProtocolError.failedToValidate("TSIG.time", ByteBuffer(integer: self.time))
             }()
+        buffer.writeInteger(shiftedTime)
+        buffer.writeInteger(UInt32(truncatingIfNeeded: self.time))
+        buffer.writeInteger(self.fudge)
+        try buffer.writeLengthPrefixedString(
+            name: "TSIG.mac",
+            bytes: self.mac,
+            maxLength: .max,
+            fitLengthInto: UInt16.self
+        )
+        buffer.writeInteger(self.oid)
+        buffer.writeInteger(self.error)
+        buffer.writeInteger(self.other.count)
+        try buffer.writeLengthPrefixedString(
+            name: "TSIG.other",
+            bytes: self.other,
+            maxLength: .max,
+            fitLengthInto: UInt16.self
+        )
     }
 }
 
@@ -278,5 +296,11 @@ extension TSIG.Algorithm {
 extension TSIG.Algorithm {
     package init(from buffer: inout ByteBuffer) throws {
         self.init(name: try Name(from: &buffer))
+    }
+}
+
+extension TSIG.Algorithm {
+    func encode(into buffer: inout ByteBuffer) throws {
+        try self.toName().encode(into: &buffer)
     }
 }

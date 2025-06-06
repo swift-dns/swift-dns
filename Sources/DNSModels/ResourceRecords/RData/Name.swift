@@ -323,7 +323,7 @@ extension Name {
         let startingReadableBytes = buffer.readableBytes  // lazily assert the size is less than 256...
 
         for label in self {
-            try buffer.writeCharacterString(
+            try buffer.writeLengthPrefixedString(
                 name: "Name.labels[]",
                 bytes: label,
                 maxLength: Self.maxLabelLength,

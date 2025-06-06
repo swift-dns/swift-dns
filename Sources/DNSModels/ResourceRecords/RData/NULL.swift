@@ -27,16 +27,16 @@ public struct NULL: Sendable {
 
 extension NULL {
     package init(from buffer: inout ByteBuffer) throws {
-        self.anything = try buffer.readCharacterString(
+        self.anything = try buffer.readLengthPrefixedString(
             name: "NULL.anything",
-            decodeCharacterLengthAs: UInt16.self
+            decodeLengthAs: UInt16.self
         )
     }
 }
 
 extension NULL {
     package func encode(into buffer: inout ByteBuffer) throws {
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "NULL.anything",
             bytes: self.anything,
             maxLength: 65535,

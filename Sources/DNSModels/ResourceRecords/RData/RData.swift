@@ -693,9 +693,9 @@ extension RData {
         case .CAA:
             self = .CAA(try DNSModels.CAA(from: &buffer))
         case .CDS:
-            fatalError("RData.CDS not implemented")
+            self = .DNSSEC(DNSSECRData.CDS(try DNSModels.CDS(from: &buffer)))
         case .CDNSKEY:
-            fatalError("RData.CDNSKEY not implemented")
+            self = .DNSSEC(DNSSECRData.CDNSKEY(try DNSModels.CDNSKEY(from: &buffer)))
         case .CERT:
             self = .CERT(try DNSModels.CERT(from: &buffer))
         case .CNAME:
@@ -703,7 +703,7 @@ extension RData {
         case .CSYNC:
             self = .CSYNC(try DNSModels.CSYNC(from: &buffer))
         case .DNSKEY:
-            fatalError("RData.DNSKEY not implemented")
+            self = .DNSSEC(DNSSECRData.DNSKEY(try DNSModels.DNSKEY(from: &buffer)))
         case .DS:
             self = .DNSSEC(DNSSECRData.DS(try DNSModels.DS(from: &buffer)))
         case .HINFO:
@@ -713,7 +713,7 @@ extension RData {
         case .IXFR:
             fatalError("RData.IXFR not implemented")
         case .KEY:
-            fatalError("RData.KEY not implemented")
+            self = .DNSSEC(DNSSECRData.KEY(try DNSModels.KEY(from: &buffer)))
         case .MX:
             self = .MX(try DNSModels.MX(from: &buffer))
         case .NAPTR:
@@ -721,11 +721,11 @@ extension RData {
         case .NS:
             self = .NS(try DNSModels.NS(from: &buffer))
         case .NSEC:
-            fatalError("RData.NSEC not implemented")
+            self = .DNSSEC(DNSSECRData.NSEC(try DNSModels.NSEC(from: &buffer)))
         case .NSEC3:
-            fatalError("RData.NSEC3 not implemented")
+            self = .DNSSEC(DNSSECRData.NSEC3(try DNSModels.NSEC3(from: &buffer)))
         case .NSEC3PARAM:
-            fatalError("RData.NSEC3PARAM not implemented")
+            self = .DNSSEC(DNSSECRData.NSEC3PARAM(try DNSModels.NSEC3PARAM(from: &buffer)))
         case .NULL:
             self = .NULL(try DNSModels.NULL(from: &buffer))
         case .OPENPGPKEY:
@@ -735,9 +735,9 @@ extension RData {
         case .PTR:
             self = .PTR(try DNSModels.PTR(from: &buffer))
         case .RRSIG:
-            fatalError("RData.RRSIG not implemented")
+            self = .DNSSEC(DNSSECRData.RRSIG(try DNSModels.RRSIG(from: &buffer)))
         case .SIG:
-            fatalError("RData.SIG not implemented")
+            self = .DNSSEC(DNSSECRData.SIG(try DNSModels.SIG(from: &buffer)))
         case .SOA:
             self = .SOA(try DNSModels.SOA(from: &buffer))
         case .SRV:
@@ -749,11 +749,12 @@ extension RData {
         case .TLSA:
             self = .TLSA(try DNSModels.TLSA(from: &buffer))
         case .TSIG:
-            fatalError("RData.TSIG not implemented")
+            self = .DNSSEC(DNSSECRData.TSIG(try DNSModels.TSIG(from: &buffer)))
         case .TXT:
             self = .TXT(try DNSModels.TXT(from: &buffer))
         case .unknown:
-            fatalError("RData.unknown not implemented")
+            let null = try DNSModels.NULL(from: &buffer)
+            self = .unknown(code: recordType, rdata: null)
         }
 
         assert(

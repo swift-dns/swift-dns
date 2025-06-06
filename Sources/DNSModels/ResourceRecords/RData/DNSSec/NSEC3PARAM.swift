@@ -1,3 +1,5 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 5155](https://tools.ietf.org/html/rfc5155#section-4), NSEC3, March 2008
 ///
 /// ```text
@@ -55,8 +57,64 @@
 ///  field.
 /// ```
 public struct NSEC3PARAM: Sendable {
-    public let hashAlgorithm: NSEC3.HashAlgorithm
-    public let optOut: Bool
-    public let iterations: UInt16
-    public let salt: [UInt8]
+    public var hashAlgorithm: NSEC3.HashAlgorithm
+    public var optOut: Bool
+    public var iterations: UInt16
+    public var salt: [UInt8]
+
+    var flags: UInt8 {
+        var flags: UInt8 = 0
+        if self.optOut {
+            flags |= 0b0000_0001
+        }
+        return flags
+    }
+
+    public init(
+        hashAlgorithm: NSEC3.HashAlgorithm,
+        optOut: Bool,
+        iterations: UInt16,
+        salt: [UInt8]
+    ) {
+        self.hashAlgorithm = hashAlgorithm
+        self.optOut = optOut
+        self.iterations = iterations
+        self.salt = salt
+    }
+}
+
+extension NSEC3PARAM {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.hashAlgorithm = try NSEC3.HashAlgorithm(from: &buffer)
+        let flags =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("NSEC3PARAM.flags", buffer)
+            }()
+        guard flags & 0b1111_1110 == 0 else {
+            throw ProtocolError.failedToValidate("NSEC3PARAM.flags", buffer)
+        }
+        //FIXME: use flags like in Header.bytes16to31
+        self.optOut = (flags & 0b0000_0001) == 0b0000_0001
+        self.iterations =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("NSEC3PARAM.iterations", buffer)
+            }()
+        self.salt = try buffer.readLengthPrefixedString(name: "NSEC3PARAM.salt")
+    }
+}
+
+extension NSEC3PARAM {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        try self.hashAlgorithm.encode(into: &buffer)
+        buffer.writeInteger(self.flags)
+        buffer.writeInteger(self.iterations)
+        try buffer.writeLengthPrefixedString(
+            name: "NSEC3PARAM.salt",
+            bytes: self.salt,
+            maxLength: 255,
+            fitLengthInto: UInt8.self
+        )
+    }
 }

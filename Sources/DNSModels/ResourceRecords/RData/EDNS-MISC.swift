@@ -168,7 +168,7 @@ extension EDNSOption {
             self = .subnet(try ClientSubnet(from: &buffer))
         default:
             let data = [UInt8](buffer: buffer)
-            buffer.moveReaderIndex(forwardBy: data.count)
+            buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
             self = .unknown(code.rawValue, data)
         }
     }

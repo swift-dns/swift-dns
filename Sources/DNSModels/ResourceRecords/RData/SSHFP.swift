@@ -75,7 +75,7 @@ extension SSHFP {
         self.algorithm = try Algorithm(from: &buffer)
         self.fingerprintType = try FingerprintType(from: &buffer)
         self.fingerprint = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.fingerprint.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     }
 }
 

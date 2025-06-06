@@ -61,9 +61,9 @@ extension ByteBuffer {
     /// length (including the length octet).
     /// ```
     /// The spec's <character-string> is a specialized version of this function where `LengthType == UInt8`.
-    package mutating func readCharacterString<IntegerType: FixedWidthInteger>(
+    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
         name: StaticString,
-        decodeCharacterLengthAs _: IntegerType.Type = UInt8.self
+        decodeLengthAs _: IntegerType.Type = UInt8.self
     ) throws -> [UInt8] {
         guard let length = self.readInteger(as: IntegerType.self),
             let bytes = self.readBytes(length: Int(length))
@@ -81,7 +81,7 @@ extension ByteBuffer {
     /// is treated as binary information, and can be up to 256 characters in
     /// length (including the length octet).
     /// ```
-    package mutating func readCharacterStringAsString(name: StaticString) throws -> String {
+    package mutating func readLengthPrefixedStringAsString(name: StaticString) throws -> String {
         guard let length = self.readInteger(as: UInt8.self),
             let string = self.readString(length: Int(length))
         else {
@@ -91,7 +91,7 @@ extension ByteBuffer {
     }
 
     /// The length of the string MUST fit into the provided integer type.
-    package mutating func writeCharacterString<IntegerType: FixedWidthInteger & Comparable>(
+    package mutating func writeLengthPrefixedString<IntegerType: FixedWidthInteger & Comparable>(
         name: StaticString,
         bytes: some Collection<UInt8>,
         maxLength: IntegerType,
@@ -105,6 +105,9 @@ extension ByteBuffer {
                 self
             )
         }
+        /// TODO: is this the optimal conversion?
+        /// At this point we can assume that the IntegerType can fit the byte count already since
+        /// maxLength was checked before?
         let length = IntegerType(bytes.count)
         self.writeInteger(length)
         self.writeBytes(bytes)

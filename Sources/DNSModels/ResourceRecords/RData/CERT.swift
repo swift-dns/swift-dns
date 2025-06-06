@@ -97,7 +97,7 @@ extension CERT {
                 throw ProtocolError.failedToRead("CERT.keyTag", buffer)
             }()
         self.algorithm = try Algorithm(from: &buffer)
-        self.certData = try buffer.readCharacterString(name: "CERT.certData")
+        self.certData = try buffer.readLengthPrefixedString(name: "CERT.certData")
     }
 }
 
@@ -106,7 +106,7 @@ extension CERT {
         certType.encode(into: &buffer)
         buffer.writeInteger(keyTag)
         algorithm.encode(into: &buffer)
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "CERT.certData",
             bytes: certData,
             maxLength: 255,

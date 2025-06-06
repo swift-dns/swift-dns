@@ -208,7 +208,7 @@ extension TLSA {
         self.selector = try Selector(from: &buffer)
         self.matching = try Matching(from: &buffer)
         self.certData = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.certData.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     }
 }
 

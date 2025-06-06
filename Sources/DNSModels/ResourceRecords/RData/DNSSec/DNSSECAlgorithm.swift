@@ -99,3 +99,9 @@ extension DNSSECAlgorithm {
         self.init(rawValue)
     }
 }
+
+extension DNSSECAlgorithm {
+    func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.rawValue)
+    }
+}

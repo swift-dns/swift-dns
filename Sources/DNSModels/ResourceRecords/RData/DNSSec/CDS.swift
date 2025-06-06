@@ -1,7 +1,54 @@
+package import struct NIOCore.ByteBuffer
+
 /// Child DS. See RFC 8078.
 public struct CDS: Sendable {
-    public let keyTag: UInt16
-    public let algorithm: DNSSECAlgorithm?
-    public let digestType: DNSSECDigestType
-    public let digest: [UInt8]
+    public var keyTag: UInt16
+    public var algorithm: DNSSECAlgorithm?
+    public var digestType: DNSSECDigestType
+    public var digest: [UInt8]
+
+    public init(
+        keyTag: UInt16,
+        algorithm: DNSSECAlgorithm?,
+        digestType: DNSSECDigestType,
+        digest: [UInt8]
+    ) {
+        self.keyTag = keyTag
+        self.algorithm = algorithm
+        self.digestType = digestType
+        self.digest = digest
+    }
+}
+
+extension CDS {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.keyTag =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("CDS.keyTag", buffer)
+            }()
+        let proto = buffer.readInteger(as: UInt8.self)
+        guard proto == 3 else {
+            throw ProtocolError.failedToValidate("CDS.protocol", buffer)
+        }
+        let algorithm =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("CDS.algorithm", buffer)
+            }()
+        self.algorithm = (algorithm == 0) ? nil : DNSSECAlgorithm(algorithm)
+        self.digestType = try DNSSECDigestType(from: &buffer)
+        self.digest = [UInt8](buffer: buffer)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    }
+}
+
+extension CDS {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.keyTag)
+        buffer.writeInteger(3 as UInt8)
+        buffer.writeInteger(self.algorithm?.rawValue ?? 0)
+        self.digestType.encode(into: &buffer)
+        buffer.writeBytes(self.digest)
+    }
 }

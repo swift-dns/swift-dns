@@ -33,20 +33,20 @@ public struct HINFO: Sendable {
 
 extension HINFO {
     package init(from buffer: inout ByteBuffer) throws {
-        self.cpu = try buffer.readCharacterStringAsString(name: "HINFO.cpu")
-        self.os = try buffer.readCharacterStringAsString(name: "HINFO.os")
+        self.cpu = try buffer.readLengthPrefixedStringAsString(name: "HINFO.cpu")
+        self.os = try buffer.readLengthPrefixedStringAsString(name: "HINFO.os")
     }
 }
 
 extension HINFO {
     package func encode(into buffer: inout ByteBuffer) throws {
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "HINFO.cpu",
             bytes: cpu.utf8,
             maxLength: 255,
             fitLengthInto: UInt8.self
         )
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "HINFO.os",
             bytes: os.utf8,
             maxLength: 255,

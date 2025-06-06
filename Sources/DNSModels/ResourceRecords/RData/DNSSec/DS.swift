@@ -44,10 +44,17 @@ package import struct NIOCore.ByteBuffer
 ///    text.
 /// ```
 public struct DS: Sendable {
-    public let keyTag: UInt16
-    public let algorithm: DNSSECAlgorithm
-    public let digestType: DNSSECDigestType
-    public let digest: [UInt8]
+    public var keyTag: UInt16
+    public var algorithm: DNSSECAlgorithm
+    public var digestType: DNSSECDigestType
+    public var digest: [UInt8]
+
+    public init(keyTag: UInt16, algorithm: DNSSECAlgorithm, digestType: DNSSECDigestType, digest: [UInt8]) {
+        self.keyTag = keyTag
+        self.algorithm = algorithm
+        self.digestType = digestType
+        self.digest = digest
+    }
 }
 
 extension DS {
@@ -58,6 +65,15 @@ extension DS {
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
         self.digestType = try DNSSECDigestType(from: &buffer)
         self.digest = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.digest.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    }
+}
+
+extension DS {
+    package func encode(into buffer: inout ByteBuffer) {
+        buffer.writeInteger(self.keyTag)
+        self.algorithm.encode(into: &buffer)
+        self.digestType.encode(into: &buffer)
+        buffer.writeBytes(self.digest)
     }
 }

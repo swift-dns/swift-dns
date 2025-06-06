@@ -1,3 +1,5 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-4), Domain Name System Security Extensions, March 1999
 ///
 /// NOTE: RFC 2535 was obsoleted with 4034+, with the exception of the
@@ -157,13 +159,84 @@
 ///    minutes into the past and 5 minutes into the future.
 /// ```
 public struct SIG: Sendable {
-    public let typeCovered: RecordType
-    public let algorithm: DNSSECAlgorithm
-    public let numLabels: UInt8
-    public let originalTTL: UInt32
-    public let sigExpiration: UInt32
-    public let sigInception: UInt32
-    public let keyTag: UInt16
-    public let signerName: Name
-    public let sig: [UInt8]
+    public var typeCovered: RecordType
+    public var algorithm: DNSSECAlgorithm
+    public var numLabels: UInt8
+    public var originalTTL: UInt32
+    public var sigExpiration: UInt32
+    public var sigInception: UInt32
+    public var keyTag: UInt16
+    public var signerName: Name
+    public var sig: [UInt8]
+
+    public init(
+        typeCovered: RecordType,
+        algorithm: DNSSECAlgorithm,
+        numLabels: UInt8,
+        originalTTL: UInt32,
+        sigExpiration: UInt32,
+        sigInception: UInt32,
+        keyTag: UInt16,
+        signerName: Name,
+        sig: [UInt8]
+    ) {
+        self.typeCovered = typeCovered
+        self.algorithm = algorithm
+        self.numLabels = numLabels
+        self.originalTTL = originalTTL
+        self.sigExpiration = sigExpiration
+        self.sigInception = sigInception
+        self.keyTag = keyTag
+        self.signerName = signerName
+        self.sig = sig
+    }
+}
+
+extension SIG {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.typeCovered = try RecordType(from: &buffer)
+        self.algorithm = try DNSSECAlgorithm(from: &buffer)
+        self.numLabels =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("SIG.numLabels", buffer)
+            }()
+        self.originalTTL =
+            try buffer.readInteger(as: UInt32.self)
+            ?? {
+                throw ProtocolError.failedToRead("SIG.originalTTL", buffer)
+            }()
+        self.sigExpiration =
+            try buffer.readInteger(as: UInt32.self)
+            ?? {
+                throw ProtocolError.failedToRead("SIG.sigExpiration", buffer)
+            }()
+        self.sigInception =
+            try buffer.readInteger(as: UInt32.self)
+            ?? {
+                throw ProtocolError.failedToRead("SIG.sigInception", buffer)
+            }()
+        self.keyTag =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("SIG.keyTag", buffer)
+            }()
+        self.signerName = try Name(from: &buffer)
+        self.sig = [UInt8](buffer: buffer)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    }
+}
+extension SIG {
+    func encode(into buffer: inout ByteBuffer) throws {
+        typeCovered.encode(into: &buffer)
+        algorithm.encode(into: &buffer)
+        buffer.writeInteger(numLabels)
+        buffer.writeInteger(originalTTL)
+        buffer.writeInteger(sigExpiration)
+        buffer.writeInteger(sigInception)
+        buffer.writeInteger(keyTag)
+        // FIXME: should encode as lowercase?
+        try signerName.encode(into: &buffer)
+        buffer.writeBytes(sig)
+    }
 }

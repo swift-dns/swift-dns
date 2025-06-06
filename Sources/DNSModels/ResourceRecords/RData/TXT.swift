@@ -25,7 +25,7 @@ extension TXT {
         self.txtData = []
         while buffer.readableBytes > 0 {
             self.txtData.append(
-                try buffer.readCharacterStringAsString(name: "TXT.txtData[]")
+                try buffer.readLengthPrefixedStringAsString(name: "TXT.txtData[]")
             )
         }
     }
@@ -39,7 +39,7 @@ extension TXT {
             }
         )
         for txt in self.txtData {
-            try buffer.writeCharacterString(
+            try buffer.writeLengthPrefixedString(
                 name: "TXT.txtData[]",
                 bytes: txt.utf8,
                 maxLength: 255,

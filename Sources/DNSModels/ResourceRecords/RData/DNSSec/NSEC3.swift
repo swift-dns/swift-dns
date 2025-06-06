@@ -1,3 +1,5 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 5155](https://tools.ietf.org/html/rfc5155#section-3), NSEC3, March 2008
 ///
 /// ```text
@@ -164,18 +166,92 @@ public struct NSEC3: Sendable {
 
     /// Labels are always stored as ASCII, unicode characters must be encoded with punycode
     public struct Label: Sendable {
-        public let value: InlineArray<24, UInt8>
+        public var value: InlineArray<24, UInt8>
+
+        public init(value: InlineArray<24, UInt8>) {
+            self.value = value
+        }
     }
 
-    public let hashAlgorithm: HashAlgorithm
-    public let optOut: Bool
-    public let iterations: UInt16
-    public let salt: [UInt8]
-    public let nextHashedOwnerName: [UInt8]
-    /// The next hashed owner name, in base32-encoded form. If the next hashed owner name field is
-    /// too long, this may be `None` instead.
-    public let nextHashedOwnerNameBase32: Label?
-    public let typeBitMaps: RecordTypeSet
+    public var hashAlgorithm: HashAlgorithm
+    public var optOut: Bool
+    public var iterations: UInt16
+    public var salt: [UInt8]
+    public var nextHashedOwnerName: [UInt8]
+    /// Don't need this yet
+    /// public var nextHashedOwnerNameBase32: Label?
+    public var typeBitMaps: RecordTypeSet
+
+    var flags: UInt8 {
+        var flags: UInt8 = 0
+        if self.optOut {
+            flags |= 0b0000_0001
+        }
+        return flags
+    }
+
+    public init(
+        hashAlgorithm: HashAlgorithm,
+        optOut: Bool,
+        iterations: UInt16,
+        salt: [UInt8],
+        nextHashedOwnerName: [UInt8],
+        typeBitMaps: RecordTypeSet
+    ) {
+        self.hashAlgorithm = hashAlgorithm
+        self.optOut = optOut
+        self.iterations = iterations
+        self.salt = salt
+        self.nextHashedOwnerName = nextHashedOwnerName
+        self.typeBitMaps = typeBitMaps
+    }
+}
+
+extension NSEC3 {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.hashAlgorithm = try HashAlgorithm(from: &buffer)
+        let flags =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("NSEC3.flags", buffer)
+            }()
+        guard flags & 0b1111_1110 == 0 else {
+            throw ProtocolError.failedToValidate("NSEC3.flags", buffer)
+        }
+        //FIXME: use flags like in Header.bytes16to31
+        self.optOut = (flags & 0b0000_0001) == 0b0000_0001
+        self.iterations =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("NSEC3.iterations", buffer)
+            }()
+        self.salt = try buffer.readLengthPrefixedString(name: "NSEC3.salt")
+        self.nextHashedOwnerName = try buffer.readLengthPrefixedString(
+            name: "NSEC3.nextHashedOwnerName"
+        )
+        self.typeBitMaps = try RecordTypeSet(from: &buffer)
+    }
+}
+
+extension NSEC3 {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        try self.hashAlgorithm.encode(into: &buffer)
+        buffer.writeInteger(self.flags)
+        buffer.writeInteger(self.iterations)
+        try buffer.writeLengthPrefixedString(
+            name: "NSEC3.salt",
+            bytes: self.salt,
+            maxLength: 255,
+            fitLengthInto: UInt8.self
+        )
+        try buffer.writeLengthPrefixedString(
+            name: "NSEC3.nextHashedOwnerName",
+            bytes: self.nextHashedOwnerName,
+            maxLength: 255,
+            fitLengthInto: UInt8.self
+        )
+        self.typeBitMaps.encode(into: &buffer)
+    }
 }
 
 extension NSEC3.HashAlgorithm: RawRepresentable {
@@ -190,5 +266,26 @@ extension NSEC3.HashAlgorithm: RawRepresentable {
         switch self {
         case .SHA1: return 1
         }
+    }
+}
+
+extension NSEC3.HashAlgorithm {
+    package init(from buffer: inout ByteBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt8.self)
+            ?? {
+                throw ProtocolError.failedToRead("NSEC3.HashAlgorithm", buffer)
+            }()
+        self =
+            try NSEC3.HashAlgorithm(rawValue: rawValue)
+            ?? {
+                throw ProtocolError.failedToValidate("NSEC3.HashAlgorithm", buffer)
+            }()
+    }
+}
+
+extension NSEC3.HashAlgorithm {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        buffer.writeInteger(self.rawValue)
     }
 }

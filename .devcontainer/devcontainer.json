@@ -1,6 +1,6 @@
 {
-  "name": "swift-6.2-DEVELOPMENT-SNAPSHOT-2025-05-15-a",
-  "image": "docker.io/swiftlang/swift@sha256:2528fbd1509cdc8ebb1fd8013f2bb74ec37272a392add3abe949ed9e18917d8b",
+  "name": "6.2-snapshot-2025-05-30",
+  "image": "docker.io/swiftlang/swift@sha256:67efd3f092b810d27ad21d90b9ab32fbbcead75df80dfcfa73bb773c80f104ca",
   "mounts": [
     "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
   ],
@@ -18,10 +18,8 @@
       ],
       "settings": {
         "lldb.library": "/usr/lib/liblldb.so",
-        "swift.path": "/usr/bin",
-        "swift.swiftEnvironmentVariables": {
-          "DEVELOPER_DIR": "${localWorkspaceFolder}"
-        }
+        "swift.path": null,
+        "swift.swiftEnvironmentVariables": {}
       }
     }
   }

@@ -1,3 +1,5 @@
+package import struct NIOCore.ByteBuffer
+
 /// [RFC 4034](https://tools.ietf.org/html/rfc4034#section-4), DNSSEC Resource Records, March 2005
 ///
 /// ```text
@@ -23,6 +25,25 @@
 ///    authenticated denial of existence.
 /// ```
 public struct NSEC: Sendable {
-    public let nextDomainName: Name
-    public let typeBitMaps: RecordTypeSet
+    public var nextDomainName: Name
+    public var typeBitMaps: RecordTypeSet
+
+    public init(nextDomainName: Name, typeBitMaps: RecordTypeSet) {
+        self.nextDomainName = nextDomainName
+        self.typeBitMaps = typeBitMaps
+    }
+}
+
+extension NSEC {
+    package init(from buffer: inout ByteBuffer) throws {
+        self.nextDomainName = try Name(from: &buffer)
+        self.typeBitMaps = try RecordTypeSet(from: &buffer)
+    }
+}
+
+extension NSEC {
+    package func encode(into buffer: inout ByteBuffer) throws {
+        try self.nextDomainName.encode(into: &buffer)
+        self.typeBitMaps.encode(into: &buffer)
+    }
 }

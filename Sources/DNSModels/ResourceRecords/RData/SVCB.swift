@@ -618,7 +618,7 @@ extension SVCB.SVCParamValue.ALPN {
         self.protocols = []
         while buffer.readableBytes != 0 {
             self.protocols.append(
-                try buffer.readCharacterStringAsString(
+                try buffer.readLengthPrefixedStringAsString(
                     name: "SVCB.SVCParamValue.ALPN.protocols"
                 )
             )
@@ -650,14 +650,14 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
 extension SVCB.SVCParamValue.ECHConfigList {
     package init(from buffer: inout ByteBuffer) throws {
         self.config = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.config.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     }
 }
 
 extension SVCB.SVCParamValue.Unknown {
     package init(from buffer: inout ByteBuffer) throws {
         self.data = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: self.data.count)
+        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     }
 }
 
@@ -706,7 +706,7 @@ extension SVCB.SVCParamValue.ALPN {
     package func encode(into buffer: inout ByteBuffer) throws {
         buffer.reserveCapacity(minimumWritableBytes: self.lengthInDNSWireProtocol)
         for proto in self.protocols {
-            try buffer.writeCharacterString(
+            try buffer.writeLengthPrefixedString(
                 name: "SVCB.SVCParamValue.ALPN.protocols",
                 bytes: proto.utf8,
                 maxLength: 255,

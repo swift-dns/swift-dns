@@ -66,9 +66,9 @@ extension NAPTR {
             ?? {
                 throw ProtocolError.failedToRead("NAPTR.preference", buffer)
             }()
-        self.flags = try buffer.readCharacterString(name: "NAPTR.flags")
-        self.services = try buffer.readCharacterString(name: "NAPTR.services")
-        self.regexp = try buffer.readCharacterString(name: "NAPTR.regexp")
+        self.flags = try buffer.readLengthPrefixedString(name: "NAPTR.flags")
+        self.services = try buffer.readLengthPrefixedString(name: "NAPTR.services")
+        self.regexp = try buffer.readLengthPrefixedString(name: "NAPTR.regexp")
         self.replacement = try Name(from: &buffer)
     }
 }
@@ -77,19 +77,19 @@ extension NAPTR {
     package func encode(into buffer: inout ByteBuffer) throws {
         buffer.writeInteger(self.order)
         buffer.writeInteger(self.preference)
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "NAPTR.flags",
             bytes: self.flags,
             maxLength: 255,
             fitLengthInto: UInt8.self
         )
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "NAPTR.services",
             bytes: self.services,
             maxLength: 255,
             fitLengthInto: UInt8.self
         )
-        try buffer.writeCharacterString(
+        try buffer.writeLengthPrefixedString(
             name: "NAPTR.regexp",
             bytes: self.regexp,
             maxLength: 255,
