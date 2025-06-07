@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4398, Storing Certificates in DNS, November 1987](https://tools.ietf.org/html/rfc4398)
 ///
 /// ```text
@@ -89,7 +87,7 @@ public struct CERT: Sendable {
 }
 
 extension CERT {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.certType = try CertType(from: &buffer)
         self.keyTag =
             try buffer.readInteger(as: UInt16.self)
@@ -102,7 +100,7 @@ extension CERT {
 }
 
 extension CERT {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         certType.encode(into: &buffer)
         buffer.writeInteger(keyTag)
         algorithm.encode(into: &buffer)
@@ -184,7 +182,7 @@ extension CERT.CertType: RawRepresentable {
 }
 
 extension CERT.CertType {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -195,7 +193,7 @@ extension CERT.CertType {
 }
 
 extension CERT.CertType {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

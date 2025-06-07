@@ -1,24 +1,39 @@
-import Logging
-import NIOCore
+public import Logging
+/// FIXME: as of writing this comment we only need EventLoopGroup as public, but Swift 6.2 doesn't
+/// accept multiple access levels for the same module, so can't import the symbols one by one with
+/// different access levels.
+public import NIOCore
 import NIOPosix
 
 public import struct DNSModels.Message
 
 public struct Client {
-    public static func query(message: Message) async throws -> Message {
-        let queryPool = QueryPool()
+    public var connectionTarget: ConnectionTarget
+    let eventLoopGroup: any EventLoopGroup
+    let queryPool: QueryPool
+    let logger: Logger
+
+    /// FIXME: shouldn't expose EventLoopGroup anymore
+    public init(
+        connectionTarget: ConnectionTarget,
+        eventLoopGroup: any EventLoopGroup,
+        logger: Logger
+    ) {
+        self.connectionTarget = connectionTarget
+        self.eventLoopGroup = eventLoopGroup
+        self.queryPool = QueryPool()
+        self.logger = logger
+    }
+
+    public func query(message: Message) async throws -> Message {
         // FIXME: catch connection target to socket address translation errors
         let connectionFactory = try ConnectionFactory(
             queryPool: queryPool,
-            connectionTarget: .domain(
-                name: "8.8.4.4",
-                port: 53
-            )
+            connectionTarget: connectionTarget
         )
-        let logger = Logger(label: "DNSClient")
         let channel = try await connectionFactory.makeChannel(
             deadline: .now() + .seconds(10),
-            eventLoop: MultiThreadedEventLoopGroup.singleton.next(),
+            eventLoop: eventLoopGroup.next(),
             logger: logger
         ).get()
         return try await withCheckedThrowingContinuation { (continuation: QueryPool.Continuation) in

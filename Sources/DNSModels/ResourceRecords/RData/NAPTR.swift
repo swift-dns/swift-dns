@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 3403 DDDS DNS Database, October 2002](https://tools.ietf.org/html/rfc3403#section-4)
 ///
 /// ```text
@@ -55,7 +53,7 @@ public struct NAPTR: Sendable {
 }
 
 extension NAPTR {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.order =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -74,7 +72,7 @@ extension NAPTR {
 }
 
 extension NAPTR {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.order)
         buffer.writeInteger(self.preference)
         try buffer.writeLengthPrefixedString(

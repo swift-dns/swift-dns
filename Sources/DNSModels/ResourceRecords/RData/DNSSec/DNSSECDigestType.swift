@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// DNSSEC Delegation Signer (DS) Resource Record (RR) Type Digest Algorithms
 ///
 /// [IANA Registry](https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml)
@@ -59,7 +57,7 @@ extension DNSSECDigestType: RawRepresentable {
 }
 
 extension DNSSECDigestType {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("DNSSECDigestType", buffer)
         }
@@ -68,7 +66,7 @@ extension DNSSECDigestType {
 }
 
 extension DNSSECDigestType {
-    func encode(into buffer: inout ByteBuffer) {
+    func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

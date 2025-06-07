@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-4), Domain Name System Security Extensions, March 1999
 ///
 /// NOTE: RFC 2535 was obsoleted with 4034+, with the exception of the
@@ -193,7 +191,7 @@ public struct SIG: Sendable {
 }
 
 extension SIG {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.typeCovered = try RecordType(from: &buffer)
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
         self.numLabels =
@@ -222,12 +220,11 @@ extension SIG {
                 throw ProtocolError.failedToRead("SIG.keyTag", buffer)
             }()
         self.signerName = try Name(from: &buffer)
-        self.sig = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.sig = buffer.readToEnd()
     }
 }
 extension SIG {
-    func encode(into buffer: inout ByteBuffer) throws {
+    func encode(into buffer: inout DNSBuffer) throws {
         typeCovered.encode(into: &buffer)
         algorithm.encode(into: &buffer)
         buffer.writeInteger(numLabels)

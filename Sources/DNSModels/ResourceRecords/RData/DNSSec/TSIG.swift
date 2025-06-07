@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 8945, Secret Key Transaction Authentication for DNS](https://tools.ietf.org/html/rfc8945#section-4.2)
 ///
 /// ```text
@@ -194,7 +192,7 @@ public struct TSIG: Sendable {
 }
 
 extension TSIG {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try TSIG.Algorithm(from: &buffer)
         guard let timeHigh = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("TSIG.timeHigh", buffer)
@@ -230,12 +228,12 @@ extension TSIG {
 }
 
 extension TSIG {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
         let shiftedTime =
             try UInt16(exactly: self.time >> 32)
             ?? {
-                throw ProtocolError.failedToValidate("TSIG.time", ByteBuffer(integer: self.time))
+                throw ProtocolError.failedToValidate("TSIG.time", DNSBuffer(integer: self.time))
             }()
         buffer.writeInteger(shiftedTime)
         buffer.writeInteger(UInt32(truncatingIfNeeded: self.time))
@@ -294,13 +292,13 @@ extension TSIG.Algorithm {
 }
 
 extension TSIG.Algorithm {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.init(name: try Name(from: &buffer))
     }
 }
 
 extension TSIG.Algorithm {
-    func encode(into buffer: inout ByteBuffer) throws {
+    func encode(into buffer: inout DNSBuffer) throws {
         try self.toName().encode(into: &buffer)
     }
 }

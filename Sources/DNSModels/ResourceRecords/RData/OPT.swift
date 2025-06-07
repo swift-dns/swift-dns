@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The OPT record type is used for ExtendedDNS records.
 ///
 /// These allow for additional information to be associated with the DNS request that otherwise
@@ -157,7 +155,7 @@ extension OPT {
         )
     }
 
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         var state: OptReadingState = .readCode
         self.options = []
 
@@ -209,7 +207,7 @@ extension OPT {
 }
 
 extension OPT {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         for (code, option) in self.options {
             code.encode(into: &buffer)
             try option.encode(into: &buffer)

@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Metadata for the `Message` struct.
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -52,7 +50,9 @@ public struct Header: Sendable {
             }
             set {
                 /// clear the 15th bit then set it to the new value
-                self.rawValue = (self.rawValue & 0b01111111_11111111) | UInt16(exactly: newValue.rawValue)! << 15
+                self.rawValue =
+                    (self.rawValue & 0b01111111_11111111) | UInt16(exactly: newValue.rawValue)!
+                    << 15
             }
         }
         public var opCode: OPCode {
@@ -60,7 +60,9 @@ public struct Header: Sendable {
                 OPCode(rawValue: UInt8((rawValue >> 11) & 0xF))!
             }
             set {
-                self.rawValue = (self.rawValue & 0b10000111_11111111) | UInt16(exactly: newValue.rawValue)! << 11
+                self.rawValue =
+                    (self.rawValue & 0b10000111_11111111) | UInt16(exactly: newValue.rawValue)!
+                    << 11
             }
         }
         public var authoritative: Bool {
@@ -261,38 +263,61 @@ public struct Header: Sendable {
 }
 
 extension Header {
-    package init(from buffer: inout ByteBuffer) throws {
-        guard
-            let read = buffer.readMultipleIntegers(
-                endianness: .big,
-                as: (UInt16, UInt16, UInt16, UInt16, UInt16, UInt16).self
-            )
-        else {
-            throw ProtocolError.badHeader(buffer)
-        }
-
-        var bytes16To31: UInt16
-        (
-            self.id,
-            bytes16To31,
-            self.queryCount,
-            self.answerCount,
-            self.nameServerCount,
-            self.additionalCount
-        ) = read
-
-        self.bytes16To31 = Bytes16To31(rawValue: bytes16To31)
+    package init(from buffer: inout DNSBuffer) throws {
+        self.id =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.id", buffer)
+            }()
+        self.bytes16To31 = try Header.Bytes16To31(from: &buffer)
+        self.queryCount =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.queryCount", buffer)
+            }()
+        self.answerCount =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.answerCount", buffer)
+            }()
+        self.nameServerCount =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.nameServerCount", buffer)
+            }()
+        self.additionalCount =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.additionalCount", buffer)
+            }()
     }
 }
 
 extension Header {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.id)
-        buffer.writeInteger(self.bytes16To31.rawValue)
+        self.bytes16To31.encode(into: &buffer)
         buffer.writeInteger(self.queryCount)
         buffer.writeInteger(self.answerCount)
         buffer.writeInteger(self.nameServerCount)
         buffer.writeInteger(self.additionalCount)
+    }
+}
+
+extension Header.Bytes16To31 {
+    package init(from buffer: inout DNSBuffer) throws {
+        let rawValue =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("Header.Bytes16To31.rawValue", buffer)
+            }()
+        self.init(rawValue: rawValue)
+    }
+}
+
+extension Header.Bytes16To31 {
+    package func encode(into buffer: inout DNSBuffer) {
+        buffer.writeInteger(self.rawValue)
     }
 }
 

@@ -1,5 +1,4 @@
 public import struct Collections.OrderedSet
-package import struct NIOCore.ByteBuffer
 
 public struct RecordTypeSet: Sendable {
     public var types: OrderedSet<RecordType>
@@ -13,7 +12,7 @@ extension RecordTypeSet {
         case recordType(window: UInt8, bitMapLength: UInt8, left: UInt8)
     }
 
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         /// 3.2.1.  Type Bit Maps Encoding
         ///
         /// The encoding of the Type Bit Maps field is the same as that used by
@@ -59,8 +58,7 @@ extension RecordTypeSet {
         /// value, within that block, among the set of RR types present at the
         ///  original owner name of the NSEC3 RR.  Trailing octets not specified
         ///  MUST be interpreted as zero octets.
-        self.originalEncoding = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.originalEncoding = buffer.readToEnd()
 
         self.types = []
         var state: BitMapReadingState = .window
@@ -130,7 +128,7 @@ extension RecordTypeSet {
 }
 
 extension RecordTypeSet {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         if case let .some(encodedBytes) = self.originalEncoding {
             buffer.writeBytes(encodedBytes)
             return

@@ -1,5 +1,6 @@
 import DNSCore
 import DNSModels
+import Logging
 import NIOCore
 
 final class DNSChannelHandler: ChannelDuplexHandler {
@@ -11,20 +12,50 @@ final class DNSChannelHandler: ChannelDuplexHandler {
 
     let queryPool: QueryPool
     let decoder: NIOSingleStepByteToMessageProcessor<DNSMessageDecoder>
+    let logger: Logger
 
-    init(queryPool: QueryPool) {
+    init(queryPool: QueryPool, logger: Logger = Logger(label: "DNSChannelHandler")) {
         self.queryPool = queryPool
         self.decoder = NIOSingleStepByteToMessageProcessor(DNSMessageDecoder())
+        self.logger = logger
     }
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        let buffer = unwrapInboundIn(data)
+        var buffer = unwrapInboundIn(data)
         do {
             try self.decoder.process(buffer: buffer) { message in
-                queryPool.succeed(with: message)
+                if !queryPool.succeed(with: message) {
+                    logger.warning(
+                        "Failed to succeed a message. Ignoring message",
+                        metadata: [
+                            "id": .stringConvertible(message.header.id)
+                        ]
+                    )
+                    return
+                }
             }
         } catch {
-            // FIXME: handle error
+            /// Only decode the ID as we likely failed to decode the full message
+            guard let id = buffer.readInteger(as: UInt16.self) else {
+                logger.warning(
+                    "Failed to read ID from buffer. Ignoring message",
+                    metadata: [
+                        "buffer": .stringConvertible(buffer)
+                    ]
+                )
+                return
+            }
+
+            if !queryPool.fail(id: id, with: error) {
+                logger.warning(
+                    "Failed to fail a message. Ignoring message",
+                    metadata: [
+                        "id": .stringConvertible(id)
+                    ]
+                )
+                return
+            }
+
             context.fireErrorCaught(error)
         }
     }
@@ -35,7 +66,7 @@ final class DNSChannelHandler: ChannelDuplexHandler {
         promise: EventLoopPromise<Void>?
     ) {
         let message = unwrapOutboundIn(data)
-        var buffer = context.channel.allocator.buffer(capacity: 256)
+        var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 256))
         assert(
             queryPool.contains(message),
             "QueryPool does not contain an entry for this message? \(message)"
@@ -43,10 +74,13 @@ final class DNSChannelHandler: ChannelDuplexHandler {
         do {
             try message.encode(into: &buffer)
         } catch {
-            queryPool.fail(id: message.header.id, with: error)
+            if !queryPool.fail(id: message.header.id, with: error) {
+                /// How come the message ID was no recognized? Our internal inconsistency?
+                assertionFailure("Failed to fail a message with ID: \(message.header.id)")
+            }
             promise?.fail(error)
             return
         }
-        context.write(NIOAny(buffer), promise: promise)
+        context.write(NIOAny(ByteBuffer(dnsBuffer: buffer)), promise: promise)
     }
 }

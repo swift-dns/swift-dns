@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3), Domain Name System Security Extensions, March 1999
 ///
 /// text
@@ -431,7 +429,7 @@ extension KEY.KeyTrust: RawRepresentable {
 }
 
 extension KEY {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let flags =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -441,11 +439,11 @@ extension KEY {
         /// Bits 4-5 are reserved and must be zero.
         /// Bits 8-11 are reserved and must be zero.
         guard flags & 0b0010_1100_1111_0000 == 0 else {
-            throw ProtocolError.failedToValidate("KEY.flags", ByteBuffer(integer: flags))
+            throw ProtocolError.failedToValidate("KEY.flags", DNSBuffer(integer: flags))
         }
         guard (flags & 0b0001_0000_0000_0000) == 0 else {
             /// extended flags unsupported for now
-            throw ProtocolError.failedToValidate("KEY.flags", ByteBuffer(integer: flags))
+            throw ProtocolError.failedToValidate("KEY.flags", DNSBuffer(integer: flags))
         }
         self.keyTrust = KEY.KeyTrust(flags)
         self.keyUsage = KEY.KeyUsage(flags)
@@ -461,7 +459,7 @@ extension KEY {
 }
 
 extension KEY {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
         self.Proto.encode(into: &buffer)
         self.algorithm.encode(into: &buffer)
@@ -475,7 +473,7 @@ extension KEY {
 }
 
 extension KEY.KeyTrust {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -486,7 +484,7 @@ extension KEY.KeyTrust {
 }
 
 extension KEY.KeyTrust {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -536,7 +534,7 @@ extension KEY.KeyUsage: RawRepresentable {
 }
 
 extension KEY.KeyUsage {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -547,7 +545,7 @@ extension KEY.KeyUsage {
 }
 
 extension KEY.KeyUsage {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -590,7 +588,7 @@ extension KEY.UpdateScope: RawRepresentable {
 }
 
 extension KEY.UpdateScope {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -601,7 +599,7 @@ extension KEY.UpdateScope {
 }
 
 extension KEY.UpdateScope {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -651,7 +649,7 @@ extension KEY.Proto: RawRepresentable {
 }
 
 extension KEY.Proto {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt8.self)
             ?? {
@@ -662,7 +660,7 @@ extension KEY.Proto {
 }
 
 extension KEY.Proto {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

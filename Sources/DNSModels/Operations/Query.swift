@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Query struct for looking up resource records, basically a resource record without RDATA.
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -40,7 +38,7 @@ public struct Query: Sendable {
 }
 
 extension Query {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.name = try Name(from: &buffer)
         self.queryType = try RecordType(from: &buffer)
         self.queryClass = try DNSClass(from: &buffer)
@@ -48,7 +46,7 @@ extension Query {
 }
 
 extension Query {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)
         self.queryType.encode(into: &buffer)
         self.queryClass.encode(into: &buffer)

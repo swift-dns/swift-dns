@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The CAA RR Type
 ///
 /// [RFC 8659, DNS Certification Authority Authorization, November 2019](https://www.rfc-editor.org/rfc/rfc8659)
@@ -77,7 +75,7 @@ public struct CAA: Sendable {
 }
 
 extension CAA {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes16To31 handles flags
         guard let flags = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("CAA.flags", buffer)
@@ -86,15 +84,15 @@ extension CAA {
         self.reservedFlags = flags & 0b0111_1111
         self.tag = try Property(from: &buffer)
         /// Copy bytes to rawValue, then decode value:
-        self.rawValue = [UInt8](buffer: buffer)
+        self.rawValue = buffer.getToEnd()
         self.value = try Value(from: &buffer, tag: self.tag)
     }
 }
 
 extension CAA {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
-        var tagBuffer = ByteBuffer()
+        var tagBuffer = DNSBuffer()
         self.tag.encode(into: &tagBuffer)
         buffer.writeBytes(self.rawValue)
     }
@@ -133,7 +131,7 @@ extension CAA.Property: RawRepresentable {
 }
 
 extension CAA.Property {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let length = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("CAA.Property.length", buffer)
         }
@@ -153,27 +151,24 @@ extension CAA.Property {
 }
 
 extension CAA.Property {
-    package func encode(into buffer: inout ByteBuffer) {
-        var temp = ByteBuffer()
+    package func encode(into buffer: inout DNSBuffer) {
+        var temp = DNSBuffer()
         temp.writeString(self.rawValue)
         buffer.writeInteger(UInt8(temp.readableBytes))
         buffer.writeBuffer(&temp)
     }
 }
 
-
 extension CAA.Value {
-    package init(from buffer: inout ByteBuffer, tag: CAA.Property) throws {
+    package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {
         case .issue, .issueWildcard:
             let (name, pairs) = try Self.readIssuer(from: &buffer)
             self = .issuer(name, pairs)
         case .iodef:
-            self = .url(String(buffer: buffer))
-            buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+            self = .url(buffer.readToEndAsString())
         case .unknown:
-            self = .unknown([UInt8](buffer: buffer))
-            buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+            self = .unknown(buffer.readToEnd())
         }
     }
 
@@ -201,7 +196,7 @@ extension CAA.Value {
                 case .key(_, let key, _):
                     throw ProtocolError.failedToValidate(
                         "CAA.issuer.state",
-                        ByteBuffer(string: key)
+                        DNSBuffer(string: key)
                     )
                 }
             }
@@ -209,7 +204,7 @@ extension CAA.Value {
     }
 
     static func readIssuer(
-        from buffer: inout ByteBuffer
+        from buffer: inout DNSBuffer
     ) throws -> (Name?, [(key: String, value: String)]) {
         let name: Name?
         guard

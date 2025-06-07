@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 7477, Child-to-Parent Synchronization in DNS, March 2015][rfc7477]
 ///
 /// ```text
@@ -53,7 +51,7 @@ public struct CSYNC: Sendable {
 }
 
 extension CSYNC {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.soaSerial =
             try buffer.readInteger(as: UInt32.self)
             ?? {
@@ -73,7 +71,7 @@ extension CSYNC {
 }
 
 extension CSYNC {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.soaSerial)
         buffer.writeInteger(self.flags)
         self.typeBitMaps.encode(into: &buffer)

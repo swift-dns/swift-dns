@@ -1,6 +1,7 @@
-import enum NIOCore.SocketAddress
+public import enum NIOCore.SocketAddress
 
-enum ConnectionTarget: Equatable, Hashable {
+/// FIXME: shouldn't expose SocketAddress as public
+public enum ConnectionTarget: Equatable, Hashable {
     // We keep the IP address serialization precisely as it is in the URL.
     // Some platforms have quirks in their implementations of 'ntop', for example
     // writing IPv6 addresses as having embedded IPv4 sections (e.g. [::192.168.0.1] vs [::c0a8:1]).

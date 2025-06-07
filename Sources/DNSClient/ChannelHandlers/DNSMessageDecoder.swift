@@ -5,8 +5,12 @@ struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
     typealias InboundOut = Message
 
     func decode(buffer: inout ByteBuffer) throws -> Message? {
+        var dnsBuffer = DNSBuffer(buffer: buffer)
+        defer {
+            buffer = ByteBuffer(dnsBuffer: dnsBuffer)
+        }
         // FIXME: need to handle a case where we need more packets and buffer is incomplete?
-        try Message(from: &buffer)
+        return try Message(from: &dnsBuffer)
     }
 
     func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) throws -> Message? {

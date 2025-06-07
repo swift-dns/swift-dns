@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// An IP address, either IPv4 or IPv6.
 ///
 /// This enum can contain either an [`Ipv4Addr`] or an [`Ipv6Addr`], see their
@@ -78,7 +76,7 @@ extension IPv4Address: CustomStringConvertible {
 }
 
 extension IPv4Address {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.bytes =
             try buffer.readInlineArray()
             ?? {
@@ -86,7 +84,7 @@ extension IPv4Address {
             }()
     }
 
-    package init(from buffer: inout ByteBuffer, addressLength: Int) throws {
+    package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
         self.bytes = try InlineArray<4, UInt8> { idx in
             switch idx < addressLength {
             case true:
@@ -103,12 +101,12 @@ extension IPv4Address {
 }
 
 extension IPv4Address {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         /// TODO: optimize writing bytes
         buffer.writeBytes(self.bytes)
     }
 
-    package func encode(into buffer: inout ByteBuffer, addressLength: Int) {
+    package func encode(into buffer: inout DNSBuffer, addressLength: Int) {
         for idx in 0..<addressLength {
             guard idx < addressLength else {
                 return
@@ -227,7 +225,7 @@ extension IPv6Address: CustomStringConvertible {
 }
 
 extension IPv6Address {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.bytes =
             try buffer.readInlineArray()
             ?? {
@@ -235,7 +233,7 @@ extension IPv6Address {
             }()
     }
 
-    package init(from buffer: inout ByteBuffer, addressLength: Int) throws {
+    package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
         self.bytes = try InlineArray<16, UInt8> { idx in
             switch idx < addressLength {
             case true:
@@ -252,12 +250,12 @@ extension IPv6Address {
 }
 
 extension IPv6Address {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         /// TODO: optimize writing bytes
         buffer.writeBytes(self.bytes)
     }
 
-    package func encode(into buffer: inout ByteBuffer, addressLength: Int) {
+    package func encode(into buffer: inout DNSBuffer, addressLength: Int) {
         for idx in 0..<addressLength {
             guard idx < addressLength else {
                 return

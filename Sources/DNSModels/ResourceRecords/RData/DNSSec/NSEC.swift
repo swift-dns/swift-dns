@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4034](https://tools.ietf.org/html/rfc4034#section-4), DNSSEC Resource Records, March 2005
 ///
 /// ```text
@@ -35,14 +33,14 @@ public struct NSEC: Sendable {
 }
 
 extension NSEC {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.nextDomainName = try Name(from: &buffer)
         self.typeBitMaps = try RecordTypeSet(from: &buffer)
     }
 }
 
 extension NSEC {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.nextDomainName.encode(into: &buffer)
         self.typeBitMaps.encode(into: &buffer)
     }

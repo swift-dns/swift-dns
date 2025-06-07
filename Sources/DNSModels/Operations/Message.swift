@@ -1,7 +1,5 @@
 import DNSCore
 
-package import struct NIOCore.ByteBuffer
-
 /// The basic request and response data structure, used for all DNS protocols.
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -72,7 +70,7 @@ public struct Message: Sendable {
 // FIXME: read and write using a dedicated reader/writer
 
 extension Message {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.header = try Header(from: &buffer)
 
         self.queries = []
@@ -111,7 +109,7 @@ extension Message {
 }
 
 extension Message {
-    package consuming func encode(into buffer: inout ByteBuffer) throws {
+    package consuming func encode(into buffer: inout DNSBuffer) throws {
         debugOnly {
             if let edns = self.edns {
                 /// Assert EDNS RCODE is the same as the response code high.

@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 public enum RData: Sendable {
     /// ```text
     /// -- RFC 1035 -- Domain Implementation and Specification    November 1987
@@ -667,7 +665,7 @@ extension RData {
 }
 
 extension RData {
-    package init(from buffer: inout ByteBuffer, recordType: RecordType) throws {
+    package init(from buffer: inout DNSBuffer, recordType: RecordType) throws {
         guard let length = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("RData.length", buffer)
         }
@@ -765,8 +763,8 @@ extension RData {
 }
 
 extension RData {
-    package func encode(into buffer: inout ByteBuffer) throws {
-        var valueBuffer = ByteBuffer()
+    package func encode(into buffer: inout DNSBuffer) throws {
+        var valueBuffer = DNSBuffer()
 
         switch self {
         case .A(let a):

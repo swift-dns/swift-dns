@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4034, DNSSEC Resource Records, March 2005](https://tools.ietf.org/html/rfc4034#section-5)
 ///
 /// ```text
@@ -49,7 +47,12 @@ public struct DS: Sendable {
     public var digestType: DNSSECDigestType
     public var digest: [UInt8]
 
-    public init(keyTag: UInt16, algorithm: DNSSECAlgorithm, digestType: DNSSECDigestType, digest: [UInt8]) {
+    public init(
+        keyTag: UInt16,
+        algorithm: DNSSECAlgorithm,
+        digestType: DNSSECDigestType,
+        digest: [UInt8]
+    ) {
         self.keyTag = keyTag
         self.algorithm = algorithm
         self.digestType = digestType
@@ -58,19 +61,20 @@ public struct DS: Sendable {
 }
 
 extension DS {
-    package init(from buffer: inout ByteBuffer) throws {
-        self.keyTag = try buffer.readInteger(as: UInt16.self) ?? {
-            throw ProtocolError.failedToRead("DS.keyTag", buffer)
-        }()
+    package init(from buffer: inout DNSBuffer) throws {
+        self.keyTag =
+            try buffer.readInteger(as: UInt16.self)
+            ?? {
+                throw ProtocolError.failedToRead("DS.keyTag", buffer)
+            }()
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
         self.digestType = try DNSSECDigestType(from: &buffer)
-        self.digest = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.digest = buffer.readToEnd()
     }
 }
 
 extension DS {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.keyTag)
         self.algorithm.encode(into: &buffer)
         self.digestType.encode(into: &buffer)

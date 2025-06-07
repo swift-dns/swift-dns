@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4255](https://tools.ietf.org/html/rfc4255#section-3.1)
 ///
 /// ```text
@@ -71,22 +69,20 @@ public struct SSHFP: Sendable {
 }
 
 extension SSHFP {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try Algorithm(from: &buffer)
         self.fingerprintType = try FingerprintType(from: &buffer)
-        self.fingerprint = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.fingerprint = buffer.readToEnd()
     }
 }
 
 extension SSHFP {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         self.algorithm.encode(into: &buffer)
         self.fingerprintType.encode(into: &buffer)
         buffer.writeBytes(self.fingerprint)
     }
 }
-
 
 extension SSHFP.FingerprintType: RawRepresentable {
     public init(_ rawValue: UInt8) {
@@ -113,7 +109,7 @@ extension SSHFP.FingerprintType: RawRepresentable {
 }
 
 extension SSHFP.FingerprintType {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("SSHFP.FingerprintType", buffer)
         }
@@ -122,7 +118,7 @@ extension SSHFP.FingerprintType {
 }
 
 extension SSHFP.FingerprintType {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

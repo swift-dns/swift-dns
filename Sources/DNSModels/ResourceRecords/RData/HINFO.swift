@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987][rfc1035]
 ///
 /// ```text
@@ -32,14 +30,14 @@ public struct HINFO: Sendable {
 }
 
 extension HINFO {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.cpu = try buffer.readLengthPrefixedStringAsString(name: "HINFO.cpu")
         self.os = try buffer.readLengthPrefixedStringAsString(name: "HINFO.os")
     }
 }
 
 extension HINFO {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixedString(
             name: "HINFO.cpu",
             bytes: cpu.utf8,

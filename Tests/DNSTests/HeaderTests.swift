@@ -157,7 +157,7 @@ struct HeaderTests {
     }
 
     @Test func headerParsesCorrectly() async throws {
-        var buffer = ByteBuffer([
+        var buffer = DNSBuffer(bytes: [
             0xAA, 0xAA, 0x01, 0x00,
             0x00, 0x01, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,

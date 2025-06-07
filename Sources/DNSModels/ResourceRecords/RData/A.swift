@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The DNS A record type, an IPv4 address
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://datatracker.ietf.org/doc/html/rfc1035#section-3.4.1)
@@ -32,13 +30,13 @@ public struct A: Sendable {
 }
 
 extension A {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.value = try IPv4Address(from: &buffer)
     }
 }
 
 extension A {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         self.value.encode(into: &buffer)
     }
 }

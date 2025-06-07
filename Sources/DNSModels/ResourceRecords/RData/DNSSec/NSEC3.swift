@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 5155](https://tools.ietf.org/html/rfc5155#section-3), NSEC3, March 2008
 ///
 /// ```text
@@ -208,7 +206,7 @@ public struct NSEC3: Sendable {
 }
 
 extension NSEC3 {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try HashAlgorithm(from: &buffer)
         let flags =
             try buffer.readInteger(as: UInt8.self)
@@ -234,7 +232,7 @@ extension NSEC3 {
 }
 
 extension NSEC3 {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.hashAlgorithm.encode(into: &buffer)
         buffer.writeInteger(self.flags)
         buffer.writeInteger(self.iterations)
@@ -270,7 +268,7 @@ extension NSEC3.HashAlgorithm: RawRepresentable {
 }
 
 extension NSEC3.HashAlgorithm {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt8.self)
             ?? {
@@ -285,7 +283,7 @@ extension NSEC3.HashAlgorithm {
 }
 
 extension NSEC3.HashAlgorithm {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.rawValue)
     }
 }

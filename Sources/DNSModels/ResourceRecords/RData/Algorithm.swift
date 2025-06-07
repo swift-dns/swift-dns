@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4398, Storing Certificates in DNS, November 1987](https://tools.ietf.org/html/rfc4398#section-2.2)
 ///
 /// ```text
@@ -221,7 +219,7 @@ extension Algorithm: RawRepresentable {
 }
 
 extension Algorithm {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt8.self)
             ?? {
@@ -232,7 +230,7 @@ extension Algorithm {
 }
 
 extension Algorithm {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

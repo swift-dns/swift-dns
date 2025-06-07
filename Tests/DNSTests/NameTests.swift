@@ -72,7 +72,7 @@ struct NameTests {
     }
 
     @Test func decodeFromBuffer() async throws {
-        var buffer = ByteBuffer([
+        var buffer = DNSBuffer(bytes: [
             0x07, 0x65, 0x78, 0x61,
             0x6d, 0x70, 0x6c, 0x65,
             0x03, 0x63, 0x6f, 0x6d,

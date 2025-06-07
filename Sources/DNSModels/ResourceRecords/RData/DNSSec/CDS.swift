@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Child DS. See RFC 8078.
 public struct CDS: Sendable {
     public var keyTag: UInt16
@@ -21,7 +19,7 @@ public struct CDS: Sendable {
 }
 
 extension CDS {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.keyTag =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -38,13 +36,12 @@ extension CDS {
             }()
         self.algorithm = (algorithm == 0) ? nil : DNSSECAlgorithm(algorithm)
         self.digestType = try DNSSECDigestType(from: &buffer)
-        self.digest = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.digest = buffer.readToEnd()
     }
 }
 
 extension CDS {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.keyTag)
         buffer.writeInteger(3 as UInt8)
         buffer.writeInteger(self.algorithm?.rawValue ?? 0)

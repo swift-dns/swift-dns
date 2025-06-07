@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Record data enum variants for DNSSEC-specific records.
 public enum DNSSECRData: Sendable {
     /// ```text
@@ -539,7 +537,7 @@ extension DNSSECRData {
 /// No init(from:). Read using `RData`
 
 extension DNSSECRData {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         switch self {
         case .CDNSKEY(let cdnskey):
             cdnskey.encode(into: &buffer)

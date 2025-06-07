@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
 ///
 /// ```text
@@ -28,7 +26,7 @@ public struct MX: Sendable {
 }
 
 extension MX {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.preference =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -39,7 +37,7 @@ extension MX {
 }
 
 extension MX {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.preference)
         try self.exchange.encode(into: &buffer)
     }

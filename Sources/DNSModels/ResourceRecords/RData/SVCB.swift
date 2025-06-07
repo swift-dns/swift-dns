@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-2.2)
 ///
 /// ```text
@@ -484,7 +482,7 @@ public struct SVCB: Sendable {
 }
 
 extension SVCB {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.svcPriority =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -505,7 +503,7 @@ extension SVCB {
 }
 
 extension SVCB {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.svcPriority)
         try self.targetName.encode(into: &buffer)
         for (key, value) in self.svcParams {
@@ -552,7 +550,7 @@ extension SVCB.SVCParamKey: RawRepresentable {
 }
 
 extension SVCB.SVCParamKey {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         let rawValue =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -563,7 +561,7 @@ extension SVCB.SVCParamKey {
 }
 
 extension SVCB.SVCParamValue {
-    package init(from buffer: inout ByteBuffer, key: SVCB.SVCParamKey) throws {
+    package init(from buffer: inout DNSBuffer, key: SVCB.SVCParamKey) throws {
         guard let length = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("SVCB.SVCParamValue.length", buffer)
         }
@@ -602,7 +600,7 @@ extension SVCB.SVCParamValue {
 }
 
 extension SVCB.SVCParamValue.Mandatory {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.keys = []
         while buffer.readableBytes != 0 {
             self.keys.append(try SVCB.SVCParamKey(from: &buffer))
@@ -614,7 +612,7 @@ extension SVCB.SVCParamValue.Mandatory {
 }
 
 extension SVCB.SVCParamValue.ALPN {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.protocols = []
         while buffer.readableBytes != 0 {
             self.protocols.append(
@@ -630,7 +628,7 @@ extension SVCB.SVCParamValue.ALPN {
 }
 
 extension SVCB.SVCParamValue.IPHint where IPType == A {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.addresses = []
         while buffer.readableBytes != 0 {
             self.addresses.append(try A(from: &buffer))
@@ -639,7 +637,7 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
 }
 
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.addresses = []
         while buffer.readableBytes != 0 {
             self.addresses.append(try AAAA(from: &buffer))
@@ -648,28 +646,26 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
 }
 
 extension SVCB.SVCParamValue.ECHConfigList {
-    package init(from buffer: inout ByteBuffer) throws {
-        self.config = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    package init(from buffer: inout DNSBuffer) throws {
+        self.config = buffer.readToEnd()
     }
 }
 
 extension SVCB.SVCParamValue.Unknown {
-    package init(from buffer: inout ByteBuffer) throws {
-        self.data = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    package init(from buffer: inout DNSBuffer) throws {
+        self.data = buffer.readToEnd()
     }
 }
 
 extension SVCB.SVCParamKey {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.rawValue)
     }
 }
 
 extension SVCB.SVCParamValue {
-    package func encode(into buffer: inout ByteBuffer) throws {
-        var valueBuffer = ByteBuffer()
+    package func encode(into buffer: inout DNSBuffer) throws {
+        var valueBuffer = DNSBuffer()
         switch self {
         case .mandatory(let mandatory):
             try mandatory.encode(into: &valueBuffer)
@@ -695,7 +691,7 @@ extension SVCB.SVCParamValue {
 }
 
 extension SVCB.SVCParamValue.Mandatory {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         for key in self.keys {
             try key.encode(into: &buffer)
         }
@@ -703,7 +699,7 @@ extension SVCB.SVCParamValue.Mandatory {
 }
 
 extension SVCB.SVCParamValue.ALPN {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(minimumWritableBytes: self.lengthInDNSWireProtocol)
         for proto in self.protocols {
             try buffer.writeLengthPrefixedString(
@@ -717,7 +713,7 @@ extension SVCB.SVCParamValue.ALPN {
 }
 
 extension SVCB.SVCParamValue.IPHint where IPType == A {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv4Address.size))
         for address in self.addresses {
             address.encode(into: &buffer)
@@ -726,7 +722,7 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
 }
 
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv6Address.size))
         for address in self.addresses {
             address.encode(into: &buffer)
@@ -735,13 +731,13 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
 }
 
 extension SVCB.SVCParamValue.ECHConfigList {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeBytes(self.config)
     }
 }
 
 extension SVCB.SVCParamValue.Unknown {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeBytes(self.data)
     }
 }

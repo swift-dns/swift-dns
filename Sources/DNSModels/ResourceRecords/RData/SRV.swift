@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 2782, DNS SRV RR, February 2000](https://tools.ietf.org/html/rfc2782)
 ///
 /// ```text
@@ -75,7 +73,7 @@ public struct SRV: Sendable {
 }
 
 extension SRV {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.priority =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -96,7 +94,7 @@ extension SRV {
 }
 
 extension SRV {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.priority)
         buffer.writeInteger(self.weight)
         buffer.writeInteger(self.port)

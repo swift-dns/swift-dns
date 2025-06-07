@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 public enum RecordType: Sendable, Hashable {
     /// [RFC 1035](https://tools.ietf.org/html/rfc1035) IPv4 Address record
     case A
@@ -176,7 +174,7 @@ extension RecordType: RawRepresentable {
 }
 
 extension RecordType {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let recordType = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("RecordType", buffer)
         }
@@ -185,7 +183,7 @@ extension RecordType {
 }
 
 extension RecordType {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

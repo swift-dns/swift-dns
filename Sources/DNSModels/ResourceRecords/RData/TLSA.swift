@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 6698, DNS-Based Authentication for TLS](https://tools.ietf.org/html/rfc6698#section-2.1)
 ///
 /// ```text
@@ -203,17 +201,16 @@ public struct TLSA: Sendable {
 }
 
 extension TLSA {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.certUsage = try CertUsage(from: &buffer)
         self.selector = try Selector(from: &buffer)
         self.matching = try Matching(from: &buffer)
-        self.certData = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.certData = buffer.readToEnd()
     }
 }
 
 extension TLSA {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         self.certUsage.encode(into: &buffer)
         self.selector.encode(into: &buffer)
         self.matching.encode(into: &buffer)
@@ -250,7 +247,7 @@ extension TLSA.CertUsage: RawRepresentable {
 }
 
 extension TLSA.CertUsage {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("TLSA.CertUsage", buffer)
         }
@@ -259,7 +256,7 @@ extension TLSA.CertUsage {
 }
 
 extension TLSA.CertUsage {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -289,7 +286,7 @@ extension TLSA.Selector: RawRepresentable {
 }
 
 extension TLSA.Selector {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("TLSA.Selector", buffer)
         }
@@ -298,7 +295,7 @@ extension TLSA.Selector {
 }
 
 extension TLSA.Selector {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -330,7 +327,7 @@ extension TLSA.Matching: RawRepresentable {
 }
 
 extension TLSA.Matching {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("TLSA.Matching", buffer)
         }
@@ -339,7 +336,7 @@ extension TLSA.Matching {
 }
 
 extension TLSA.Matching {
-    func encode(into buffer: inout ByteBuffer) {
+    func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

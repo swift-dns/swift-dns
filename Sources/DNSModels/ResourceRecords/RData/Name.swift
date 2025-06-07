@@ -1,6 +1,3 @@
-package import struct NIOCore.ByteBuffer
-package import struct NIOCore.ByteBufferView
-
 /// A domain name.
 ///
 /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
@@ -170,7 +167,7 @@ extension Name {
                     throw ProtocolError.badCharacter(
                         in: "Name.bytes",
                         character: char,
-                        ByteBuffer(bytes: bytes)
+                        DNSBuffer(bytes: bytes)
                     )
                 }
             case .escape1:
@@ -188,7 +185,7 @@ extension Name {
                     throw ProtocolError.badCharacter(
                         in: "Name.bytes",
                         character: char,
-                        ByteBuffer(bytes: bytes)
+                        DNSBuffer(bytes: bytes)
                     )
                 }
             case .escape3(let i, let ii):
@@ -196,7 +193,7 @@ extension Name {
                     throw ProtocolError.badCharacter(
                         in: "Name.bytes",
                         character: char,
-                        ByteBuffer(bytes: bytes)
+                        DNSBuffer(bytes: bytes)
                     )
                 }
                 /// octal conversion
@@ -208,7 +205,7 @@ extension Name {
                     throw ProtocolError.badCharacter(
                         in: "Name.bytes",
                         character: char,
-                        ByteBuffer(bytes: bytes)
+                        DNSBuffer(bytes: bytes)
                     )
                 }
                 label.append(contentsOf: new.utf8)
@@ -249,7 +246,7 @@ extension Name {
                 "Name.label",
                 actual: newLength,
                 max: Int(Self.maxLength),
-                ByteBuffer(bytes: label)
+                DNSBuffer(bytes: label)
             )
         }
 
@@ -260,39 +257,138 @@ extension Name {
 }
 
 extension Name {
-    /// [RFC 1035, Domain Names - Implementation and Specification, November 1987](https://datatracker.ietf.org/doc/html/rfc1035#section-3.1)
-    package init(from buffer: inout ByteBuffer) throws {
+    /// This is the list of states for the label parsing state machine
+    enum LabelParseState {
+        case labelLengthOrPointer  // basically the start of the FSM
+        case label  // storing length of the label, must be < 63
+        case pointer  // location of pointer in slice,
+        case root  // root is the end of the labels list for an FQDN
+        case end  // the end of the name
+    }
+
+    package init(from buffer: inout DNSBuffer) throws {
         self.init()
+        let start = buffer.readerIndex
 
-        guard let endIndex = buffer.readableBytesView.firstIndex(of: 0) else {
-            throw ProtocolError.failedToRead("Name.label", buffer)
+        var state: LabelParseState = .labelLengthOrPointer
+        // assume all chars are utf-8. We're doing byte-by-byte operations, no endianness issues...
+        // reserved: (1000 0000 aka 0800) && (0100 0000 aka 0400)
+        // pointer: (slice == 1100 0000 aka C0) & C0 == true, then 03FF & slice = offset
+        // label: 03FF & slice = length slice.next(length) = label
+        // root: 0000
+        loop: while true {
+            switch state {
+            case .labelLengthOrPointer:
+                // determine what the next label is
+                switch buffer.peekInteger(as: UInt8.self) {
+                case 0:
+                    switch start == buffer.readerIndex {
+                    case true:
+                        // RFC 1035 Section 3.1 - Name space definitions
+                        //
+                        // Domain names in messages are expressed in terms of a sequence of labels.
+                        // Each label is represented as a one octet length field followed by that
+                        // number of octets.  **Since every domain name ends with the null label of
+                        // the root, a domain name is terminated by a length byte of zero.**  The
+                        // high order two bits of every length octet must be zero, and the
+                        // remaining six bits of the length field limit the label to 63 octets or
+                        // less.
+                        self.isFQDN = true
+                        state = .root
+                    case false:
+                        /// FIXME: check no fqdn?
+                        state = .end
+                    }
+                case .none:
+                    // Valid names on the wire should end in a 0-octet, signifying the end of
+                    // the name. If the last byte wasn't 00, the name is invalid.
+                    throw ProtocolError.failedToValidate("Name.label", buffer)
+                case .some(let byte) where (byte & 0b1100_0000) == 0b1100_0000:
+                    state = .pointer
+                case .some(let byte) where (byte & 0b1100_0000) == 0b0000_0000:
+                    state = .label
+                case .some(let byte):
+                    throw ProtocolError.badCharacter(
+                        in: "Name.label",
+                        character: byte,
+                        buffer
+                    )
+                }
+            case .label:
+                let label = try buffer.readLengthPrefixedString(
+                    name: "Name.label",
+                    decodeLengthAs: UInt8.self
+                )
+                guard label.count <= Self.maxLabelLength else {
+                    throw ProtocolError.lengthLimitExceeded(
+                        "Name.label",
+                        actual: label.count,
+                        max: Int(Self.maxLabelLength),
+                        buffer
+                    )
+                }
+
+                try self.extendName(label)
+
+                // reset to collect more data
+                state = .labelLengthOrPointer
+            //         4.1.4. Message compression
+            //
+            // In order to reduce the size of messages, the domain system utilizes a
+            // compression scheme which eliminates the repetition of domain names in a
+            // message.  In this scheme, an entire domain name or a list of labels at
+            // the end of a domain name is replaced with a pointer to a prior occurrence
+            // of the same name.
+            //
+            // The pointer takes the form of a two octet sequence:
+            //
+            //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+            //     | 1  1|                OFFSET                   |
+            //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+            //
+            // The first two bits are ones.  This allows a pointer to be distinguished
+            // from a label, since the label must begin with two zero bits because
+            // labels are restricted to 63 octets or less.  (The 10 and 01 combinations
+            // are reserved for future use.)  The OFFSET field specifies an offset from
+            // the start of the message (i.e., the first octet of the ID field in the
+            // domain header).  A zero offset specifies the first byte of the ID field,
+            // etc.
+            case .pointer:
+                guard let pointer = buffer.readInteger(as: UInt16.self) else {
+                    throw ProtocolError.failedToRead("Name.label", buffer)
+                }
+                let currentIndex = buffer.readerIndex
+                let offset = pointer & 0b0011_1111_1111_1111
+
+                buffer.moveReaderIndex(toOffsetInDNSPortion: Int(offset))
+                try self.init(from: &buffer)
+                /// Reset the reader index to where we were
+                /// There is no nullByte at the end, for pointers
+                buffer.moveReaderIndex(to: currentIndex)
+
+                // Pointers always finish the name, break like Root.
+                break loop
+            case .root:
+                assert(buffer.peekInteger(as: UInt8.self) == 0)
+                buffer.moveReaderIndex(forwardBy: 1)
+                break loop
+            case .end:
+                assert(buffer.peekInteger(as: UInt8.self) == 0)
+                buffer.moveReaderIndex(forwardBy: 1)
+                break loop
+            }
         }
-        /// Guranteed to be at least 1 byte (the null byte)
-        let byteCount = endIndex - buffer.readerIndex + 1
-        var domainBuffer = buffer.readSlice(length: byteCount).unsafelyUnwrapped  // safe
 
-        var nameBytes = ByteBuffer()
-
-        var notFirst = false
-        /// TODO: Optimize no copying bytes around
-        while let labelLength = domainBuffer.readInteger(as: UInt8.self) {
-            if labelLength == .nullByte {
-                /// End of name
-                break
-            }
-            /// TODO: optimize no need to write dots manually. Shouldn't need to write static data
-            if notFirst {
-                nameBytes.writeInteger(UInt8.asciiDot)
-            } else {
-                notFirst = true
-            }
-            guard var slice = domainBuffer.readSlice(length: Int(labelLength)) else {
-                throw ProtocolError.failedToRead("Name.label", buffer)
-            }
-            nameBytes.writeBuffer(&slice)
+        // TODO: should we consider checking this while the name is parsed?
+        let len = self.encodedLength
+        if len >= Self.maxLength {
+            throw ProtocolError.lengthLimitExceeded(
+                "Name",
+                actual: len,
+                max: Int(Self.maxLength),
+                buffer
+            )
         }
-
-        try self.init(bytes: nameBytes.readableBytesView)
     }
 }
 
@@ -319,7 +415,7 @@ extension Name {
 }
 
 extension Name {
-    package func encode(into buffer: inout ByteBuffer, asCanonical: Bool = false) throws {
+    package func encode(into buffer: inout DNSBuffer, asCanonical: Bool = false) throws {
         let startingReadableBytes = buffer.readableBytes  // lazily assert the size is less than 256...
 
         for label in self {

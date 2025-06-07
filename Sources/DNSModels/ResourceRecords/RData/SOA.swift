@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
 ///
 /// ```text
@@ -73,7 +71,7 @@ public struct SOA: Sendable {
 }
 
 extension SOA {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.mName = try Name(from: &buffer)
         self.rName = try Name(from: &buffer)
         self.serial =
@@ -105,7 +103,7 @@ extension SOA {
 }
 
 extension SOA {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.mName.encode(into: &buffer)
         try self.rName.encode(into: &buffer)
         buffer.writeInteger(self.serial)

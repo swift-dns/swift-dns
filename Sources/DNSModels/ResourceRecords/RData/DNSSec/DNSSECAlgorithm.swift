@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 4034, Resource Records for the DNS Security Extensions](https://datatracker.ietf.org/doc/html/rfc4034#appendix-A.1)
 /// ```text
 /// The DNSKEY, RRSIG, and DS RRs use an 8-bit number to identify the
@@ -92,7 +90,7 @@ extension DNSSECAlgorithm: RawRepresentable {
 }
 
 extension DNSSECAlgorithm {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let rawValue = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("DNSSECAlgorithm", buffer)
         }
@@ -101,7 +99,7 @@ extension DNSSECAlgorithm {
 }
 
 extension DNSSECAlgorithm {
-    func encode(into buffer: inout ByteBuffer) {
+    func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

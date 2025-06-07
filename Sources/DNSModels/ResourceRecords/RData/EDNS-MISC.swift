@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The code of the EDNS data option
 public enum EDNSCode: Sendable, Hashable {
     /// [RFC 6891, Reserved](https://tools.ietf.org/html/rfc6891)
@@ -78,7 +76,7 @@ extension EDNSCode: RawRepresentable {
 }
 
 extension EDNSCode {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let code = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("EDNSCode", buffer)
         }
@@ -87,7 +85,7 @@ extension EDNSCode {
 }
 
 extension EDNSCode {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
@@ -160,25 +158,24 @@ public enum EDNSOption: Sendable, Hashable {
 }
 
 extension EDNSOption {
-    package init(from buffer: inout ByteBuffer, code: EDNSCode) throws {
+    package init(from buffer: inout DNSBuffer, code: EDNSCode) throws {
         switch code {
         case .dau:
             self = .dau(SupportedAlgorithms(from: &buffer))
         case .subnet:
             self = .subnet(try ClientSubnet(from: &buffer))
         default:
-            let data = [UInt8](buffer: buffer)
-            buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+            let data = buffer.readToEnd()
             self = .unknown(code.rawValue, data)
         }
     }
 }
 
 extension EDNSOption {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         switch self {
         case .dau(let algorithms):
-            var valueBuffer = ByteBuffer()
+            var valueBuffer = DNSBuffer()
             let count = algorithms.encode(into: &valueBuffer)
             buffer.writeInteger(count)
             buffer.writeBuffer(&valueBuffer)
@@ -217,7 +214,7 @@ extension EDNSOption.SupportedAlgorithms {
 }
 
 extension EDNSOption.SupportedAlgorithms {
-    package init(from buffer: inout ByteBuffer) {
+    package init(from buffer: inout DNSBuffer) {
         self.init()
         while let byte = buffer.readInteger(as: UInt8.self) {
             switch DNSSECAlgorithmEDNSSubset(rawValue: byte) {
@@ -273,7 +270,7 @@ extension EDNSOption.SupportedAlgorithms {
 }
 
 extension EDNSOption.SupportedAlgorithms {
-    package func encode(into buffer: inout ByteBuffer) -> UInt16 {
+    package func encode(into buffer: inout DNSBuffer) -> UInt16 {
         var count: UInt16 = 0
         for algorithm in self.makeSequence() {
             count += 1
@@ -284,7 +281,7 @@ extension EDNSOption.SupportedAlgorithms {
 }
 
 extension EDNSOption.ClientSubnet {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let family = buffer.readInteger(as: UInt8.self) else {
             throw ProtocolError.failedToRead("EDNSOption.ClientSubnet.family", buffer)
         }
@@ -336,7 +333,7 @@ extension EDNSOption.ClientSubnet {
 }
 
 extension EDNSOption.ClientSubnet {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         let addressLength = Self.addressLength(of: numericCast(self.sourcePrefix))
 
         switch self.address {

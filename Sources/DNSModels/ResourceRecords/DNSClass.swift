@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The DNS Record class
 public enum DNSClass: Sendable, Hashable {
     /// Internet
@@ -56,7 +54,7 @@ extension DNSClass {
     }
 }
 extension DNSClass {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         guard let dnsClass = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("DNSClass", buffer)
         }
@@ -65,7 +63,7 @@ extension DNSClass {
 }
 
 extension DNSClass {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }

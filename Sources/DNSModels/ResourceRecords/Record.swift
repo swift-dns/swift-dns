@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Resource records are storage value in DNS, into which all key/value pair data is stored.
 ///
 /// # Generic type
@@ -54,7 +52,7 @@ public struct Record: Sendable {
 }
 
 extension Record {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.nameLabels = try Name(from: &buffer)
         let recordType = try RecordType(from: &buffer)
         self.dnsClass = try DNSClass(from: &buffer)
@@ -77,7 +75,7 @@ extension [Record] {
     }
 
     package static func from(
-        buffer: inout ByteBuffer,
+        buffer: inout DNSBuffer,
         count: UInt16,
         isAdditional: Bool
     ) throws -> (records: [Record], edns: EDNS?, sigs: [Record]) {
@@ -136,7 +134,7 @@ extension [Record] {
 }
 
 extension Record {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try nameLabels.encode(into: &buffer)
         recordType.encode(into: &buffer)
         dnsClass.encode(into: &buffer)

@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// Child DNSKEY. See RFC 8078.
 public struct CDNSKEY: Sendable {
     public var flags: UInt16
@@ -14,7 +12,7 @@ public struct CDNSKEY: Sendable {
 }
 
 extension CDNSKEY {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.flags =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -30,13 +28,12 @@ extension CDNSKEY {
                 throw ProtocolError.failedToRead("CDNSKEY.algorithm", buffer)
             }()
         self.algorithm = (algorithm == 0) ? nil : DNSSECAlgorithm(algorithm)
-        self.publicKey = [UInt8](buffer: buffer)
-        buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+        self.publicKey = buffer.readToEnd()
     }
 }
 
 extension CDNSKEY {
-    package func encode(into buffer: inout ByteBuffer) {
+    package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(flags)
         buffer.writeInteger(3 as UInt8)
         buffer.writeInteger(algorithm?.rawValue ?? 0)

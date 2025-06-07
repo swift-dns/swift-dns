@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
 ///
 /// ```text
@@ -21,7 +19,7 @@ extension TXT {
     /// Initialize a TXT record from a slice of a buffer.
     /// Due to how TXT record parsing works, this initializer will exhaust the buffer.
     /// Therefore you must only pass the rdata slice to it.
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.txtData = []
         while buffer.readableBytes > 0 {
             self.txtData.append(
@@ -32,7 +30,7 @@ extension TXT {
 }
 
 extension TXT {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(
             minimumWritableBytes: self.txtData.reduce(into: 0) {
                 $0 += $1.lengthInDNSWireProtocol

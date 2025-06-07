@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
 ///
 /// ```text
@@ -26,7 +24,7 @@ public struct NULL: Sendable {
 }
 
 extension NULL {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.anything = try buffer.readLengthPrefixedString(
             name: "NULL.anything",
             decodeLengthAs: UInt16.self
@@ -35,7 +33,7 @@ extension NULL {
 }
 
 extension NULL {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixedString(
             name: "NULL.anything",
             bytes: self.anything,

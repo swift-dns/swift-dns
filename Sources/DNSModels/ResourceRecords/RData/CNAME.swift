@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// The DNS CNAME record type
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -26,13 +24,13 @@ public struct CNAME: Sendable {
 }
 
 extension CNAME {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.name = try Name(from: &buffer)
     }
 }
 
 extension CNAME {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)
     }
 }

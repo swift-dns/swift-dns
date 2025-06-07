@@ -1,5 +1,3 @@
-package import struct NIOCore.ByteBuffer
-
 /// [RFC 5155](https://tools.ietf.org/html/rfc5155#section-4), NSEC3, March 2008
 ///
 /// ```text
@@ -84,7 +82,7 @@ public struct NSEC3PARAM: Sendable {
 }
 
 extension NSEC3PARAM {
-    package init(from buffer: inout ByteBuffer) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try NSEC3.HashAlgorithm(from: &buffer)
         let flags =
             try buffer.readInteger(as: UInt8.self)
@@ -106,7 +104,7 @@ extension NSEC3PARAM {
 }
 
 extension NSEC3PARAM {
-    package func encode(into buffer: inout ByteBuffer) throws {
+    package func encode(into buffer: inout DNSBuffer) throws {
         try self.hashAlgorithm.encode(into: &buffer)
         buffer.writeInteger(self.flags)
         buffer.writeInteger(self.iterations)
