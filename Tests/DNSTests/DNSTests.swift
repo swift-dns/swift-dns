@@ -5,7 +5,7 @@ import Testing
 
 @Suite
 struct DNSTests {
-    @Test func encodingDNSAExampleComQuery() async throws {
+    @Test func encodeAExampleComQuery() async throws {
         let query = Query(
             name: try Name(string: "example.com"),
             queryType: .A,
@@ -49,7 +49,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodingDNSAExampleComResponse() async throws {
+    @Test func decodeAExampleComResponse() async throws {
         var buffer = Resource.dnsResponseAExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -128,7 +128,7 @@ struct DNSTests {
         #expect(option.1 == .unknown(11, []))
     }
 
-    @Test func encodingDNSAAAACloudflareComQuery() async throws {
+    @Test func encodeAAAACloudflareComQuery() async throws {
         let query = Query(
             name: try Name(string: "cloudflare.com"),
             queryType: .AAAA,
@@ -172,7 +172,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodingDNSAAAACloudflareComResponse() async throws {
+    @Test func decodeAAAACloudflareComResponse() async throws {
         var buffer = Resource.dnsResponseAAAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -220,7 +220,7 @@ struct DNSTests {
             case .AAAA(let aaaa):
                 return aaaa.value
             default:
-                Issue.record("rdata was not of type A: \($0.rdata)")
+                Issue.record("rdata was not of type AAAA: \($0.rdata)")
                 return nil
             }
         }
@@ -251,6 +251,122 @@ struct DNSTests {
         #expect(edns.flags.dnssecOk == false)
         #expect(edns.flags.z == 0)
         #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
+    @Test func encodeTXTExampleComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "example.com"),
+            queryType: .TXT,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x9f11,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resource.dnsQueryTXTExampleComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeTXTExampleComResponse() async throws {
+        var buffer = Resource.dnsResponseTXTExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x9f11)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 2)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == true)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(!response.queries[0].name.isFQDN)
+        let name = try Name(string: "example.com")
+        #expect(response.queries[0].name.data == name.data)
+        #expect(response.queries[0].queryType == .TXT)
+        #expect(response.queries[0].queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 2)
+        #expect(
+            response.answers.allSatisfy { !$0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.ttl == 80148 }, "\(response.answers)")
+        let txts = response.answers.compactMap {
+            switch $0.rdata {
+            case .TXT(let txt):
+                return txt
+            default:
+                Issue.record("rdata was not of type TXT: \($0.rdata)")
+                return nil
+            }
+        }
+        let expectedTXTs = [
+            TXT(txtData: ["v=spf1 -all"]),
+            TXT(txtData: ["_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"]),
+        ]
+        #expect(txts == expectedTXTs)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 1232)
         #expect(edns.options.options.count == 0)
     }
 }

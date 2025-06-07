@@ -13,6 +13,10 @@
 /// ```
 public struct TXT: Sendable {
     public var txtData: [String]
+
+    public init(txtData: [String]) {
+        self.txtData = txtData
+    }
 }
 
 extension TXT {
@@ -44,5 +48,11 @@ extension TXT {
                 fitLengthInto: UInt8.self
             )
         }
+    }
+}
+
+extension TXT: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.txtData == rhs.txtData
     }
 }

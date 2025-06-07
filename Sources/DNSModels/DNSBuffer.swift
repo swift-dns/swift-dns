@@ -7,6 +7,9 @@ package import enum NIOCore.Endianness
 package struct DNSBuffer /*: ~Copyable*/ {
     var _buffer: ByteBuffer
     /// Start index of the DNS portion of the packet the buffer
+    ///
+    /// TODO: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
+    /// Start from the DNS portion of the packet?
     let _dnsStartIndex: Int
 
     var readerIndex: Int {
