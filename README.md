@@ -1,16 +1,19 @@
 # 🚧 Under Heavy Construction 🚧
 
-Definetely not yet ready for production use.
-I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.
-If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.
+Definetely not yet ready for production use.   
 
-#### Requires Swift 6.2 on Linux which supports types like InlineArray. Should be useable on macos very soon, perhaps as soon as the WWDC.
+I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.   
 
-## swift-dns
+If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.   
+
+#### Requires Swift 6.2 on Linux which supports types like InlineArray.
+#### Should be useable on macos very soon, perhaps as soon as the WWDC.
+
+# swift-dns
 
 A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
-### Usage
+## Usage
 
 I'll add convenience methods sometime soon.
 For now use the `DNSClient` to send a fully-customizable DNS `Message`:
@@ -75,7 +78,7 @@ for answer in response.answers {
 }
 ```
 
-### Checklist
+## Checklist
 
 - [x] DNS client
   - [x] DNS over UDP
@@ -87,7 +90,7 @@ for answer in response.answers {
 - [ ] DNS server
 - [ ] DNSSEC
 
-### Credits
+## Credits
 
 - https://github.com/apple/swift-nio
   - The networking library used to implement this library.
