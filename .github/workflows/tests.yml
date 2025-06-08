@@ -1,0 +1,113 @@
+name: tests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize] }
+  push: { branches: [main] }
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swiftlang/swift:nightly-6.2-noble
+            # Disbale failures on nightlies for now
+            continue-on-error: true
+          - name: swiftlang/swift:nightly-main-noble
+            # Disbale failures on nightlies for now
+            continue-on-error: true
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v4
+
+      - name: Install zstd (for faster caching)
+        run: |
+          apt-get update -y
+          apt-get install -y zstd
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          # e.g. 'swift-dns-debug-build-swiftlang/swift:nightly-6.0-jammy-Linux-c7008df8062ac4d5887ead9e59aa05829e'
+          key: "${{ github.event.repository.name }}-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      - name: Build ${{ github.event.repository.name }}
+        continue-on-error: ${{ matrix.swift-image.continue-on-error }}
+        run: |
+          swift build \
+            --build-tests \
+            --enable-code-coverage \
+            -Xswiftc -enable-testing \
+            --enable-experimental-prebuilts \
+            -c ${{ matrix.config.mode }}
+
+      - name: Cache .build
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+
+      - name: Run tests
+        continue-on-error: ${{ matrix.swift-image.continue-on-error }}
+        run: |
+          swift test \
+            --skip-build \
+            --enable-code-coverage \
+            -Xswiftc -enable-testing \
+            --enable-experimental-prebuilts \
+            -c ${{ matrix.config.mode }}
+
+      - name: Submit code coverage
+        continue-on-error: ${{ matrix.swift-image.continue-on-error }}
+        uses: vapor/swift-codecov-action@v0.3
+        with:
+          build_parameters: "-c ${{ matrix.config.mode }}"
+          codecov_token: "${{ secrets.CODECOV_TOKEN }}"
+
+  lint:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    container: swiftlang/swift:nightly-6.2-noble
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v4
+
+      - name: Check config file
+        run: |
+          if [ ! -f .swift-format ]; then
+            echo "No .swift-format file found."
+            exit 1
+          fi
+
+      - name: Lint
+        run: |
+          apt -q update && apt -yq install curl
+          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash

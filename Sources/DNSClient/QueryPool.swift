@@ -1,7 +1,8 @@
 import DNSModels
 import Synchronization
 
-final class QueryPool: @unchecked Sendable /* Protected by Mutex */ {
+/// Protected by Mutex
+final class QueryPool: @unchecked Sendable {
     typealias Continuation = CheckedContinuation<Message, any Error>
     private let queries: Mutex<[UInt16: Continuation]> = .init([:])
 
@@ -22,7 +23,8 @@ final class QueryPool: @unchecked Sendable /* Protected by Mutex */ {
 
     // FIXME: consuming?
     /// Returns true if the message was found and succeeded, false otherwise.
-    func succeed(with message: /*consuming*/ Message) -> Bool {
+    /// use `consuming`?
+    func succeed(with message: Message) -> Bool {
         queries.withLock { queries in
             queries.removeValue(forKey: message.header.id)?.resume(returning: message) != nil
         }

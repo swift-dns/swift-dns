@@ -413,7 +413,7 @@ extension Name {
 
 extension Name {
     package func encode(into buffer: inout DNSBuffer, asCanonical: Bool = false) throws {
-        let startingReadableBytes = buffer.readableBytes  // lazily assert the size is less than 256...
+        let startingReadableBytes = buffer.readableBytes
 
         for label in self {
             try buffer.writeLengthPrefixedString(
@@ -427,6 +427,7 @@ extension Name {
         /// Write end
         buffer.writeInteger(0 as UInt8)
 
+        /// lazily assert the size is less than 256...
         let length = buffer.readableBytes - startingReadableBytes
         if length > Self.maxLength {
             throw ProtocolError.lengthLimitExceeded(

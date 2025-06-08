@@ -42,7 +42,8 @@ public struct Header: Sendable {
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
     @_spi(Testing)
     public struct Bytes16To31: Sendable {
-        /* private */ public var rawValue: UInt16
+        /// private
+        public var rawValue: UInt16
 
         /// TODO: check whether `truncatingIfNeeded` has a positive impact on performance
         /// Compared to just using init().
@@ -154,7 +155,8 @@ public struct Header: Sendable {
 
     /// Represents Bytes 16 to 31 in the DNS header.
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
-    /* private */var bytes16To31: Bytes16To31
+    /// private
+    var bytes16To31: Bytes16To31
     public var messageType: MessageType {
         get {
             bytes16To31.messageType
