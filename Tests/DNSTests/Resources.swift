@@ -1,5 +1,5 @@
-import FoundationEssentials
 import DNSModels
+import FoundationEssentials
 
 enum Resource: String {
     case dnsQueryAExampleComPacket = "example.com-a-query-packet"

@@ -4,8 +4,9 @@ public import enum NIOCore.Endianness
 
 /// FIXME: investigating making this non-copyable
 /// FXIME: CustomStringConvertible + Debug
+/// use ~Copyable?
 @usableFromInline
-package struct DNSBuffer: Sendable /*, ~Copyable*/ {
+package struct DNSBuffer: Sendable {
     @usableFromInline
     var _buffer: ByteBuffer
     /// Start index of the DNS portion of the packet the buffer
