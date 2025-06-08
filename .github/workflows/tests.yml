@@ -13,8 +13,10 @@ jobs:
       matrix:
         swift-image:
           - name: swiftlang/swift:nightly-6.2-noble
+            # Disbale failures on nightlies for now
             continue-on-error: true
           - name: swiftlang/swift:nightly-main-noble
+            # Disbale failures on nightlies for now
             continue-on-error: true
         config:
           - mode: "debug"
@@ -84,7 +86,7 @@ jobs:
 
     timeout-minutes: 20
 
-    container: swift:6.1-noble
+    container: swiftlang/swift:nightly-6.2-noble
 
     defaults:
       run:
