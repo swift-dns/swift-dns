@@ -153,6 +153,7 @@ extension CAA.Property {
 extension CAA.Property {
     package func encode(into buffer: inout DNSBuffer) {
         var temp = DNSBuffer()
+        /// TODO: write a test to make sure `self.rawValue.count` is never bigger than UInt8.max
         temp.writeString(self.rawValue)
         buffer.writeInteger(UInt8(temp.readableBytes))
         buffer.writeBuffer(&temp)

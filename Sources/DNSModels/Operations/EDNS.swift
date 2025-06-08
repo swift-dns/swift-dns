@@ -58,9 +58,8 @@ public struct EDNS: Sendable {
 extension EDNS {
     package init(fromOPTRecord record: consuming Record) {
         assert(record.rdata.recordType == .OPT)
-        /// TODO: check which UInt8 init is more performant considering we are guranteed a valid UInt8 already
-        self.rcodeHigh = UInt8(exactly: (record.ttl & 0xFF00_0000) >> 24)!
-        self.version = UInt8(exactly: (record.ttl & 0x00FF_0000) >> 16)!
+        self.rcodeHigh = UInt8(truncatingIfNeeded: (record.ttl & 0xFF00_0000) >> 24)
+        self.version = UInt8(truncatingIfNeeded: (record.ttl & 0x00FF_0000) >> 16)
         self.flags = Flags(from: record.ttl)
         self.maxPayload = record.dnsClass.rawValue
         self.options = OPT(fromOPTRData: record.rdata)
@@ -80,7 +79,7 @@ extension EDNS {
 
 extension EDNS.Flags {
     package init(from ttl: UInt32) {
-        let first16bits = UInt16(exactly: ttl & 0x0000_FFFF)!
+        let first16bits = UInt16(truncatingIfNeeded: ttl & 0x0000_FFFF)
         self.dnssecOk = (first16bits & 0x8000) == 0x8000
         self.z = first16bits & 0x7FFF
     }

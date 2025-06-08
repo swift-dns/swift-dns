@@ -183,6 +183,7 @@ extension EDNSOption {
             buffer.writeInteger(subnet.lengthForWireProtocol)
             try subnet.encode(into: &buffer)
         case .unknown(_, let data):
+            /// FIXME: we don't know this fits, should throw if it doesnt?
             buffer.writeInteger(UInt16(data.count))
             buffer.writeBytes(data)
         }

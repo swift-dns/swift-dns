@@ -4,13 +4,16 @@ import NIOCore
 struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
     typealias InboundOut = Message
 
+    let emptyBuffer = ByteBuffer()
+
     func decode(buffer: inout ByteBuffer) throws -> Message? {
         var dnsBuffer = DNSBuffer(buffer: buffer)
+        /// Avoid CoW when used in dnsBuffer
+        buffer = emptyBuffer
         defer {
             /// Need to keep the buffer up to date so `NIOSingleStepByteToMessageDecoder` knows
             buffer = ByteBuffer(dnsBuffer: dnsBuffer)
         }
-        // FIXME: need to handle a case where we need more packets and buffer is incomplete?
         return try Message(from: &dnsBuffer)
     }
 

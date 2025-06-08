@@ -99,7 +99,9 @@ extension RecordTypeSet {
                         if overflew {
                             throw ProtocolError.failedToRead("RecordTypeSet", buffer)
                         }
-                        let rrType = (UInt16(window) << 8) | UInt16(lowByte)
+                        let rrType =
+                            (UInt16(truncatingIfNeeded: window) << 8)
+                            | UInt16(truncatingIfNeeded: lowByte)
                         types.append(RecordType(rrType))
                     }
                     // Shift left and look at the next bit

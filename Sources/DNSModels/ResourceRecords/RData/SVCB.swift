@@ -565,6 +565,7 @@ extension SVCB.SVCParamValue {
         guard let length = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("SVCB.SVCParamValue.length", buffer)
         }
+        /// `length` is a `UInt16`, so it's safe to convert to Int
         guard var valueSlice = buffer.readSlice(length: Int(length)) else {
             throw ProtocolError.failedToRead("SVCB.SVCParamValue.valueData", buffer)
         }
@@ -685,6 +686,7 @@ extension SVCB.SVCParamValue {
         case .unknown(let unknown):
             try unknown.encode(into: &valueBuffer)
         }
+        /// FIXME: check no overflow?
         buffer.writeInteger(UInt16(valueBuffer.readableBytes))
         buffer.writeBuffer(&valueBuffer)
     }
@@ -714,6 +716,7 @@ extension SVCB.SVCParamValue.ALPN {
 
 extension SVCB.SVCParamValue.IPHint where IPType == A {
     package func encode(into buffer: inout DNSBuffer) throws {
+        /// FIXME: How do we know `addresses.count * IPv4Address.size` fits into Int?
         buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv4Address.size))
         for address in self.addresses {
             address.encode(into: &buffer)
@@ -723,6 +726,7 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
 
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     package func encode(into buffer: inout DNSBuffer) throws {
+        /// FIXME: How do we know `addresses.count * IPv6Address.size` fits into Int?
         buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv6Address.size))
         for address in self.addresses {
             address.encode(into: &buffer)

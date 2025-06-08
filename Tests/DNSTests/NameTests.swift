@@ -79,6 +79,6 @@ struct NameTests {
             0x00,
         ])
         let name = try Name(from: &buffer)
-        #expect(name.asString() == "example.com")
+        #expect(name.asString() == "example.com.")
     }
 }

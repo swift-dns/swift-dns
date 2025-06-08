@@ -200,7 +200,9 @@ extension TSIG {
         guard let timeLow = buffer.readInteger(as: UInt32.self) else {
             throw ProtocolError.failedToRead("TSIG.timeLow", buffer)
         }
-        self.time = (UInt64(timeHigh) << 32) | UInt64(timeLow)
+        /// `timeHigh` and `timeLow` are `UInt16` and `UInt32` respectively, so it's safe to convert to `UInt64`
+        self.time =
+            (UInt64(truncatingIfNeeded: timeHigh) << 32) | UInt64(truncatingIfNeeded: timeLow)
         self.fudge =
             try buffer.readInteger(as: UInt16.self)
             ?? {
@@ -230,12 +232,14 @@ extension TSIG {
 extension TSIG {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
+        /// FIXME: Is this check needed, with `init(exactly:)`?
         let shiftedTime =
             try UInt16(exactly: self.time >> 32)
             ?? {
                 throw ProtocolError.failedToValidate("TSIG.time", DNSBuffer(integer: self.time))
             }()
         buffer.writeInteger(shiftedTime)
+        /// Truncation is desired here, even if it cuts some bits off.
         buffer.writeInteger(UInt32(truncatingIfNeeded: self.time))
         buffer.writeInteger(self.fudge)
         try buffer.writeLengthPrefixedString(

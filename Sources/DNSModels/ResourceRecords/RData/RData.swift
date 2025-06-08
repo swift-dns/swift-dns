@@ -669,6 +669,7 @@ extension RData {
         guard let length = buffer.readInteger(as: UInt16.self) else {
             throw ProtocolError.failedToRead("RData.length", buffer)
         }
+        /// `length` is a `UInt16`, so it's safe to convert to Int
         guard var buffer = buffer.readSlice(length: Int(length)) else {
             throw ProtocolError.failedToRead("RData.length", buffer)
         }
@@ -818,7 +819,7 @@ extension RData {
             break
         }
 
-        /// FIXME: check overflow?
+        /// FIXME: check no overflow?
         buffer.writeInteger(UInt16(valueBuffer.readableBytes))
         buffer.writeBuffer(&valueBuffer)
     }

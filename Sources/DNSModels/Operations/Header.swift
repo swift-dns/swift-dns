@@ -44,15 +44,19 @@ public struct Header: Sendable {
     public struct Bytes16To31: Sendable {
         /* private */ public var rawValue: UInt16
 
+        /// TODO: check whether `truncatingIfNeeded` has a positive impact on performance
+        /// Compared to just using init().
+
         public var messageType: MessageType {
             get {
-                MessageType(rawValue: UInt8(exactly: self.rawValue >> 15)!)!
+                MessageType(rawValue: UInt8(truncatingIfNeeded: self.rawValue >> 15))!
             }
             set {
                 /// clear the 15th bit then set it to the new value
                 self.rawValue =
-                    (self.rawValue & 0b01111111_11111111) | UInt16(exactly: newValue.rawValue)!
-                    << 15
+                    (self.rawValue & 0b01111111_11111111) | UInt16(
+                        truncatingIfNeeded: newValue.rawValue
+                    ) << 15
             }
         }
         public var opCode: OPCode {
@@ -61,8 +65,9 @@ public struct Header: Sendable {
             }
             set {
                 self.rawValue =
-                    (self.rawValue & 0b10000111_11111111) | UInt16(exactly: newValue.rawValue)!
-                    << 11
+                    (self.rawValue & 0b10000111_11111111) | UInt16(
+                        truncatingIfNeeded: newValue.rawValue
+                    ) << 11
             }
         }
         public var authoritative: Bool {

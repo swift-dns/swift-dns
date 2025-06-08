@@ -108,6 +108,7 @@ extension Name: Sequence {
             self.start += 1
 
             var bytes: [UInt8] = []
+            /// TODO: make sure this is safe
             bytes.reserveCapacity(Int(end - start))
             for idx in start..<end {
                 bytes.append(self.name.data[Int(idx)])
@@ -251,26 +252,27 @@ extension Name {
         }
 
         self.data.append(contentsOf: label)
-        /// Safe to force unwrap because data is `InlineArray<32, UInt8>` aka 32 bytes max
-        self.borders.append(UInt8(exactly: self.data.count)!)
+        self.borders.append(
+            /// Safe to force unwrap because already checked newLength is
+            /// less than Self.maxLength which is 255
+            UInt8(exactly: self.data.count)!
+        )
     }
 }
 
 extension Name {
     /// This is the list of states for the label parsing state machine
-    enum LabelParseState {
+    enum LabelParsingState {
         case labelLengthOrPointer  // basically the start of the FSM
         case label  // storing length of the label, must be < 63
         case pointer  // location of pointer in slice,
         case root  // root is the end of the labels list for an FQDN
-        case end  // the end of the name
     }
 
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
-        let start = buffer.readerIndex
 
-        var state: LabelParseState = .labelLengthOrPointer
+        var state: LabelParsingState = .labelLengthOrPointer
         // assume all chars are utf-8. We're doing byte-by-byte operations, no endianness issues...
         // reserved: (1000 0000 aka 0800) && (0100 0000 aka 0400)
         // pointer: (slice == 1100 0000 aka C0) & C0 == true, then 03FF & slice = offset
@@ -282,37 +284,34 @@ extension Name {
                 // determine what the next label is
                 switch buffer.peekInteger(as: UInt8.self) {
                 case 0:
-                    switch start == buffer.readerIndex {
-                    case true:
-                        // RFC 1035 Section 3.1 - Name space definitions
-                        //
-                        // Domain names in messages are expressed in terms of a sequence of labels.
-                        // Each label is represented as a one octet length field followed by that
-                        // number of octets.  **Since every domain name ends with the null label of
-                        // the root, a domain name is terminated by a length byte of zero.**  The
-                        // high order two bits of every length octet must be zero, and the
-                        // remaining six bits of the length field limit the label to 63 octets or
-                        // less.
-                        self.isFQDN = true
-                        state = .root
-                    case false:
-                        /// FIXME: check no fqdn?
-                        state = .end
-                    }
+                    // RFC 1035 Section 3.1 - Name space definitions
+                    //
+                    // Domain names in messages are expressed in terms of a sequence of labels.
+                    // Each label is represented as a one octet length field followed by that
+                    // number of octets.  **Since every domain name ends with the null label of
+                    // the root, a domain name is terminated by a length byte of zero.**  The
+                    // high order two bits of every length octet must be zero, and the
+                    // remaining six bits of the length field limit the label to 63 octets or
+                    // less.
+                    self.isFQDN = true
+                    state = .root
                 case .none:
                     // Valid names on the wire should end in a 0-octet, signifying the end of
                     // the name. If the last byte wasn't 00, the name is invalid.
                     throw ProtocolError.failedToValidate("Name.label", buffer)
-                case .some(let byte) where (byte & 0b1100_0000) == 0b1100_0000:
-                    state = .pointer
-                case .some(let byte) where (byte & 0b1100_0000) == 0b0000_0000:
-                    state = .label
                 case .some(let byte):
-                    throw ProtocolError.badCharacter(
-                        in: "Name.label",
-                        character: byte,
-                        buffer
-                    )
+                    switch byte & 0b1100_0000 {
+                    case 0b1100_0000:
+                        state = .pointer
+                    case 0b0000_0000:
+                        state = .label
+                    default:
+                        throw ProtocolError.badCharacter(
+                            in: "Name.label",
+                            character: byte,
+                            buffer
+                        )
+                    }
                 }
             case .label:
                 let label = try buffer.readLengthPrefixedString(
@@ -360,19 +359,17 @@ extension Name {
                 let currentIndex = buffer.readerIndex
                 let offset = pointer & 0b0011_1111_1111_1111
 
+                /// FIXME: check offset is not out of bounds
+                /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
                 buffer.moveReaderIndex(toOffsetInDNSPortion: Int(offset))
                 try self.init(from: &buffer)
                 /// Reset the reader index to where we were
-                /// There is no nullByte at the end, for pointers
+                /// There is no null byte at the end, for pointers
                 buffer.moveReaderIndex(to: currentIndex)
 
                 // Pointers always finish the name, break like Root.
                 break loop
             case .root:
-                assert(buffer.peekInteger(as: UInt8.self) == 0)
-                buffer.moveReaderIndex(forwardBy: 1)
-                break loop
-            case .end:
                 assert(buffer.peekInteger(as: UInt8.self) == 0)
                 buffer.moveReaderIndex(forwardBy: 1)
                 break loop

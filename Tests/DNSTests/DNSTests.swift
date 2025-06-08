@@ -13,7 +13,7 @@ struct DNSTests {
         )
         let message = Message(
             header: Header(
-                id: 26605,
+                id: 0x67ed,
                 messageType: .Query,
                 opCode: .Query,
                 authoritative: false,
@@ -56,7 +56,7 @@ struct DNSTests {
 
         let response = try Message(from: &buffer)
 
-        #expect(response.header.id == 26605)
+        #expect(response.header.id == 0x67ed)
         #expect(response.header.queryCount == 1)
         #expect(response.header.answerCount == 6)
         #expect(response.header.nameServerCount == 0)
@@ -72,7 +72,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(!response.queries[0].name.isFQDN)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "example.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .A)
@@ -82,7 +82,7 @@ struct DNSTests {
 
         #expect(response.answers.count == 6)
         #expect(
-            response.answers.allSatisfy { !$0.nameLabels.isFQDN },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(
@@ -195,7 +195,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN == false)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "cloudflare.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .AAAA)
@@ -205,7 +205,7 @@ struct DNSTests {
 
         #expect(response.answers.count == 2)
         #expect(
-            response.answers.allSatisfy { !$0.nameLabels.isFQDN },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(
@@ -321,7 +321,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(!response.queries[0].name.isFQDN)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "example.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .TXT)
@@ -331,7 +331,7 @@ struct DNSTests {
 
         #expect(response.answers.count == 2)
         #expect(
-            response.answers.allSatisfy { !$0.nameLabels.isFQDN },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(

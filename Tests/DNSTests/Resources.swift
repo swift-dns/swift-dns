@@ -2,12 +2,12 @@ import FoundationEssentials
 import DNSModels
 
 enum Resource: String {
-    case dnsQueryAExampleComPacket = "dns-query-a-example.com-packet"
-    case dnsResponseAExampleComPacket = "dns-response-a-example.com-packet"
-    case dnsQueryAAAACloudflareComPacket = "dns-query-aaaa-cloudflare.com-packet"
-    case dnsResponseAAAACloudflareComPacket = "dns-response-aaaa-cloudflare.com-packet"
-    case dnsQueryTXTExampleComPacket = "dns-query-txt-example.com-packet"
-    case dnsResponseTXTExampleComPacket = "dns-response-txt-example.com-packet"
+    case dnsQueryAExampleComPacket = "example.com-a-query-packet"
+    case dnsResponseAExampleComPacket = "example.com-a-response-packet"
+    case dnsQueryAAAACloudflareComPacket = "cloudflare.com-aaaa-query-packet"
+    case dnsResponseAAAACloudflareComPacket = "cloudflare.com-aaaa-response-packet"
+    case dnsQueryTXTExampleComPacket = "example.com-txt-query-packet"
+    case dnsResponseTXTExampleComPacket = "example.com-txt-response-packet"
 
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: Resource.data(at: self.rawValue))

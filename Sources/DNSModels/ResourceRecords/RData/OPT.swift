@@ -173,6 +173,7 @@ extension OPT {
                     state = .readCode
                 default:
                     var collected: [UInt8] = []
+                    /// `length` is a `UInt16`, so it's safe to convert to Int
                     collected.reserveCapacity(Int(length))
                     state = .data(
                         code: code,

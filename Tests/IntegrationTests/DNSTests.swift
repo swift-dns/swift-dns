@@ -7,7 +7,7 @@ import Testing
 @Suite
 struct DNSTests {
     @Test func queryA() async throws {
-        let client = Client(
+        let client = DNSClient(
             connectionTarget: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
@@ -67,7 +67,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN == false)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "example.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .A)
@@ -77,7 +77,7 @@ struct DNSTests {
 
         #expect(response.answers.count > 1)
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.isFQDN == false },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(
@@ -122,7 +122,7 @@ struct DNSTests {
     }
 
     @Test func queryAAAA() async throws {
-        let client = Client(
+        let client = DNSClient(
             connectionTarget: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
@@ -182,7 +182,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN == false)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "cloudflare.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .AAAA)
@@ -192,7 +192,7 @@ struct DNSTests {
 
         #expect(response.answers.count > 1)
         #expect(
-            response.answers.allSatisfy { !$0.nameLabels.isFQDN },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(
@@ -273,7 +273,7 @@ struct DNSTests {
     @Test func queryTLSA() async throws {}
 
     @Test func queryTXT() async throws {
-        let client = Client(
+        let client = DNSClient(
             connectionTarget: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
@@ -333,7 +333,7 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN == false)
+        #expect(response.queries[0].name.isFQDN)
         let name = try Name(string: "example.com")
         #expect(response.queries[0].name.data == name.data)
         #expect(response.queries[0].queryType == .TXT)
@@ -343,7 +343,7 @@ struct DNSTests {
 
         #expect(response.answers.count > 1)
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.isFQDN == false },
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
             "\(response.answers)"
         )
         #expect(

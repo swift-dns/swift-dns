@@ -209,6 +209,11 @@ package struct DNSBuffer /*: ~Copyable*/ {
         name: StaticString,
         decodeLengthAs _: IntegerType.Type = UInt8.self
     ) throws -> [UInt8] {
+        assert(
+            IntegerType.max <= Int.max,
+            /// ByteBuffer can't fit more than UInt32 bytes anyway.
+            "This function assumes the length will fit into an Int."
+        )
         guard let length = self.readInteger(as: IntegerType.self),
             let bytes = self.readBytes(length: Int(length))
         else {
@@ -227,7 +232,9 @@ package struct DNSBuffer /*: ~Copyable*/ {
     /// ```
     package mutating func readLengthPrefixedStringAsString(name: StaticString) throws -> String {
         guard let length = self.readInteger(as: UInt8.self),
-            let string = self.readString(length: Int(length))
+            let string = self.readString(
+                length: Int(length)/// `UInt8` -> `Int` is safe
+            )
         else {
             throw ProtocolError.failedToRead(name, self)
         }
@@ -241,6 +248,12 @@ package struct DNSBuffer /*: ~Copyable*/ {
         maxLength: IntegerType,
         fitLengthInto: IntegerType.Type
     ) throws {
+        assert(
+            IntegerType.max <= Int.max,
+            /// ByteBuffer can't fit more than UInt32 bytes anyway.
+            "This function assumes the length will fit into an Int."
+        )
+        /// The `IntegerType(truncatingIfNeeded:)` initializer below relies on this check
         if bytes.count > maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 name,
@@ -249,10 +262,9 @@ package struct DNSBuffer /*: ~Copyable*/ {
                 self
             )
         }
-        /// TODO: is this the optimal conversion?
         /// At this point we can assume that the IntegerType can fit the byte count already since
-        /// maxLength was checked before?
-        let length = IntegerType(bytes.count)
+        /// maxLength was checked before.
+        let length = IntegerType(truncatingIfNeeded: bytes.count)
         self.writeInteger(length)
         self.writeBytes(bytes)
     }

@@ -143,6 +143,8 @@ extension ResponseCode: RawRepresentable {
 }
 
 extension ResponseCode {
+    /// TODO: write tests for these
+
     package var low: UInt8 {
         UInt8(truncatingIfNeeded: self.rawValue & 0x000F)
     }

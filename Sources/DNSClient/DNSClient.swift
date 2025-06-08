@@ -7,20 +7,30 @@ import NIOPosix
 
 public import struct DNSModels.Message
 
-public struct Client {
+public struct DNSClient {
     public var connectionTarget: ConnectionTarget
     let eventLoopGroup: any EventLoopGroup
     let queryPool: QueryPool
     let logger: Logger
 
-    /// FIXME: shouldn't expose EventLoopGroup anymore
+    /// FIXME: shouldn't expose EventLoopGroup anymore?
     public init(
         connectionTarget: ConnectionTarget,
         eventLoopGroup: any EventLoopGroup,
-        logger: Logger
+        logger: Logger = .noopLogger
     ) {
         self.connectionTarget = connectionTarget
         self.eventLoopGroup = eventLoopGroup
+        self.queryPool = QueryPool()
+        self.logger = logger
+    }
+
+    public init(
+        connectionTarget: ConnectionTarget,
+        logger: Logger = .noopLogger
+    ) {
+        self.connectionTarget = connectionTarget
+        self.eventLoopGroup = MultiThreadedEventLoopGroup.singleton
         self.queryPool = QueryPool()
         self.logger = logger
     }
@@ -31,6 +41,7 @@ public struct Client {
             queryPool: queryPool,
             connectionTarget: connectionTarget
         )
+        /// FIXME: use a connection pool and all
         let channel = try await connectionFactory.makeChannel(
             deadline: .now() + .seconds(10),
             eventLoop: eventLoopGroup.next(),
@@ -38,7 +49,7 @@ public struct Client {
         ).get()
         return try await withCheckedThrowingContinuation { (continuation: QueryPool.Continuation) in
             queryPool.insert(message, continuation: continuation)
-            // FIXME: what if the channel is closed and all and rejects this write?
+            // FIXME: what if the channel is closed and rejects this write?
             channel.writeAndFlush(message).whenComplete { result in
                 switch result {
                 case .success:

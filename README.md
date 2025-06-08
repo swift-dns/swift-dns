@@ -1,17 +1,27 @@
+# 🚧 Under Heavy Construction 🚧
+
+Definetely not yet ready for production use.
+I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.
+If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.
+
+#### Requires Swift 6.2 on Linux which supports types like InlineArray. Should be useable on macos very soon, perhaps as soon as the WWDC.
+
 ## swift-dns
+
+A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
 ### Usage
 
-Use `Message` to send a fully-customizable DNS request:
+I'll add convenience methods sometime soon.
+For now use the `DNSClient` to send a fully-customizable DNS `Message`:
 
 ```swift
 import DNSClient
 import DNSModels
 
-/// Create a `Client`
-let client = Client(
+/// Create a `DNSClient`
+let client = DNSClient(
     connectionTarget: .domain(name: "8.8.4.4", port: 53),
-    eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
     logger: Logger(label: "DNSTests")
 )
 
@@ -45,13 +55,7 @@ let message = Message(
     nameServers: [],
     additionals: [],
     signature: [],
-    edns: EDNS(
-        rcodeHigh: 0,
-        version: 0,
-        flags: .init(dnssecOk: false, z: 0),
-        maxPayload: 4096,
-        options: OPT(options: [])
-    )
+    edns: nil
 )
 
 /// Send the query
@@ -71,7 +75,21 @@ for answer in response.answers {
 }
 ```
 
+### Checklist
+
+- [x] DNS client
+  - [x] DNS over UDP
+  - [ ] DNS over TCP
+  - [ ] DoT (DNS Over TLS)
+  - [ ] DoH (DNS Over HTTPS)
+  - [ ] DoQ (DNS Over Quic)
+- [ ] DNS resolver (DNS client but with caching etc...)
+- [ ] DNS server
+- [ ] DNSSEC
+
 ### Credits
 
+- https://github.com/apple/swift-nio
+  - The networking library used to implement this library.
 - https://github.com/hickory-dns/hickory-dns
-  - Some data type implementations were inspired by hickory-dns.
+  - Some data type / parsing implementations were heavily inspired by hickory-dns.
