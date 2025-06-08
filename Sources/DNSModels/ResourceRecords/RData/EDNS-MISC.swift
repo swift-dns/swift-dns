@@ -77,9 +77,9 @@ extension EDNSCode: RawRepresentable {
 
 extension EDNSCode {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let code = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("EDNSCode", buffer)
-        }
+        let code = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("EDNSCode", buffer)
+        )
         self.init(code)
     }
 }
@@ -283,22 +283,18 @@ extension EDNSOption.SupportedAlgorithms {
 
 extension EDNSOption.ClientSubnet {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let family = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("EDNSOption.ClientSubnet.family", buffer)
-        }
+        let family = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("EDNSOption.ClientSubnet.family", buffer)
+        )
         guard family == 1 || family == 2 else {
             throw ProtocolError.failedToValidate("EDNSOption.ClientSubnet.family", buffer)
         }
-        self.sourcePrefix =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("EDNSOption.ClientSubnet.sourcePrefix", buffer)
-            }()
-        self.scopePrefix =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("EDNSOption.ClientSubnet.scopePrefix", buffer)
-            }()
+        self.sourcePrefix = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("EDNSOption.ClientSubnet.sourcePrefix", buffer)
+        )
+        self.scopePrefix = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("EDNSOption.ClientSubnet.scopePrefix", buffer)
+        )
         let addressLength = Self.addressLength(of: numericCast(self.sourcePrefix))
         switch family {
         case 1:

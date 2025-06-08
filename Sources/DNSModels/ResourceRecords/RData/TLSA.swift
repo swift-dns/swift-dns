@@ -248,9 +248,9 @@ extension TLSA.CertUsage: RawRepresentable {
 
 extension TLSA.CertUsage {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("TLSA.CertUsage", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("TLSA.CertUsage", buffer)
+        )
         self.init(rawValue)
     }
 }
@@ -287,9 +287,9 @@ extension TLSA.Selector: RawRepresentable {
 
 extension TLSA.Selector {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("TLSA.Selector", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("TLSA.Selector", buffer)
+        )
         self.init(rawValue)
     }
 }
@@ -328,9 +328,9 @@ extension TLSA.Matching: RawRepresentable {
 
 extension TLSA.Matching {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("TLSA.Matching", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("TLSA.Matching", buffer)
+        )
         self.init(rawValue)
     }
 }

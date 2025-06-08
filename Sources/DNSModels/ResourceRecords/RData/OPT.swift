@@ -164,9 +164,9 @@ extension OPT {
             case .readCode:
                 state = .code(code: try EDNSCode(from: &buffer))
             case .code(let code):
-                guard let length = buffer.readInteger(as: UInt16.self) else {
-                    throw ProtocolError.failedToRead("OPT.length", buffer)
-                }
+                let length = try buffer.readInteger(as: UInt16.self).unwrap(
+                    or: .failedToRead("OPT.length", buffer)
+                )
                 switch length {
                 case 0:
                     options.append((code, try EDNSOption(from: &buffer, code: code)))
@@ -183,9 +183,9 @@ extension OPT {
                 }
                 state = .data(code: code, length: length, collected: [])
             case .data(let code, let length, var collected):
-                guard let byte = buffer.readInteger(as: UInt8.self) else {
-                    throw ProtocolError.failedToRead("OPT.data", buffer)
-                }
+                let byte = try buffer.readInteger(as: UInt8.self).unwrap(
+                    or: .failedToRead("OPT.data", buffer)
+                )
                 collected.append(byte)
                 switch length == collected.count {
                 case true:

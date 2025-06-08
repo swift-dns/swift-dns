@@ -2,10 +2,6 @@ import DNSCore
 import DNSModels
 import Testing
 
-// REMOVE
-import struct Foundation.Data
-import struct NIOCore.ByteBuffer
-
 @Suite
 struct NameTests {
     @Test(

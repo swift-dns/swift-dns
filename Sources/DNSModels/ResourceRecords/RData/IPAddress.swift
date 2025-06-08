@@ -77,11 +77,9 @@ extension IPv4Address: CustomStringConvertible {
 
 extension IPv4Address {
     package init(from buffer: inout DNSBuffer) throws {
-        self.bytes =
-            try buffer.readInlineArray()
-            ?? {
-                throw ProtocolError.failedToRead("IPv4Address", buffer)
-            }()
+        self.bytes = try buffer.readInlineArray().unwrap(
+            or: .failedToRead("IPv4Address", buffer)
+        )
     }
 
     package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
@@ -89,10 +87,9 @@ extension IPv4Address {
             switch idx < addressLength {
             case true:
                 /// TODO: optimize reading bytes
-                return try buffer.readInteger(as: UInt8.self)
-                    ?? {
-                        throw ProtocolError.failedToRead("IPv4Address", buffer)
-                    }()
+                return try buffer.readInteger(as: UInt8.self).unwrap(
+                    or: .failedToRead("IPv4Address", buffer)
+                )
             case false:
                 return 0
             }
@@ -226,11 +223,9 @@ extension IPv6Address: CustomStringConvertible {
 
 extension IPv6Address {
     package init(from buffer: inout DNSBuffer) throws {
-        self.bytes =
-            try buffer.readInlineArray()
-            ?? {
-                throw ProtocolError.failedToRead("IPv6Address", buffer)
-            }()
+        self.bytes = try buffer.readInlineArray().unwrap(
+            or: .failedToRead("IPv6Address", buffer)
+        )
     }
 
     package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
@@ -238,10 +233,9 @@ extension IPv6Address {
             switch idx < addressLength {
             case true:
                 /// TODO: optimize reading bytes
-                return try buffer.readInteger(as: UInt8.self)
-                    ?? {
-                        throw ProtocolError.failedToRead("IPv4Address", buffer)
-                    }()
+                return try buffer.readInteger(as: UInt8.self).unwrap(
+                    or: .failedToRead("IPv4Address", buffer)
+                )
             case false:
                 return 0
             }

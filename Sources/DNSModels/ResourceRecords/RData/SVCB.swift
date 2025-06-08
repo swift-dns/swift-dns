@@ -483,11 +483,9 @@ public struct SVCB: Sendable {
 
 extension SVCB {
     package init(from buffer: inout DNSBuffer) throws {
-        self.svcPriority =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SVCB.priority", buffer)
-            }()
+        self.svcPriority = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SVCB.priority", buffer)
+        )
         self.targetName = try Name(from: &buffer)
         self.svcParams = []
         var remaining = buffer.readableBytes
@@ -551,24 +549,22 @@ extension SVCB.SVCParamKey: RawRepresentable {
 
 extension SVCB.SVCParamKey {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SVCB.ParamKey", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SVCB.ParamKey", buffer)
+        )
         self.init(rawValue)
     }
 }
 
 extension SVCB.SVCParamValue {
     package init(from buffer: inout DNSBuffer, key: SVCB.SVCParamKey) throws {
-        guard let length = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("SVCB.SVCParamValue.length", buffer)
-        }
+        let length = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SVCB.SVCParamValue.length", buffer)
+        )
         /// `length` is a `UInt16`, so it's safe to convert to Int
-        guard var valueSlice = buffer.readSlice(length: Int(length)) else {
-            throw ProtocolError.failedToRead("SVCB.SVCParamValue.valueData", buffer)
-        }
+        var valueSlice = try buffer.readSlice(length: Int(length)).unwrap(
+            or: .failedToRead("SVCB.SVCParamValue.valueData", buffer)
+        )
         switch key {
         case .mandatory:
             self = .mandatory(try Mandatory(from: &valueSlice))
@@ -580,9 +576,9 @@ extension SVCB.SVCParamValue {
             }
             self = .noDefaultALPN
         case .port:
-            guard let port = valueSlice.readInteger(as: UInt16.self) else {
-                throw ProtocolError.failedToRead("SVCB.SVCParamValue.port", buffer)
-            }
+            let port = try valueSlice.readInteger(as: UInt16.self).unwrap(
+                or: .failedToRead("SVCB.SVCParamValue.port", buffer)
+            )
             self = .port(port)
         case .ipv4hint:
             self = .ipv4hint(try IPHint<A>(from: &valueSlice))

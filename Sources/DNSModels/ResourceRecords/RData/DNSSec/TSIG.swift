@@ -194,34 +194,28 @@ public struct TSIG: Sendable {
 extension TSIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try TSIG.Algorithm(from: &buffer)
-        guard let timeHigh = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("TSIG.timeHigh", buffer)
-        }
-        guard let timeLow = buffer.readInteger(as: UInt32.self) else {
-            throw ProtocolError.failedToRead("TSIG.timeLow", buffer)
-        }
+        let timeHigh = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("TSIG.timeHigh", buffer)
+        )
+        let timeLow = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("TSIG.timeLow", buffer)
+        )
         /// `timeHigh` and `timeLow` are `UInt16` and `UInt32` respectively, so it's safe to convert to `UInt64`
         self.time =
             (UInt64(truncatingIfNeeded: timeHigh) << 32) | UInt64(truncatingIfNeeded: timeLow)
-        self.fudge =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("TSIG.fudge", buffer)
-            }()
+        self.fudge = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("TSIG.fudge", buffer)
+        )
         self.mac = try buffer.readLengthPrefixedString(
             name: "TSIG.mac",
             decodeLengthAs: UInt16.self
         )
-        self.oid =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("TSIG.oid", buffer)
-            }()
-        self.error =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("TSIG.error", buffer)
-            }()
+        self.oid = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("TSIG.oid", buffer)
+        )
+        self.error = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("TSIG.error", buffer)
+        )
         self.other = try buffer.readLengthPrefixedString(
             name: "TSIG.other",
             decodeLengthAs: UInt16.self
@@ -233,11 +227,9 @@ extension TSIG {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
         /// FIXME: Is this check needed, with `init(exactly:)`?
-        let shiftedTime =
-            try UInt16(exactly: self.time >> 32)
-            ?? {
-                throw ProtocolError.failedToValidate("TSIG.time", DNSBuffer(integer: self.time))
-            }()
+        let shiftedTime = try UInt16(exactly: self.time >> 32).unwrap(
+            or: .failedToValidate("TSIG.time", DNSBuffer(integer: self.time))
+        )
         buffer.writeInteger(shiftedTime)
         /// Truncation is desired here, even if it cuts some bits off.
         buffer.writeInteger(UInt32(truncatingIfNeeded: self.time))

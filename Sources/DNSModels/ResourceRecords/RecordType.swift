@@ -175,9 +175,9 @@ extension RecordType: RawRepresentable {
 
 extension RecordType {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let recordType = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("RecordType", buffer)
-        }
+        let recordType = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("RecordType", buffer)
+        )
         self = RecordType(recordType)
     }
 }

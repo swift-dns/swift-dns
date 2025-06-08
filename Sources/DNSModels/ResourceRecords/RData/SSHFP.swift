@@ -110,9 +110,9 @@ extension SSHFP.FingerprintType: RawRepresentable {
 
 extension SSHFP.FingerprintType {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("SSHFP.FingerprintType", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("SSHFP.FingerprintType", buffer)
+        )
         self.init(rawValue)
     }
 }

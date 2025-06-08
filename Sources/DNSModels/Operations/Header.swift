@@ -269,32 +269,22 @@ public struct Header: Sendable {
 
 extension Header {
     package init(from buffer: inout DNSBuffer) throws {
-        self.id =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.id", buffer)
-            }()
+        self.id = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.id", buffer)
+        )
         self.bytes16To31 = try Header.Bytes16To31(from: &buffer)
-        self.queryCount =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.queryCount", buffer)
-            }()
-        self.answerCount =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.answerCount", buffer)
-            }()
-        self.nameServerCount =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.nameServerCount", buffer)
-            }()
-        self.additionalCount =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.additionalCount", buffer)
-            }()
+        self.queryCount = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.queryCount", buffer)
+        )
+        self.answerCount = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.answerCount", buffer)
+        )
+        self.nameServerCount = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.nameServerCount", buffer)
+        )
+        self.additionalCount = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.additionalCount", buffer)
+        )
     }
 }
 
@@ -311,11 +301,9 @@ extension Header {
 
 extension Header.Bytes16To31 {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("Header.Bytes16To31.rawValue", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("Header.Bytes16To31.rawValue", buffer)
+        )
         self.init(rawValue: rawValue)
     }
 }

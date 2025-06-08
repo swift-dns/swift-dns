@@ -74,31 +74,21 @@ extension SOA {
     package init(from buffer: inout DNSBuffer) throws {
         self.mName = try Name(from: &buffer)
         self.rName = try Name(from: &buffer)
-        self.serial =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SOA.serial", buffer)
-            }()
-        self.refresh =
-            try buffer.readInteger(as: Int32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SOA.refresh", buffer)
-            }()
-        self.retry =
-            try buffer.readInteger(as: Int32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SOA.retry", buffer)
-            }()
-        self.expire =
-            try buffer.readInteger(as: Int32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SOA.expire", buffer)
-            }()
-        self.minimum =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SOA.minimum", buffer)
-            }()
+        self.serial = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("SOA.serial", buffer)
+        )
+        self.refresh = try buffer.readInteger(as: Int32.self).unwrap(
+            or: .failedToRead("SOA.refresh", buffer)
+        )
+        self.retry = try buffer.readInteger(as: Int32.self).unwrap(
+            or: .failedToRead("SOA.retry", buffer)
+        )
+        self.expire = try buffer.readInteger(as: Int32.self).unwrap(
+            or: .failedToRead("SOA.expire", buffer)
+        )
+        self.minimum = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("SOA.minimum", buffer)
+        )
     }
 }
 

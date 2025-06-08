@@ -353,9 +353,9 @@ extension Name {
             // domain header).  A zero offset specifies the first byte of the ID field,
             // etc.
             case .pointer:
-                guard let pointer = buffer.readInteger(as: UInt16.self) else {
-                    throw ProtocolError.failedToRead("Name.label", buffer)
-                }
+                let pointer = try buffer.readInteger(as: UInt16.self).unwrap(
+                    or: .failedToRead("Name.label", buffer)
+                )
                 let currentIndex = buffer.readerIndex
                 let offset = pointer & 0b0011_1111_1111_1111
 

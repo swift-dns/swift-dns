@@ -74,21 +74,15 @@ public struct SRV: Sendable {
 
 extension SRV {
     package init(from buffer: inout DNSBuffer) throws {
-        self.priority =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SRV.priority", buffer)
-            }()
-        self.weight =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SRV.weight", buffer)
-            }()
-        self.port =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SRV.port", buffer)
-            }()
+        self.priority = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SRV.priority", buffer)
+        )
+        self.weight = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SRV.weight", buffer)
+        )
+        self.port = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SRV.port", buffer)
+        )
         self.target = try Name(from: &buffer)
     }
 }

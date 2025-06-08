@@ -89,11 +89,9 @@ public struct CERT: Sendable {
 extension CERT {
     package init(from buffer: inout DNSBuffer) throws {
         self.certType = try CertType(from: &buffer)
-        self.keyTag =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("CERT.keyTag", buffer)
-            }()
+        self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("CERT.keyTag", buffer)
+        )
         self.algorithm = try Algorithm(from: &buffer)
         self.certData = try buffer.readLengthPrefixedString(name: "CERT.certData")
     }
@@ -183,11 +181,9 @@ extension CERT.CertType: RawRepresentable {
 
 extension CERT.CertType {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("CERT.CertType", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("CERT.CertType", buffer)
+        )
         self.init(rawValue)
     }
 }

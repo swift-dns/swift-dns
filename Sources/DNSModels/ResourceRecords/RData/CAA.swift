@@ -77,9 +77,9 @@ public struct CAA: Sendable {
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes16To31 handles flags
-        guard let flags = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("CAA.flags", buffer)
-        }
+        let flags = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("CAA.flags", buffer)
+        )
         self.issuerCritical = (flags & 0b1000_0000) != 0
         self.reservedFlags = flags & 0b0111_1111
         self.tag = try Property(from: &buffer)
@@ -132,15 +132,15 @@ extension CAA.Property: RawRepresentable {
 
 extension CAA.Property {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let length = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("CAA.Property.length", buffer)
-        }
+        let length = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("CAA.Property.length", buffer)
+        )
         guard length > 0, length < 16 else {
             throw ProtocolError.failedToValidate("CAA.Property.length", buffer)
         }
-        guard let tag = buffer.readString(length: Int(length)) else {
-            throw ProtocolError.failedToRead("CAA.Property.tag", buffer)
-        }
+        let tag = try buffer.readString(length: Int(length)).unwrap(
+            or: .failedToRead("CAA.Property.tag", buffer)
+        )
 
         guard tag.utf8.allSatisfy(\.isASCIIAlphanumeric) else {
             throw ProtocolError.failedToValidate("CAA.Property.tag", buffer)

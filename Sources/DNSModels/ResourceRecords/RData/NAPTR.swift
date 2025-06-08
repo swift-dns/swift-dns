@@ -54,16 +54,12 @@ public struct NAPTR: Sendable {
 
 extension NAPTR {
     package init(from buffer: inout DNSBuffer) throws {
-        self.order =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("NAPTR.order", buffer)
-            }()
-        self.preference =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("NAPTR.preference", buffer)
-            }()
+        self.order = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("NAPTR.order", buffer)
+        )
+        self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("NAPTR.preference", buffer)
+        )
         self.flags = try buffer.readLengthPrefixedString(name: "NAPTR.flags")
         self.services = try buffer.readLengthPrefixedString(name: "NAPTR.services")
         self.regexp = try buffer.readLengthPrefixedString(name: "NAPTR.regexp")

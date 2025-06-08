@@ -67,11 +67,9 @@ public struct DNSKEY: Sendable {
 
 extension DNSKEY {
     package init(from buffer: inout DNSBuffer) throws {
-        self.flags =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("DNSKEY.flags", buffer)
-            }()
+        self.flags = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("DNSKEY.flags", buffer)
+        )
         let proto = buffer.readInteger(as: UInt8.self)
         guard proto == 3 else {
             throw ProtocolError.failedToValidate("DNSKEY.protocol", buffer)

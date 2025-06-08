@@ -56,11 +56,9 @@ extension Record {
         self.nameLabels = try Name(from: &buffer)
         let recordType = try RecordType(from: &buffer)
         self.dnsClass = try DNSClass(from: &buffer)
-        self.ttl =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("Record.ttl", buffer)
-            }()
+        self.ttl = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("Record.ttl", buffer)
+        )
         self.rdata = try RData(
             from: &buffer,
             recordType: recordType

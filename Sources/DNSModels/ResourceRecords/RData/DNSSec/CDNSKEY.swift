@@ -13,20 +13,16 @@ public struct CDNSKEY: Sendable {
 
 extension CDNSKEY {
     package init(from buffer: inout DNSBuffer) throws {
-        self.flags =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("CDNSKEY.flags", buffer)
-            }()
+        self.flags = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("CDNSKEY.flags", buffer)
+        )
         let proto = buffer.readInteger(as: UInt8.self)
         guard proto == 3 else {
             throw ProtocolError.failedToValidate("CDNSKEY.protocol", buffer)
         }
-        let algorithm =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("CDNSKEY.algorithm", buffer)
-            }()
+        let algorithm = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("CDNSKEY.algorithm", buffer)
+        )
         self.algorithm = (algorithm == 0) ? nil : DNSSECAlgorithm(algorithm)
         self.publicKey = buffer.readToEnd()
     }

@@ -430,11 +430,9 @@ extension KEY.KeyTrust: RawRepresentable {
 
 extension KEY {
     package init(from buffer: inout DNSBuffer) throws {
-        let flags =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("KEY.flags", buffer)
-            }()
+        let flags = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("KEY.flags", buffer)
+        )
         /// Bits 2 is reserved and must be zero.
         /// Bits 4-5 are reserved and must be zero.
         /// Bits 8-11 are reserved and must be zero.
@@ -474,11 +472,9 @@ extension KEY {
 
 extension KEY.KeyTrust {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("KEY.keyTrust", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("KEY.keyTrust", buffer)
+        )
         self.init(rawValue)
     }
 }
@@ -535,11 +531,9 @@ extension KEY.KeyUsage: RawRepresentable {
 
 extension KEY.KeyUsage {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("KEY.keyUsage", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("KEY.keyUsage", buffer)
+        )
         self.init(rawValue)
     }
 }
@@ -589,11 +583,9 @@ extension KEY.UpdateScope: RawRepresentable {
 
 extension KEY.UpdateScope {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("KEY.updateScope", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("KEY.updateScope", buffer)
+        )
         self.init(rawValue)
     }
 }
@@ -650,11 +642,9 @@ extension KEY.Proto: RawRepresentable {
 
 extension KEY.Proto {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("KEY.Proto", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("KEY.Proto", buffer)
+        )
         self.init(rawValue)
     }
 }

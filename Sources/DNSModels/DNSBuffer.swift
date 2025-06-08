@@ -1,15 +1,18 @@
-package import struct NIOCore.ByteBuffer
-package import struct NIOCore.ByteBufferView
-package import enum NIOCore.Endianness
+public import struct NIOCore.ByteBuffer
+public import struct NIOCore.ByteBufferView
+public import enum NIOCore.Endianness
 
 /// FIXME: investigating making this non-copyable
 /// FXIME: CustomStringConvertible + Debug
-package struct DNSBuffer /*: ~Copyable*/ {
+@usableFromInline
+package struct DNSBuffer: Sendable /*, ~Copyable*/ {
+    @usableFromInline
     var _buffer: ByteBuffer
     /// Start index of the DNS portion of the packet the buffer
     ///
     /// TODO: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
     /// Start from the DNS portion of the packet?
+    @usableFromInline
     let _dnsStartIndex: Int
 
     var readerIndex: Int {
@@ -271,6 +274,7 @@ package struct DNSBuffer /*: ~Copyable*/ {
 }
 
 extension DNSBuffer: Equatable {
+    @inlinable
     package static func == (lhs: DNSBuffer, rhs: DNSBuffer) -> Bool {
         lhs._buffer == rhs._buffer
     }

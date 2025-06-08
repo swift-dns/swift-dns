@@ -55,9 +55,9 @@ extension DNSClass {
 }
 extension DNSClass {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let dnsClass = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("DNSClass", buffer)
-        }
+        let dnsClass = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("DNSClass", buffer)
+        )
         self = DNSClass(dnsClass)
     }
 }

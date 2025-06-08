@@ -1,8 +1,6 @@
 @_spi(Testing) import DNSModels
 import Testing
 
-import struct NIOCore.ByteBuffer
-
 @Suite
 struct HeaderTests {
     @Test func setGetWorksInBytes16To31WithDefaultTrue() async throws {

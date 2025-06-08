@@ -84,21 +84,17 @@ public struct NSEC3PARAM: Sendable {
 extension NSEC3PARAM {
     package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try NSEC3.HashAlgorithm(from: &buffer)
-        let flags =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("NSEC3PARAM.flags", buffer)
-            }()
+        let flags = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("NSEC3PARAM.flags", buffer)
+        )
         guard flags & 0b1111_1110 == 0 else {
             throw ProtocolError.failedToValidate("NSEC3PARAM.flags", buffer)
         }
         //FIXME: use flags like in Header.bytes16to31
         self.optOut = (flags & 0b0000_0001) == 0b0000_0001
-        self.iterations =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("NSEC3PARAM.iterations", buffer)
-            }()
+        self.iterations = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("NSEC3PARAM.iterations", buffer)
+        )
         self.salt = try buffer.readLengthPrefixedString(name: "NSEC3PARAM.salt")
     }
 }

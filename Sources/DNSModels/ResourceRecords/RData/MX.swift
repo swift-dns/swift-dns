@@ -27,11 +27,9 @@ public struct MX: Sendable {
 
 extension MX {
     package init(from buffer: inout DNSBuffer) throws {
-        self.preference =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("MX.preference", buffer)
-            }()
+        self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("MX.preference", buffer)
+        )
         self.exchange = try Name(from: &buffer)
     }
 }

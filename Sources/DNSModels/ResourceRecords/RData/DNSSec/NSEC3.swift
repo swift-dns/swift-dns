@@ -208,21 +208,17 @@ public struct NSEC3: Sendable {
 extension NSEC3 {
     package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try HashAlgorithm(from: &buffer)
-        let flags =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("NSEC3.flags", buffer)
-            }()
+        let flags = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("NSEC3.flags", buffer)
+        )
         guard flags & 0b1111_1110 == 0 else {
             throw ProtocolError.failedToValidate("NSEC3.flags", buffer)
         }
         //FIXME: use flags like in Header.bytes16to31
         self.optOut = (flags & 0b0000_0001) == 0b0000_0001
-        self.iterations =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("NSEC3.iterations", buffer)
-            }()
+        self.iterations = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("NSEC3.iterations", buffer)
+        )
         self.salt = try buffer.readLengthPrefixedString(name: "NSEC3.salt")
         self.nextHashedOwnerName = try buffer.readLengthPrefixedString(
             name: "NSEC3.nextHashedOwnerName"
@@ -269,16 +265,12 @@ extension NSEC3.HashAlgorithm: RawRepresentable {
 
 extension NSEC3.HashAlgorithm {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("NSEC3.HashAlgorithm", buffer)
-            }()
-        self =
-            try NSEC3.HashAlgorithm(rawValue: rawValue)
-            ?? {
-                throw ProtocolError.failedToValidate("NSEC3.HashAlgorithm", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("NSEC3.HashAlgorithm", buffer)
+        )
+        self = try NSEC3.HashAlgorithm(rawValue: rawValue).unwrap(
+            or: .failedToValidate("NSEC3.HashAlgorithm", buffer)
+        )
     }
 }
 

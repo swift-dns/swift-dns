@@ -52,16 +52,12 @@ public struct CSYNC: Sendable {
 
 extension CSYNC {
     package init(from buffer: inout DNSBuffer) throws {
-        self.soaSerial =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("CSYNC.soaSerial", buffer)
-            }()
-        let flags =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("CSYNC.flags", buffer)
-            }()
+        self.soaSerial = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("CSYNC.soaSerial", buffer)
+        )
+        let flags = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("CSYNC.flags", buffer)
+        )
         /// TODO: flag parsing like in Header Bytes16To31
         self.immediate = flags & 0b0000_0001 == 0b0000_0001
         self.soaMinimum = flags & 0b0000_0010 == 0b0000_0010

@@ -666,13 +666,13 @@ extension RData {
 
 extension RData {
     package init(from buffer: inout DNSBuffer, recordType: RecordType) throws {
-        guard let length = buffer.readInteger(as: UInt16.self) else {
-            throw ProtocolError.failedToRead("RData.length", buffer)
-        }
+        let length = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("RData.length", buffer)
+        )
         /// `length` is a `UInt16`, so it's safe to convert to Int
-        guard var buffer = buffer.readSlice(length: Int(length)) else {
-            throw ProtocolError.failedToRead("RData.length", buffer)
-        }
+        var buffer = try buffer.readSlice(length: Int(length)).unwrap(
+            or: .failedToRead("RData.length", buffer)
+        )
         /// FIXME: is this valid? :
         /// This is to handle updates, RFC 2136, which uses 0 to indicate certain aspects of
         /// pre-requisites Null represents any data.

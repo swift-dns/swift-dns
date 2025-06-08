@@ -220,11 +220,9 @@ extension Algorithm: RawRepresentable {
 
 extension Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
-        let rawValue =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("Algorithm", buffer)
-            }()
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("Algorithm", buffer)
+        )
         self.init(rawValue)
     }
 }

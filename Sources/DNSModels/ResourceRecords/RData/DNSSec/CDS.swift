@@ -20,20 +20,16 @@ public struct CDS: Sendable {
 
 extension CDS {
     package init(from buffer: inout DNSBuffer) throws {
-        self.keyTag =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("CDS.keyTag", buffer)
-            }()
+        self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("CDS.keyTag", buffer)
+        )
         let proto = buffer.readInteger(as: UInt8.self)
         guard proto == 3 else {
             throw ProtocolError.failedToValidate("CDS.protocol", buffer)
         }
-        let algorithm =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("CDS.algorithm", buffer)
-            }()
+        let algorithm = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("CDS.algorithm", buffer)
+        )
         self.algorithm = (algorithm == 0) ? nil : DNSSECAlgorithm(algorithm)
         self.digestType = try DNSSECDigestType(from: &buffer)
         self.digest = buffer.readToEnd()

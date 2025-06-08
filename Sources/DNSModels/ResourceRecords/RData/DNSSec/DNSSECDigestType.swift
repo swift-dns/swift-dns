@@ -58,9 +58,9 @@ extension DNSSECDigestType: RawRepresentable {
 
 extension DNSSECDigestType {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("DNSSECDigestType", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("DNSSECDigestType", buffer)
+        )
         self.init(rawValue)
     }
 }

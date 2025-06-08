@@ -194,31 +194,21 @@ extension SIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.typeCovered = try RecordType(from: &buffer)
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
-        self.numLabels =
-            try buffer.readInteger(as: UInt8.self)
-            ?? {
-                throw ProtocolError.failedToRead("SIG.numLabels", buffer)
-            }()
-        self.originalTTL =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SIG.originalTTL", buffer)
-            }()
-        self.sigExpiration =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SIG.sigExpiration", buffer)
-            }()
-        self.sigInception =
-            try buffer.readInteger(as: UInt32.self)
-            ?? {
-                throw ProtocolError.failedToRead("SIG.sigInception", buffer)
-            }()
-        self.keyTag =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("SIG.keyTag", buffer)
-            }()
+        self.numLabels = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("SIG.numLabels", buffer)
+        )
+        self.originalTTL = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("SIG.originalTTL", buffer)
+        )
+        self.sigExpiration = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("SIG.sigExpiration", buffer)
+        )
+        self.sigInception = try buffer.readInteger(as: UInt32.self).unwrap(
+            or: .failedToRead("SIG.sigInception", buffer)
+        )
+        self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("SIG.keyTag", buffer)
+        )
         self.signerName = try Name(from: &buffer)
         self.sig = buffer.readToEnd()
     }

@@ -62,11 +62,9 @@ public struct DS: Sendable {
 
 extension DS {
     package init(from buffer: inout DNSBuffer) throws {
-        self.keyTag =
-            try buffer.readInteger(as: UInt16.self)
-            ?? {
-                throw ProtocolError.failedToRead("DS.keyTag", buffer)
-            }()
+        self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("DS.keyTag", buffer)
+        )
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
         self.digestType = try DNSSECDigestType(from: &buffer)
         self.digest = buffer.readToEnd()

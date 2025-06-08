@@ -1,6 +1,7 @@
 /// FIXME
 /// TODO: use with typed throws?
 /// TODO: take function and line?
+@usableFromInline
 package enum ProtocolError: Error {
     case lengthLimitExceeded(StaticString, actual: Int, max: Int, DNSBuffer)
     case operationUnsupported(StaticString, DNSBuffer)

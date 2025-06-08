@@ -91,9 +91,9 @@ extension DNSSECAlgorithm: RawRepresentable {
 
 extension DNSSECAlgorithm {
     package init(from buffer: inout DNSBuffer) throws {
-        guard let rawValue = buffer.readInteger(as: UInt8.self) else {
-            throw ProtocolError.failedToRead("DNSSECAlgorithm", buffer)
-        }
+        let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
+            or: .failedToRead("DNSSECAlgorithm", buffer)
+        )
         self.init(rawValue)
     }
 }
