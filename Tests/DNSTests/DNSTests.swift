@@ -1,4 +1,3 @@
-import DNSCore
 import DNSModels
 import NIOCore
 import Testing
@@ -44,13 +43,13 @@ struct DNSTests {
         var buffer = DNSBuffer()
         try message.encode(into: &buffer)
 
-        var expected = Resource.dnsQueryAExampleComPacket.buffer()
+        var expected = Resources.dnsQueryAExampleComPacket.buffer()
         expected.moveReaderIndex(forwardBy: 42)
         #expect(buffer == expected)
     }
 
     @Test func decodeAExampleComResponse() async throws {
-        var buffer = Resource.dnsResponseAExampleComPacket.buffer()
+        var buffer = Resources.dnsResponseAExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
 
@@ -167,13 +166,13 @@ struct DNSTests {
         var buffer = DNSBuffer()
         try message.encode(into: &buffer)
 
-        var expected = Resource.dnsQueryAAAACloudflareComPacket.buffer()
+        var expected = Resources.dnsQueryAAAACloudflareComPacket.buffer()
         expected.moveReaderIndex(forwardBy: 42)
         #expect(buffer == expected)
     }
 
     @Test func decodeAAAACloudflareComResponse() async throws {
-        var buffer = Resource.dnsResponseAAAACloudflareComPacket.buffer()
+        var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
 
@@ -293,13 +292,13 @@ struct DNSTests {
         var buffer = DNSBuffer()
         try message.encode(into: &buffer)
 
-        var expected = Resource.dnsQueryTXTExampleComPacket.buffer()
+        var expected = Resources.dnsQueryTXTExampleComPacket.buffer()
         expected.moveReaderIndex(forwardBy: 42)
         #expect(buffer == expected)
     }
 
     @Test func decodeTXTExampleComResponse() async throws {
-        var buffer = Resource.dnsResponseTXTExampleComPacket.buffer()
+        var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
 

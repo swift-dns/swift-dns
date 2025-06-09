@@ -4,6 +4,7 @@
   "mounts": [
     "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
   ],
+  "postCreateCommand": "apt update && apt install -y libjemalloc-dev",
   "customizations": {
     "vscode": {
       "extensions": [
