@@ -1,0 +1,39 @@
+name: lint
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize] }
+  push: { branches: [main] }
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    container: swiftlang/swift:nightly-6.2-noble
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v4
+
+      - name: Check config file
+        run: |
+          if [ ! -f .swift-format ]; then
+            echo "No .swift-format file found."
+            exit 1
+          fi
+
+      - name: Lint
+        run: |
+          apt -q update && apt -yq install curl
+          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash

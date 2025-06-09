@@ -16,7 +16,7 @@ package struct DNSBuffer: Sendable {
     @usableFromInline
     let _dnsStartIndex: Int
 
-    var readerIndex: Int {
+    package var readerIndex: Int {
         self._buffer.readerIndex
     }
 
@@ -127,7 +127,7 @@ package struct DNSBuffer: Sendable {
         return self._buffer.readWithUnsafeReadableBytes {
             ptr -> (Int, InlineArray<count, IntegerType>) in
             assert(ptr.count >= bytesRequired)
-            let values: InlineArray<count, IntegerType> = InlineArray { index in
+            let values = InlineArray<count, IntegerType> { index in
                 switch endianness {
                 case .big:
                     return IntegerType(
@@ -145,6 +145,7 @@ package struct DNSBuffer: Sendable {
                     )
                 }
             }
+
             return (bytesRequired, values)
         }
     }

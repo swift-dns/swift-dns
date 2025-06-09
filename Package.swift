@@ -60,3 +60,24 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
     ]
 }
+
+// MARK: - Benchmark stuff
+/// Should make all these conditional only for development with an env var or something
+
+package.dependencies.append(
+    .package(url: "https://github.com/ordo-one/package-benchmark.git", from: "1.29.3"),
+)
+
+package.targets += [
+    .executableTarget(
+        name: "DNSParserBenchmarks",
+        dependencies: [
+            "DNSModels",
+            .product(name: "Benchmark", package: "package-benchmark"),
+        ],
+        path: "Benchmarks/DNSParser",
+        plugins: [
+            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+        ]
+    )
+]
