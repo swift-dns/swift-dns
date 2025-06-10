@@ -6,8 +6,7 @@ I'll tag/release an alpha/beta as soon as things are more reliable and there are
 
 If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.   
 
-#### Requires Swift 6.2 on Linux which supports types like InlineArray.
-#### Should be useable on macos very soon, perhaps as soon as the WWDC.
+#### Requires Swift 6.2. Also requires macOS 26 if used on macos.
 
 # swift-dns
 
