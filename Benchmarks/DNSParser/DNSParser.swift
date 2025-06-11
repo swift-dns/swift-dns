@@ -3,12 +3,12 @@ import DNSModels
 
 let benchmarks: @Sendable () -> Void = {
     Benchmark(
-        "1000xParser_A_Response_CPUUser",
+        "100_000xParser_A_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
             maxDuration: .seconds(10),
-            maxIterations: 10,
+            maxIterations: 5,
             thresholds: [
                 .cpuUser: .init(
                     /// `3 - 1 == 2`% tolerance.
@@ -25,15 +25,12 @@ let benchmarks: @Sendable () -> Void = {
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
         let startIndex = buffer.readerIndex
 
-        for _ in 0..<1000 {
+        benchmark.startMeasurement()
+        for _ in 0..<100_000 {
             buffer.moveReaderIndex(to: startIndex)
-
-            benchmark.startMeasurement()
 
             let message = try Message(from: &buffer)
             blackHole(message)
-
-            benchmark.stopMeasurement()
         }
     }
 }
