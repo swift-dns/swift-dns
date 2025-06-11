@@ -74,7 +74,7 @@ package.dependencies.append(
 
 package.targets += [
     .executableTarget(
-        name: "DNSParserBenchmarks",
+        name: "DNSParser",
         dependencies: [
             "DNSModels",
             .product(name: "Benchmark", package: "package-benchmark"),
