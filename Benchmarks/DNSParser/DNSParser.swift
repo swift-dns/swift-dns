@@ -26,7 +26,7 @@ let benchmarks: @Sendable () -> Void = {
         let startIndex = buffer.readerIndex
 
         benchmark.startMeasurement()
-        for _ in 0..<100_000 {
+        for _ in 0..<200_000 {
             buffer.moveReaderIndex(to: startIndex)
 
             let message = try Message(from: &buffer)
@@ -53,7 +53,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "100_000xParser_AAAA_Response_CPUUser",
+        "300_000xParser_AAAA_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
@@ -103,7 +103,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "100_000xParser_TXT_Response_CPUUser",
+        "300_000xParser_TXT_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,

@@ -124,7 +124,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 1)
         let option = try #require(edns.options.options.first)
         #expect(option.0 == .padding)
-        #expect(option.1 == .unknown(11, []))
+        #expect(option.1 == .unknown(12, [UInt8](repeating: 0, count: 328)))
     }
 
     @Test func encodeAAAACloudflareComQuery() async throws {
