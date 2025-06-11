@@ -105,7 +105,7 @@ jobs:
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
-          path: .build
+          path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
@@ -154,7 +154,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: .build
+          path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
 
       - name: Construct result comment
