@@ -1,5 +1,6 @@
 // swift-tools-version: 6.2
 
+import CompilerPluginSupport
 // MARK: - BEGIN exact copy of the main package's Package.swift
 import PackageDescription
 
