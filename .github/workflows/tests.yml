@@ -13,8 +13,7 @@ jobs:
       matrix:
         swift-image:
           - name: swiftlang/swift:nightly-6.2-noble
-            # Disbale failures on nightlies for now
-            continue-on-error: true
+            continue-on-error: false
           - name: swiftlang/swift:nightly-main-noble
             # Disbale failures on nightlies for now
             continue-on-error: true
@@ -26,7 +25,7 @@ jobs:
 
     container: ${{ matrix.swift-image.name }}
 
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Check out ${{ github.event.repository.name }}

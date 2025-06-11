@@ -8,3 +8,4 @@ DerivedData/
 .netrc
 .vscode/settings.json
 *.vsix
+__LocalProfilingTests.swift

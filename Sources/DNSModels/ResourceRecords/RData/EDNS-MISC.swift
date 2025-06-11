@@ -61,15 +61,15 @@ extension EDNSCode: RawRepresentable {
         case .llq: return 1
         case .ul: return 2
         case .nsid: return 3
-        case .dau: return 4
-        case .dhu: return 5
-        case .n3u: return 6
-        case .subnet: return 7
-        case .expire: return 8
-        case .cookie: return 9
-        case .keepalive: return 10
-        case .padding: return 11
-        case .chain: return 12
+        case .dau: return 5
+        case .dhu: return 6
+        case .n3u: return 7
+        case .subnet: return 8
+        case .expire: return 9
+        case .cookie: return 10
+        case .keepalive: return 11
+        case .padding: return 12
+        case .chain: return 13
         case .unknown(let value): return value
         }
     }

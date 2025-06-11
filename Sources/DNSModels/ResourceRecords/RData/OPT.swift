@@ -148,11 +148,7 @@ extension OPT {
     enum OptReadingState {
         case readCode
         case code(code: EDNSCode)
-        case data(
-            code: EDNSCode,
-            length: UInt16,
-            collected: [UInt8]
-        )
+        case data(code: EDNSCode, length: UInt16)
     }
 
     package init(from buffer: inout DNSBuffer) throws {
@@ -172,28 +168,18 @@ extension OPT {
                     options.append((code, try EDNSOption(from: &buffer, code: code)))
                     state = .readCode
                 default:
-                    var collected: [UInt8] = []
-                    /// `length` is a `UInt16`, so it's safe to convert to Int
-                    collected.reserveCapacity(Int(length))
                     state = .data(
                         code: code,
-                        length: length,
-                        collected: collected
+                        length: length
                     )
                 }
-                state = .data(code: code, length: length, collected: [])
-            case .data(let code, let length, var collected):
-                let byte = try buffer.readInteger(as: UInt8.self).unwrap(
+            case .data(let code, let length):
+                /// `length` is a `UInt16`, so it's safe to convert to Int
+                var bytes = try buffer.readSlice(length: Int(length)).unwrap(
                     or: .failedToRead("OPT.data", buffer)
                 )
-                collected.append(byte)
-                switch length == collected.count {
-                case true:
-                    options.append((code, try EDNSOption(from: &buffer, code: code)))
-                    state = .readCode
-                case false:
-                    state = .data(code: code, length: length, collected: collected)
-                }
+                options.append((code, try EDNSOption(from: &bytes, code: code)))
+                state = .readCode
             }
         }
 
