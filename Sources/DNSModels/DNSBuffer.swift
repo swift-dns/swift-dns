@@ -118,6 +118,8 @@ package struct DNSBuffer: Sendable {
         as: InlineArray<count, IntegerType>.Type = InlineArray<count, IntegerType>.self
     ) -> InlineArray<count, IntegerType>? {
         let length = MemoryLayout<IntegerType>.size
+        /// FIXME: is unchecked acceptable? perhpas needs to do something in the function name to
+        /// point out that it's unchecked?
         let bytesRequired = length &* count
 
         guard self.readableBytes >= bytesRequired else {
@@ -127,17 +129,15 @@ package struct DNSBuffer: Sendable {
         return self._buffer.readWithUnsafeReadableBytes {
             ptr -> (Int, InlineArray<count, IntegerType>) in
             assert(ptr.count >= bytesRequired)
-            let values = InlineArray<count, IntegerType> { index in
+            var array = InlineArray<count, IntegerType>(repeating: 0)
+            for index in array.indices {
                 switch endianness {
                 case .big:
-                    return IntegerType(
-                        bigEndian: ptr.load(
-                            fromByteOffset: index &* length,
-                            as: IntegerType.self
-                        )
+                    array[index] = IntegerType(
+                        bigEndian: ptr.load(fromByteOffset: index &* length, as: IntegerType.self)
                     )
                 case .little:
-                    return IntegerType(
+                    array[index] = IntegerType(
                         littleEndian: ptr.load(
                             fromByteOffset: index &* length,
                             as: IntegerType.self
@@ -146,7 +146,28 @@ package struct DNSBuffer: Sendable {
                 }
             }
 
-            return (bytesRequired, values)
+            /// Issue: https://github.com/swiftlang/swift/issues/82093
+            /// Resolved on main, haven't made it to snapshots yet.
+            // let values = InlineArray<count, IntegerType> { index in
+            //     switch endianness {
+            //     case .big:
+            //         return IntegerType(
+            //             bigEndian: ptr.load(
+            //                 fromByteOffset: index &* length,
+            //                 as: IntegerType.self
+            //             )
+            //         )
+            //     case .little:
+            //         return IntegerType(
+            //             littleEndian: ptr.load(
+            //                 fromByteOffset: index &* length,
+            //                 as: IntegerType.self
+            //             )
+            //         )
+            //     }
+            // }
+
+            return (bytesRequired, array)
         }
     }
 
