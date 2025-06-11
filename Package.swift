@@ -4,6 +4,9 @@ import PackageDescription
 
 let package = Package(
     name: "swift-dns",
+    platforms: [
+        .macOS("26.0")
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.4"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.82.1"),
@@ -60,8 +63,3 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
     ]
 }
-
-/// Linux nightlies don't like "macOS(.v26)"
-#if os(macOS)
-package.platforms = [.macOS(.v26)]
-#endif
