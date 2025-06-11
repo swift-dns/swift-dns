@@ -181,7 +181,6 @@ extension OPT {
                         collected: collected
                     )
                 }
-                state = .data(code: code, length: length, collected: [])
             case .data(let code, let length, var collected):
                 let byte = try buffer.readInteger(as: UInt8.self).unwrap(
                     or: .failedToRead("OPT.data", buffer)
