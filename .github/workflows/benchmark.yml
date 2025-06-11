@@ -33,8 +33,16 @@ jobs:
       - name: Find commit info
         id: commit-info
         run: |
-          COMMIT_SHA="${{ github.event.after || github.event.pull_request.base.sha }}"
-          if [[ -n "${COMMIT_SHA}" ]]; then
+          COMMIT_SHA="${{ github.event.after }}"
+          if [[ "${{ github.event_name }}" == *"pull_request"* ]]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            echo "title=${{ github.event.pull_request.title }}" >> "${GITHUB_OUTPUT}"
+            echo "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
+            SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
+            FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
+          elif [[ -n "${COMMIT_SHA}" ]]; then
             FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_SHA}" | jq -r '.sha')"
 
             # Get the oldest PR that contains the commit
@@ -97,19 +105,23 @@ jobs:
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
-          path: .build
+          path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
         run: |
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark baseline update \
             '${{ steps.commit-info.outputs.title }}'
 
       - name: Read benchmark result
         run: |
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark baseline read \
             '${{ steps.commit-info.outputs.title }}' \
             --no-progress \
@@ -126,7 +138,9 @@ jobs:
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \
@@ -140,7 +154,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: .build
+          path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
 
       - name: Construct result comment

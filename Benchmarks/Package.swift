@@ -1,5 +1,7 @@
 // swift-tools-version: 6.2
 
+import CompilerPluginSupport
+// MARK: - BEGIN exact copy of the main package's Package.swift
 import PackageDescription
 
 let package = Package(
@@ -65,3 +67,24 @@ var settings: [SwiftSetting] {
 #if os(macOS)
 package.platforms = [.macOS(.v26)]
 #endif
+// MARK: - END exact copy of the main package's Package.swift
+
+// MARK: - Add benchmark stuff now
+
+package.dependencies.append(
+    .package(url: "https://github.com/ordo-one/package-benchmark.git", from: "1.29.3"),
+)
+
+package.targets += [
+    .executableTarget(
+        name: "DNSParser",
+        dependencies: [
+            "DNSModels",
+            .product(name: "Benchmark", package: "package-benchmark"),
+        ],
+        path: "DNSParser",
+        plugins: [
+            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+        ]
+    )
+]
