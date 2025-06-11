@@ -83,17 +83,26 @@ extension IPv4Address {
     }
 
     package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
-        self.bytes = try InlineArray<4, UInt8> { idx in
-            switch idx < addressLength {
-            case true:
-                /// TODO: optimize reading bytes
-                return try buffer.readInteger(as: UInt8.self).unwrap(
-                    or: .failedToRead("IPv4Address", buffer)
-                )
-            case false:
-                return 0
-            }
+        self.bytes = InlineArray<4, UInt8>(repeating: 0)
+        for idx in 0..<min(addressLength, self.bytes.count) {
+            self.bytes[idx] = try buffer.readInteger(as: UInt8.self).unwrap(
+                or: .failedToRead("IPv4Address", buffer)
+            )
         }
+
+        /// Issue: https://github.com/swiftlang/swift/issues/82093
+        /// Resolved on main, haven't made it to snapshots yet.
+        // self.bytes = try InlineArray<4, UInt8> { idx in
+        //     switch idx < addressLength {
+        //     case true:
+        //         /// TODO: optimize reading bytes
+        //         return try buffer.readInteger(as: UInt8.self).unwrap(
+        //             or: .failedToRead("IPv4Address", buffer)
+        //         )
+        //     case false:
+        //         return 0
+        //     }
+        // }
     }
 }
 
@@ -229,17 +238,26 @@ extension IPv6Address {
     }
 
     package init(from buffer: inout DNSBuffer, addressLength: Int) throws {
-        self.bytes = try InlineArray<16, UInt8> { idx in
-            switch idx < addressLength {
-            case true:
-                /// TODO: optimize reading bytes
-                return try buffer.readInteger(as: UInt8.self).unwrap(
-                    or: .failedToRead("IPv4Address", buffer)
-                )
-            case false:
-                return 0
-            }
+        self.bytes = InlineArray<16, UInt8>(repeating: 0)
+        for idx in 0..<min(addressLength, self.bytes.count) {
+            self.bytes[idx] = try buffer.readInteger(as: UInt8.self).unwrap(
+                or: .failedToRead("IPv6Address", buffer)
+            )
         }
+
+        /// Issue: https://github.com/swiftlang/swift/issues/82093
+        /// Resolved on main, haven't made it to snapshots yet.
+        // self.bytes = try InlineArray<16, UInt8> { idx in
+        //     switch idx < addressLength {
+        //     case true:
+        //         /// TODO: optimize reading bytes
+        //         return try buffer.readInteger(as: UInt8.self).unwrap(
+        //             or: .failedToRead("IPv4Address", buffer)
+        //         )
+        //     case false:
+        //         return 0
+        //     }
+        // }
     }
 }
 

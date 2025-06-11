@@ -14,7 +14,7 @@ jobs:
   benchmark-vs-thresholds:
     runs-on: [self-hosted, linux, x64]
 
-    container: swiftlang/swift:nightly-main-noble
+    container: swiftlang/swift:nightly-6.2-noble
 
     permissions:
       pull-requests: write # For the comment action
