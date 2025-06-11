@@ -103,13 +103,17 @@ jobs:
 
       - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
         run: |
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark baseline update \
             '${{ steps.commit-info.outputs.title }}'
 
       - name: Read benchmark result
         run: |
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark baseline read \
             '${{ steps.commit-info.outputs.title }}' \
             --no-progress \
@@ -126,7 +130,9 @@ jobs:
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
-          swift package -c release --disable-sandbox \
+          swift package -c release \
+            --package-path Benchmarks \
+            --disable-sandbox \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \

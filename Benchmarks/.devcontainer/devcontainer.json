@@ -1,0 +1,28 @@
+{
+  "name": "6.2-snapshot-2025-05-30",
+  "image": "docker.io/swiftlang/swift@sha256:67efd3f092b810d27ad21d90b9ab32fbbcead75df80dfcfa73bb773c80f104ca",
+  "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind,consistency=cached",
+  "mounts": [
+    "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": "apt update && apt install -y libjemalloc-dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.lldb-dap",
+        "swiftlang.swift-vscode",
+        "esbenp.prettier-vscode",
+        "usernamehw.errorlens",
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "vadimcn.vscode-lldb"
+      ],
+      "settings": {
+        "lldb.library": "/usr/lib/liblldb.so",
+        "swift.path": null,
+        "swift.swiftEnvironmentVariables": {}
+      }
+    }
+  }
+}

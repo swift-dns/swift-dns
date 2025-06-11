@@ -1,5 +1,6 @@
 // swift-tools-version: 6.2
 
+// MARK: - BEGIN exact copy of the main package's Package.swift
 import PackageDescription
 
 let package = Package(
@@ -60,3 +61,24 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
     ]
 }
+// MARK: - END exact copy of the main package's Package.swift
+
+// MARK: - Add benchmark stuff now
+
+package.dependencies.append(
+    .package(url: "https://github.com/ordo-one/package-benchmark.git", from: "1.29.3"),
+)
+
+package.targets += [
+    .executableTarget(
+        name: "DNSParserBenchmarks",
+        dependencies: [
+            "DNSModels",
+            .product(name: "Benchmark", package: "package-benchmark"),
+        ],
+        path: "DNSParser",
+        plugins: [
+            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+        ]
+    )
+]
