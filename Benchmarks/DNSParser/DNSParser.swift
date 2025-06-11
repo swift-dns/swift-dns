@@ -3,7 +3,7 @@ import DNSModels
 
 let benchmarks: @Sendable () -> Void = {
     Benchmark(
-        "100_000xParser_A_Response_CPUUser",
+        "200_000xParser_A_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
