@@ -8,6 +8,27 @@ If you're curious, use the GitHub "Watch" feature (near the star button) and cho
 
 #### Requires Swift 6.2. Also requires macOS 26 if used on macos.
 
+<p>
+    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/tests.yml">
+        <img
+            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/tests.yml?event=push&style=plastic&logo=github&label=tests&logoColor=%23ccc"
+            alt="Tests CI"
+        >
+    </a>
+    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/benchmarks.yml">
+        <img
+            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/benchmarks.yml?event=push&style=plastic&logo=github&label=benchmarks&logoColor=%23ccc"
+            alt="Benchamrks CI"
+        >
+    </a>
+    <a href="https://swift.org">
+        <img
+            src="https://design.vapor.codes/images/swift62up.svg"
+            alt="Swift 6.2+"
+        >
+    </a>
+</p>
+
 # swift-dns
 
 A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
