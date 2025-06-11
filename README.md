@@ -50,7 +50,7 @@ let message = Message(
         queryCount: 1,
         answerCount: 0,
         nameServerCount: 0,
-        additionalCount: 1
+        additionalCount: 0
     ),
     queries: [query],
     answers: [],
