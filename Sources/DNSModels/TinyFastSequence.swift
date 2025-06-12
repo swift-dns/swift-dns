@@ -14,6 +14,8 @@ public struct TinyFastSequence<Element>: Sequence {
         self.base = .none(reserveCapacity: 0)
     }
 
+    // FIXME: introduce subscripting?
+
     @inlinable
     public init(_ collection: some Collection<Element>) {
         switch collection.count {

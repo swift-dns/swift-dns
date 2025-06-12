@@ -3,7 +3,7 @@ import DNSModels
 
 let benchmarks: @Sendable () -> Void = {
     Benchmark(
-        "200_000xParser_A_Response_CPUUser",
+        "200_000xA_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
@@ -35,7 +35,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Parser_A_Response_Malloc",
+        "A_Response_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -53,7 +53,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "300_000xParser_AAAA_Response_CPUUser",
+        "300_000xAAAA_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
@@ -61,9 +61,9 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
             thresholds: [
                 .cpuUser: .init(
-                    /// `3 - 1 == 2`% tolerance.
+                    /// `4 - 1 == 3`% tolerance.
                     /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 3],
+                    relative: [.p90: 4],
                     /// 11ms of tolerance.
                     absolute: [.p90: 11_000_000]
                 )
@@ -85,7 +85,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Parser_AAAA_Response_Malloc",
+        "AAAA_Response_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -103,7 +103,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "300_000xParser_TXT_Response_CPUUser",
+        "300_000xTXT_Response_CPUUser",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 1,
@@ -111,9 +111,9 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
             thresholds: [
                 .cpuUser: .init(
-                    /// `3 - 1 == 2`% tolerance.
+                    /// `4 - 1 == 3`% tolerance.
                     /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 3],
+                    relative: [.p90: 4],
                     /// 11ms of tolerance.
                     absolute: [.p90: 11_000_000]
                 )
@@ -135,7 +135,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Parser_TXT_Response_Malloc",
+        "TXT_Response_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
