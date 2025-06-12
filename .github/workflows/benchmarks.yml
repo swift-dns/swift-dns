@@ -34,6 +34,7 @@ jobs:
         id: commit-info
         run: |
           COMMIT_SHA="${{ github.event.after }}"
+
           if [[ "${{ github.event_name }}" == *"pull_request"* ]]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"
             echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
@@ -42,37 +43,16 @@ jobs:
             echo "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
-          elif [[ -n "${COMMIT_SHA}" ]]; then
-            FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_SHA}" | jq -r '.sha')"
-
-            # Get the oldest PR that contains the commit
-            PR="$(
-              curl "https://api.github.com/search/issues?q=${FULL_SHA}" | \
-                jq 'select(.items[].pull_request.url | contains("/${{ github.repository }}/")) | .items[-1]'
-            )"
-
-            # PR title, removing all occurrences of `'`
-            PR_TITLE="$(echo "${PR}" | jq -r '.title' | tr -d "'")"
-            PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
-
-            if [[ -z "${PR_NUMBER}" ]]; then
-              echo "failed to find PR info for commit ${COMMIT_SHA}"
-              exit 1
-            fi
-
-            echo "ref=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
-            echo "sha=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
-            echo "title=${PR_TITLE}" >> "${GITHUB_OUTPUT}"
-            echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
-            SHORT_NAME="$(echo $FULL_SHA | cut -c 1-7)"
-            FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
-          else
-            echo 'ref=${{ github.ref }}' >> "${GITHUB_OUTPUT}"
-            echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
-            echo 'title=${{ github.ref_name }}' >> "${GITHUB_OUTPUT}"
-            echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-            SHORT_NAME='${{ github.ref_name }}'
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            echo "title=${{ github.event.head_commit.message }}" >> "${GITHUB_OUTPUT}"
+            echo "pr_number=" >> "${GITHUB_OUTPUT}"
+            SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
+          else
+            echo 'Unsupported event: ${{ toJson(github) }}'
+            exit 1
           fi
 
           echo "md_link=[${SHORT_NAME}](${FILES_LINK})" >> "${GITHUB_OUTPUT}"
