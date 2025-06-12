@@ -3,7 +3,6 @@ public struct TinyFastSequence<Element>: Sequence {
     @usableFromInline
     enum Base {
         case none(reserveCapacity: Int)
-        case one(Element, reserveCapacity: Int)
         case n([Element])
     }
 
@@ -16,17 +15,10 @@ public struct TinyFastSequence<Element>: Sequence {
     }
 
     @inlinable
-    public init(element: Element) {
-        self.base = .one(element, reserveCapacity: 1)
-    }
-
-    @inlinable
     public init(_ collection: some Collection<Element>) {
         switch collection.count {
         case 0:
             self.base = .none(reserveCapacity: 0)
-        case 1:
-            self.base = .one(collection.first!, reserveCapacity: 0)
         default:
             if let collection = collection as? [Element] {
                 self.base = .n(collection)
@@ -42,8 +34,6 @@ public struct TinyFastSequence<Element>: Sequence {
         case 0:
             self.base = .none(reserveCapacity: 0)
         case 1:
-            self.base = .one(max2Sequence.first!, reserveCapacity: 0)
-        case 2:
             self.base = .n(Array(max2Sequence))
         default:
             fatalError()
@@ -55,8 +45,6 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none:
             return 0
-        case .one:
-            return 1
         case .n(let array):
             return array.count
         }
@@ -67,8 +55,6 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none:
             return nil
-        case .one(let element, _):
-            return element
         case .n(let array):
             return array.first
         }
@@ -79,7 +65,7 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none:
             return true
-        case .one, .n:
+        case .n:
             return false
         }
     }
@@ -89,8 +75,6 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none(let reservedCapacity):
             self.base = .none(reserveCapacity: Swift.max(reservedCapacity, minimumCapacity))
-        case .one(let element, let reservedCapacity):
-            self.base = .one(element, reserveCapacity: Swift.max(reservedCapacity, minimumCapacity))
         case .n(var array):
             self.base = .none(reserveCapacity: 0)  // prevent CoW
             array.reserveCapacity(minimumCapacity)
@@ -102,12 +86,8 @@ public struct TinyFastSequence<Element>: Sequence {
     public mutating func append(_ element: Element) {
         switch self.base {
         case .none(let reserveCapacity):
-            self.base = .one(element, reserveCapacity: reserveCapacity)
-
-        case .one(let first, let reserveCapacity):
             var new = [Element]()
-            new.reserveCapacity(Swift.max(4, reserveCapacity))
-            new.append(first)
+            new.reserveCapacity(Swift.max(2, reserveCapacity))
             new.append(element)
             self.base = .n(new)
 
@@ -139,12 +119,6 @@ public struct TinyFastSequence<Element>: Sequence {
             switch self.backing.base {
             case .none:
                 return nil
-            case .one(let element, _):
-                if self.index == 0 {
-                    self.index += 1
-                    return element
-                }
-                return nil
 
             case .n(let array):
                 if self.index < array.endIndex {
@@ -169,12 +143,9 @@ extension TinyFastSequence.Base: Sendable where Element: Sendable {}
 extension TinyFastSequence: ExpressibleByArrayLiteral {
     @inlinable
     public init(arrayLiteral elements: Element...) {
-        var iterator = elements.makeIterator()
         switch elements.count {
         case 0:
             self.base = .none(reserveCapacity: 0)
-        case 1:
-            self.base = .one(iterator.next()!, reserveCapacity: 0)
         default:
             self.base = .n(elements)
         }
