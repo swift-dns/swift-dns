@@ -4,7 +4,6 @@ public struct TinyFastSequence<Element>: Sequence {
     enum Base {
         case none(reserveCapacity: Int)
         case one(Element, reserveCapacity: Int)
-        case two(Element, Element, reserveCapacity: Int)
         case n([Element])
     }
 
@@ -58,8 +57,6 @@ public struct TinyFastSequence<Element>: Sequence {
             return 0
         case .one:
             return 1
-        case .two:
-            return 2
         case .n(let array):
             return array.count
         }
@@ -72,8 +69,6 @@ public struct TinyFastSequence<Element>: Sequence {
             return nil
         case .one(let element, _):
             return element
-        case .two(let first, _, _):
-            return first
         case .n(let array):
             return array.first
         }
@@ -84,7 +79,7 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none:
             return true
-        case .one, .two, .n:
+        case .one, .n:
             return false
         }
     }
@@ -96,12 +91,6 @@ public struct TinyFastSequence<Element>: Sequence {
             self.base = .none(reserveCapacity: Swift.max(reservedCapacity, minimumCapacity))
         case .one(let element, let reservedCapacity):
             self.base = .one(element, reserveCapacity: Swift.max(reservedCapacity, minimumCapacity))
-        case .two(let first, let second, let reservedCapacity):
-            self.base = .two(
-                first,
-                second,
-                reserveCapacity: Swift.max(reservedCapacity, minimumCapacity)
-            )
         case .n(var array):
             self.base = .none(reserveCapacity: 0)  // prevent CoW
             array.reserveCapacity(minimumCapacity)
@@ -114,14 +103,11 @@ public struct TinyFastSequence<Element>: Sequence {
         switch self.base {
         case .none(let reserveCapacity):
             self.base = .one(element, reserveCapacity: reserveCapacity)
-        case .one(let first, let reserveCapacity):
-            self.base = .two(first, element, reserveCapacity: reserveCapacity)
 
-        case .two(let first, let second, let reserveCapacity):
+        case .one(let first, let reserveCapacity):
             var new = [Element]()
             new.reserveCapacity(Swift.max(4, reserveCapacity))
             new.append(first)
-            new.append(second)
             new.append(element)
             self.base = .n(new)
 
@@ -160,17 +146,6 @@ public struct TinyFastSequence<Element>: Sequence {
                 }
                 return nil
 
-            case .two(let first, let second, _):
-                defer { self.index += 1 }
-                switch self.index {
-                case 0:
-                    return first
-                case 1:
-                    return second
-                default:
-                    return nil
-                }
-
             case .n(let array):
                 if self.index < array.endIndex {
                     defer { self.index += 1 }
@@ -200,8 +175,6 @@ extension TinyFastSequence: ExpressibleByArrayLiteral {
             self.base = .none(reserveCapacity: 0)
         case 1:
             self.base = .one(iterator.next()!, reserveCapacity: 0)
-        case 2:
-            self.base = .two(iterator.next()!, iterator.next()!, reserveCapacity: 0)
         default:
             self.base = .n(elements)
         }
