@@ -71,11 +71,11 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN)
+        #expect(response.queries.first?.name.isFQDN == true)
         let name = try Name(string: "example.com")
-        #expect(response.queries[0].name.data == name.data)
-        #expect(response.queries[0].queryType == .A)
-        #expect(response.queries[0].queryClass == .IN)
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .A)
+        #expect(response.queries.first?.queryClass == .IN)
 
         #expect(response.nameServers.count == 0)
 
@@ -194,11 +194,11 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN)
+        #expect(response.queries.first?.name.isFQDN == true)
         let name = try Name(string: "cloudflare.com")
-        #expect(response.queries[0].name.data == name.data)
-        #expect(response.queries[0].queryType == .AAAA)
-        #expect(response.queries[0].queryClass == .IN)
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .AAAA)
+        #expect(response.queries.first?.queryClass == .IN)
 
         #expect(response.nameServers.count == 0)
 
@@ -320,11 +320,11 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries[0].name.isFQDN)
+        #expect(response.queries.first?.name.isFQDN == true)
         let name = try Name(string: "example.com")
-        #expect(response.queries[0].name.data == name.data)
-        #expect(response.queries[0].queryType == .TXT)
-        #expect(response.queries[0].queryClass == .IN)
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .TXT)
+        #expect(response.queries.first?.queryClass == .IN)
 
         #expect(response.nameServers.count == 0)
 

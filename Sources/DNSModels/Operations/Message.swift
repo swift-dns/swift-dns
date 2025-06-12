@@ -41,20 +41,20 @@ import DNSCore
 /// ```
 public struct Message: Sendable {
     public var header: Header
-    public var queries: [Query]
-    public var answers: [Record]
-    public var nameServers: [Record]
-    public var additionals: [Record]
-    public var signature: [Record]
+    public var queries: TinyFastSequence<Query>
+    public var answers: TinyFastSequence<Record>
+    public var nameServers: TinyFastSequence<Record>
+    public var additionals: TinyFastSequence<Record>
+    public var signature: TinyFastSequence<Record>
     public var edns: EDNS?
 
     package init(
         header: Header,
-        queries: [Query],
-        answers: [Record],
-        nameServers: [Record],
-        additionals: [Record],
-        signature: [Record],
+        queries: TinyFastSequence<Query>,
+        answers: TinyFastSequence<Record>,
+        nameServers: TinyFastSequence<Record>,
+        additionals: TinyFastSequence<Record>,
+        signature: TinyFastSequence<Record>,
         edns: EDNS?
     ) {
         self.header = header
@@ -73,10 +73,10 @@ extension Message {
     package init(from buffer: inout DNSBuffer) throws {
         self.header = try Header(from: &buffer)
 
-        self.queries = []
+        self.queries = TinyFastSequence<Query>()
         self.queries.reserveCapacity(Int(self.header.queryCount))
         for _ in 0..<header.queryCount {
-            self.queries.append(try Query(from: &buffer))
+            self.queries.append(try Query(from: &buffer))  // FIXME: this is not efficient
         }
 
         // TODO: reserve capacity and provide the array as `inout` for the function to fill?

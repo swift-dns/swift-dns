@@ -76,11 +76,11 @@ extension [Record] {
         buffer: inout DNSBuffer,
         count: UInt16,
         isAdditional: Bool
-    ) throws -> (records: [Record], edns: EDNS?, sigs: [Record]) {
-        var records: [Record] = []
+    ) throws -> (records: TinyFastSequence<Record>, edns: EDNS?, sigs: TinyFastSequence<Record>) {
+        var records = TinyFastSequence<Record>()
         records.reserveCapacity(Int(count))
         var edns: EDNS? = nil
-        var sigs: [Record] = []
+        var sigs = TinyFastSequence<Record>()
         if isAdditional {
             sigs.reserveCapacity(1)
         }
