@@ -29,18 +29,6 @@ public struct TinyFastSequence<Element>: Sequence {
     }
 
     @inlinable
-    init(_ max2Sequence: Max2Sequence<Element>) {
-        switch max2Sequence.count {
-        case 0:
-            self.base = .none(reserveCapacity: 0)
-        case 1:
-            self.base = .n(Array(max2Sequence))
-        default:
-            fatalError()
-        }
-    }
-
-    @inlinable
     public var count: Int {
         switch self.base {
         case .none:
