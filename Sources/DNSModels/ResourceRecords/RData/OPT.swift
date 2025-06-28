@@ -145,7 +145,7 @@ public struct OPT: Sendable {
 }
 
 extension OPT {
-    enum OptReadingState {
+    enum OptReadingState: ~Copyable {
         case readCode
         case code(code: EDNSCode)
         case data(code: EDNSCode, length: UInt16)
@@ -156,7 +156,7 @@ extension OPT {
         self.options = []
 
         while buffer.readableBytes != 0 {
-            switch state {
+            switch consume state {
             case .readCode:
                 state = .code(code: try EDNSCode(from: &buffer))
             case .code(let code):
@@ -187,7 +187,7 @@ extension OPT {
         case .readCode: break
         default:
             /// FIXME: do something about warnings logs
-            print("Incomplete or poorly formatted EDNS options: \(state)")
+            print("Incomplete or poorly formatted EDNS options")
             options.removeAll(keepingCapacity: false)
         }
     }

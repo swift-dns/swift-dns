@@ -173,7 +173,7 @@ extension CAA.Value {
         }
     }
 
-    enum ParsingState {
+    enum ParsingState: ~Copyable {
         case beforeKey([(key: String, value: String)])
         case key(
             isFirstChar: Bool,
@@ -226,7 +226,7 @@ extension CAA.Value {
 
         // run the state machine through all remaining data, collecting all parameter tag/value pairs.
         while let char = buffer.readInteger(as: UInt8.self) {
-            switch state {
+            switch consume state {
             // name was already successfully parsed, otherwise we couldn't get here.
             case let .beforeKey(keyValues):
                 switch char {

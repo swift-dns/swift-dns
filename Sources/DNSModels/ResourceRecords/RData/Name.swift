@@ -128,7 +128,7 @@ extension Name: Sequence {
 }
 
 extension Name {
-    enum ParsingState {
+    enum ParsingState: ~Copyable {
         case label
         case escape1
         case escape2(UInt8)
@@ -149,69 +149,15 @@ extension Name {
 
         var label = [UInt8]()
 
-        var state = ParsingState.label
+        var state: ParsingState = .label
 
         for char in bytes {
-            switch state {
-            case .label:
-                switch char {
-                case UInt8.asciiDot:
-                    try self.extendName(label)
-                    label.removeAll(keepingCapacity: true)
-                case UInt8.asciiBackslash:
-                    state = .escape1
-                case let char
-                where !(Unicode.Scalar(char).properties.generalCategory == .control)
-                    && !Unicode.Scalar(char).properties.isWhitespace:
-                    label.append(char)
-                default:
-                    throw ProtocolError.badCharacter(
-                        in: "Name.bytes",
-                        character: char,
-                        DNSBuffer(bytes: bytes)
-                    )
-                }
-            case .escape1:
-                if Unicode.Scalar(char).properties.generalCategory.isNumeric {
-                    state = .escape2(char)
-                } else {
-                    /// it's a single escaped char
-                    label.append(char)
-                    state = .label
-                }
-            case .escape2(let i):
-                if Unicode.Scalar(char).properties.generalCategory.isNumeric {
-                    state = .escape3(i, char)
-                } else {
-                    throw ProtocolError.badCharacter(
-                        in: "Name.bytes",
-                        character: char,
-                        DNSBuffer(bytes: bytes)
-                    )
-                }
-            case .escape3(let i, let ii):
-                guard Unicode.Scalar(char).properties.generalCategory.isNumeric else {
-                    throw ProtocolError.badCharacter(
-                        in: "Name.bytes",
-                        character: char,
-                        DNSBuffer(bytes: bytes)
-                    )
-                }
-                /// octal conversion
-                let val: UInt32 =
-                    (UInt32(i) * 8 * 8)
-                    + (UInt32(ii) * 8)
-                    + UInt32(char)
-                guard let new = Unicode.Scalar(val) else {
-                    throw ProtocolError.badCharacter(
-                        in: "Name.bytes",
-                        character: char,
-                        DNSBuffer(bytes: bytes)
-                    )
-                }
-                label.append(contentsOf: new.utf8)
-                state = .label
-            }
+            state = try self.iterate(
+                state: state,
+                label: &label,
+                char: char,
+                bytes: bytes
+            )
         }
 
         if !label.isEmpty {
@@ -223,6 +169,76 @@ extension Name {
             self.isFQDN = true
         } else if let other = origin {
             try self.appendDomain(other)
+        }
+    }
+
+    mutating func iterate(
+        state: consuming ParsingState,
+        label: inout [UInt8],
+        char: UInt8,
+        bytes: some Collection<UInt8>
+    ) throws -> ParsingState {
+        switch consume state {
+        case .label:
+            switch char {
+            case UInt8.asciiDot:
+                try self.extendName(label)
+                label.removeAll(keepingCapacity: true)
+                return .label
+            case UInt8.asciiBackslash:
+                return .escape1
+            case let char
+            where !(Unicode.Scalar(char).properties.generalCategory == .control)
+                && !Unicode.Scalar(char).properties.isWhitespace:
+                label.append(char)
+                return .label
+            default:
+                throw ProtocolError.badCharacter(
+                    in: "Name.bytes",
+                    character: char,
+                    DNSBuffer(bytes: bytes)
+                )
+            }
+        case .escape1:
+            if Unicode.Scalar(char).properties.generalCategory.isNumeric {
+                return .escape2(char)
+            } else {
+                /// it's a single escaped char
+                label.append(char)
+                return .label
+            }
+        case .escape2(let i):
+            if Unicode.Scalar(char).properties.generalCategory.isNumeric {
+                return .escape3(i, char)
+            } else {
+                throw ProtocolError.badCharacter(
+                    in: "Name.bytes",
+                    character: char,
+                    DNSBuffer(bytes: bytes)
+                )
+            }
+        case .escape3(let i, let ii):
+            guard Unicode.Scalar(char).properties.generalCategory.isNumeric else {
+                throw ProtocolError.badCharacter(
+                    in: "Name.bytes",
+                    character: char,
+                    DNSBuffer(bytes: bytes)
+                )
+            }
+            /// octal conversion
+            let val: UInt32 =
+                (UInt32(i) * 8 * 8)
+                + (UInt32(ii) * 8)
+                + UInt32(char)
+            guard let new = Unicode.Scalar(val) else {
+                throw ProtocolError.badCharacter(
+                    in: "Name.bytes",
+                    character: char,
+                    DNSBuffer(bytes: bytes)
+                )
+            }
+            label.append(contentsOf: new.utf8)
+            return .label
         }
     }
 
@@ -262,7 +278,7 @@ extension Name {
 
 extension Name {
     /// This is the list of states for the label parsing state machine
-    enum LabelParsingState {
+    enum LabelParsingState: ~Copyable {
         case labelLengthOrPointer  // basically the start of the FSM
         case label  // storing length of the label, must be < 63
         case pointer  // location of pointer in slice,
@@ -279,7 +295,7 @@ extension Name {
         // label: 03FF & slice = length slice.next(length) = label
         // root: 0000
         loop: while true {
-            switch state {
+            switch consume state {
             case .labelLengthOrPointer:
                 // determine what the next label is
                 switch buffer.peekInteger(as: UInt8.self) {

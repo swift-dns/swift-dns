@@ -6,7 +6,7 @@ public struct RecordTypeSet: Sendable {
 }
 
 extension RecordTypeSet {
-    enum BitMapReadingState {
+    enum BitMapReadingState: ~Copyable {
         case window
         case len(window: UInt8)
         case recordType(window: UInt8, bitMapLength: UInt8, left: UInt8)
@@ -65,7 +65,7 @@ extension RecordTypeSet {
 
         /// Loop through all the bytes in the bitmap
         for currentByte in self.originalEncoding ?? [] {
-            switch state {
+            switch consume state {
             case .window:
                 state = .len(window: currentByte)
             case let .len(window):
