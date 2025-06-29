@@ -253,6 +253,216 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodeCNAMEWwwGithubComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "www.github.com"),
+            queryType: .CNAME,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x3dfb,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryCNAMEWwwGithubComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeCNAMEWwwGithubComResponse() async throws {
+        var buffer = Resources.dnsResponseCNAMEWwwGithubComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x3dfb)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 1)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "www.github.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CNAME)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 1)
+        let answer = try #require(response.answers.first)
+        #expect(answer.nameLabels.isFQDN == true)
+        #expect(answer.nameLabels.data == name.data)
+        #expect(answer.recordType == .CNAME)
+        #expect(answer.dnsClass == .IN)
+        #expect(answer.ttl == 3550)
+        let cname: CNAME
+        switch answer.rdata {
+        case .CNAME(let _cname):
+            cname = _cname
+        default:
+            Issue.record("rdata was not of type CNAME: \(answer.rdata)")
+            return
+        }
+        #expect(cname.name.asString() == "github.com.")
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
+    @Test func encodeCNAMERawGithubusercontentComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "raw.githubusercontent.com"),
+            queryType: .CNAME,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x3c7d,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryCNAMERawGithubusercontentComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeCNAMERawGithubusercontentComResponse() async throws {
+        var buffer = Resources.dnsResponseCNAMERawGithubusercontentComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x3c7d)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 0)
+        #expect(response.header.nameServerCount == 1)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "raw.githubusercontent.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CNAME)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 1)
+        let nameServer = try #require(response.nameServers.first)
+        switch nameServer.rdata {
+        case .SOA(let soa):
+            #expect(soa.mName.asString() == "ns-1411.awsdns-48.org.")
+            #expect(soa.rName.asString() == "awsdns-hostmaster.amazon.com.")
+            #expect(soa.serial == 1)
+            #expect(soa.refresh == 7200)
+            #expect(soa.retry == 900)
+            #expect(soa.expire == 1_209_600)
+            #expect(soa.minimum == 86400)
+        default:
+            Issue.record("rdata was not of type SOA: \(nameServer.rdata)")
+        }
+
+        #expect(response.answers.count == 0)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
     @Test func encodeTXTExampleComQuery() async throws {
         let query = Query(
             name: try Name(string: "example.com"),

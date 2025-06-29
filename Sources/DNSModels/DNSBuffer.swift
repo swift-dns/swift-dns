@@ -171,10 +171,37 @@ package struct DNSBuffer: Sendable {
         }
     }
 
-    package mutating func readSlice(length: Int) -> DNSBuffer? {
-        self._buffer.readSlice(length: length).map {
-            DNSBuffer(_buffer: $0, _dnsStartIndex: self._dnsStartIndex)
+    /// Truncates the buffer and returns the previous `writerIndex`.
+    /// To limit the readable bytes to a specific length.
+    /// Returns `nil` if the buffer has less readable bytes than requested.
+    @inlinable
+    mutating func truncate(length: Int) -> Int? {
+        let readableBytes = self._buffer.readableBytes
+        let writerIndex = self._buffer.writerIndex
+        guard readableBytes >= length else {
+            return nil
         }
+        let limitedWriterIndex = writerIndex - (readableBytes - length)
+        self._buffer.moveWriterIndex(to: limitedWriterIndex)
+        return writerIndex
+    }
+
+    // FIXME: Use @inline(__always) ?
+    /// Gives access to a version of the buffer that has a writerIndex limited to the requested length.
+    /// Resets the writer index to the previous value after the body is executed.
+    @inlinable
+    package mutating func withTruncatedReadableBytes<T>(
+        length: Int,
+        orThrow error: ProtocolError,
+        body: (inout DNSBuffer) throws -> T,
+    ) throws -> T {
+        guard let previousWriterIndex = self.truncate(length: length) else {
+            throw error
+        }
+        defer {
+            self._buffer.moveWriterIndex(to: previousWriterIndex)
+        }
+        return try body(&self)
     }
 
     /// Returns the remaining bytes in the buffer and moves the reader index.

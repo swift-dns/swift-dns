@@ -175,10 +175,12 @@ extension OPT {
                 }
             case .data(let code, let length):
                 /// `length` is a `UInt16`, so it's safe to convert to Int
-                var bytes = try buffer.readSlice(length: Int(length)).unwrap(
-                    or: .failedToRead("OPT.data", buffer)
-                )
-                options.append((code, try EDNSOption(from: &bytes, code: code)))
+                try buffer.withTruncatedReadableBytes(
+                    length: Int(length),
+                    orThrow: .failedToRead("OPT.data", buffer)
+                ) { bytes in
+                    options.append((code, try EDNSOption(from: &bytes, code: code)))
+                }
                 state = .readCode
             }
         }

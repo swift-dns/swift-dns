@@ -562,36 +562,38 @@ extension SVCB.SVCParamValue {
             or: .failedToRead("SVCB.SVCParamValue.length", buffer)
         )
         /// `length` is a `UInt16`, so it's safe to convert to Int
-        var valueSlice = try buffer.readSlice(length: Int(length)).unwrap(
-            or: .failedToRead("SVCB.SVCParamValue.valueData", buffer)
-        )
-        switch key {
-        case .mandatory:
-            self = .mandatory(try Mandatory(from: &valueSlice))
-        case .alpn:
-            self = .alpn(try ALPN(from: &valueSlice))
-        case .noDefaultALPN:
-            guard length == 0 else {
-                throw ProtocolError.failedToRead("SVCB.SVCParamValue.noDefaultALPN", buffer)
+        self = try buffer.withTruncatedReadableBytes(
+            length: Int(length),
+            orThrow: .failedToRead("SVCB.SVCParamValue.valueData", buffer)
+        ) { valueSlice -> SVCB.SVCParamValue in
+            switch key {
+            case .mandatory:
+                return .mandatory(try Mandatory(from: &valueSlice))
+            case .alpn:
+                return .alpn(try ALPN(from: &valueSlice))
+            case .noDefaultALPN:
+                guard length == 0 else {
+                    throw ProtocolError.failedToRead("SVCB.SVCParamValue.noDefaultALPN", valueSlice)
+                }
+                return .noDefaultALPN
+            case .port:
+                let port = try valueSlice.readInteger(as: UInt16.self).unwrap(
+                    or: .failedToRead("SVCB.SVCParamValue.port", valueSlice)
+                )
+                return .port(port)
+            case .ipv4hint:
+                return .ipv4hint(try IPHint<A>(from: &valueSlice))
+            case .echConfigList:
+                return .echConfigList(try ECHConfigList(from: &valueSlice))
+            case .ipv6hint:
+                return .ipv6hint(try IPHint<AAAA>(from: &valueSlice))
+            case .key:
+                return .unknown(try Unknown(from: &valueSlice))
+            case .key65535:
+                return .unknown(try Unknown(from: &valueSlice))
+            case .unknown:
+                return .unknown(try Unknown(from: &valueSlice))
             }
-            self = .noDefaultALPN
-        case .port:
-            let port = try valueSlice.readInteger(as: UInt16.self).unwrap(
-                or: .failedToRead("SVCB.SVCParamValue.port", buffer)
-            )
-            self = .port(port)
-        case .ipv4hint:
-            self = .ipv4hint(try IPHint<A>(from: &valueSlice))
-        case .echConfigList:
-            self = .echConfigList(try ECHConfigList(from: &valueSlice))
-        case .ipv6hint:
-            self = .ipv6hint(try IPHint<AAAA>(from: &valueSlice))
-        case .key:
-            self = .unknown(try Unknown(from: &valueSlice))
-        case .key65535:
-            self = .unknown(try Unknown(from: &valueSlice))
-        case .unknown:
-            self = .unknown(try Unknown(from: &valueSlice))
         }
     }
 }

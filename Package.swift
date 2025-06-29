@@ -5,6 +5,7 @@ import PackageDescription
 let package = Package(
     name: "swift-dns",
     platforms: [
+        // FIXME: remove this platform requirement, use @available instead
         .macOS("26.0")
     ],
     dependencies: [
