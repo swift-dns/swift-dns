@@ -240,7 +240,201 @@ struct DNSTests {
 
     @Test func queryCERT() async throws {}
 
-    @Test func queryCNAME() async throws {}
+    @Test func queryCNAMEWwwGithubCom() async throws {
+        let client = DNSClient(
+            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
+            logger: Logger(label: "DNSTests")
+        )
+
+        let query = Query(
+            name: try Name(string: "www.github.com"),
+            queryType: .CNAME,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: .random(in: .min ... .max),
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+
+        let response = try await client.query(message: message)
+
+        #expect(response.header.id == message.header.id)
+        #expect(response.header.queryCount > 0)
+        #expect(response.header.answerCount == 1)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount > 0)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        /// `response.header.authenticData` is whatever
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "www.github.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CNAME)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 1)
+        let answer = try #require(response.answers.first)
+        #expect(answer.nameLabels.isFQDN == true)
+        #expect(answer.nameLabels.data == name.data)
+        #expect(answer.recordType == .CNAME)
+        #expect(answer.dnsClass == .IN)
+        #expect(answer.ttl > 0)
+        let cname: CNAME
+        switch answer.rdata {
+        case .CNAME(let _cname):
+            cname = _cname
+        default:
+            Issue.record("rdata was not of type CNAME: \(answer.rdata)")
+            return
+        }
+        #expect(cname.name.asString() == "github.com.")
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        /// edns.flags.z is whatever
+        /// edns.maxPayload is whatever
+        /// edns.options.options is whatever
+    }
+
+    @Test func queryCNAMERawGithubusercontentCom() async throws {
+        let client = DNSClient(
+            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
+            logger: Logger(label: "DNSTests")
+        )
+
+        let query = Query(
+            name: try Name(string: "raw.githubusercontent.com"),
+            queryType: .CNAME,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: .random(in: .min ... .max),
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+
+        let response = try await client.query(message: message)
+
+        #expect(response.header.id == message.header.id)
+        #expect(response.header.queryCount > 0)
+        #expect(response.header.answerCount == 0)
+        #expect(response.header.nameServerCount > 0)
+        #expect(response.header.additionalCount > 0)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        /// `response.header.authenticData` is whatever
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "raw.githubusercontent.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CNAME)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count > 0)
+
+        let nameServer = try #require(response.nameServers.first)
+        switch nameServer.rdata {
+        case .SOA(let soa):
+            let mName = soa.mName.asString()
+            let rName = soa.rName.asString()
+            #expect(mName.count > 5, "mName: \(mName), soa: \(soa)")
+            #expect(rName.count > 5, "rName: \(rName), soa: \(soa)")
+        default:
+            Issue.record("rdata was not of type SOA: \(nameServer.rdata)")
+        }
+
+        #expect(response.answers.count == 0)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        /// edns.flags.z is whatever
+        /// edns.maxPayload is whatever
+        /// edns.options.options is whatever
+    }
 
     @Test func queryCSYNC() async throws {}
 

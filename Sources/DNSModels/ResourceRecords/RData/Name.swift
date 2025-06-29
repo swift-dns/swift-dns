@@ -287,7 +287,11 @@ extension Name {
 
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
+        try self.read(from: &buffer)
+    }
 
+    /// Reads the domain name from the buffer, adding it to the current name.
+    package mutating func read(from buffer: inout DNSBuffer) throws {
         var state: LabelParsingState = .labelLengthOrPointer
         // assume all chars are utf-8. We're doing byte-by-byte operations, no endianness issues...
         // reserved: (1000 0000 aka 0800) && (0100 0000 aka 0400)
@@ -378,7 +382,7 @@ extension Name {
                 /// FIXME: check offset is not out of bounds
                 /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
                 buffer.moveReaderIndex(toOffsetInDNSPortion: Int(offset))
-                try self.init(from: &buffer)
+                try self.read(from: &buffer)
                 /// Reset the reader index to where we were
                 /// There is no null byte at the end, for pointers
                 buffer.moveReaderIndex(to: currentIndex)

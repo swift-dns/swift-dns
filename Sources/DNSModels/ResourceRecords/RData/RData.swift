@@ -670,96 +670,97 @@ extension RData {
             or: .failedToRead("RData.length", buffer)
         )
         /// `length` is a `UInt16`, so it's safe to convert to Int
-        var buffer = try buffer.readSlice(length: Int(length)).unwrap(
-            or: .failedToRead("RData.length", buffer)
-        )
-        /// FIXME: is this valid? :
-        /// This is to handle updates, RFC 2136, which uses 0 to indicate certain aspects of
-        /// pre-requisites Null represents any data.
-        if buffer.readableBytes == 0 {
-            self = .Update0(recordType)
-            return
-        }
-        switch recordType {
-        case .A:
-            self = .A(try DNSModels.A(from: &buffer))
-        case .AAAA:
-            self = .AAAA(try DNSModels.AAAA(from: &buffer))
-        case .ANY:
-            fatalError("RData.ANY not implemented")
-        case .AXFR:
-            fatalError("RData.AXFR not implemented")
-        case .CAA:
-            self = .CAA(try DNSModels.CAA(from: &buffer))
-        case .CDS:
-            self = .DNSSEC(DNSSECRData.CDS(try DNSModels.CDS(from: &buffer)))
-        case .CDNSKEY:
-            self = .DNSSEC(DNSSECRData.CDNSKEY(try DNSModels.CDNSKEY(from: &buffer)))
-        case .CERT:
-            self = .CERT(try DNSModels.CERT(from: &buffer))
-        case .CNAME:
-            self = .CNAME(try DNSModels.CNAME(from: &buffer))
-        case .CSYNC:
-            self = .CSYNC(try DNSModels.CSYNC(from: &buffer))
-        case .DNSKEY:
-            self = .DNSSEC(DNSSECRData.DNSKEY(try DNSModels.DNSKEY(from: &buffer)))
-        case .DS:
-            self = .DNSSEC(DNSSECRData.DS(try DNSModels.DS(from: &buffer)))
-        case .HINFO:
-            self = .HINFO(try DNSModels.HINFO(from: &buffer))
-        case .HTTPS:
-            self = .HTTPS(try DNSModels.HTTPS(from: &buffer))
-        case .IXFR:
-            fatalError("RData.IXFR not implemented")
-        case .KEY:
-            self = .DNSSEC(DNSSECRData.KEY(try DNSModels.KEY(from: &buffer)))
-        case .MX:
-            self = .MX(try DNSModels.MX(from: &buffer))
-        case .NAPTR:
-            self = .NAPTR(try DNSModels.NAPTR(from: &buffer))
-        case .NS:
-            self = .NS(try DNSModels.NS(from: &buffer))
-        case .NSEC:
-            self = .DNSSEC(DNSSECRData.NSEC(try DNSModels.NSEC(from: &buffer)))
-        case .NSEC3:
-            self = .DNSSEC(DNSSECRData.NSEC3(try DNSModels.NSEC3(from: &buffer)))
-        case .NSEC3PARAM:
-            self = .DNSSEC(DNSSECRData.NSEC3PARAM(try DNSModels.NSEC3PARAM(from: &buffer)))
-        case .NULL:
-            self = .NULL(try DNSModels.NULL(from: &buffer))
-        case .OPENPGPKEY:
-            self = .OPENPGPKEY(try DNSModels.OPENPGPKEY(from: &buffer))
-        case .OPT:
-            self = .OPT(try DNSModels.OPT(from: &buffer))
-        case .PTR:
-            self = .PTR(try DNSModels.PTR(from: &buffer))
-        case .RRSIG:
-            self = .DNSSEC(DNSSECRData.RRSIG(try DNSModels.RRSIG(from: &buffer)))
-        case .SIG:
-            self = .DNSSEC(DNSSECRData.SIG(try DNSModels.SIG(from: &buffer)))
-        case .SOA:
-            self = .SOA(try DNSModels.SOA(from: &buffer))
-        case .SRV:
-            self = .SRV(try DNSModels.SRV(from: &buffer))
-        case .SSHFP:
-            self = .SSHFP(try DNSModels.SSHFP(from: &buffer))
-        case .SVCB:
-            self = .SVCB(try DNSModels.SVCB(from: &buffer))
-        case .TLSA:
-            self = .TLSA(try DNSModels.TLSA(from: &buffer))
-        case .TSIG:
-            self = .DNSSEC(DNSSECRData.TSIG(try DNSModels.TSIG(from: &buffer)))
-        case .TXT:
-            self = .TXT(try DNSModels.TXT(from: &buffer))
-        case .unknown:
-            let null = try DNSModels.NULL(from: &buffer)
-            self = .unknown(code: recordType, rdata: null)
-        }
+        self = try buffer.withTruncatedReadableBytes(
+            length: Int(length),
+            orThrow: .failedToRead("RData.length", buffer)
+        ) { buffer -> RData in
+            /// FIXME: is this valid? :
+            /// This is to handle updates, RFC 2136, which uses 0 to indicate certain aspects of
+            /// pre-requisites Null represents any data.
+            if buffer.readableBytes == 0 {
+                return .Update0(recordType)
+            }
+            switch recordType {
+            case .A:
+                return .A(try DNSModels.A(from: &buffer))
+            case .AAAA:
+                return .AAAA(try DNSModels.AAAA(from: &buffer))
+            case .ANY:
+                fatalError("RData.ANY not implemented")
+            case .AXFR:
+                fatalError("RData.AXFR not implemented")
+            case .CAA:
+                return .CAA(try DNSModels.CAA(from: &buffer))
+            case .CDS:
+                return .DNSSEC(DNSSECRData.CDS(try DNSModels.CDS(from: &buffer)))
+            case .CDNSKEY:
+                return .DNSSEC(DNSSECRData.CDNSKEY(try DNSModels.CDNSKEY(from: &buffer)))
+            case .CERT:
+                return .CERT(try DNSModels.CERT(from: &buffer))
+            case .CNAME:
+                return .CNAME(try DNSModels.CNAME(from: &buffer))
+            case .CSYNC:
+                return .CSYNC(try DNSModels.CSYNC(from: &buffer))
+            case .DNSKEY:
+                return .DNSSEC(DNSSECRData.DNSKEY(try DNSModels.DNSKEY(from: &buffer)))
+            case .DS:
+                return .DNSSEC(DNSSECRData.DS(try DNSModels.DS(from: &buffer)))
+            case .HINFO:
+                return .HINFO(try DNSModels.HINFO(from: &buffer))
+            case .HTTPS:
+                return .HTTPS(try DNSModels.HTTPS(from: &buffer))
+            case .IXFR:
+                fatalError("RData.IXFR not implemented")
+            case .KEY:
+                return .DNSSEC(DNSSECRData.KEY(try DNSModels.KEY(from: &buffer)))
+            case .MX:
+                return .MX(try DNSModels.MX(from: &buffer))
+            case .NAPTR:
+                return .NAPTR(try DNSModels.NAPTR(from: &buffer))
+            case .NS:
+                return .NS(try DNSModels.NS(from: &buffer))
+            case .NSEC:
+                return .DNSSEC(DNSSECRData.NSEC(try DNSModels.NSEC(from: &buffer)))
+            case .NSEC3:
+                return .DNSSEC(DNSSECRData.NSEC3(try DNSModels.NSEC3(from: &buffer)))
+            case .NSEC3PARAM:
+                return .DNSSEC(DNSSECRData.NSEC3PARAM(try DNSModels.NSEC3PARAM(from: &buffer)))
+            case .NULL:
+                return .NULL(try DNSModels.NULL(from: &buffer))
+            case .OPENPGPKEY:
+                return .OPENPGPKEY(try DNSModels.OPENPGPKEY(from: &buffer))
+            case .OPT:
+                return .OPT(try DNSModels.OPT(from: &buffer))
+            case .PTR:
+                return .PTR(try DNSModels.PTR(from: &buffer))
+            case .RRSIG:
+                return .DNSSEC(DNSSECRData.RRSIG(try DNSModels.RRSIG(from: &buffer)))
+            case .SIG:
+                return .DNSSEC(DNSSECRData.SIG(try DNSModels.SIG(from: &buffer)))
+            case .SOA:
+                return .SOA(try DNSModels.SOA(from: &buffer))
+            case .SRV:
+                return .SRV(try DNSModels.SRV(from: &buffer))
+            case .SSHFP:
+                return .SSHFP(try DNSModels.SSHFP(from: &buffer))
+            case .SVCB:
+                return .SVCB(try DNSModels.SVCB(from: &buffer))
+            case .TLSA:
+                return .TLSA(try DNSModels.TLSA(from: &buffer))
+            case .TSIG:
+                return .DNSSEC(DNSSECRData.TSIG(try DNSModels.TSIG(from: &buffer)))
+            case .TXT:
+                return .TXT(try DNSModels.TXT(from: &buffer))
+            case .unknown:
+                let null = try DNSModels.NULL(from: &buffer)
+                return .unknown(code: recordType, rdata: null)
+            }
 
-        assert(
-            buffer.readableBytes == 0,
-            "RData.init(from:...) did not consume the entire buffer?: \(buffer)"
-        )
+            assert(
+                buffer.readableBytes == 0,
+                "RData.init(from:...) did not consume the entire buffer?: \(buffer)"
+            )
+        }
     }
 }
 

@@ -10,10 +10,19 @@ import Foundation
 enum Resources: String {
     case dnsQueryAExampleComPacket = "example.com-a-query-packet"
     case dnsResponseAExampleComPacket = "example.com-a-response-packet"
+
     case dnsQueryAAAACloudflareComPacket = "cloudflare.com-aaaa-query-packet"
     case dnsResponseAAAACloudflareComPacket = "cloudflare.com-aaaa-response-packet"
+
     case dnsQueryTXTExampleComPacket = "example.com-txt-query-packet"
     case dnsResponseTXTExampleComPacket = "example.com-txt-response-packet"
+
+    case dnsQueryCNAMERawGithubusercontentComPacket = "raw.githubusercontent.com-cname-query-packet"
+    case dnsResponseCNAMERawGithubusercontentComPacket =
+        "raw.githubusercontent.com-cname-response-packet"
+
+    case dnsQueryCNAMEWwwGithubComPacket = "www.github.com-cname-query-packet"
+    case dnsResponseCNAMEWwwGithubComPacket = "www.github.com-cname-response-packet"
 
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: Resources.data(at: self.rawValue))
