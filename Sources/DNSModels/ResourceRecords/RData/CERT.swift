@@ -93,7 +93,7 @@ extension CERT {
             or: .failedToRead("CERT.keyTag", buffer)
         )
         self.algorithm = try Algorithm(from: &buffer)
-        self.certData = try buffer.readLengthPrefixedString(name: "CERT.certData")
+        self.certData = buffer.readToEnd()
     }
 }
 

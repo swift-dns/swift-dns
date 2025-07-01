@@ -579,6 +579,139 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodeCERTForDnsCertTestingMahdibmComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "for-dns-cert-testing.mahdibm.com"),
+            queryType: .CERT,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x200c,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryCERTForDnsCertTestingMahdibmComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeCERTForDnsCertTestingMahdibmComResponse() async throws {
+        var buffer = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x200c)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 1)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "for-dns-cert-testing.mahdibm.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CERT)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 1)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        let certs = response.answers.compactMap {
+            switch $0.rdata {
+            case .CERT(let cert):
+                return cert
+            default:
+                Issue.record("rdata was not of type CERT: \($0.rdata)")
+                return nil
+            }
+        }
+        let expectedCerts = [
+            CERT(
+                certType: .PKIX,
+                keyTag: 12345,
+                algorithm: .RSASHA256,
+                certData: [
+                    0x4c, 0x4a, 0x41, 0x34, 0x56, 0x32, 0x4c, 0x6b, 0x56, 0x51, 0x5a, 0x6c, 0x4c,
+                    0x7a, 0x5a, 0x6b, 0x48, 0x6d, 0x41, 0x75, 0x4f, 0x77, 0x4c, 0x31, 0x44, 0x47,
+                    0x42, 0x33, 0x70, 0x51, 0x4d, 0x33, 0x56, 0x6d, 0x4c, 0x32, 0x56, 0x54, 0x4d,
+                    0x34, 0x44, 0x4a, 0x5a,
+                ]
+            )
+        ]
+
+        #expect(certs.count == expectedCerts.count)
+
+        for (lhs, rhs) in zip(certs, expectedCerts) {
+            #expect(lhs.certType == rhs.certType)
+            #expect(lhs.keyTag == rhs.keyTag)
+            #expect(lhs.algorithm == rhs.algorithm)
+            #expect(lhs.certData == rhs.certData)
+        }
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
     @Test func encodeCNAMEWwwGithubComQuery() async throws {
         let query = Query(
             name: try Name(string: "www.github.com"),

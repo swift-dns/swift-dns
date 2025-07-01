@@ -27,6 +27,11 @@ enum Resources: String {
     case dnsQueryCAACloudflareComPacket = "cloudflare.com-caa-query-packet"
     case dnsResponseCAACloudflareComPacket = "cloudflare.com-caa-response-packet"
 
+    case dnsQueryCERTForDnsCertTestingMahdibmComPacket =
+        "for-dns-cert-testing.mahdibm.com-cert-query-packet"
+    case dnsResponseCERTForDnsCertTestingMahdibmComPacket =
+        "for-dns-cert-testing.mahdibm.com-cert-response-packet"
+
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: Resources.data(at: self.rawValue))
     }
