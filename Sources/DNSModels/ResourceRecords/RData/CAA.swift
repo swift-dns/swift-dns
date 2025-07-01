@@ -208,17 +208,28 @@ extension CAA.Value {
         from buffer: inout DNSBuffer
     ) throws -> (Name?, [(key: String, value: String)]) {
         let name: Name?
-        guard
-            let semicolonIdx = buffer.readableBytesView
-                .firstIndex(where: { $0 == UInt8.asciiSemicolon })
-        else {
-            throw ProtocolError.failedToValidate("CAA.Value.issuer.name", buffer)
-        }
-        let nameBytes = buffer.peekBytes(length: semicolonIdx) ?? []
-        if nameBytes.isEmpty {
-            name = nil
+        if let semicolonIdx = buffer.readableBytesView
+            .firstIndex(where: { $0 == UInt8.asciiSemicolon })
+        {
+            /// FXIME: `semicolonIdx - buffer.readerIndex` is safe, right?
+            /// FIXME: do "read-while char is not a semicolon"
+            let nameBytes = buffer.peekBytes(length: semicolonIdx - buffer.readerIndex) ?? []
+            if nameBytes.isEmpty {
+                name = nil
+            } else {
+                name = try Name(bytes: nameBytes)
+                buffer.moveReaderIndex(forwardBy: nameBytes.count)
+            }
         } else {
-            name = try Name(bytes: nameBytes)
+            if buffer.readableBytes > 0 {
+                name = try Name(bytes: buffer.readableBytesView)
+                buffer.moveReaderIndex(to: buffer.writerIndex)
+                /// There was no semicolon in the buffer so the whole of it was the name.
+                /// Therefore, we can return immediately.
+                return (name, [])
+            } else {
+                return (nil, [])
+            }
         }
 
         // initial state is looking for a key ';' is valid...

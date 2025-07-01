@@ -253,6 +253,327 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodeCAACloudflareComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "cloudflare.com"),
+            queryType: .CAA,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0xc01b,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryCAACloudflareComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeCAACloudflareComResponse() async throws {
+        var buffer = Resources.dnsResponseCAACloudflareComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0xc01b)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 11)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == true)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "cloudflare.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .CAA)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 11)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        let caas = response.answers.compactMap {
+            switch $0.rdata {
+            case .CAA(let caa):
+                return caa
+            default:
+                Issue.record("rdata was not of type CAA: \($0.rdata)")
+                return nil
+            }
+        }
+        let expectedCAAs = [
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issueWildcard,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [112, 107, 105, 103, 111, 111, 103],
+                            borders: [3, 7]
+                        )
+                    ),
+                    [(key: "cansignhttpexchanges", value: "yes")]
+                ),
+                rawValue: [
+                    112, 107, 105, 46, 103, 111, 111, 103, 59, 32, 99, 97, 110, 115, 105, 103, 110,
+                    104, 116, 116, 112, 101, 120, 99, 104, 97, 110, 103, 101, 115, 61, 121, 101,
+                    115,
+                ]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issueWildcard,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [99, 111, 109, 111, 100, 111, 99, 97, 99, 111, 109],
+                            borders: [8, 11]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [99, 111, 109, 111, 100, 111, 99, 97, 46, 99, 111, 109]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .iodef,
+                value: .url("mailto:tls-abuse@cloudflare.com"),
+                rawValue: [
+                    109, 97, 105, 108, 116, 111, 58, 116, 108, 115, 45, 97, 98, 117, 115, 101, 64,
+                    99, 108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109,
+                ]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issue,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [112, 107, 105, 103, 111, 111, 103],
+                            borders: [3, 7]
+                        )
+                    ),
+                    [
+                        (
+                            key: "cansignhttpexchanges",
+                            value: "yes"
+                        )
+                    ]
+                ),
+                rawValue: [
+                    112, 107, 105, 46, 103, 111, 111, 103, 59, 32, 99, 97, 110, 115, 105, 103, 110,
+                    104, 116, 116, 112, 101, 120, 99, 104, 97, 110, 103, 101, 115, 61, 121, 101,
+                    115,
+                ]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issue,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [99, 111, 109, 111, 100, 111, 99, 97, 99, 111, 109],
+                            borders: [8, 11]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [99, 111, 109, 111, 100, 111, 99, 97, 46, 99, 111, 109]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issue,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [115, 115, 108, 99, 111, 109],
+                            borders: [3, 6]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [115, 115, 108, 46, 99, 111, 109]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issueWildcard,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [100, 105, 103, 105, 99, 101, 114, 116, 99, 111, 109],
+                            borders: [8, 11]
+                        )
+                    ),
+                    [
+                        (
+                            key: "cansignhttpexchanges",
+                            value: "yes"
+                        )
+                    ]
+                ),
+                rawValue: [
+                    100, 105, 103, 105, 99, 101, 114, 116, 46, 99, 111, 109, 59, 32, 99, 97, 110,
+                    115, 105, 103, 110, 104, 116, 116, 112, 101, 120, 99, 104, 97, 110, 103, 101,
+                    115, 61, 121, 101, 115,
+                ]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issueWildcard,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [115, 115, 108, 99, 111, 109],
+                            borders: [3, 6]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [115, 115, 108, 46, 99, 111, 109]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issueWildcard,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [
+                                108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 111, 114, 103,
+                            ],
+                            borders: [11, 14]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 46, 111, 114, 103]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issue,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [100, 105, 103, 105, 99, 101, 114, 116, 99, 111, 109],
+                            borders: [8, 11]
+                        )
+                    ),
+                    [
+                        (
+                            key: "cansignhttpexchanges",
+                            value: "yes"
+                        )
+                    ]
+                ),
+                rawValue: [
+                    100, 105, 103, 105, 99, 101, 114, 116, 46, 99, 111, 109, 59, 32, 99, 97, 110,
+                    115, 105, 103, 110, 104, 116, 116, 112, 101, 120, 99, 104, 97, 110, 103, 101,
+                    115, 61, 121, 101, 115,
+                ]
+            ),
+            CAA(
+                issuerCritical: false,
+                reservedFlags: 0,
+                tag: .issue,
+                value: .issuer(
+                    Optional(
+                        Name(
+                            isFQDN: false,
+                            data: [
+                                108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 111, 114, 103,
+                            ],
+                            borders: [11, 14]
+                        )
+                    ),
+                    []
+                ),
+                rawValue: [108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 46, 111, 114, 103]
+            ),
+        ]
+        try #require(caas.count == 11)
+        // FXIME: use proper equality checking when I've figured out Name equality checking
+        #expect("\(caas)" == "\(expectedCAAs)")
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
     @Test func encodeCNAMEWwwGithubComQuery() async throws {
         let query = Query(
             name: try Name(string: "www.github.com"),
