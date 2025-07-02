@@ -41,6 +41,9 @@ enum Resources: String {
     case dnsQueryPTR9dot9dot9dot9Packet = "9dot9dot9dot9-ptr-query-packet"
     case dnsResponsePTR9dot9dot9dot9Packet = "9dot9dot9dot9-ptr-response-packet"
 
+    case dnsQueryOPTCloudflareComPacket = "cloudflare.com-opt-query-packet"
+    case dnsResponseOPTCloudflareComPacket = "cloudflare.com-opt-response-packet"
+
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: Resources.data(at: self.rawValue))
     }

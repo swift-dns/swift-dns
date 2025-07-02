@@ -27,6 +27,8 @@ public enum EDNSCode: Sendable, Hashable {
     case padding
     /// [RFC 7901, CHAIN Query Requests in DNS, Optional](https://tools.ietf.org/html/rfc7901)
     case chain
+    /// [RFC 8914, Extended DNS Errors](https://tools.ietf.org/html/rfc8914)
+    case ednsError
     /// Unknown, used to deal with unknown or unsupported codes
     case unknown(UInt16)
 }
@@ -47,6 +49,7 @@ extension EDNSCode: RawRepresentable {
         case 11: self = .keepalive
         case 12: self = .padding
         case 13: self = .chain
+        case 15: self = .ednsError
         case let value: self = .unknown(value)
         }
     }
@@ -70,6 +73,7 @@ extension EDNSCode: RawRepresentable {
         case .keepalive: return 11
         case .padding: return 12
         case .chain: return 13
+        case .ednsError: return 15
         case .unknown(let value): return value
         }
     }
