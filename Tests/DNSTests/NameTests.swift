@@ -25,6 +25,17 @@ struct NameTests {
 
     @Test(
         arguments: [
+            ".mahdibm.com"
+        ]
+    )
+    func initInvalidFromString(name: String) async throws {
+        #expect(throws: (any Error).self) {
+            try Name(string: name)
+        }
+    }
+
+    @Test(
+        arguments: [
             (name: ".", isFQDN: true),
             (name: "", isFQDN: false),
             (name: "www.example.com.", isFQDN: true),

@@ -135,10 +135,13 @@ extension Name {
         case escape3(UInt8, UInt8)
     }
 
+    /// Parses the name from the string, and ensures the name is valid.
     public init(string: some StringProtocol, origin: Self? = nil) throws {
         try self.init(bytes: string.utf8, origin: origin)
     }
 
+    /// Parses the name from the bytes, and ensures the name is valid.
+    /// DOES NOT parse based on the wire format. Use ``init(from:)`` instead for that.
     public init(bytes: some Collection<UInt8>, origin: Self? = nil) throws {
         self.init()
         // short circuit root parse
@@ -182,6 +185,9 @@ extension Name {
         case .label:
             switch char {
             case UInt8.asciiDot:
+                if label.isEmpty {
+                    throw ProtocolError.failedToValidate("Name.bytes", DNSBuffer(bytes: bytes))
+                }
                 try self.extendName(label)
                 label.removeAll(keepingCapacity: true)
                 return .label
@@ -255,6 +261,9 @@ extension Name {
     }
 
     /// Extend the name with the offered label, and ensure maximum name length is not exceeded.
+    /// Does not check if the label is not empty. That needs to be done by the caller.
+    /// In the wire format labels cannot be empty, but in the string format they can, so the caller
+    /// will need to check that.
     mutating func extendName(_ label: [UInt8]) throws {
         let newLength = self.encodedLength + label.count + 1
 
@@ -347,6 +356,9 @@ extension Name {
                     )
                 }
 
+                /// Label length cannot be zero so we're good to call `extendName`. If the label
+                /// length was specified as zero on the wire, that zero would have been taken as the
+                /// null byte aka the end of the name, and this code path would not have been taken.
                 try self.extendName(label)
 
                 // reset to collect more data
