@@ -795,7 +795,124 @@ struct DNSTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @Test func queryNS() async throws {}
+    @Test func queryNS() async throws {
+        let client = DNSClient(
+            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
+            logger: Logger(label: "DNSTests")
+        )
+
+        let query = Query(
+            name: try Name(string: "apple.com"),
+            queryType: .NS,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: .random(in: .min ... .max),
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+
+        let response = try await client.query(message: message)
+
+        #expect(response.header.id == message.header.id)
+        #expect(response.header.queryCount > 0)
+        #expect(response.header.answerCount == 4)
+        /// response.header.nameServerCount is whatever
+        #expect(response.header.additionalCount > 0)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        /// `response.header.authenticData` is whatever
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "apple.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .NS)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 4)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        /// response.answers[].ttl is whatever
+        let nss = response.answers.compactMap {
+            switch $0.rdata {
+            case .NS(let ns):
+                return ns
+            default:
+                Issue.record("rdata was not of type NS: \($0.rdata)")
+                return nil
+            }
+        }.sorted {
+            $0.name.asString() < $1.name.asString()
+        }
+        let expectedNSs = [
+            NS(name: try Name(string: "a.ns.apple.com.")),
+            NS(name: try Name(string: "b.ns.apple.com.")),
+            NS(name: try Name(string: "c.ns.apple.com.")),
+            NS(name: try Name(string: "d.ns.apple.com.")),
+        ]
+        #expect(nss.count == expectedNSs.count)
+        for (ns, expectedNS) in zip(nss, expectedNSs) {
+            #expect(ns.name.isFQDN == expectedNS.name.isFQDN)
+            #expect(ns.name.data == expectedNS.name.data)
+            #expect(ns.name.borders == expectedNS.name.borders)
+        }
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        /// edns.flags.z is whatever
+        /// edns.maxPayload is whatever
+        /// edns.options.options is whatever
+    }
 
     @Test func queryNULL() async throws {}
 
