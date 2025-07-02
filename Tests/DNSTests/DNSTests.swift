@@ -922,6 +922,128 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodeMXMahdibmComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "mahdibm.com"),
+            queryType: .MX,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x3c4a,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryMXMahdibmComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodeMXMahdibmComResponse() async throws {
+        var buffer = Resources.dnsResponseMXMahdibmComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x3c4a)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 2)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "mahdibm.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .MX)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 2)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        let mxs = response.answers.compactMap {
+            switch $0.rdata {
+            case .MX(let mx):
+                return mx
+            default:
+                Issue.record("rdata was not of type MX: \($0.rdata)")
+                return nil
+            }
+        }
+        let expectedMXs = [
+            MX(preference: 10, exchange: try Name(string: "in1-smtp.messagingengine.com.")),
+            MX(preference: 20, exchange: try Name(string: "in2-smtp.messagingengine.com.")),
+        ]
+        #expect(mxs.count == expectedMXs.count)
+        for (mx, expectedMX) in zip(mxs, expectedMXs) {
+            #expect(mx.preference == expectedMX.preference)
+            #expect(mx.exchange.isFQDN == expectedMX.exchange.isFQDN)
+            #expect(mx.exchange.data == expectedMX.exchange.data)
+            #expect(mx.exchange.borders == expectedMX.exchange.borders)
+        }
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
     @Test func encodeTXTExampleComQuery() async throws {
         let query = Query(
             name: try Name(string: "example.com"),
