@@ -1167,6 +1167,126 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodePTR9dot9dot9dot9Query() async throws {
+        let query = Query(
+            name: try Name(string: "9.9.9.9.in-addr.arpa"),
+            queryType: .PTR,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0xa9ee,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryPTR9dot9dot9dot9Packet.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @Test func decodePTR9dot9dot9dot9Response() async throws {
+        var buffer = Resources.dnsResponsePTR9dot9dot9dot9Packet.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0xa9ee)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 1)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == true)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "9.9.9.9.in-addr.arpa")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .PTR)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 1)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.ttl == 2176 }, "\(response.answers)")
+        let ptrs = response.answers.compactMap {
+            switch $0.rdata {
+            case .PTR(let ptr):
+                return ptr
+            default:
+                Issue.record("rdata was not of type PTR: \($0.rdata)")
+                return nil
+            }
+        }
+        let expectedPTRs = [
+            PTR(name: try Name(string: "dns9.quad9.net."))
+        ]
+        #expect(ptrs.count == expectedPTRs.count)
+        for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
+            #expect(ptr.name.isFQDN == expectedPTR.name.isFQDN)
+            #expect(ptr.name.data == expectedPTR.name.data)
+            #expect(ptr.name.borders == expectedPTR.name.borders)
+        }
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
     @Test func encodeTXTExampleComQuery() async throws {
         let query = Query(
             name: try Name(string: "example.com"),
