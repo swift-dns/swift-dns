@@ -33,7 +33,9 @@ jobs:
       - name: Find commit info
         id: commit-info
         run: |
-          COMMIT_SHA="${{ github.event.after }}"
+          # 'github.event.pull_request.head.sha' is needed for certain 'pull_request' events, such
+          # as 'opened' and 'reopened' events.
+          COMMIT_SHA="${{ github.event.after || github.event.pull_request.head.sha }}"
 
           if [[ "${{ github.event_name }}" == *"pull_request"* ]]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"

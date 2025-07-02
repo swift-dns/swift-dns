@@ -1,4 +1,4 @@
-/// A `Sequence` that does not heap allocate, if it only carries a single element
+/// A `Sequence` that does not heap allocate, if it carries no elements
 public struct TinyFastSequence<Element>: Sequence {
     @usableFromInline
     enum Base {
