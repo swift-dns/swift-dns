@@ -1167,6 +1167,365 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
+    @Test func encodeOPTCloudflareComQuery() async throws {
+        let query = Query(
+            name: try Name(string: "cloudflare.com"),
+            queryType: .OPT,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x05d5,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryOPTCloudflareComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    /// You can't query OPT directly, so this response is a `ServFail`.
+    /// OPT is used in every other query, so it's already well-tested.
+    @Test func decodeOPTCloudflareComResponse() async throws {
+        var buffer = Resources.dnsResponseOPTCloudflareComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x05d5)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 0)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .ServFail)
+
+        #expect(response.queries.count == 1)
+        #expect(response.queries.first?.name.isFQDN == true)
+        let name = try Name(string: "cloudflare.com")
+        #expect(response.queries.first?.name.data == name.data)
+        #expect(response.queries.first?.queryType == .OPT)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 0)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 22)
+
+        let expectedOptions: [(EDNSCode, EDNSOption)] = [
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 30, 73, 110, 118, 97, 108, 105, 100, 32, 81, 117, 101, 114, 121, 32, 84,
+                        121, 112, 101,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 51, 46, 49, 49, 93, 32, 114, 99,
+                        111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112,
+                        116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 54, 46, 54, 93, 32, 114, 99, 111,
+                        100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108,
+                        111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 57, 46, 53, 53, 93, 32, 114, 99,
+                        111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112,
+                        116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 49, 50, 49, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 49, 46, 51, 51, 93, 32, 114, 99,
+                        111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112,
+                        116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 52, 48, 56, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 57, 51, 55, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 55, 46, 50, 50, 54, 93, 32, 114,
+                        99, 111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32,
+                        99, 108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111,
+                        112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 56, 51, 55, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 50, 48, 57, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 48, 46, 51, 51, 93, 32, 114, 99,
+                        111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112,
+                        116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 53, 46, 54, 93, 32, 114, 99, 111,
+                        100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108,
+                        111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 54, 48, 54, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 51, 48, 98, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 53, 48, 54, 93, 32, 114, 99, 111, 100, 101, 61,
+                        70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100,
+                        102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 55, 101, 50, 93, 32, 114, 99, 111, 100, 101,
+                        61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117,
+                        100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 52, 46, 56, 93, 32, 114, 99, 111,
+                        100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108,
+                        111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 50, 46, 57, 93, 32, 114, 99, 111,
+                        100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108,
+                        111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 50, 52, 48, 48, 58, 99, 98, 48, 48, 58, 50, 48, 52, 57, 58, 49,
+                        58, 58, 97, 50, 57, 102, 58, 50, 49, 93, 32, 114, 99, 111, 100, 101, 61, 70,
+                        79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99, 108, 111, 117, 100, 102,
+                        108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112, 116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 23, 91, 49, 54, 50, 46, 49, 53, 57, 46, 56, 46, 53, 53, 93, 32, 114, 99,
+                        111, 100, 101, 61, 70, 79, 82, 77, 69, 82, 82, 32, 102, 111, 114, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 47, 111, 112,
+                        116,
+                    ]
+                )
+            ),
+            (
+                .ednsError,
+                .unknown(
+                    15,
+                    [
+                        0, 22, 65, 116, 32, 100, 101, 108, 101, 103, 97, 116, 105, 111, 110, 32, 99,
+                        108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109, 32, 102, 111,
+                        114, 32, 99, 108, 111, 117, 100, 102, 108, 97, 114, 101, 46, 99, 111, 109,
+                        47, 111, 112, 116,
+                    ]
+                )
+            ),
+        ]
+
+        for (option, expectedOption) in zip(edns.options.options, expectedOptions) {
+            #expect(option.0 == expectedOption.0)
+            #expect(option.1 == expectedOption.1)
+        }
+    }
+
     @Test func encodePTR9dot9dot9dot9Query() async throws {
         let query = Query(
             name: try Name(string: "9.9.9.9.in-addr.arpa"),
