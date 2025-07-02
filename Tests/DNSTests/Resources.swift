@@ -32,6 +32,9 @@ enum Resources: String {
     case dnsResponseCERTForDnsCertTestingMahdibmComPacket =
         "for-dns-cert-testing.mahdibm.com-cert-response-packet"
 
+    case dnsQueryMXMahdibmComPacket = "mahdibm.com-mx-query-packet"
+    case dnsResponseMXMahdibmComPacket = "mahdibm.com-mx-response-packet"
+
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: Resources.data(at: self.rawValue))
     }
