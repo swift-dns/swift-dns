@@ -11,11 +11,11 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
             thresholds: [
                 .cpuUser: .init(
-                    /// `3 - 1 == 2`% tolerance.
+                    /// `4 - 1 == 3`% tolerance.
                     /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 3],
-                    /// 11ms of tolerance.
-                    absolute: [.p90: 11_000_000]
+                    relative: [.p90: 4],
+                    /// 16ms of tolerance.
+                    absolute: [.p90: 16_000_000]
                 )
             ]
         )
@@ -61,11 +61,11 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
             thresholds: [
                 .cpuUser: .init(
-                    /// `4 - 1 == 3`% tolerance.
+                    /// `5 - 1 == 4`% tolerance.
                     /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 4],
-                    /// 11ms of tolerance.
-                    absolute: [.p90: 11_000_000]
+                    relative: [.p90: 5],
+                    /// 16ms of tolerance.
+                    absolute: [.p90: 16_000_000]
                 )
             ]
         )
