@@ -169,8 +169,7 @@ extension EDNSOption {
         case .subnet:
             self = .subnet(try ClientSubnet(from: &buffer))
         default:
-            let data = buffer.readToEnd()
-            self = .unknown(code.rawValue, data)
+            self = .unknown(code.rawValue, buffer.readToEnd())
         }
     }
 }
