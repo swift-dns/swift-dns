@@ -82,6 +82,29 @@ extension Name {
     }
 }
 
+extension Name: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.isFQDN == rhs.isFQDN
+            && lhs.borders == rhs.borders
+            && lhs.data == rhs.data
+    }
+
+    /// FIXME: implement case-insensitive comparison
+    public func __caseInsensitiveEquals(_ rhs: Self) -> Bool {
+        self.isFQDN == rhs.isFQDN
+            && self.borders == rhs.borders
+            && self.data == rhs.data
+    }
+}
+
+extension Name: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.isFQDN)
+        hasher.combine(self.borders)
+        hasher.combine(self.data)
+    }
+}
+
 extension Name: Sequence {
     public struct Iterator: IteratorProtocol {
         public typealias Label = [UInt8]

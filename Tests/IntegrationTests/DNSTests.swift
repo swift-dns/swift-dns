@@ -1011,7 +1011,8 @@ struct DNSTests {
             edns.options.options.allSatisfy {
                 switch $0.1 {
                 case .unknown(let code, let data):
-                    return code == 15 && data.count > 10
+                    return code == EDNSCode.ednsError.rawValue
+                        && data.count > 10
                 default:
                     return false
                 }

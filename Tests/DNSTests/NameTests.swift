@@ -34,6 +34,52 @@ struct NameTests {
         }
     }
 
+    @Test func equality() async throws {
+        let name = try Name(string: "example.com.")
+        let duplicate = try Name(string: "example.com.")
+        let uppercased = try Name(string: "EXAMPLE.COM.")
+        let partiallyUppercased = try Name(string: "exaMple.com.")
+        let notFQDN = try Name(string: "example.com")
+        let letterMismatch = try Name(string: "exmmple.com.")
+        let bordersMismatch = try Name(string: "example.com.com.")
+        let different = try Name(string: "mahdibm.com.")
+        let differentNotFQDN = try Name(string: "mahdibm.com")
+
+        #expect(name == duplicate)
+        #expect(name != uppercased)
+        #expect(name != partiallyUppercased)
+        #expect(name != notFQDN)
+        #expect(name != letterMismatch)
+        #expect(name != bordersMismatch)
+        #expect(name != different)
+        #expect(name != differentNotFQDN)
+    }
+
+    @Test func caseInsensitiveEquality() async throws {
+        withKnownIssue(
+            "Need to implement cross-platform case-insensitive equality w/o relying on Foundation"
+        ) {
+            let name = try Name(string: "example.com.")
+            let duplicate = try Name(string: "example.com.")
+            let uppercased = try Name(string: "EXAMPLE.COM.")
+            let partiallyUppercased = try Name(string: "exaMple.com.")
+            let notFQDN = try Name(string: "example.com")
+            let letterMismatch = try Name(string: "exmmple.com.")
+            let bordersMismatch = try Name(string: "example.com.com.")
+            let different = try Name(string: "mahdibm.com.")
+            let differentNotFQDN = try Name(string: "mahdibm.com")
+
+            #expect(name.__caseInsensitiveEquals(duplicate))
+            #expect(name.__caseInsensitiveEquals(uppercased))
+            #expect(name.__caseInsensitiveEquals(partiallyUppercased))
+            #expect(!name.__caseInsensitiveEquals(notFQDN))
+            #expect(!name.__caseInsensitiveEquals(letterMismatch))
+            #expect(!name.__caseInsensitiveEquals(bordersMismatch))
+            #expect(!name.__caseInsensitiveEquals(different))
+            #expect(!name.__caseInsensitiveEquals(differentNotFQDN))
+        }
+    }
+
     @Test(
         arguments: [
             (name: ".", isFQDN: true),
