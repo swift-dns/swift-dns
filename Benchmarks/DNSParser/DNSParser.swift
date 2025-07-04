@@ -1,37 +1,33 @@
 import Benchmark
 import DNSModels
+import NIOCore
 
 let benchmarks: @Sendable () -> Void = {
+    var buffer = DNSBuffer()
+    var startIndex = 0
+
     Benchmark(
-        "200_000xA_Response_CPUUser",
+        "A_Response_Throughput",
         configuration: .init(
-            metrics: [.cpuUser],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10,
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxDuration: .seconds(5),
+            maxIterations: 10_000_000,
             thresholds: [
-                .cpuUser: .init(
-                    /// `4 - 1 == 3`% tolerance.
-                    /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 4],
-                    /// 16ms of tolerance.
-                    absolute: [.p90: 16_000_000]
-                )
-            ]
+                .throughput: .init(relative: [.p90: 5])
+            ],
+            setup: {
+                buffer = Resources.dnsResponseAExampleComPacket.buffer()
+                buffer.moveReaderIndex(forwardBy: 42)
+                buffer.moveDNSPortionStartIndex(forwardBy: 42)
+                startIndex = buffer.readerIndex
+            }
         )
     ) { benchmark in
-        var buffer = Resources.dnsResponseAExampleComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-        let startIndex = buffer.readerIndex
-
+        buffer.moveReaderIndex(to: startIndex)
         benchmark.startMeasurement()
-        for _ in 0..<200_000 {
-            buffer.moveReaderIndex(to: startIndex)
-
-            let message = try Message(from: &buffer)
-            blackHole(message)
-        }
+        let message = try Message(from: &buffer)
+        blackHole(message)
     }
 
     Benchmark(
@@ -53,35 +49,27 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "300_000xAAAA_Response_CPUUser",
+        "AAAA_Response_Throughput",
         configuration: .init(
-            metrics: [.cpuUser],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10,
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxDuration: .seconds(5),
+            maxIterations: 10_000_000,
             thresholds: [
-                .cpuUser: .init(
-                    /// `5 - 1 == 4`% tolerance.
-                    /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 5],
-                    /// 16ms of tolerance.
-                    absolute: [.p90: 16_000_000]
-                )
-            ]
+                .throughput: .init(relative: [.p90: 4])
+            ],
+            setup: {
+                buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
+                buffer.moveReaderIndex(forwardBy: 42)
+                buffer.moveDNSPortionStartIndex(forwardBy: 42)
+                startIndex = buffer.readerIndex
+            }
         )
     ) { benchmark in
-        var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-        let startIndex = buffer.readerIndex
-
+        buffer.moveReaderIndex(to: startIndex)
         benchmark.startMeasurement()
-        for _ in 0..<300_000 {
-            buffer.moveReaderIndex(to: startIndex)
-
-            let message = try Message(from: &buffer)
-            blackHole(message)
-        }
+        let message = try Message(from: &buffer)
+        blackHole(message)
     }
 
     Benchmark(
@@ -103,35 +91,27 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "300_000xTXT_Response_CPUUser",
+        "TXT_Response_Throughput",
         configuration: .init(
-            metrics: [.cpuUser],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10,
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxDuration: .seconds(5),
+            maxIterations: 10_000_000,
             thresholds: [
-                .cpuUser: .init(
-                    /// `4 - 1 == 3`% tolerance.
-                    /// Will rely on the absolute threshold as the tighter threshold.
-                    relative: [.p90: 4],
-                    /// 11ms of tolerance.
-                    absolute: [.p90: 11_000_000]
-                )
-            ]
+                .throughput: .init(relative: [.p90: 4])
+            ],
+            setup: {
+                buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
+                buffer.moveReaderIndex(forwardBy: 42)
+                buffer.moveDNSPortionStartIndex(forwardBy: 42)
+                startIndex = buffer.readerIndex
+            }
         )
     ) { benchmark in
-        var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-        let startIndex = buffer.readerIndex
-
+        buffer.moveReaderIndex(to: startIndex)
         benchmark.startMeasurement()
-        for _ in 0..<300_000 {
-            buffer.moveReaderIndex(to: startIndex)
-
-            let message = try Message(from: &buffer)
-            blackHole(message)
-        }
+        let message = try Message(from: &buffer)
+        blackHole(message)
     }
 
     Benchmark(
