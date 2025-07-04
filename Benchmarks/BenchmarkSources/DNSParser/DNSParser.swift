@@ -35,7 +35,7 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
+            maxDuration: .seconds(1),
             maxIterations: 10
         )
     ) { benchmark in
@@ -77,7 +77,7 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
+            maxDuration: .seconds(1),
             maxIterations: 10
         )
     ) { benchmark in
@@ -119,7 +119,7 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
+            maxDuration: .seconds(1),
             maxIterations: 10
         )
     ) { benchmark in
