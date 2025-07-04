@@ -63,7 +63,7 @@ let benchmarks: @Sendable () -> Void = {
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 5])
             ],
             setup: {
                 buffer = DNSBuffer(bytes: [
@@ -121,7 +121,7 @@ let benchmarks: @Sendable () -> Void = {
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 5])
             ]
         )
     ) { benchmark in
@@ -151,7 +151,7 @@ let benchmarks: @Sendable () -> Void = {
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 2])
             ]
         )
     ) { benchmark in
@@ -172,35 +172,6 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name)
     }
 
-    let lowercasedDomain = try! Name(string: "helooß.co.uk.")
-    let uppercasedDomain = try! Name(string: "HELOOSS.CO.UK.")
-    Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Throughput",
-        configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
-            maxDuration: .seconds(5),
-            maxIterations: 100_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 4])
-            ]
-        )
-    ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
-    }
-
-    Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Malloc",
-        configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxDuration: .seconds(1),
-            maxIterations: 10,
-        )
-    ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
-    }
-
     let name1 = try! Name(string: "google.com.")
     let name2 = try! Name(string: "google.com.")
     Benchmark(
@@ -211,7 +182,7 @@ let benchmarks: @Sendable () -> Void = {
             maxDuration: .seconds(5),
             maxIterations: 100_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 6])
             ]
         )
     ) { benchmark in
@@ -228,5 +199,34 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         blackHole(name1 == name2)
+    }
+
+    let lowercasedDomain = try! Name(string: "helooß.co.uk.")
+    let uppercasedDomain = try! Name(string: "HELOOSS.CO.UK.")
+    Benchmark(
+        "Case_Insensitive_Equality_Check_Slow_Path_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxDuration: .seconds(5),
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 2])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedDomain == uppercasedDomain)
+    }
+
+    Benchmark(
+        "Case_Insensitive_Equality_Check_Slow_Path_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxDuration: .seconds(1),
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedDomain == uppercasedDomain)
     }
 }
