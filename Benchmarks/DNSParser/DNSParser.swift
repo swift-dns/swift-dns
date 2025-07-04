@@ -7,9 +7,9 @@ let benchmarks: @Sendable () -> Void = {
     var startIndex = 0
 
     Benchmark(
-        "A_Response_Throughput",
+        "A_Response",
         configuration: .init(
-            metrics: [.throughput],
+            metrics: [.throughput, .mallocCountTotal],
             warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
@@ -31,27 +31,9 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "A_Response_Malloc",
+        "AAAA_Response",
         configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10
-        )
-    ) { benchmark in
-        var buffer = Resources.dnsResponseAExampleComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-
-        benchmark.startMeasurement()
-        let message = try Message(from: &buffer)
-        blackHole(message)
-    }
-
-    Benchmark(
-        "AAAA_Response_Throughput",
-        configuration: .init(
-            metrics: [.throughput],
+            metrics: [.throughput, .mallocCountTotal],
             warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
@@ -73,27 +55,9 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "AAAA_Response_Malloc",
+        "TXT_Response",
         configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10
-        )
-    ) { benchmark in
-        var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-
-        benchmark.startMeasurement()
-        let message = try Message(from: &buffer)
-        blackHole(message)
-    }
-
-    Benchmark(
-        "TXT_Response_Throughput",
-        configuration: .init(
-            metrics: [.throughput],
+            metrics: [.throughput, .mallocCountTotal],
             warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
@@ -109,24 +73,6 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         buffer.moveReaderIndex(to: startIndex)
-        benchmark.startMeasurement()
-        let message = try Message(from: &buffer)
-        blackHole(message)
-    }
-
-    Benchmark(
-        "TXT_Response_Malloc",
-        configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxDuration: .seconds(10),
-            maxIterations: 10
-        )
-    ) { benchmark in
-        var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-
         benchmark.startMeasurement()
         let message = try Message(from: &buffer)
         blackHole(message)
