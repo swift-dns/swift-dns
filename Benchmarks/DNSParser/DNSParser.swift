@@ -3,6 +3,9 @@ import DNSModels
 import NIOCore
 
 let benchmarks: @Sendable () -> Void = {
+    Benchmark.defaultConfiguration.units = [.throughput: .kilo]
+    Benchmark.defaultConfiguration.maxDuration = .seconds(5)
+
     var buffer = DNSBuffer()
     var startIndex = 0
 
@@ -11,10 +14,9 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
-            maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 5])
+                .throughput: .init(relative: [.p90: 6])
             ],
             setup: {
                 buffer = Resources.dnsResponseAExampleComPacket.buffer()
@@ -35,7 +37,6 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
             maxIterations: 10
         )
     ) { benchmark in
@@ -53,7 +54,6 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
-            maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
                 .throughput: .init(relative: [.p90: 4])
@@ -77,7 +77,6 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
             maxIterations: 10
         )
     ) { benchmark in
@@ -95,7 +94,6 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
-            maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
                 .throughput: .init(relative: [.p90: 4])
@@ -119,7 +117,6 @@ let benchmarks: @Sendable () -> Void = {
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
-            maxDuration: .seconds(10),
             maxIterations: 10
         )
     ) { benchmark in

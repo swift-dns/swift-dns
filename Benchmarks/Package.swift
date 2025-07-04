@@ -84,5 +84,16 @@ package.targets += [
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
-    )
+    ),
+    .executableTarget(
+        name: "Name",
+        dependencies: [
+            "DNSModels",
+            .product(name: "Benchmark", package: "package-benchmark"),
+        ],
+        path: "Name",
+        plugins: [
+            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+        ]
+    ),
 ]
