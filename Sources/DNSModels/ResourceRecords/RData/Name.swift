@@ -83,17 +83,47 @@ extension Name {
 }
 
 extension Name: Equatable {
+    /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
+    ///
+    /// ```text
+    /// For all parts of the DNS that are part of the official protocol, all
+    /// comparisons between character strings (e.g., labels, domain names, etc.)
+    /// are done in a case-insensitive manner.
+    /// ```
+    ///
+    /// Does a **case-insensitive** equality check of 2 domain names.
+    @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.isFQDN == rhs.isFQDN
             && lhs.borders == rhs.borders
-            && lhs.data == rhs.data
+            && caseInsensitiveEquals(lhs.data, rhs.data)
     }
 
-    /// FIXME: implement case-insensitive comparison
-    public func __caseInsensitiveEquals(_ rhs: Self) -> Bool {
-        self.isFQDN == rhs.isFQDN
-            && self.borders == rhs.borders
-            && self.data == rhs.data
+    @usableFromInline
+    static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
+        guard lhs.count == rhs.count else {
+            return false
+        }
+
+        if lhs.isEmpty {
+            return true
+        }
+
+        /// Short circuit if the strings are the same
+        if lhs == rhs {
+            return true
+        }
+
+        /// Slow path: Need to check case-insensitively
+        /// FIXME: find a more-efficient way?
+        let lhs = String(decoding: lhs, as: UTF8.self)
+        let rhs = String(decoding: rhs, as: UTF8.self)
+
+        guard lhs.utf8.count == rhs.utf8.count else {
+            return false
+        }
+
+        return lhs.uppercased() == rhs.uppercased()
     }
 }
 
@@ -159,11 +189,13 @@ extension Name {
     }
 
     /// Parses the name from the string, and ensures the name is valid.
+    /// Example: try Name(string: "mahdibm.com")
     public init(string: some StringProtocol, origin: Self? = nil) throws {
         try self.init(bytes: string.utf8, origin: origin)
     }
 
     /// Parses the name from the bytes, and ensures the name is valid.
+    /// Example: try Name(bytes: "mahdibm.com".utf8)
     /// DOES NOT parse based on the wire format. Use ``init(from:)`` instead for that.
     public init(bytes: some Collection<UInt8>, origin: Self? = nil) throws {
         self.init()
@@ -174,6 +206,8 @@ extension Name {
         }
 
         var label = [UInt8]()
+        /// FIXME: try this line after we have benchmarks
+        // label.reserveCapacity(8)
 
         var state: ParsingState = .label
 
@@ -216,17 +250,10 @@ extension Name {
                 return .label
             case UInt8.asciiBackslash:
                 return .escape1
-            case let char
-            where !(Unicode.Scalar(char).properties.generalCategory == .control)
-                && !Unicode.Scalar(char).properties.isWhitespace:
+            case let char:
+                /// Allow any characters, even binary characters or whitespaces.
                 label.append(char)
                 return .label
-            default:
-                throw ProtocolError.badCharacter(
-                    in: "Name.bytes",
-                    character: char,
-                    DNSBuffer(bytes: bytes)
-                )
             }
         case .escape1:
             if Unicode.Scalar(char).properties.generalCategory.isNumeric {
@@ -284,7 +311,7 @@ extension Name {
     }
 
     /// Extend the name with the offered label, and ensure maximum name length is not exceeded.
-    /// Does not check if the label is not empty. That needs to be done by the caller.
+    /// Does not check if the label is not empty. That needs to be checked by the caller.
     /// In the wire format labels cannot be empty, but in the string format they can, so the caller
     /// will need to check that.
     mutating func extendName(_ label: [UInt8]) throws {

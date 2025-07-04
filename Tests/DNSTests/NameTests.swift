@@ -14,6 +14,14 @@ struct NameTests {
             (name: "a.b.c", isFQDN: false, data: [97, 98, 99], borders: [1, 2, 3]),
             (name: "a.b.c.", isFQDN: true, data: [97, 98, 99], borders: [1, 2, 3]),
             (name: #"test\."#, isFQDN: false, data: [116, 101, 115, 116, 46], borders: [5]),
+            (
+                name: "Mijia Cloud", isFQDN: false,
+                data: [77, 105, 106, 105, 97, 32, 67, 108, 111, 117, 100], borders: [11]
+            ),
+            (
+                name: "helooß.co.uk.", isFQDN: true,
+                data: [104, 101, 108, 111, 111, 195, 159, 99, 111, 117, 107], borders: [7, 9, 11]
+            ),
         ]
     )
     func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) async throws {
@@ -34,7 +42,7 @@ struct NameTests {
         }
     }
 
-    @Test func equality() async throws {
+    @Test func equalityWhichShouldBeCaseInsensitive() async throws {
         let name = try Name(string: "example.com.")
         let duplicate = try Name(string: "example.com.")
         let uppercased = try Name(string: "EXAMPLE.COM.")
@@ -46,38 +54,21 @@ struct NameTests {
         let differentNotFQDN = try Name(string: "mahdibm.com")
 
         #expect(name == duplicate)
-        #expect(name != uppercased)
-        #expect(name != partiallyUppercased)
+        #expect(name == uppercased)
+        #expect(name == partiallyUppercased)
         #expect(name != notFQDN)
         #expect(name != letterMismatch)
         #expect(name != bordersMismatch)
         #expect(name != different)
         #expect(name != differentNotFQDN)
-    }
 
-    @Test func caseInsensitiveEquality() async throws {
-        withKnownIssue(
-            "Need to implement cross-platform case-insensitive equality w/o relying on Foundation"
-        ) {
-            let name = try Name(string: "example.com.")
-            let duplicate = try Name(string: "example.com.")
-            let uppercased = try Name(string: "EXAMPLE.COM.")
-            let partiallyUppercased = try Name(string: "exaMple.com.")
-            let notFQDN = try Name(string: "example.com")
-            let letterMismatch = try Name(string: "exmmple.com.")
-            let bordersMismatch = try Name(string: "example.com.com.")
-            let different = try Name(string: "mahdibm.com.")
-            let differentNotFQDN = try Name(string: "mahdibm.com")
+        let weirdLowercaseDomain = try Name(string: "helooß.co.uk.")
+        let weirdPartiallyUppercaseDomain = try Name(string: "helooSS.co.uk.")
+        let weirdUppercaseDomain = try Name(string: "HELOOSS.CO.UK.")
 
-            #expect(name.__caseInsensitiveEquals(duplicate))
-            #expect(name.__caseInsensitiveEquals(uppercased))
-            #expect(name.__caseInsensitiveEquals(partiallyUppercased))
-            #expect(!name.__caseInsensitiveEquals(notFQDN))
-            #expect(!name.__caseInsensitiveEquals(letterMismatch))
-            #expect(!name.__caseInsensitiveEquals(bordersMismatch))
-            #expect(!name.__caseInsensitiveEquals(different))
-            #expect(!name.__caseInsensitiveEquals(differentNotFQDN))
-        }
+        #expect(weirdLowercaseDomain == weirdPartiallyUppercaseDomain)
+        #expect(weirdLowercaseDomain == weirdUppercaseDomain)
+        #expect(weirdPartiallyUppercaseDomain == weirdUppercaseDomain)
     }
 
     @Test(
