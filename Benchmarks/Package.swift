@@ -80,7 +80,7 @@ package.targets += [
             "DNSModels",
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
-        path: "DNSParser",
+        path: "BenchmarkSources/DNSParser",
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
@@ -91,7 +91,7 @@ package.targets += [
             "DNSModels",
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
-        path: "Name",
+        path: "BenchmarkSources/Name",
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
