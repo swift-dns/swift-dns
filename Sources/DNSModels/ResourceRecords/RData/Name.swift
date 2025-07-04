@@ -101,21 +101,14 @@ extension Name: Equatable {
 
     @usableFromInline
     static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        guard lhs.count == rhs.count else {
-            return false
-        }
-
-        if lhs.isEmpty {
-            return true
-        }
-
-        /// Short circuit if the strings are the same
+        /// Short circuit if the bytes are the same
+        /// TODO: use memcmp or does it already do that?
         if lhs == rhs {
             return true
         }
 
         /// Slow path: Need to check case-insensitively
-        /// FIXME: find a more-efficient way?
+        /// FIXME: find a more-efficient way than fully converting to a String just to compare?
         let lhs = String(decoding: lhs, as: UTF8.self)
         let rhs = String(decoding: rhs, as: UTF8.self)
 
@@ -123,6 +116,7 @@ extension Name: Equatable {
             return false
         }
 
+        /// TODO: use memcmp or does it already do that?
         return lhs.uppercased() == rhs.uppercased()
     }
 }
