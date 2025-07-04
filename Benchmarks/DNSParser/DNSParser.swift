@@ -10,11 +10,11 @@ let benchmarks: @Sendable () -> Void = {
         "A_Response_Throughput",
         configuration: .init(
             metrics: [.throughput],
-            warmupIterations: 100,
+            warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 5])
+                .throughput: .init(relative: [.p90: 1])
             ],
             setup: {
                 buffer = Resources.dnsResponseAExampleComPacket.buffer()
@@ -52,11 +52,11 @@ let benchmarks: @Sendable () -> Void = {
         "AAAA_Response_Throughput",
         configuration: .init(
             metrics: [.throughput],
-            warmupIterations: 100,
+            warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 1])
             ],
             setup: {
                 buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
@@ -94,11 +94,11 @@ let benchmarks: @Sendable () -> Void = {
         "TXT_Response_Throughput",
         configuration: .init(
             metrics: [.throughput],
-            warmupIterations: 100,
+            warmupIterations: 1000,
             maxDuration: .seconds(5),
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 1])
             ],
             setup: {
                 buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
