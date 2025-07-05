@@ -20,7 +20,7 @@ enum Resources: String {
     }
 
     private static func data(at relativePath: String) -> Data {
-        let dropCount = "DNSParser/DNSParser.swift".count
+        let dropCount = "DNSParsing/Resources.swift".count
         let path = #filePath.dropLast(dropCount) + "Tests/Resources/\(relativePath)"
         return FileManager.default.contents(atPath: String(path))!
     }
