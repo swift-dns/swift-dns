@@ -50,6 +50,23 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
+        "A_Response_Memory_Leaked",
+        configuration: .init(
+            metrics: [.memoryLeaked],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        var buffer = Resources.dnsResponseAExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        benchmark.startMeasurement()
+        let message = try Message(from: &buffer)
+        blackHole(message)
+    }
+
+    Benchmark(
         "AAAA_Response_Throughput",
         configuration: .init(
             metrics: [.throughput],
