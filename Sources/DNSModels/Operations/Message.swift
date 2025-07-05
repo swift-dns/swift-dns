@@ -41,20 +41,20 @@ import DNSCore
 /// ```
 public struct Message: Sendable {
     public var header: Header
-    public var queries: TinyFastSequence<Query>
-    public var answers: TinyFastSequence<Record>
-    public var nameServers: TinyFastSequence<Record>
-    public var additionals: TinyFastSequence<Record>
-    public var signature: TinyFastSequence<Record>
+    public var queries: TinyArray<1, Query>
+    public var answers: TinyArray<1, Record>
+    public var nameServers: TinyArray<1, Record>
+    public var additionals: TinyArray<1, Record>
+    public var signature: TinyArray<1, Record>
     public var edns: EDNS?
 
     package init(
         header: Header,
-        queries: TinyFastSequence<Query>,
-        answers: TinyFastSequence<Record>,
-        nameServers: TinyFastSequence<Record>,
-        additionals: TinyFastSequence<Record>,
-        signature: TinyFastSequence<Record>,
+        queries: TinyArray<1, Query>,
+        answers: TinyArray<1, Record>,
+        nameServers: TinyArray<1, Record>,
+        additionals: TinyArray<1, Record>,
+        signature: TinyArray<1, Record>,
         edns: EDNS?
     ) {
         self.header = header
@@ -73,8 +73,7 @@ extension Message {
     package init(from buffer: inout DNSBuffer) throws {
         self.header = try Header(from: &buffer)
 
-        self.queries = TinyFastSequence<Query>()
-        self.queries.reserveCapacity(Int(self.header.queryCount))
+        self.queries = TinyArray<1, Query>()
         for _ in 0..<header.queryCount {
             self.queries.append(try Query(from: &buffer))  // FIXME: this is not efficient
         }
