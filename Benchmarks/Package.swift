@@ -75,12 +75,12 @@ package.dependencies.append(
 
 package.targets += [
     .executableTarget(
-        name: "DNSParser",
+        name: "DNSParsing",
         dependencies: [
             "DNSModels",
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
-        path: "DNSParser",
+        path: "DNSParsing",
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
