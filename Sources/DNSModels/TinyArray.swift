@@ -10,6 +10,15 @@ public struct TinyArray<let count: Int, Element> {
         self.base = .inline(UninitializedInlineArray<count, Element>())
     }
 
+    public init(_ elements: [Element]) {
+        switch elements.count {
+        case 0...count:
+            self.base = .inline(UninitializedInlineArray<count, Element>(elements))
+        default:
+            self.base = .heap(Array(elements))
+        }
+    }
+
     public var count: Int {
         switch self.base {
         case .inline(let array):
@@ -73,8 +82,14 @@ extension TinyArray: Sequence {
         public mutating func next() -> Element? {
             switch self.base {
             case .inline(var array):
+                defer {
+                    self.base = .inline(array)
+                }
                 return array.next()
             case .heap(var array):
+                defer {
+                    self.base = .heap(array)
+                }
                 return array.next()
             }
         }
@@ -83,16 +98,7 @@ extension TinyArray: Sequence {
 
 extension TinyArray: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: Element...) {
-        self.init()
-        switch elements.count {
-            case 0...count:
-                self.base = .inline(UninitializedInlineArray<count, Element>(elements))
-            default:
-                self.base = .heap(Array(elements))
-        }
-        for element in elements {
-            self.append(element)
-        }
+        self.init(elements)
     }
 }
 

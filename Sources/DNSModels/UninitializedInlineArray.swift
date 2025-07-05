@@ -17,7 +17,7 @@ struct UninitializedInlineArray<let count: Int, Element> {
     }
 
     init(_ elements: [Element]) {
-        precondition(elements.count <= count, "elements.count must be less than or equal to count")
+        assert(elements.count <= count, "elements.count must be less than or equal to count")
         self.init()
         for (i, element) in elements.enumerated() {
             self.storage[i] = element
@@ -26,7 +26,7 @@ struct UninitializedInlineArray<let count: Int, Element> {
     }
 
     mutating func append(_ element: Element) {
-        precondition(self.count < self.storage.count, "count must be less than storage.count")
+        assert(self.count < self.storage.count, "count must be less than storage.count")
         self.storage[self.count] = element
         self.count += 1
     }
@@ -42,6 +42,9 @@ extension UninitializedInlineArray: Sequence {
         var index: Int = 0
 
         mutating func next() -> Element? {
+            guard self.index < self.base.count else {
+                return nil
+            }
             defer { self.index += 1 }
             return self.base.storage[self.index]
         }
