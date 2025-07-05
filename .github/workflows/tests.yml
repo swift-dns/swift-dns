@@ -52,7 +52,6 @@ jobs:
           swift build \
             --build-tests \
             --enable-code-coverage \
-            -Xswiftc -enable-testing \
             --enable-experimental-prebuilts \
             -c ${{ matrix.config.mode }}
 
@@ -69,7 +68,6 @@ jobs:
           swift test \
             --skip-build \
             --enable-code-coverage \
-            -Xswiftc -enable-testing \
             --enable-experimental-prebuilts \
             -c ${{ matrix.config.mode }}
 
