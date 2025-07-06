@@ -294,3 +294,11 @@ extension NSEC3: RDataConvertible {
         .DNSSEC(.NSEC3(self))
     }
 }
+
+extension NSEC3: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .NSEC3 }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

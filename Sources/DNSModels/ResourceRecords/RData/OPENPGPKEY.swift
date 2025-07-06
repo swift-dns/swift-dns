@@ -39,3 +39,11 @@ extension OPENPGPKEY: RDataConvertible {
         .OPENPGPKEY(self)
     }
 }
+
+extension OPENPGPKEY: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .OPENPGPKEY }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

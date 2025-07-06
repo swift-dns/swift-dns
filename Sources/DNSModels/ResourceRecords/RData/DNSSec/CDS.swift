@@ -60,3 +60,11 @@ extension CDS: RDataConvertible {
         .DNSSEC(.CDS(self))
     }
 }
+
+extension CDS: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .CDS }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

@@ -94,3 +94,11 @@ extension DS: RDataConvertible {
         .DNSSEC(.DS(self))
     }
 }
+
+extension DS: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .DS }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

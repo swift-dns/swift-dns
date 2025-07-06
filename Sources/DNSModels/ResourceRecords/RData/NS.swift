@@ -33,3 +33,11 @@ extension NS: RDataConvertible {
         .NS(self)
     }
 }
+
+extension NS: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .NS }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

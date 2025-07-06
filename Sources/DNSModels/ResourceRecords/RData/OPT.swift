@@ -234,3 +234,11 @@ extension OPT: RDataConvertible {
         .OPT(self)
     }
 }
+
+extension OPT: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .OPT }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

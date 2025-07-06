@@ -669,3 +669,11 @@ extension KEY: RDataConvertible {
         .DNSSEC(.KEY(self))
     }
 }
+
+extension KEY: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .KEY }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

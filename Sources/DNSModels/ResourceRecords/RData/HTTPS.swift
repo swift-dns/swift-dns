@@ -29,3 +29,11 @@ extension HTTPS: RDataConvertible {
         .HTTPS(self)
     }
 }
+
+extension HTTPS: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .HTTPS }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

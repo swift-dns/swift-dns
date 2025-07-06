@@ -151,12 +151,18 @@ public struct Header: Sendable {
         }
     }
 
+    /// A 16 bit identifier assigned by the program that
+    /// generates any kind of query. This identifier is copied
+    /// the corresponding reply and can be used by the requester
+    /// to match up replies to outstanding queries.
     public var id: UInt16
 
     /// Represents Bytes 16 to 31 in the DNS header.
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
     /// private
     var bytes16To31: Bytes16To31
+
+    /// Whether this message is a query, or a response.
     public var messageType: MessageType {
         get {
             bytes16To31.messageType
@@ -165,6 +171,8 @@ public struct Header: Sendable {
             bytes16To31.messageType = newValue
         }
     }
+
+    /// The kind of query.
     public var opCode: OPCode {
         get {
             bytes16To31.opCode
@@ -173,6 +181,11 @@ public struct Header: Sendable {
             bytes16To31.opCode = newValue
         }
     }
+
+    /// Whether the responding name server is an authority for the domain name in question.
+    /// Note that the contents of the answer section may have multiple owner names because of
+    /// aliases. `authoritative` corresponds to the name which matches the query name, or
+    /// the first owner name in the answer section.
     public var authoritative: Bool {
         get {
             bytes16To31.authoritative
@@ -181,6 +194,9 @@ public struct Header: Sendable {
             bytes16To31.authoritative = newValue
         }
     }
+
+    /// Specifies that this message was truncated due to length greater than that permitted on the
+    /// transmission channel.
     public var truncation: Bool {
         get {
             bytes16To31.truncation
@@ -189,6 +205,8 @@ public struct Header: Sendable {
             bytes16To31.truncation = newValue
         }
     }
+
+    /// If true, it directs the name server to pursue the query recursively.
     public var recursionDesired: Bool {
         get {
             bytes16To31.recursionDesired
@@ -197,6 +215,8 @@ public struct Header: Sendable {
             bytes16To31.recursionDesired = newValue
         }
     }
+
+    /// Whether recursive query support is available in the name server.
     public var recursionAvailable: Bool {
         get {
             bytes16To31.recursionAvailable
@@ -205,6 +225,9 @@ public struct Header: Sendable {
             bytes16To31.recursionAvailable = newValue
         }
     }
+
+    /// Whether the data included in the answer and authority portion of the response has been
+    /// authenticated by the server according to the policies of that server.
     public var authenticData: Bool {
         get {
             bytes16To31.authenticData
@@ -213,6 +236,11 @@ public struct Header: Sendable {
             bytes16To31.authenticData = newValue
         }
     }
+
+    /// Whether checking is disabled.
+    ///
+    /// `checkingDisabled` indicates in a query that Pending (non-authenticated) data
+    /// is acceptable to the resolver sending the query.
     public var checkingDisabled: Bool {
         get {
             bytes16To31.checkingDisabled
@@ -221,6 +249,8 @@ public struct Header: Sendable {
             bytes16To31.checkingDisabled = newValue
         }
     }
+
+    /// The response code.
     public var responseCode: ResponseCode {
         get {
             bytes16To31.responseCode
@@ -234,6 +264,7 @@ public struct Header: Sendable {
     public var nameServerCount: UInt16
     public var additionalCount: UInt16
 
+    @usableFromInline
     package init(
         id: UInt16,
         messageType: MessageType,

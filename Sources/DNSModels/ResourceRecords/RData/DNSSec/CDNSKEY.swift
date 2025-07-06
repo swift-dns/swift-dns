@@ -51,3 +51,11 @@ extension CDNSKEY: RDataConvertible {
         .DNSSEC(.CDNSKEY(self))
     }
 }
+
+extension CDNSKEY: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .CDNSKEY }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

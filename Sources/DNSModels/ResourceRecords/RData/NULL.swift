@@ -57,3 +57,11 @@ extension NULL: RDataConvertible {
         .NULL(self)
     }
 }
+
+extension NULL: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .NULL }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

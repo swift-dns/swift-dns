@@ -67,3 +67,11 @@ extension HINFO: RDataConvertible {
         .HINFO(self)
     }
 }
+
+extension HINFO: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .HINFO }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

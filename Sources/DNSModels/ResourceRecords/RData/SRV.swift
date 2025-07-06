@@ -110,3 +110,11 @@ extension SRV: RDataConvertible {
         .SRV(self)
     }
 }
+
+extension SRV: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .SRV }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

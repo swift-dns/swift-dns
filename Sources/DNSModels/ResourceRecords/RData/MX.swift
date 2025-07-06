@@ -55,3 +55,11 @@ extension MX: RDataConvertible {
         .MX(self)
     }
 }
+
+extension MX: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .MX }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

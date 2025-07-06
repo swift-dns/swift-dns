@@ -137,3 +137,11 @@ extension SSHFP: RDataConvertible {
         .SSHFP(self)
     }
 }
+
+extension SSHFP: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .SSHFP }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

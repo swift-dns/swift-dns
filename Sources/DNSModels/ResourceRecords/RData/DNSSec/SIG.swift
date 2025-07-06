@@ -242,3 +242,11 @@ extension SIG: RDataConvertible {
         .DNSSEC(.SIG(self))
     }
 }
+
+extension SIG: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .SIG }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

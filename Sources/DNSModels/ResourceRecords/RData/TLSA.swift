@@ -355,3 +355,11 @@ extension TLSA: RDataConvertible {
         .TLSA(self)
     }
 }
+
+extension TLSA: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .TLSA }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

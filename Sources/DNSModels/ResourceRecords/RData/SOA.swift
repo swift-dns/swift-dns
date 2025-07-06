@@ -118,3 +118,11 @@ extension SOA: RDataConvertible {
         .SOA(self)
     }
 }
+
+extension SOA: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .SOA }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

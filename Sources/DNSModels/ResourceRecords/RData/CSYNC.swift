@@ -88,3 +88,11 @@ extension CSYNC: RDataConvertible {
         .CSYNC(self)
     }
 }
+
+extension CSYNC: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .CSYNC }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

@@ -114,3 +114,11 @@ extension DNSKEY: RDataConvertible {
         .DNSSEC(.DNSKEY(self))
     }
 }
+
+extension DNSKEY: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .DNSKEY }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

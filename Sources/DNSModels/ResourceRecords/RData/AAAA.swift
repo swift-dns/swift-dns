@@ -33,3 +33,11 @@ extension AAAA: RDataConvertible {
         .AAAA(self)
     }
 }
+
+extension AAAA: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .AAAA }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

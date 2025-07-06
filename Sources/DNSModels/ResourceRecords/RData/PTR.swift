@@ -33,3 +33,11 @@ extension PTR: RDataConvertible {
         .PTR(self)
     }
 }
+
+extension PTR: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .PTR }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}

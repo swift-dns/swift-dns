@@ -60,3 +60,11 @@ extension NSEC: RDataConvertible {
         .DNSSEC(.NSEC(self))
     }
 }
+
+extension NSEC: Queryable {
+    @inlinable
+    public static var recordType: RecordType { .NSEC }
+
+    @inlinable
+    public static var dnsClass: DNSClass { .IN }
+}
