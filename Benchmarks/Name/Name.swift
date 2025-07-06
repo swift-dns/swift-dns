@@ -194,8 +194,8 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name1 == name2)
     }
 
-    let lowercasedDomain = try! Name(string: "helooß.co.uk.")
-    let uppercasedDomain = try! Name(string: "HELOOSS.CO.UK.")
+    let lowercasedDomain = try! Name(string: "googße.com.")
+    let uppercasedDomain = try! Name(string: "GOOGSSe.COM.")
     Benchmark(
         "Case_Insensitive_Equality_Check_Slow_Path_Throughput",
         configuration: .init(
