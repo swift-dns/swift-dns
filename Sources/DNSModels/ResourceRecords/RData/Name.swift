@@ -1,21 +1,3 @@
-#if os(Windows)
-import ucrt
-#elseif canImport(Darwin)
-import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
-#if canImport(Glibc)
-@preconcurrency import Glibc
-#elseif canImport(Musl)
-@preconcurrency import Musl
-#elseif canImport(Android)
-@preconcurrency import Android
-#endif
-#elseif canImport(WASILibc)
-@preconcurrency import WASILibc
-#else
-#error("Name.swift was unable to identify your C library.")
-#endif
-
 /// A domain name.
 ///
 /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
@@ -122,9 +104,7 @@ extension Name: Equatable {
     @usableFromInline
     static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
         /// Short circuit if the bytes are the same
-        if lhs.count == rhs.count,
-            memcmp(lhs, rhs, lhs.count) == 0
-        {
+        if lhs == rhs {
             return true
         }
 
