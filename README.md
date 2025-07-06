@@ -1,10 +1,10 @@
 # 🚧 Under Heavy Construction 🚧
 
-Definetely not yet ready for production use.   
+Definetely not yet ready for production use.
 
-I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.   
+I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.
 
-If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.   
+If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.
 
 #### Requires Swift 6.2. Also requires macOS 26 if used on macos.
 
@@ -35,7 +35,7 @@ A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, reso
 
 ## Usage
 
-I'll add convenience methods sometime soon.
+I'll add more-convenient methods sometime soon.
 For now use the `DNSClient` to send a fully-customizable DNS `Message`:
 
 ```swift
@@ -84,17 +84,13 @@ let message = Message(
 /// Send the query
 /// The return type is the same as the query type (`Message`)
 /// But the returned `Message` can have completely different contents
-let response: Message = try await client.query(message: message)
+let response: Message = try await client.queryA(message: message)
 
 /// Read the answers
 for answer in response.answers {
-    switch answer.rdata {
-    case .A(let a):
-        let ipv4 = a.value
-        print("Got:", ipv4)
-    default:
-        print("Impossible")
-    }
+    let a = try answer.rdata /// type of value is `A`
+    let ipv4 = a.value /// type of value is `IPv4Address`
+    print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.asString() ?? "n/a")")
 }
 ```
 

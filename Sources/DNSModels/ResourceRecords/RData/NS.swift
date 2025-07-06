@@ -18,3 +18,18 @@ extension NS {
         try self.name.encode(into: &buffer)
     }
 }
+
+extension NS: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .NS(let ns):
+            self = ns
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .NS(self)
+    }
+}

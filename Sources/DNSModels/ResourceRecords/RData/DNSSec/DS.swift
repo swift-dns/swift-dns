@@ -79,3 +79,18 @@ extension DS {
         buffer.writeBytes(self.digest)
     }
 }
+
+extension DS: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.DS(let ds)):
+            self = ds
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.DS(self))
+    }
+}

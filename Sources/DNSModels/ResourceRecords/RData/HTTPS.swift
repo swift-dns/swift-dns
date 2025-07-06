@@ -14,3 +14,18 @@ extension HTTPS {
         try self.svcb.encode(into: &buffer)
     }
 }
+
+extension HTTPS: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .HTTPS(let https):
+            self = https
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .HTTPS(self)
+    }
+}

@@ -45,3 +45,18 @@ extension NSEC {
         self.typeBitMaps.encode(into: &buffer)
     }
 }
+
+extension NSEC: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.NSEC(let nsec)):
+            self = nsec
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.NSEC(self))
+    }
+}

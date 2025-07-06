@@ -103,3 +103,18 @@ extension SOA {
         buffer.writeInteger(self.minimum)
     }
 }
+
+extension SOA: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .SOA(let soa):
+            self = soa
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .SOA(self)
+    }
+}

@@ -340,3 +340,18 @@ extension TLSA.Matching {
         buffer.writeInteger(self.rawValue)
     }
 }
+
+extension TLSA: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .TLSA(let tlsa):
+            self = tlsa
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .TLSA(self)
+    }
+}

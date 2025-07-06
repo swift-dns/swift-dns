@@ -193,3 +193,18 @@ extension CERT.CertType {
         buffer.writeInteger(self.rawValue)
     }
 }
+
+extension CERT: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .CERT(let cert):
+            self = cert
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .CERT(self)
+    }
+}

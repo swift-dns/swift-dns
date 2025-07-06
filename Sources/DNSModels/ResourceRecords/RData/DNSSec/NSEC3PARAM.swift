@@ -112,3 +112,18 @@ extension NSEC3PARAM {
         )
     }
 }
+
+extension NSEC3PARAM: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.NSEC3PARAM(let nsec3param)):
+            self = nsec3param
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.NSEC3PARAM(self))
+    }
+}

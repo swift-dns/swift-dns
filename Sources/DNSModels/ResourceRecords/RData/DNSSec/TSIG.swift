@@ -298,3 +298,18 @@ extension TSIG.Algorithm {
         try self.toName().encode(into: &buffer)
     }
 }
+
+extension TSIG: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.TSIG(let tsig)):
+            self = tsig
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.TSIG(self))
+    }
+}

@@ -227,3 +227,18 @@ extension SIG {
         buffer.writeBytes(sig)
     }
 }
+
+extension SIG: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.SIG(let sig)):
+            self = sig
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.SIG(self))
+    }
+}

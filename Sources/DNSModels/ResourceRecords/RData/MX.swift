@@ -40,3 +40,18 @@ extension MX {
         try self.exchange.encode(into: &buffer)
     }
 }
+
+extension MX: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .MX(let mx):
+            self = mx
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .MX(self)
+    }
+}

@@ -34,3 +34,18 @@ extension CNAME {
         try self.name.encode(into: &buffer)
     }
 }
+
+extension CNAME: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .CNAME(let cname):
+            self = cname
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .CNAME(self)
+    }
+}

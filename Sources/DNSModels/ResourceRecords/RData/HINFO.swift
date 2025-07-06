@@ -52,3 +52,18 @@ extension HINFO {
         )
     }
 }
+
+extension HINFO: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .HINFO(let hinfo):
+            self = hinfo
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .HINFO(self)
+    }
+}

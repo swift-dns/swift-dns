@@ -42,3 +42,18 @@ extension NULL {
         )
     }
 }
+
+extension NULL: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .NULL(let null):
+            self = null
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .NULL(self)
+    }
+}
