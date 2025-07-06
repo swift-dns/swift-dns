@@ -13,43 +13,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "example.com"),
-            queryType: .A,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryA(message: message)
+        let factory = try MessageFactory<A>.forQuery(name: "example.com")
+        let message = factory.message
+        let response = try await client.queryA(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -122,43 +88,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "cloudflare.com"),
-            queryType: .AAAA,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryAAAA(message: message)
+        let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com")
+        let message = factory.message
+        let response = try await client.queryAAAA(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -231,43 +163,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "cloudflare.com"),
-            queryType: .CAA,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryCAA(message: message)
+        let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com")
+        let message = factory.message
+        let response = try await client.queryCAA(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -335,43 +233,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "for-dns-cert-testing.mahdibm.com"),
-            queryType: .CERT,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryCERT(message: message)
+        let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com")
+        let message = factory.message
+        let response = try await client.queryCERT(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -456,43 +320,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "www.github.com"),
-            queryType: .CNAME,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryCNAME(message: message)
+        let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com")
+        let message = factory.message
+        let response = try await client.queryCNAME(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -549,43 +379,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "raw.githubusercontent.com"),
-            queryType: .CNAME,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryCNAME(message: message)
+        let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com")
+        let message = factory.message
+        let response = try await client.queryCNAME(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -651,43 +447,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "mahdibm.com"),
-            queryType: .MX,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryMX(message: message)
+        let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com")
+        let message = factory.message
+        let response = try await client.queryMX(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -765,43 +527,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "apple.com"),
-            queryType: .NS,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryNS(message: message)
+        let factory = try MessageFactory<NS>.forQuery(name: "apple.com")
+        let message = factory.message
+        let response = try await client.queryNS(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -886,43 +614,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "9.9.9.9.in-addr.arpa"),
-            queryType: .PTR,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryPTR(message: message)
+        let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa")
+        let message = factory.message
+        let response = try await client.queryPTR(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -1004,43 +698,9 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let query = Query(
-            name: try Name(string: "example.com"),
-            queryType: .TXT,
-            queryClass: .IN
-        )
-        let message = Message(
-            header: Header(
-                id: .random(in: .min ... .max),
-                messageType: .Query,
-                opCode: .Query,
-                authoritative: false,
-                truncation: false,
-                recursionDesired: true,
-                recursionAvailable: false,
-                authenticData: true,
-                checkingDisabled: false,
-                responseCode: .NoError,
-                queryCount: 1,
-                answerCount: 0,
-                nameServerCount: 0,
-                additionalCount: 1
-            ),
-            queries: [query],
-            answers: [],
-            nameServers: [],
-            additionals: [],
-            signature: [],
-            edns: EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        )
-
-        let response = try await client.queryTXT(message: message)
+        let factory = try MessageFactory<TXT>.forQuery(name: "example.com")
+        let message = factory.message
+        let response = try await client.queryTXT(message: factory, options: .edns)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)

@@ -71,3 +71,8 @@ extension TXT: RDataConvertible {
         .TXT(self)
     }
 }
+
+extension TXT: Queryable {
+    public static var recordType: RecordType { .TXT }
+    public static var dnsClass: DNSClass { .IN }
+}

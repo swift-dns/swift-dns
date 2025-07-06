@@ -29,3 +29,8 @@ extension HTTPS: RDataConvertible {
         .HTTPS(self)
     }
 }
+
+extension HTTPS: Queryable {
+    public static var recordType: RecordType { .HTTPS }
+    public static var dnsClass: DNSClass { .IN }
+}

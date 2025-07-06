@@ -313,3 +313,8 @@ extension TSIG: RDataConvertible {
         .DNSSEC(.TSIG(self))
     }
 }
+
+extension TSIG: Queryable {
+    public static var recordType: RecordType { .TSIG }
+    public static var dnsClass: DNSClass { .IN }
+}

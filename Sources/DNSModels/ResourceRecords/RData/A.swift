@@ -55,3 +55,8 @@ extension A: RDataConvertible {
         .A(self)
     }
 }
+
+extension A: Queryable {
+    public static var recordType: RecordType { .A }
+    public static var dnsClass: DNSClass { .IN }
+}

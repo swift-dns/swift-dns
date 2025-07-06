@@ -35,8 +35,7 @@ A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, reso
 
 ## Usage
 
-I'll add more-convenient methods sometime soon.
-For now use the `DNSClient` to send a fully-customizable DNS `Message`:
+Initialize a `DNSClient`, then use the `query` methods:
 
 ```swift
 import DNSClient
@@ -48,43 +47,11 @@ let client = DNSClient(
     logger: Logger(label: "DNSTests")
 )
 
-/// Create a `Query` object
-let query = Query(
-    name: try Name(string: "example.com"),
-    queryType: .A,
-    queryClass: .IN
-)
-
-/// Construct the full `Message` object
-let message = Message(
-    header: Header(
-        id: .random(in: .min ... .max),
-        messageType: .Query,
-        opCode: .Query,
-        authoritative: false,
-        truncation: false,
-        recursionDesired: true,
-        recursionAvailable: false,
-        authenticData: true,
-        checkingDisabled: false,
-        responseCode: .NoError,
-        queryCount: 1,
-        answerCount: 0,
-        nameServerCount: 0,
-        additionalCount: 0
-    ),
-    queries: [query],
-    answers: [],
-    nameServers: [],
-    additionals: [],
-    signature: [],
-    edns: nil
-)
-
 /// Send the query
-/// The return type is the same as the query type (`Message`)
-/// But the returned `Message` can have completely different contents
-let response: Message = try await client.queryA(message: message)
+let response = try await client.queryA(
+    message: .forQuery(name: "example.com"),
+    options: .edns
+) /// type of value is `Message`
 
 /// Read the answers
 for answer in response.answers {

@@ -758,3 +758,8 @@ extension SVCB: RDataConvertible {
         .SVCB(self)
     }
 }
+
+extension SVCB: Queryable {
+    public static var recordType: RecordType { .SVCB }
+    public static var dnsClass: DNSClass { .IN }
+}

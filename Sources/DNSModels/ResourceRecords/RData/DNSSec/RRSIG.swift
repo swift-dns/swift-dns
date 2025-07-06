@@ -33,3 +33,8 @@ extension RRSIG: RDataConvertible {
         .DNSSEC(.RRSIG(self))
     }
 }
+
+extension RRSIG: Queryable {
+    public static var recordType: RecordType { .RRSIG }
+    public static var dnsClass: DNSClass { .IN }
+}

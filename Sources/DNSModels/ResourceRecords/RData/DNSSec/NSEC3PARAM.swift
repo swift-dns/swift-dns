@@ -127,3 +127,8 @@ extension NSEC3PARAM: RDataConvertible {
         .DNSSEC(.NSEC3PARAM(self))
     }
 }
+
+extension NSEC3PARAM: Queryable {
+    public static var recordType: RecordType { .NSEC3PARAM }
+    public static var dnsClass: DNSClass { .IN }
+}

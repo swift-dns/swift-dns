@@ -333,3 +333,8 @@ extension CAA: RDataConvertible {
         .CAA(self)
     }
 }
+
+extension CAA: Queryable {
+    public static var recordType: RecordType { .CAA }
+    public static var dnsClass: DNSClass { .IN }
+}

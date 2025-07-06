@@ -208,3 +208,8 @@ extension CERT: RDataConvertible {
         .CERT(self)
     }
 }
+
+extension CERT: Queryable {
+    public static var recordType: RecordType { .CERT }
+    public static var dnsClass: DNSClass { .IN }
+}

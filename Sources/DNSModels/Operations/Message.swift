@@ -48,6 +48,7 @@ public struct Message: Sendable {
     public var signature: TinyFastSequence<Record>
     public var edns: EDNS?
 
+    @usableFromInline
     package init(
         header: Header,
         queries: TinyFastSequence<Query>,

@@ -107,3 +107,8 @@ extension NAPTR: RDataConvertible {
         .NAPTR(self)
     }
 }
+
+extension NAPTR: Queryable {
+    public static var recordType: RecordType { .NAPTR }
+    public static var dnsClass: DNSClass { .IN }
+}

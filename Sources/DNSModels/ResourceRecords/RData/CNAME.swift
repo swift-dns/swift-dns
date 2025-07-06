@@ -49,3 +49,8 @@ extension CNAME: RDataConvertible {
         .CNAME(self)
     }
 }
+
+extension CNAME: Queryable {
+    public static var recordType: RecordType { .CNAME }
+    public static var dnsClass: DNSClass { .IN }
+}
