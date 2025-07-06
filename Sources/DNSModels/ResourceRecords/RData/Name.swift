@@ -130,22 +130,14 @@ extension Name: Equatable {
 
         /// Slow path: Need to check case-insensitively
         /// FIXME: find a more-efficient way than fully converting to a String just to compare?
-        var lhs = String(decoding: lhs, as: UTF8.self)
-        var rhs = String(decoding: rhs, as: UTF8.self)
+        let lhs = String(decoding: lhs, as: UTF8.self)
+        let rhs = String(decoding: rhs, as: UTF8.self)
 
         guard lhs.utf8.count == rhs.utf8.count else {
             return false
         }
 
-        lhs = lhs.uppercased()
-        rhs = rhs.uppercased()
-        if lhs.count == rhs.count,
-            memcmp(lhs, rhs, lhs.count) == 0
-        {
-            return true
-        }
-
-        return false
+        return lhs.uppercased() == rhs.uppercased()
     }
 }
 
