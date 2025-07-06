@@ -122,3 +122,18 @@ extension SSHFP.FingerprintType {
         buffer.writeInteger(self.rawValue)
     }
 }
+
+extension SSHFP: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .SSHFP(let sshfp):
+            self = sshfp
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .SSHFP(self)
+    }
+}

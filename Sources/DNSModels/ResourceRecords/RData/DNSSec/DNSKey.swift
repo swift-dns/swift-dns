@@ -99,3 +99,18 @@ extension DNSKEY.PublicKey {
         buffer.writeBytes(self.key)
     }
 }
+
+extension DNSKEY: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.DNSKEY(let dnskey)):
+            self = dnskey
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.DNSKEY(self))
+    }
+}

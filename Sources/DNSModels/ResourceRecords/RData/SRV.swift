@@ -95,3 +95,18 @@ extension SRV {
         try self.target.encode(into: &buffer)
     }
 }
+
+extension SRV: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .SRV(let srv):
+            self = srv
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .SRV(self)
+    }
+}

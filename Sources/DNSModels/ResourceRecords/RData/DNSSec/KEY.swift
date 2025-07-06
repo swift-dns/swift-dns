@@ -654,3 +654,18 @@ extension KEY.Proto {
         buffer.writeInteger(self.rawValue)
     }
 }
+
+extension KEY: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.KEY(let key)):
+            self = key
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.KEY(self))
+    }
+}

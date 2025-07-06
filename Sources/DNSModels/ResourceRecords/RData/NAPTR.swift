@@ -92,3 +92,18 @@ extension NAPTR {
         try self.replacement.encode(into: &buffer)
     }
 }
+
+extension NAPTR: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .NAPTR(let naptr):
+            self = naptr
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .NAPTR(self)
+    }
+}

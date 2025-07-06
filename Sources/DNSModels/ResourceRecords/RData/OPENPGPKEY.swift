@@ -24,3 +24,18 @@ extension OPENPGPKEY {
         buffer.writeBytes(self.publicKey)
     }
 }
+
+extension OPENPGPKEY: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .OPENPGPKEY(let openpgpkey):
+            self = openpgpkey
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .OPENPGPKEY(self)
+    }
+}

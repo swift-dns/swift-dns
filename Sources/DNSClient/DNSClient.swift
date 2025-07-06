@@ -1,11 +1,10 @@
+public import DNSModels
 public import Logging
 /// FIXME: as of writing this comment we only need EventLoopGroup as public, but Swift 6.2 doesn't
 /// accept multiple access levels for the same module, so can't import the symbols one by one with
 /// different access levels.
 public import NIOCore
 import NIOPosix
-
-public import struct DNSModels.Message
 
 public struct DNSClient {
     public var connectionTarget: ConnectionTarget
@@ -63,5 +62,176 @@ public struct DNSClient {
                 }
             }
         }
+    }
+}
+
+extension DNSClient {
+    @usableFromInline
+    func querySpecialized<RDataType: RDataConvertible>(
+        message: Message
+    ) async throws -> SpecializedMessage<RDataType> {
+        try SpecializedMessage(
+            message: await query(message: message)
+        )
+    }
+
+    @inlinable
+    public func queryA(message: Message) async throws -> SpecializedMessage<A> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryAAAA(message: Message) async throws -> SpecializedMessage<AAAA> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCAA(message: Message) async throws -> SpecializedMessage<CAA> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCDS(message: Message) async throws -> SpecializedMessage<CDS> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCDNSKEY(message: Message) async throws -> SpecializedMessage<CDNSKEY> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCERT(message: Message) async throws -> SpecializedMessage<CERT> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCNAME(message: Message) async throws -> SpecializedMessage<CNAME> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryCSYNC(message: Message) async throws -> SpecializedMessage<CSYNC> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryDNSKEY(message: Message) async throws -> SpecializedMessage<DNSKEY> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryDS(message: Message) async throws -> SpecializedMessage<DS> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryHINFO(message: Message) async throws -> SpecializedMessage<HINFO> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryHTTPS(message: Message) async throws -> SpecializedMessage<HTTPS> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryKEY(message: Message) async throws -> SpecializedMessage<KEY> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryMX(message: Message) async throws -> SpecializedMessage<MX> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNAPTR(message: Message) async throws -> SpecializedMessage<NAPTR> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNS(message: Message) async throws -> SpecializedMessage<NS> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNSEC(message: Message) async throws -> SpecializedMessage<NSEC> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNSEC3(message: Message) async throws -> SpecializedMessage<NSEC3> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNSEC3PARAM(message: Message) async throws -> SpecializedMessage<NSEC3PARAM> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryNULL(message: Message) async throws -> SpecializedMessage<NULL> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryOPENPGPKEY(message: Message) async throws -> SpecializedMessage<OPENPGPKEY> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryOPT(message: Message) async throws -> SpecializedMessage<OPT> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryPTR(message: Message) async throws -> SpecializedMessage<PTR> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryRRSIG(message: Message) async throws -> SpecializedMessage<RRSIG> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func querySIG(message: Message) async throws -> SpecializedMessage<SIG> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func querySOA(message: Message) async throws -> SpecializedMessage<SOA> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func querySRV(message: Message) async throws -> SpecializedMessage<SRV> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func querySSHFP(message: Message) async throws -> SpecializedMessage<SSHFP> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func querySVCB(message: Message) async throws -> SpecializedMessage<SVCB> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryTLSA(message: Message) async throws -> SpecializedMessage<TLSA> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryTSIG(message: Message) async throws -> SpecializedMessage<TSIG> {
+        try await self.querySpecialized(message: message)
+    }
+
+    @inlinable
+    public func queryTXT(message: Message) async throws -> SpecializedMessage<TXT> {
+        try await self.querySpecialized(message: message)
     }
 }

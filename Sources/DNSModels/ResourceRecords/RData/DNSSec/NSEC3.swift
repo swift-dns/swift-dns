@@ -279,3 +279,18 @@ extension NSEC3.HashAlgorithm {
         buffer.writeInteger(self.rawValue)
     }
 }
+
+extension NSEC3: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.NSEC3(let nsec3)):
+            self = nsec3
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.NSEC3(self))
+    }
+}

@@ -18,3 +18,18 @@ extension AAAA {
         value.encode(into: &buffer)
     }
 }
+
+extension AAAA: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .AAAA(let aaaa):
+            self = aaaa
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .AAAA(self)
+    }
+}

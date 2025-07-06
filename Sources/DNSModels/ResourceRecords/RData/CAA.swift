@@ -318,3 +318,18 @@ extension CAA.Value {
         return (name, try state.keyValues)
     }
 }
+
+extension CAA: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .CAA(let caa):
+            self = caa
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .CAA(self)
+    }
+}

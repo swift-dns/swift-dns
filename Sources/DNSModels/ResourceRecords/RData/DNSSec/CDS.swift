@@ -45,3 +45,18 @@ extension CDS {
         buffer.writeBytes(self.digest)
     }
 }
+
+extension CDS: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.CDS(let cds)):
+            self = cds
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.CDS(self))
+    }
+}

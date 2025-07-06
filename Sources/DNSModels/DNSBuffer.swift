@@ -134,7 +134,10 @@ package struct DNSBuffer: Sendable {
                 switch endianness {
                 case .big:
                     array[index] = IntegerType(
-                        bigEndian: ptr.load(fromByteOffset: index &* length, as: IntegerType.self)
+                        bigEndian: ptr.load(
+                            fromByteOffset: index &* length,
+                            as: IntegerType.self
+                        )
                     )
                 case .little:
                     array[index] = IntegerType(

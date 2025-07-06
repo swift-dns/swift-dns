@@ -40,3 +40,18 @@ extension A {
         self.value.encode(into: &buffer)
     }
 }
+
+extension A: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .A(let a):
+            self = a
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .A(self)
+    }
+}

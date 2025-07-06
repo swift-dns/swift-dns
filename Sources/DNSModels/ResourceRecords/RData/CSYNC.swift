@@ -73,3 +73,18 @@ extension CSYNC {
         self.typeBitMaps.encode(into: &buffer)
     }
 }
+
+extension CSYNC: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .CSYNC(let csync):
+            self = csync
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .CSYNC(self)
+    }
+}

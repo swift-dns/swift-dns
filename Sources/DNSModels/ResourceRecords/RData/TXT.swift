@@ -56,3 +56,18 @@ extension TXT: Equatable {
         lhs.txtData == rhs.txtData
     }
 }
+
+extension TXT: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .TXT(let txt):
+            self = txt
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .TXT(self)
+    }
+}

@@ -219,3 +219,18 @@ extension OPT {
         }
     }
 }
+
+extension OPT: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .OPT(let opt):
+            self = opt
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .OPT(self)
+    }
+}

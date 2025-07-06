@@ -18,3 +18,18 @@ extension RRSIG {
         try self.value.encode(into: &buffer)
     }
 }
+
+extension RRSIG: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.RRSIG(let rrsig)):
+            self = rrsig
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.RRSIG(self))
+    }
+}

@@ -18,3 +18,18 @@ extension PTR {
         try self.name.encode(into: &buffer)
     }
 }
+
+extension PTR: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .PTR(let ptr):
+            self = ptr
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .PTR(self)
+    }
+}

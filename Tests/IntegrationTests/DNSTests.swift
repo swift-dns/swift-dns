@@ -49,7 +49,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryA(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -87,14 +87,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let ipv4s = response.answers.compactMap {
-            switch $0.rdata {
-            case .A(let a):
-                return a.value
-            default:
-                Issue.record("rdata was not of type A: \($0.rdata)")
-                return nil
-            }
+        let ipv4s = try response.answers.map {
+            try $0.rdata.value
         }
         #expect(
             ipv4s.allSatisfy {
@@ -164,7 +158,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryAAAA(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -202,14 +196,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let ipv6s = response.answers.compactMap {
-            switch $0.rdata {
-            case .AAAA(let aaaa):
-                return aaaa.value
-            default:
-                Issue.record("rdata was not of type AAAA: \($0.rdata)")
-                return nil
-            }
+        let ipv6s = try response.answers.map {
+            try $0.rdata.value
         }
         #expect(
             ipv6s.allSatisfy {
@@ -279,7 +267,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryCAA(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -317,14 +305,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let caa = response.answers.compactMap {
-            switch $0.rdata {
-            case .CAA(let caa):
-                return caa
-            default:
-                Issue.record("rdata was not of type CAA: \($0.rdata)")
-                return nil
-            }
+        let caa = try response.answers.map {
+            try $0.rdata
         }
         #expect(
             caa.allSatisfy {
@@ -389,7 +371,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryCERT(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -427,14 +409,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let certs = response.answers.compactMap {
-            switch $0.rdata {
-            case .CERT(let cert):
-                return cert
-            default:
-                Issue.record("rdata was not of type CERT: \($0.rdata)")
-                return nil
-            }
+        let certs = try response.answers.map {
+            try $0.rdata
         }
         let expectedCerts = [
             CERT(
@@ -516,7 +492,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryCNAME(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -549,14 +525,7 @@ struct DNSTests {
         #expect(answer.recordType == .CNAME)
         #expect(answer.dnsClass == .IN)
         #expect(answer.ttl > 0)
-        let cname: CNAME
-        switch answer.rdata {
-        case .CNAME(let _cname):
-            cname = _cname
-        default:
-            Issue.record("rdata was not of type CNAME: \(answer.rdata)")
-            return
-        }
+        let cname = try answer.rdata
         #expect(cname.name.asString() == "github.com.")
 
         /// The 'additional' was an EDNS
@@ -616,7 +585,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryCNAME(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -718,7 +687,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryMX(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -756,14 +725,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let mxs = response.answers.compactMap {
-            switch $0.rdata {
-            case .MX(let mx):
-                return mx
-            default:
-                Issue.record("rdata was not of type MX: \($0.rdata)")
-                return nil
-            }
+        let mxs = try response.answers.map {
+            try $0.rdata
         }.sorted {
             $0.preference < $1.preference
         }
@@ -838,7 +801,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryNS(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -876,14 +839,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let nss = response.answers.compactMap {
-            switch $0.rdata {
-            case .NS(let ns):
-                return ns
-            default:
-                Issue.record("rdata was not of type NS: \($0.rdata)")
-                return nil
-            }
+        let nss = try response.answers.map {
+            try $0.rdata
         }.sorted {
             $0.name.asString() < $1.name.asString()
         }
@@ -965,7 +922,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryPTR(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -1003,14 +960,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let ptrs = response.answers.compactMap {
-            switch $0.rdata {
-            case .PTR(let ptr):
-                return ptr
-            default:
-                Issue.record("rdata was not of type PTR: \($0.rdata)")
-                return nil
-            }
+        let ptrs = try response.answers.map {
+            try $0.rdata
         }
         let expectedPTRs = [
             PTR(name: try Name(string: "dns9.quad9.net."))
@@ -1089,7 +1040,7 @@ struct DNSTests {
             )
         )
 
-        let response = try await client.query(message: message)
+        let response = try await client.queryTXT(message: message)
 
         #expect(response.header.id == message.header.id)
         #expect(response.header.queryCount > 0)
@@ -1127,14 +1078,8 @@ struct DNSTests {
         #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers)")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
         /// response.answers[].ttl is whatever
-        let txts = response.answers.compactMap {
-            switch $0.rdata {
-            case .TXT(let txt):
-                return txt
-            default:
-                Issue.record("rdata was not of type TXT: \($0.rdata)")
-                return nil
-            }
+        let txts = try response.answers.map {
+            try $0.rdata
         }
         #expect(txts.allSatisfy { ($0.txtData.first?.count ?? 0) > 5 })
 

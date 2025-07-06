@@ -743,3 +743,18 @@ extension SVCB.SVCParamValue.Unknown {
         buffer.writeBytes(self.data)
     }
 }
+
+extension SVCB: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .SVCB(let svcb):
+            self = svcb
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .SVCB(self)
+    }
+}

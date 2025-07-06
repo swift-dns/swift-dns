@@ -36,3 +36,18 @@ extension CDNSKEY {
         buffer.writeBytes(publicKey)
     }
 }
+
+extension CDNSKEY: RDataConvertible {
+    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+        switch rdata {
+        case .DNSSEC(.CDNSKEY(let cdnskey)):
+            self = cdnskey
+        default:
+            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+        }
+    }
+
+    public func toRData() -> RData {
+        .DNSSEC(.CDNSKEY(self))
+    }
+}
