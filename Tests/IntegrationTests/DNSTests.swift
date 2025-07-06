@@ -4,7 +4,7 @@ import Logging
 import NIOPosix
 import Testing
 
-@Suite
+@Suite(.serialized)
 struct DNSTests {
     @Test func queryA() async throws {
         let client = DNSClient(

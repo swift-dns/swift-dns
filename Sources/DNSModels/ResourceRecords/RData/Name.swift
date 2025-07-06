@@ -92,6 +92,7 @@ extension Name: Equatable {
     /// ```
     ///
     /// Does a **case-insensitive** equality check of 2 domain names.
+    /// Not constant time if that matters to your usecase.
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.isFQDN == rhs.isFQDN
@@ -99,10 +100,10 @@ extension Name: Equatable {
             && caseInsensitiveEquals(lhs.data, rhs.data)
     }
 
+    /// TODO: check compatibility with RFC 3490 "Internationalizing Domain Names in Applications (IDNA)"
     @usableFromInline
     static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
         /// Short circuit if the bytes are the same
-        /// TODO: use memcmp or does it already do that?
         if lhs == rhs {
             return true
         }
@@ -116,7 +117,6 @@ extension Name: Equatable {
             return false
         }
 
-        /// TODO: use memcmp or does it already do that?
         return lhs.uppercased() == rhs.uppercased()
     }
 }
