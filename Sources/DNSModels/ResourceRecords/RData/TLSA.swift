@@ -342,15 +342,16 @@ extension TLSA.Matching {
 }
 
 extension TLSA: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .TLSA(let tlsa):
             self = tlsa
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .TLSA(self)
     }

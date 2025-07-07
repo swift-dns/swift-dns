@@ -42,15 +42,16 @@ extension A {
 }
 
 extension A: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .A(let a):
             self = a
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .A(self)
     }

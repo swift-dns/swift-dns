@@ -47,15 +47,16 @@ extension CDS {
 }
 
 extension CDS: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.CDS(let cds)):
             self = cds
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .DNSSEC(.CDS(self))
     }

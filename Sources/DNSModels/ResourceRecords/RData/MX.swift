@@ -42,15 +42,16 @@ extension MX {
 }
 
 extension MX: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .MX(let mx):
             self = mx
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .MX(self)
     }

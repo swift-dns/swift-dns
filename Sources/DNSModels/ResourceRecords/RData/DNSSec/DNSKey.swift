@@ -101,15 +101,16 @@ extension DNSKEY.PublicKey {
 }
 
 extension DNSKEY: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.DNSKEY(let dnskey)):
             self = dnskey
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .DNSSEC(.DNSKEY(self))
     }

@@ -281,15 +281,16 @@ extension NSEC3.HashAlgorithm {
 }
 
 extension NSEC3: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.NSEC3(let nsec3)):
             self = nsec3
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .DNSSEC(.NSEC3(self))
     }

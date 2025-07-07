@@ -300,15 +300,16 @@ extension TSIG.Algorithm {
 }
 
 extension TSIG: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.TSIG(let tsig)):
             self = tsig
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .DNSSEC(.TSIG(self))
     }

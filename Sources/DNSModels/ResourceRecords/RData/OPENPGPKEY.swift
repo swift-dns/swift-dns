@@ -26,15 +26,16 @@ extension OPENPGPKEY {
 }
 
 extension OPENPGPKEY: RDataConvertible {
-    public init(rdata: RData) throws(RDataConversionTypeMismatchError<Self>) {
+    public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .OPENPGPKEY(let openpgpkey):
             self = openpgpkey
         default:
-            throw RDataConversionTypeMismatchError<Self>(actualValue: rdata)
+            throw FromRDataTypeMismatchError<Self>(actualValue: rdata)
         }
     }
 
+    @inlinable
     public func toRData() -> RData {
         .OPENPGPKEY(self)
     }
