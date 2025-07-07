@@ -108,7 +108,50 @@ extension Name: Equatable {
             return true
         }
 
-        /// Slow path: Need to check case-insensitively
+        /// Slower path: See if both strings are ASCII and compare case-insensitively
+        if caseInsensitiveEqualsTryASCII(lhs, rhs) {
+            return true
+        }
+
+        /// Slowest path: Try compare as UTF-8 strings
+        if caseInsensitiveEqualsTryAnyUTF8(lhs, rhs) {
+            return true
+        }
+
+        return false
+    }
+
+    @usableFromInline
+    static func caseInsensitiveEqualsTryASCII(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
+        /// Slower path: See if both strings are ASCII and compare case-insensitively
+        guard lhs.count == rhs.count else {
+            return false
+        }
+
+        for (l, r) in zip(lhs, rhs) {
+            if l == r {
+                /// Doesn't matter if ASCII or not, they're equal
+                continue
+            }
+
+            let l = UnicodeScalar(l)
+            guard l.isASCII else {
+                return false
+            }
+            let r = UnicodeScalar(r)
+            guard r.isASCII else {
+                return false
+            }
+            if l.properties.lowercaseMapping != r.properties.lowercaseMapping {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    @usableFromInline
+    static func caseInsensitiveEqualsTryAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
         /// FIXME: find a more-efficient way than fully converting to a String just to compare?
         let lhs = String(decoding: lhs, as: UTF8.self)
         let rhs = String(decoding: rhs, as: UTF8.self)

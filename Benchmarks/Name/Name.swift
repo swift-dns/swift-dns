@@ -194,10 +194,10 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name1 == name2)
     }
 
-    let lowercasedDomain = try! Name(string: "googße.com.")
-    let uppercasedDomain = try! Name(string: "GOOGSSe.COM.")
+    let lowercasedASCIIDomain = try! Name(string: "google.com.")
+    let uppercasedASCIIDomain = try! Name(string: "GOOGLE.COM.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Throughput",
+        "Case_Insensitive_Equality_Check_Any_ASCII_Path_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
@@ -207,17 +207,44 @@ let benchmarks: @Sendable () -> Void = {
             ]
         )
     ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
+        blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Malloc",
+        "Case_Insensitive_Equality_Check_Any_ASCII_Path_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
             maxIterations: 10,
         )
     ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
+        blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
+    }
+
+    let lowercasedUTF8Domain = try! Name(string: "googße.com.")
+    let uppercasedUTF8Domain = try! Name(string: "GOOGSSe.COM.")
+    Benchmark(
+        "Case_Insensitive_Equality_Check_Any_UTF8_Path_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 3])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
+    }
+
+    Benchmark(
+        "Case_Insensitive_Equality_Check_Any_UTF8_Path_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
     }
 }
