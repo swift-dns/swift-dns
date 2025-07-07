@@ -144,15 +144,12 @@ extension Name: Equatable {
 
         for (l, r) in zip(lhs, rhs) {
             /// ASCII bytes are less than 128, so the eighth bit is always 0
-            guard l & 0b1000_0000 == 0,
-                r & 0b1000_0000 == 0
-            else {
+            guard (r | l) & 0b1000_0000 == 0 else {
                 return .cannotDetermine
             }
             /// https://ss64.com/ascii.html
             /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-            /// Check if they are either equal or differ by their sixth bit.
-            guard ((l ^ r) | 0b0010_0000) == 0b0010_0000 else {
+            guard (l & 0b1101_1111) == (r & 0b1101_1111) else {
                 return .notEqual
             }
         }
