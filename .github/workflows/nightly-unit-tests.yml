@@ -1,0 +1,72 @@
+name: nightly-unit-tests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize] }
+  push: { branches: [main] }
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swiftlang/swift:nightly-main-noble
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v4
+
+      - name: Install zstd for faster caching, and curl for codecov action
+        run: |
+          apt-get update -y
+          apt-get install -y zstd curl
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-nightly-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-nightly-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      - name: Build ${{ github.event.repository.name }}
+        run: |
+          swift build \
+            --build-tests \
+            --enable-code-coverage \ # keeping this to check for regressions
+            --enable-experimental-prebuilts \
+            -Xswiftc -require-explicit-sendable \
+            -c ${{ matrix.config.mode }}
+
+      - name: Cache .build
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-nightly-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+
+      - name: Run tests
+        run: |
+          swift test \
+            --skip "IntegrationTests." \
+            --skip-build \
+            --enable-code-coverage \ # keeping this to check for regressions
+            --enable-experimental-prebuilts \
+            -Xswiftc -require-explicit-sendable \
+            -c ${{ matrix.config.mode }}
