@@ -174,15 +174,19 @@ extension Name: Sequence {
         var start: Int
         let end: Int
 
+        public init(base: Name) {
+            self.name = base
+            self.start = 0
+            self.end = base.borders.count
+        }
+
         public mutating func next() -> Label? {
             if self.start >= self.end {
                 return nil
             }
 
-            guard self.name.borders.count > self.start else {
-                return nil
-            }
-
+            /// self.name.borders.count is self.end based on the initializer,
+            /// so no need to check again for that.
             let end = self.name.borders[self.start]
             let start: UInt8 =
                 switch self.start {
@@ -203,11 +207,7 @@ extension Name: Sequence {
     }
 
     public func makeIterator() -> Self.Iterator {
-        Iterator(
-            name: self,
-            start: 0,
-            end: self.borders.count,
-        )
+        Iterator(base: self)
     }
 }
 
