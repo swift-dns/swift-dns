@@ -170,7 +170,7 @@ let benchmarks: @Sendable () -> Void = {
     let name1 = try! Name(string: "google.com.")
     let name2 = try! Name(string: "google.com.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Fast_Path_Throughput",
+        "Equality_Check_Identical_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
@@ -184,7 +184,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Fast_Path_Malloc",
+        "Equality_Check_Identical_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -197,7 +197,7 @@ let benchmarks: @Sendable () -> Void = {
     let lowercasedASCIIDomain = try! Name(string: "google.com.")
     let uppercasedASCIIDomain = try! Name(string: "GOOGLE.COM.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Any_ASCII_Path_Throughput",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_ASCII_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
@@ -211,7 +211,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Any_ASCII_Path_Malloc",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_ASCII_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -219,12 +219,38 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
+    }
+
+    let uppercasedOneLetterASCIIDomain = try! Name(string: "googLe.com.")
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_ASCII_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 3])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedASCIIDomain == uppercasedOneLetterASCIIDomain)
+    }
+
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_ASCII_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedASCIIDomain == uppercasedOneLetterASCIIDomain)
     }
 
     let lowercasedUTF8Domain = try! Name(string: "googße.com.")
     let uppercasedUTF8Domain = try! Name(string: "GOOGSSe.COM.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Any_UTF8_Path_Throughput",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_UTF8_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
@@ -238,7 +264,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Any_UTF8_Path_Malloc",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_UTF8_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -246,5 +272,31 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
+    }
+
+    let uppercasedOneLetterUTF8Domain = try! Name(string: "googSSe.com.")
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_UTF8_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 3])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedOneLetterUTF8Domain)
+    }
+
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_UTF8_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedOneLetterUTF8Domain)
     }
 }
