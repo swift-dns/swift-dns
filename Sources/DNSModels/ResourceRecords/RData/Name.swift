@@ -129,17 +129,13 @@ extension Name: Equatable {
         }
 
         for (l, r) in zip(lhs, rhs) {
-            if l == r {
-                /// Doesn't matter if ASCII or not, they're equal
-                continue
-            }
-
             /// ASCII bytes are less than 128, so the eighth bit is always 0
             guard l & 0b1000_0000 == 0,
                 r & 0b1000_0000 == 0,
                 /// https://ss64.com/ascii.html
                 /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-                (l ^ r) == 0b0010_0000
+                /// Check if they are either equal or differ by their sixth bit.
+                ((l ^ r) | 0b0010_0000) == 0b0010_0000
             else {
                 return false
             }
