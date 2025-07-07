@@ -108,13 +108,18 @@ extension Name: Equatable {
             return true
         }
 
-        /// Slower path: See if both strings are ASCII and compare case-insensitively
-        if caseInsensitiveEqualsTryASCII(lhs, rhs) {
+        /// Slower path: See if both strings are ASCII, then compare case-insensitively
+        switch caseInsensitiveEqualsASCII(lhs, rhs) {
+        case .equal:
             return true
+        case .notEqual:
+            return false
+        case .cannotDetermine:
+            break
         }
 
-        /// Slowest path: Try compare as UTF-8 strings
-        if caseInsensitiveEqualsTryAnyUTF8(lhs, rhs) {
+        /// Slowest path: Compare as UTF-8 strings
+        if caseInsensitiveEqualsAnyUTF8(lhs, rhs) {
             return true
         }
 
@@ -122,30 +127,41 @@ extension Name: Equatable {
     }
 
     @usableFromInline
-    static func caseInsensitiveEqualsTryASCII(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        /// Slower path: See if both strings are ASCII and compare case-insensitively
+    enum ASCIIComparisonResult {
+        case equal
+        case notEqual
+        case cannotDetermine
+    }
+
+    @usableFromInline
+    static func caseInsensitiveEqualsASCII(
+        _ lhs: [UInt8],
+        _ rhs: [UInt8]
+    ) -> ASCIIComparisonResult {
         guard lhs.count == rhs.count else {
-            return false
+            return .cannotDetermine
         }
 
         for (l, r) in zip(lhs, rhs) {
             /// ASCII bytes are less than 128, so the eighth bit is always 0
             guard l & 0b1000_0000 == 0,
-                r & 0b1000_0000 == 0,
-                /// https://ss64.com/ascii.html
-                /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-                /// Check if they are either equal or differ by their sixth bit.
-                ((l ^ r) | 0b0010_0000) == 0b0010_0000
+                r & 0b1000_0000 == 0
             else {
-                return false
+                return .cannotDetermine
+            }
+            /// https://ss64.com/ascii.html
+            /// The difference between an upper and lower cased ASCII byte is their sixth bit.
+            /// Check if they are either equal or differ by their sixth bit.
+            guard ((l ^ r) | 0b0010_0000) == 0b0010_0000 else {
+                return .notEqual
             }
         }
 
-        return true
+        return .equal
     }
 
     @usableFromInline
-    static func caseInsensitiveEqualsTryAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
+    static func caseInsensitiveEqualsAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
         /// FIXME: find a more-efficient way than fully converting to a String just to compare?
         let lhs = String(decoding: lhs, as: UTF8.self)
         let rhs = String(decoding: rhs, as: UTF8.self)
