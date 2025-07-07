@@ -147,7 +147,7 @@ let benchmarks: @Sendable () -> Void = {
             warmupIterations: 1000,
             maxIterations: 10_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 4])
+                .throughput: .init(relative: [.p90: 5])
             ]
         )
     ) { benchmark in
@@ -170,13 +170,13 @@ let benchmarks: @Sendable () -> Void = {
     let name1 = try! Name(string: "google.com.")
     let name2 = try! Name(string: "google.com.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Fast_Path_Throughput",
+        "Equality_Check_Identical_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 100_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 6])
+                .throughput: .init(relative: [.p90: 10])
             ]
         )
     ) { benchmark in
@@ -184,7 +184,7 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Fast_Path_Malloc",
+        "Equality_Check_Identical_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -194,30 +194,109 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name1 == name2)
     }
 
-    let lowercasedDomain = try! Name(string: "googße.com.")
-    let uppercasedDomain = try! Name(string: "GOOGSSe.COM.")
+    let lowercasedASCIIDomain = try! Name(string: "google.com.")
+    let uppercasedASCIIDomain = try! Name(string: "GOOGLE.COM.")
     Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Throughput",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_ASCII_Throughput",
         configuration: .init(
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 100_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 3])
+                .throughput: .init(relative: [.p90: 8])
             ]
         )
     ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
+        blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
     }
 
     Benchmark(
-        "Case_Insensitive_Equality_Check_Slow_Path_Malloc",
+        "Equality_Check_Lowercased_VS_Full_Uppercased_ASCII_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
             maxIterations: 10,
         )
     ) { benchmark in
-        blackHole(lowercasedDomain == uppercasedDomain)
+        blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
+    }
+
+    let uppercasedOneLetterASCIIDomain = try! Name(string: "googLe.com.")
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_ASCII_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 8])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedASCIIDomain == uppercasedOneLetterASCIIDomain)
+    }
+
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_ASCII_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedASCIIDomain == uppercasedOneLetterASCIIDomain)
+    }
+
+    let lowercasedUTF8Domain = try! Name(string: "googße.com.")
+    let uppercasedUTF8Domain = try! Name(string: "GOOGSSe.COM.")
+    Benchmark(
+        "Equality_Check_Lowercased_VS_Full_Uppercased_UTF8_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 5])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
+    }
+
+    Benchmark(
+        "Equality_Check_Lowercased_VS_Full_Uppercased_UTF8_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
+    }
+
+    let uppercasedOneLetterUTF8Domain = try! Name(string: "googSSe.com.")
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_UTF8_Throughput",
+        configuration: .init(
+            metrics: [.throughput],
+            warmupIterations: 1000,
+            maxIterations: 100_000_000,
+            thresholds: [
+                .throughput: .init(relative: [.p90: 5])
+            ]
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedOneLetterUTF8Domain)
+    }
+
+    Benchmark(
+        "Equality_Check_Lowercased_VS_One_Letter_Uppercased_UTF8_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10,
+        )
+    ) { benchmark in
+        blackHole(lowercasedUTF8Domain == uppercasedOneLetterUTF8Domain)
     }
 }

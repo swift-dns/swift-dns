@@ -108,7 +108,60 @@ extension Name: Equatable {
             return true
         }
 
-        /// Slow path: Need to check case-insensitively
+        /// Slower path: See if both strings are ASCII, then compare case-insensitively
+        switch caseInsensitiveEqualsASCII(lhs, rhs) {
+        case .equal:
+            return true
+        case .notEqual:
+            return false
+        case .cannotDetermine:
+            break
+        }
+
+        /// Slowest path: Compare as UTF-8 strings
+        if caseInsensitiveEqualsAnyUTF8(lhs, rhs) {
+            return true
+        }
+
+        return false
+    }
+
+    @usableFromInline
+    enum ASCIIComparisonResult {
+        case equal
+        case notEqual
+        case cannotDetermine
+    }
+
+    @usableFromInline
+    static func caseInsensitiveEqualsASCII(
+        _ lhs: [UInt8],
+        _ rhs: [UInt8]
+    ) -> ASCIIComparisonResult {
+        guard lhs.count == rhs.count else {
+            return .cannotDetermine
+        }
+
+        for (l, r) in zip(lhs, rhs) {
+            /// ASCII bytes are less than 128, so the eighth bit is always 0
+            guard l & 0b1000_0000 == 0,
+                r & 0b1000_0000 == 0
+            else {
+                return .cannotDetermine
+            }
+            /// https://ss64.com/ascii.html
+            /// The difference between an upper and lower cased ASCII byte is their sixth bit.
+            /// Check if they are either equal or differ by their sixth bit.
+            guard ((l ^ r) | 0b0010_0000) == 0b0010_0000 else {
+                return .notEqual
+            }
+        }
+
+        return .equal
+    }
+
+    @usableFromInline
+    static func caseInsensitiveEqualsAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
         /// FIXME: find a more-efficient way than fully converting to a String just to compare?
         let lhs = String(decoding: lhs, as: UTF8.self)
         let rhs = String(decoding: rhs, as: UTF8.self)
@@ -137,15 +190,19 @@ extension Name: Sequence {
         var start: Int
         let end: Int
 
+        public init(base: Name) {
+            self.name = base
+            self.start = 0
+            self.end = base.borders.count
+        }
+
         public mutating func next() -> Label? {
             if self.start >= self.end {
                 return nil
             }
 
-            guard self.name.borders.count > self.start else {
-                return nil
-            }
-
+            /// self.name.borders.count is self.end based on the initializer,
+            /// so no need to check again for that.
             let end = self.name.borders[self.start]
             let start: UInt8 =
                 switch self.start {
@@ -166,11 +223,7 @@ extension Name: Sequence {
     }
 
     public func makeIterator() -> Self.Iterator {
-        Iterator(
-            name: self,
-            start: 0,
-            end: self.borders.count,
-        )
+        Iterator(base: self)
     }
 }
 
