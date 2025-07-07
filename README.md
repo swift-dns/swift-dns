@@ -9,15 +9,15 @@ If you're curious, use the GitHub "Watch" feature (near the star button) and cho
 #### Requires Swift 6.2. Also requires macOS 26 if used on macos.
 
 <p>
-    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/tests.yml">
+    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/unit-tests.yml">
         <img
-            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/unit-tests.yml?event=push&job=unit-tests&style=plastic&logo=github&label=tests&logoColor=%23ccc"
+            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/unit-tests.yml?event=push&&style=plastic&logo=github&label=tests&logoColor=%23ccc"
             alt="Unit Tests CI"
         >
     </a>
-    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/tests.yml">
+    <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/integration-tests.yml">
         <img
-            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/integration-tests.yml?event=push&job=unit-tests&style=plastic&logo=github&label=tests&logoColor=%23ccc"
+            src="https://img.shields.io/github/actions/workflow/status/MahdiBM/swift-dns/integration-tests.yml?event=push&style=plastic&logo=github&label=tests&logoColor=%23ccc"
             alt="Integration Tests CI"
         >
     </a>
