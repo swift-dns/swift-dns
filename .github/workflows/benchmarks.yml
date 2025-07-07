@@ -6,6 +6,10 @@ on:
   pull_request: { types: [opened, reopened, synchronize] }
   push: { branches: [main] }
 
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
@@ -18,10 +22,6 @@ jobs:
 
     permissions:
       pull-requests: write # For the comment action
-
-    defaults:
-      run:
-        shell: bash --noprofile --norc -e -u -o pipefail {0}
 
     steps:
       # jemalloc is a dependency of the Benchmarking package
