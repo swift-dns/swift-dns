@@ -49,7 +49,8 @@ jobs:
         run: |
           swift build \
             --build-tests \
-            --enable-code-coverage \ # keeping this to check for regressions
+            # keeping code coverage flag to check for regressions
+            --enable-code-coverage \
             --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
@@ -66,7 +67,8 @@ jobs:
           swift test \
             --skip "IntegrationTests." \
             --skip-build \
-            --enable-code-coverage \ # keeping this to check for regressions
+            # keeping code coverage flag to check for regressions
+            --enable-code-coverage \
             --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
