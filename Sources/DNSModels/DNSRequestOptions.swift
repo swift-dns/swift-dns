@@ -4,7 +4,7 @@ public struct DNSRequestOptions: Sendable, OptionSet {
 
     @inlinable
     public static var edns: DNSRequestOptions {
-        DNSRequestOptions(rawValue: 1 << 0)
+        DNSRequestOptions(rawValue: 1 &<< 0)
     }
 
     @inlinable

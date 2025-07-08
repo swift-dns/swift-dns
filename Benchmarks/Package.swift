@@ -7,6 +7,7 @@ import PackageDescription
 let package = Package(
     name: "swift-dns",
     platforms: [
+        // FIXME: remove this platform requirement, use @available instead
         .macOS("26.0")
     ],
     dependencies: [
@@ -19,10 +20,12 @@ let package = Package(
             name: "DNSCore",
             swiftSettings: settings
         ),
+        .target(name: "CSwiftDNSIDNA"),
         .target(
             name: "DNSModels",
             dependencies: [
                 "DNSCore",
+                "CSwiftDNSIDNA",
                 .product(name: "Collections", package: "swift-collections"),
                 .product(name: "NIOCore", package: "swift-nio"),
             ],
@@ -39,11 +42,16 @@ let package = Package(
             ],
             swiftSettings: settings
         ),
+        .target(
+            name: "CSwiftDNSIDNATesting",
+            cSettings: cSettingsIgnoringInvalidSourceCharacters
+        ),
         .testTarget(
             name: "DNSTests",
             dependencies: [
                 "DNSCore",
                 "DNSModels",
+                "CSwiftDNSIDNATesting",
             ],
             swiftSettings: settings
         ),
@@ -63,6 +71,17 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("ExistentialAny"),
+    ]
+}
+
+var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
+    [
+        .unsafeFlags(
+            [
+                "-Wno-unknown-escape-sequence",
+                "-Wno-invalid-source-encoding",
+            ]
+        )
     ]
 }
 // MARK: - END exact copy of the main package's Package.swift

@@ -61,6 +61,8 @@ extension A: Queryable {
     @inlinable
     public static var recordType: RecordType { .A }
 
+    /// TODO: check what do the other DNS classes do anyway, and if tying a type to a
+    /// specific class is a good idea.
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

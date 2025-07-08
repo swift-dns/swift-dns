@@ -217,12 +217,18 @@ extension CAA.Value {
             if nameBytes.isEmpty {
                 name = nil
             } else {
-                name = try Name(bytes: nameBytes)
+                name = try Name(
+                    expectingASCIIBytes: nameBytes,
+                    name: "CAA.issuer.name"
+                )
                 buffer.moveReaderIndex(forwardBy: nameBytes.count)
             }
         } else {
             if buffer.readableBytes > 0 {
-                name = try Name(bytes: buffer.readableBytesView)
+                name = try Name(
+                    expectingASCIIBytes: buffer.readableBytesView,
+                    name: "CAA.issuer.name"
+                )
                 buffer.moveReaderIndex(to: buffer.writerIndex)
                 /// There was no semicolon in the buffer so the whole of it was the name.
                 /// Therefore, we can return immediately.
@@ -247,7 +253,7 @@ extension CAA.Value {
                     /// we found the beginning of a new Key
                     state = .key(
                         isFirstChar: true,
-                        key: "\(UnicodeScalar(char))",
+                        key: "\(Unicode.Scalar(char))",
                         keyValues: keyValues
                     )
                 default:
@@ -271,7 +277,7 @@ extension CAA.Value {
                 where (char.isASCIIAlphanumeric || (!isFirstChar && char == UInt8.asciiDash))
                     && (char != UInt8.asciiEqual) && (char != UInt8.asciiSemicolon):
 
-                    key.append(Character(UnicodeScalar(char)))
+                    key.append(Character(Unicode.Scalar(char)))
                     state = .key(
                         isFirstChar: false,
                         key: key,
@@ -299,7 +305,7 @@ extension CAA.Value {
                     && char < UInt8.asciiPrintableEnd
                     && (char != UInt8.asciiSemicolon):
 
-                    value.append(Character(UnicodeScalar(char)))
+                    value.append(Character(Unicode.Scalar(char)))
                     state = .value(
                         key: key,
                         value: value,

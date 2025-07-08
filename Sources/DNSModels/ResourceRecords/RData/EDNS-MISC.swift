@@ -209,6 +209,7 @@ extension EDNSOption.ClientSubnet {
 
 extension EDNSOption.SupportedAlgorithms {
     mutating func insert(_ algorithm: DNSSECAlgorithmEDNSSubset) {
+        /// No unchecked math (&<<) here because we might need to grow the size of algorithm.
         self.rawValue |= 1 << algorithm.rawValue
     }
 
@@ -369,6 +370,7 @@ extension EDNSOption.ClientSubnet {
     }
 }
 
+/// FIXME: what if we need to grow the size of this enum?
 public enum DNSSECAlgorithmEDNSSubset: UInt8 {
 
     /// I know the explicit numbers are not needed and Swift already does this.

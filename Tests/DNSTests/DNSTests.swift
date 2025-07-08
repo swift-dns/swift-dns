@@ -4,7 +4,7 @@ import Testing
 
 @Suite
 struct DNSTests {
-    @Test func encodeAExampleComQuery() async throws {
+    @Test func encodeAExampleComQuery() throws {
         let query = Query(
             name: try Name(string: "example.com"),
             queryType: .A,
@@ -48,7 +48,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeAExampleComResponse() async throws {
+    @Test func decodeAExampleComResponse() throws {
         var buffer = Resources.dnsResponseAExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -127,7 +127,7 @@ struct DNSTests {
         #expect(option.1 == .unknown(12, [UInt8](repeating: 0, count: 328)))
     }
 
-    @Test func encodeAAAACloudflareComQuery() async throws {
+    @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
             name: try Name(string: "cloudflare.com"),
             queryType: .AAAA,
@@ -171,7 +171,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeAAAACloudflareComResponse() async throws {
+    @Test func decodeAAAACloudflareComResponse() throws {
         var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -253,7 +253,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeCAACloudflareComQuery() async throws {
+    @Test func encodeCAACloudflareComQuery() throws {
         let query = Query(
             name: try Name(string: "cloudflare.com"),
             queryType: .CAA,
@@ -297,7 +297,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeCAACloudflareComResponse() async throws {
+    @Test func decodeCAACloudflareComResponse() throws {
         var buffer = Resources.dnsResponseCAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -579,7 +579,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeCERTForDnsCertTestingMahdibmComQuery() async throws {
+    @Test func encodeCERTForDnsCertTestingMahdibmComQuery() throws {
         let query = Query(
             name: try Name(string: "for-dns-cert-testing.mahdibm.com"),
             queryType: .CERT,
@@ -623,7 +623,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeCERTForDnsCertTestingMahdibmComResponse() async throws {
+    @Test func decodeCERTForDnsCertTestingMahdibmComResponse() throws {
         var buffer = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -712,7 +712,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeCNAMEWwwGithubComQuery() async throws {
+    @Test func encodeCNAMEWwwGithubComQuery() throws {
         let query = Query(
             name: try Name(string: "www.github.com"),
             queryType: .CNAME,
@@ -756,7 +756,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeCNAMEWwwGithubComResponse() async throws {
+    @Test func decodeCNAMEWwwGithubComResponse() throws {
         var buffer = Resources.dnsResponseCNAMEWwwGithubComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -802,7 +802,7 @@ struct DNSTests {
             Issue.record("rdata was not of type CNAME: \(answer.rdata)")
             return
         }
-        #expect(cname.name.asString() == "github.com.")
+        #expect(cname.name.description == "github.com.")
 
         /// The 'additional' was an EDNS
         #expect(response.additionals.count == 0)
@@ -818,7 +818,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeCNAMERawGithubusercontentComQuery() async throws {
+    @Test func encodeCNAMERawGithubusercontentComQuery() throws {
         let query = Query(
             name: try Name(string: "raw.githubusercontent.com"),
             queryType: .CNAME,
@@ -862,7 +862,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeCNAMERawGithubusercontentComResponse() async throws {
+    @Test func decodeCNAMERawGithubusercontentComResponse() throws {
         var buffer = Resources.dnsResponseCNAMERawGithubusercontentComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -895,8 +895,8 @@ struct DNSTests {
         let nameServer = try #require(response.nameServers.first)
         switch nameServer.rdata {
         case .SOA(let soa):
-            #expect(soa.mName.asString() == "ns-1411.awsdns-48.org.")
-            #expect(soa.rName.asString() == "awsdns-hostmaster.amazon.com.")
+            #expect(soa.mName.description == "ns-1411.awsdns-48.org.")
+            #expect(soa.rName.description == "awsdns-hostmaster.amazon.com.")
             #expect(soa.serial == 1)
             #expect(soa.refresh == 7200)
             #expect(soa.retry == 900)
@@ -922,7 +922,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeMXMahdibmComQuery() async throws {
+    @Test func encodeMXMahdibmComQuery() throws {
         let query = Query(
             name: try Name(string: "mahdibm.com"),
             queryType: .MX,
@@ -966,7 +966,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeMXMahdibmComResponse() async throws {
+    @Test func decodeMXMahdibmComResponse() throws {
         var buffer = Resources.dnsResponseMXMahdibmComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -1044,7 +1044,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeNSAppleComQuery() async throws {
+    @Test func encodeNSAppleComQuery() throws {
         let query = Query(
             name: try Name(string: "apple.com"),
             queryType: .NS,
@@ -1088,7 +1088,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeNSAppleComResponse() async throws {
+    @Test func decodeNSAppleComResponse() throws {
         var buffer = Resources.dnsResponseNSAppleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -1167,7 +1167,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeOPTCloudflareComQuery() async throws {
+    @Test func encodeOPTCloudflareComQuery() throws {
         let query = Query(
             name: try Name(string: "cloudflare.com"),
             queryType: .OPT,
@@ -1213,7 +1213,7 @@ struct DNSTests {
 
     /// You can't query OPT directly, so this response is a `ServFail`.
     /// OPT is used in every other query, so it's already well-tested.
-    @Test func decodeOPTCloudflareComResponse() async throws {
+    @Test func decodeOPTCloudflareComResponse() throws {
         var buffer = Resources.dnsResponseOPTCloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -1526,7 +1526,7 @@ struct DNSTests {
         }
     }
 
-    @Test func encodePTR9dot9dot9dot9Query() async throws {
+    @Test func encodePTR9dot9dot9dot9Query() throws {
         let query = Query(
             name: try Name(string: "9.9.9.9.in-addr.arpa"),
             queryType: .PTR,
@@ -1570,7 +1570,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodePTR9dot9dot9dot9Response() async throws {
+    @Test func decodePTR9dot9dot9dot9Response() throws {
         var buffer = Resources.dnsResponsePTR9dot9dot9dot9Packet.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)
@@ -1646,7 +1646,7 @@ struct DNSTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @Test func encodeTXTExampleComQuery() async throws {
+    @Test func encodeTXTExampleComQuery() throws {
         let query = Query(
             name: try Name(string: "example.com"),
             queryType: .TXT,
@@ -1690,7 +1690,7 @@ struct DNSTests {
         #expect(buffer == expected)
     }
 
-    @Test func decodeTXTExampleComResponse() async throws {
+    @Test func decodeTXTExampleComResponse() throws {
         var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
         buffer.moveDNSPortionStartIndex(forwardBy: 42)

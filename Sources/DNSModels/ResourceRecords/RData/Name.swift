@@ -10,12 +10,14 @@
 /// ```
 public struct Name: Sendable {
     /// Maximum allowed domain name length.
-    public static var maxLength: UInt8 {
+    @usableFromInline
+    static var maxLength: UInt8 {
         255
     }
 
     /// Maximum allowed label length.
-    public static var maxLabelLength: UInt8 {
+    @usableFromInline
+    static var maxLabelLength: UInt8 {
         63
     }
 
@@ -29,7 +31,8 @@ public struct Name: Sendable {
     /// A domain name whose last label identifies a root of the graph is fully qualified other domain names whose
     /// labels form a strict prefix of a fully qualified domain name are relative to its first omitted node.
     /// ```
-    public var isFQDN: Bool
+    @usableFromInline
+    package var isFQDN: Bool
     /// FIXME: investigate performance improvements, with something like `ArraySlice<UInt8>` or `TinyVec`
     /// The data of each label in the name.
     ///
@@ -41,9 +44,11 @@ public struct Name: Sendable {
     /// An ordered list of zero or more octets that makes up a portion of a domain name.
     /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
     /// ```
-    public var data: [UInt8]
+    @usableFromInline
+    package var data: [UInt8]
     /// The end of each label in the `data` array.
-    public var borders: [UInt8]
+    @usableFromInline
+    package var borders: [UInt8]
 
     /// Returns the encoded length of this name, ignoring compression.
     ///
@@ -54,17 +59,20 @@ public struct Name: Sendable {
     }
 
     /// The number of labels in the name, excluding `*`.
+    @inlinable
     public var labelsCount: Int {
         let count = self.borders.count
-        return (self.data.first == UInt8.asciiStar) ? count - 1 : count
+        return (self.data.first == UInt8.asciiStar) ? (count - 1) : count
     }
 
     /// Whether the name is the DNS root name, aka `.`.
+    @inlinable
     public var isRoot: Bool {
         self.isFQDN && self.borders.isEmpty
     }
 
-    public init(
+    @usableFromInline
+    package init(
         isFQDN: Bool = false,
         data: [UInt8] = [],
         borders: [UInt8] = []
@@ -72,6 +80,8 @@ public struct Name: Sendable {
         self.isFQDN = isFQDN
         self.data = data
         self.borders = borders
+        /// No empty labels
+        assert(self.allSatisfy({ !$0.isEmpty }))
     }
 }
 
@@ -108,66 +118,21 @@ extension Name: Equatable {
             return true
         }
 
-        /// Slower path: See if both strings are ASCII, then compare case-insensitively
-        switch caseInsensitiveEqualsASCII(lhs, rhs) {
-        case .equal:
-            return true
-        case .notEqual:
-            return false
-        case .cannotDetermine:
-            break
-        }
-
-        /// Slowest path: Compare as UTF-8 strings
-        if caseInsensitiveEqualsAnyUTF8(lhs, rhs) {
-            return true
-        }
-
-        return false
-    }
-
-    @usableFromInline
-    enum ASCIIComparisonResult {
-        case equal
-        case notEqual
-        case cannotDetermine
-    }
-
-    @usableFromInline
-    static func caseInsensitiveEqualsASCII(
-        _ lhs: [UInt8],
-        _ rhs: [UInt8]
-    ) -> ASCIIComparisonResult {
+        /// Slower path: Compare case-insensitively assuming ASCII.
+        /// Names are validated or converted to ASCII at initialization time.
         guard lhs.count == rhs.count else {
-            return .cannotDetermine
+            return false
         }
 
         for (l, r) in zip(lhs, rhs) {
-            /// ASCII bytes are less than 128, so the eighth bit is always 0
-            guard (r | l) & 0b1000_0000 == 0 else {
-                return .cannotDetermine
-            }
             /// https://ss64.com/ascii.html
             /// The difference between an upper and lower cased ASCII byte is their sixth bit.
             guard (l & 0b1101_1111) == (r & 0b1101_1111) else {
-                return .notEqual
+                return false
             }
         }
 
-        return .equal
-    }
-
-    @usableFromInline
-    static func caseInsensitiveEqualsAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        /// FIXME: find a more-efficient way than fully converting to a String just to compare?
-        let lhs = String(decoding: lhs, as: UTF8.self)
-        let rhs = String(decoding: rhs, as: UTF8.self)
-
-        guard lhs.utf8.count == rhs.utf8.count else {
-            return false
-        }
-
-        return lhs.uppercased() == rhs.uppercased()
+        return true
     }
 }
 
@@ -225,6 +190,7 @@ extension Name: Sequence {
 }
 
 extension Name {
+    @usableFromInline
     enum ParsingState: ~Copyable {
         case label
         case escape1
@@ -234,21 +200,41 @@ extension Name {
 
     /// Parses the name from the string, and ensures the name is valid.
     /// Example: try Name(string: "mahdibm.com")
-    public init(string: some StringProtocol, origin: Self? = nil) throws {
-        try self.init(bytes: string.utf8, origin: origin)
-    }
-
-    /// Parses the name from the bytes, and ensures the name is valid.
-    /// Example: try Name(bytes: "mahdibm.com".utf8)
-    /// DOES NOT parse based on the wire format. Use ``init(from:)`` instead for that.
-    public init(bytes: some Collection<UInt8>, origin: Self? = nil) throws {
+    @inlinable
+    public init(string: String, origin: Self? = nil) throws {
         self.init()
+
         // short circuit root parse
-        if bytes.count == 1, bytes.first == UInt8.asciiDot {
+        /// TODO: do we need `.utf8` here?
+        if string.utf8.count == 1, string.utf8.first == UInt8.asciiDot {
             self.isFQDN = true
             return
         }
 
+        var scalars = string.unicodeScalars
+        Name.ensureASCII(&scalars)
+        try self.init(
+            guaranteedASCIIBytes: scalars.flatMap(\.utf8),
+            origin: origin
+        )
+    }
+
+    @usableFromInline
+    init(expectingASCIIBytes bytes: some Collection<UInt8>, name: StaticString) throws {
+        guard bytes.allSatisfy(\.isASCII) else {
+            /// FIXME: throw a better error
+            throw ProtocolError.failedToValidate(name, DNSBuffer(bytes: bytes))
+        }
+        self.init()
+        try self.init(guaranteedASCIIBytes: bytes)
+    }
+
+    @usableFromInline
+    init(
+        guaranteedASCIIBytes bytes: some Collection<UInt8>,
+        origin: Self? = nil
+    ) throws {
+        self.init()
         var label = [UInt8]()
         /// FIXME: try this line after we have benchmarks
         // label.reserveCapacity(8)
@@ -276,6 +262,7 @@ extension Name {
         }
     }
 
+    @usableFromInline
     mutating func iterate(
         state: consuming ParsingState,
         label: inout [UInt8],
@@ -294,10 +281,17 @@ extension Name {
                 return .label
             case UInt8.asciiBackslash:
                 return .escape1
-            case let char:
-                /// Allow any characters, even binary characters or whitespaces.
+            case let char
+            where Unicode.Scalar(char).properties.generalCategory != .control
+                && !Unicode.Scalar(char).properties.isWhitespace:
                 label.append(char)
                 return .label
+            default:
+                throw ProtocolError.badCharacter(
+                    in: "Name.bytes",
+                    character: char,
+                    DNSBuffer(bytes: bytes)
+                )
             }
         case .escape1:
             if Unicode.Scalar(char).properties.generalCategory.isNumeric {
@@ -342,11 +336,13 @@ extension Name {
         }
     }
 
+    @usableFromInline
     mutating func appendDomain(_ domain: Self) throws {
         try self.appendName(domain)
         self.isFQDN = true
     }
 
+    @usableFromInline
     mutating func appendName(_ name: Self) throws {
         for label in name {
             try self.extendName(label)
@@ -358,6 +354,7 @@ extension Name {
     /// Does not check if the label is not empty. That needs to be checked by the caller.
     /// In the wire format labels cannot be empty, but in the string format they can, so the caller
     /// will need to check that.
+    @usableFromInline
     mutating func extendName(_ label: [UInt8]) throws {
         let newLength = self.encodedLength + label.count + 1
 
@@ -376,6 +373,60 @@ extension Name {
             /// less than Self.maxLength which is 255
             UInt8(exactly: self.data.count)!
         )
+    }
+
+    /// Makes sure the bytes are ASCII or turns them into ASCII following IDN.
+    /// [RFC 5891, Internationalized Domain Names in Applications (IDNA): Protocol, August 2010](https://datatracker.ietf.org/doc/html/rfc5891)
+    @usableFromInline
+    static func ensureASCII(_ bytes: inout String.UnicodeScalarView) {
+        // let string = ""
+        // string.lazy.split(separator: ".")
+        guard bytes.contains(where: { !$0.isASCII }) else {
+            return
+        }
+
+    }
+
+    @usableFromInline
+    static func ensureASCIILabel(_ string: inout String) {
+        /// [RFC 5891, Internationalized Domain Names in Applications (IDNA): Protocol, August 2010](https://datatracker.ietf.org/doc/html/rfc5891#section-4.1)
+        ///
+        /// ```text
+        /// By the time a string enters the IDNA registration process as
+        /// described in this specification, it MUST be in Unicode and in
+        /// Normalization Form C (NFC [Unicode-UAX15]).
+        /// ```
+        let string = string.asNFC
+
+        let scalars = string.unicodeScalars
+
+        /// [RFC 5891, Internationalized Domain Names in Applications (IDNA): Protocol, August 2010](https://datatracker.ietf.org/doc/html/rfc5891#section-4.2.3.1)
+        ///
+        /// ```text
+        /// The Unicode string MUST NOT contain "--" (two consecutive hyphens) in
+        /// the third and fourth character positions and MUST NOT start or end
+        /// with a "-" (hyphen).
+        /// ```
+        if (scalars.first?.isHyphen == true)
+            || (scalars.last?.isHyphen == true)
+            || (scalars.count > 3
+                && scalars[scalars.index(scalars.startIndex, offsetBy: 2)].isHyphen
+                && scalars[scalars.index(scalars.startIndex, offsetBy: 3)].isHyphen)
+        {
+            // throw
+        }
+
+        /// [RFC 5891, Internationalized Domain Names in Applications (IDNA): Protocol, August 2010](https://datatracker.ietf.org/doc/html/rfc5891#section-4.2.3.2)
+        ///
+        /// ```text
+        /// The Unicode string MUST NOT begin with a combining mark or combining
+        /// character (see The Unicode Standard, Section 2.11 [Unicode] for an
+        /// exact definition).
+        /// ```
+        if scalars.first?.properties.generalCategory.isMark == true {
+            // throw
+        }
+        // TODO: check for other IDNA rules
     }
 }
 
@@ -515,19 +566,19 @@ extension Name {
     }
 }
 
-extension Name {
-    package func asString() -> String {
-        var scalars: [UnicodeScalar] = []
+extension Name: CustomStringConvertible {
+    public var description: String {
+        var scalars: [Unicode.Scalar] = []
         scalars.reserveCapacity(self.encodedLength)
 
         var iterator = self.makeIterator()
         if let first = iterator.next() {
-            scalars.append(contentsOf: first.map(UnicodeScalar.init))
+            scalars.append(contentsOf: first.map(Unicode.Scalar.init))
         }
 
         while let label = iterator.next() {
             scalars.append(".")
-            scalars.append(contentsOf: label.map(UnicodeScalar.init))
+            scalars.append(contentsOf: label.map(Unicode.Scalar.init))
         }
 
         if self.isFQDN {

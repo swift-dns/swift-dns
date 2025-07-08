@@ -202,7 +202,7 @@ extension TSIG {
         )
         /// `timeHigh` and `timeLow` are `UInt16` and `UInt32` respectively, so it's safe to convert to `UInt64`
         self.time =
-            (UInt64(truncatingIfNeeded: timeHigh) << 32) | UInt64(truncatingIfNeeded: timeLow)
+            (UInt64(truncatingIfNeeded: timeHigh) &<< 32) | UInt64(truncatingIfNeeded: timeLow)
         self.fudge = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("TSIG.fudge", buffer)
         )
@@ -255,7 +255,7 @@ extension TSIG {
 extension TSIG.Algorithm {
     init(name: Name) {
         self =
-            switch name.asString() {
+            switch name.description {
             case "HMAC-MD5.SIG-ALG.REG.INT": .HMAC_MD5
             case "gss-tsig": .GSS
             case "hmac-sha1": .HMAC_SHA1

@@ -41,8 +41,8 @@ public struct EDNS: Sendable {
     public var options: OPT
 
     var ttl: UInt32 {
-        (UInt32(self.rcodeHigh) << 24)
-            | (UInt32(self.version) << 16)
+        (UInt32(self.rcodeHigh) &<< 24)
+            | (UInt32(self.version) &<< 16)
             | UInt32(self.flags.rawValue)
     }
 

@@ -19,12 +19,16 @@ struct NameTests {
                 data: [77, 105, 106, 105, 97, 32, 67, 108, 111, 117, 100], borders: [11]
             ),
             (
-                name: "helooß.co.uk.", isFQDN: true,
-                data: [104, 101, 108, 111, 111, 195, 159, 99, 111, 117, 107], borders: [7, 9, 11]
+                name: "helloß.co.uk.", isFQDN: true,
+                data: [
+                    13, 120, 110, 45, 45, 104, 101, 108, 108, 111,
+                    45, 112, 113, 97, 2, 99, 111, 2, 117, 107,
+                ],
+                borders: [7, 9, 11]
             ),
         ]
     )
-    func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) async throws {
+    func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) throws {
         let domainName = try Name(string: name)
         #expect(domainName.isFQDN == isFQDN)
         #expect(domainName.data == data)
@@ -36,13 +40,25 @@ struct NameTests {
             ".mahdibm.com"
         ]
     )
-    func initInvalidFromString(name: String) async throws {
+    func initInvalidFromString(name: String) throws {
         #expect(throws: (any Error).self) {
             try Name(string: name)
         }
     }
 
-    @Test func equalityWhichShouldBeCaseInsensitive() async throws {
+    @Test(
+        arguments: [
+            ("xn--1lq90ic7f1rc.cn", "\u{5317}\u{4eac}\u{5927}\u{5b78}.cn"),
+            ("xn--36c-tfa.com", "xn--36c-tfa.com"),
+            ("www.xn--hello-pqa.co.uk.", "www.helloß.co.uk."),
+        ]
+    )
+    func description(name: String, expected: String) throws {
+        let name = try Name(string: name)
+        #expect(name.description == expected)
+    }
+
+    @Test func equalityWhichShouldBeCaseInsensitive() throws {
         let name = try Name(string: "example.com.")
         let duplicate = try Name(string: "example.com.")
         let uppercased = try Name(string: "EXAMPLE.COM.")
@@ -62,9 +78,9 @@ struct NameTests {
         #expect(name != different)
         #expect(name != differentNotFQDN)
 
-        let weirdLowercaseDomain = try Name(string: "helooß.co.uk.")
-        let weirdPartiallyUppercaseDomain = try Name(string: "helooSS.co.uk.")
-        let weirdUppercaseDomain = try Name(string: "HELOOSS.CO.UK.")
+        let weirdLowercaseDomain = try Name(string: "helloß.co.uk.")
+        let weirdPartiallyUppercaseDomain = try Name(string: "helloSS.co.uk.")
+        let weirdUppercaseDomain = try Name(string: "HELLOSS.CO.UK.")
 
         #expect(weirdLowercaseDomain == weirdPartiallyUppercaseDomain)
         #expect(weirdLowercaseDomain == weirdUppercaseDomain)
@@ -82,7 +98,7 @@ struct NameTests {
             (name: #"test\."#, isFQDN: false),
         ]
     )
-    func `fqdnParsing`(name: String, isFQDN: Bool) async throws {
+    func `fqdnParsing`(name: String, isFQDN: Bool) throws {
         try #expect(Name(string: name).isFQDN == isFQDN)
     }
 
@@ -97,8 +113,8 @@ struct NameTests {
             (name: #"test\."#, expected: "test."),
         ]
     )
-    func `parsingThenAsStringWorksAsExpected`(name: String, expected: String) async throws {
-        #expect(try Name(string: name).asString() == expected)
+    func `parsingThenAsStringWorksAsExpected`(name: String, expected: String) throws {
+        #expect(try Name(string: name).description == expected)
     }
 
     @Test(
@@ -111,11 +127,11 @@ struct NameTests {
             (name: "a.b.c", expectedLabelsCount: 3),
         ]
     )
-    func `numberOfLabels`(name: String, expectedLabelsCount: Int) async throws {
+    func `numberOfLabels`(name: String, expectedLabelsCount: Int) throws {
         try #expect(Name(string: name).labelsCount == expectedLabelsCount)
     }
 
-    @Test func decodeFromBuffer() async throws {
+    @Test func decodeFromBufferAndTurnBackIntoString() throws {
         var buffer = DNSBuffer(bytes: [
             0x07, 0x65, 0x78, 0x61,
             0x6d, 0x70, 0x6c, 0x65,
@@ -123,6 +139,21 @@ struct NameTests {
             0x00,
         ])
         let name = try Name(from: &buffer)
-        #expect(name.asString() == "example.com.")
+        #expect(name.description == "example.com.")
+    }
+
+    @Test func decodeNonASCIIFromBufferAndTurnBackIntoString() throws {
+        /// Testing `helloß.co.uk.` which turns into `www.xn--heloo-pqa.co.uk.` based on punycode.
+        var buffer = DNSBuffer(bytes: [
+            0x3, 0x77, 0x77, 0x77,
+            0xd, 0x78, 0x6e, 0x2d,
+            0x2d, 0x68, 0x65, 0x6c,
+            0x6c, 0x6f, 0x2d, 0x70,
+            0x71, 0x61, 0x2, 0x63,
+            0x6f, 0x2, 0x75, 0x6b,
+            0x0,
+        ])
+        let name = try Name(from: &buffer)
+        #expect(name.description == "helloß.co.uk.")
     }
 }

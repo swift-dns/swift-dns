@@ -356,7 +356,7 @@ struct DNSTests {
         #expect(answer.dnsClass == .IN)
         #expect(answer.ttl > 0)
         let cname = try answer.rdata
-        #expect(cname.name.asString() == "github.com.")
+        #expect(cname.name.description == "github.com.")
 
         /// The 'additional' was an EDNS
         #expect(response.additionals.count == 0)
@@ -410,8 +410,8 @@ struct DNSTests {
         let nameServer = try #require(response.nameServers.first)
         switch nameServer.rdata {
         case .SOA(let soa):
-            let mName = soa.mName.asString()
-            let rName = soa.rName.asString()
+            let mName = soa.mName.description
+            let rName = soa.rName.description
             #expect(mName.count > 5, "mName: \(mName), soa: \(soa)")
             #expect(rName.count > 5, "rName: \(rName), soa: \(soa)")
         default:
@@ -438,7 +438,9 @@ struct DNSTests {
 
     @Test func queryHINFO() async throws {}
 
-    @Test func queryHTTPS() async throws {}
+    @Test func queryHTTPS() async throws {
+        /// TODO: try `education.github.com`
+    }
 
     @Test func queryMX() async throws {
         let client = DNSClient(
@@ -570,7 +572,7 @@ struct DNSTests {
         let nss = try response.answers.map {
             try $0.rdata
         }.sorted {
-            $0.name.asString() < $1.name.asString()
+            $0.name.description < $1.name.description
         }
         let expectedNSs = [
             NS(name: try Name(string: "a.ns.apple.com.")),
@@ -687,7 +689,9 @@ struct DNSTests {
 
     @Test func querySSHFP() async throws {}
 
-    @Test func querySVCB() async throws {}
+    @Test func querySVCB() async throws {
+        /// TODO: try `_dns.resolver.arpa`
+    }
 
     @Test func queryTLSA() async throws {}
 

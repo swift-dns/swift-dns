@@ -10,6 +10,7 @@ package struct DNSBuffer: Sendable {
     @usableFromInline
     var _buffer: ByteBuffer
     /// Start index of the DNS portion of the packet the buffer
+    /// This can be a negative number if e.g. this `DNSBuffer` is a slice of a parent `DNSBuffer`.
     ///
     /// TODO: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
     /// Start from the DNS portion of the packet?

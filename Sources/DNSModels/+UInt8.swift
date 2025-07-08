@@ -15,6 +15,11 @@ extension UInt8 {
     }
 
     @inlinable
+    var isASCII: Bool {
+        self & 0b1000_0000 == 0
+    }
+
+    @inlinable
     static var asciiPrintableStart: UInt8 {
         0x20
     }
@@ -62,6 +67,16 @@ extension UInt8 {
     @inlinable
     static var asciiDot: UInt8 {
         0x2E
+    }
+
+    @inlinable
+    static var asciiLowercasedX: UInt8 {
+        0x78
+    }
+
+    @inlinable
+    static var asciiLowercasedN: UInt8 {
+        0x6E
     }
 
     @inlinable

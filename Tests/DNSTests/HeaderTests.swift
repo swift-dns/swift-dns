@@ -3,7 +3,7 @@ import Testing
 
 @Suite
 struct HeaderTests {
-    @Test func setGetWorksInBytes16To31WithDefaultTrue() async throws {
+    @Test func setGetWorksInBytes16To31WithDefaultTrue() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
             bytes16To31.messageType = .Query
@@ -49,7 +49,7 @@ struct HeaderTests {
         }
     }
 
-    @Test func setGetWorksInBytes16To31WithDefaultFalse() async throws {
+    @Test func setGetWorksInBytes16To31WithDefaultFalse() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
             bytes16To31.messageType = .Response
@@ -95,7 +95,7 @@ struct HeaderTests {
         }
     }
 
-    @Test func setGetWorksInBytes16To31WithDefaultFalseAndReverseOrdering() async throws {
+    @Test func setGetWorksInBytes16To31WithDefaultFalseAndReverseOrdering() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
             bytes16To31.responseCode = .NotZone
@@ -141,7 +141,7 @@ struct HeaderTests {
         }
     }
 
-    @Test func testRealWorldBytes16To31Parsing() async throws {
+    @Test func testRealWorldBytes16To31Parsing() throws {
         let bytes16To31 = Header.Bytes16To31(rawValue: 33152)
         #expect(bytes16To31.messageType == .Response)
         #expect(bytes16To31.opCode == .Query)
@@ -154,7 +154,7 @@ struct HeaderTests {
         #expect(bytes16To31.responseCode == .NoError)
     }
 
-    @Test func headerParsesCorrectly() async throws {
+    @Test func headerParsesCorrectly() throws {
         var buffer = DNSBuffer(bytes: [
             0xAA, 0xAA, 0x01, 0x00,
             0x00, 0x01, 0x00, 0x00,
