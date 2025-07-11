@@ -6,7 +6,7 @@
 extern const IDNATestV2CCase idna_test_v2_cases[];
 
 const IDNATestV2CCase* idna_test_v2_all_cases(size_t* count) {
-    if (count) *count = IDNA_TEST_V2_CASES_COUNT;
+    *count = IDNA_TEST_V2_CASES_COUNT;
     return idna_test_v2_cases;
 }
 

@@ -2,6 +2,10 @@
 
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 let mappingTableURL = "https://www.unicode.org/Public/idna/16.0.0/IdnaMappingTable.txt"
 let outputPath = "Sources/CSwiftDNSIDNA/src/idna_mapping_table.c"
 

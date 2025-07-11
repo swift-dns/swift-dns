@@ -2,6 +2,10 @@
 
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 let testV2URL = "https://www.unicode.org/Public/idna/16.0.0/IdnaTestV2.txt"
 let outputPath = "Sources/CSwiftDNSIDNATesting/src/idna_test_v2_cases.c"
 
@@ -121,7 +125,7 @@ func generate() -> String {
         extern const IDNATestV2CCase idna_test_v2_cases[];
 
         const IDNATestV2CCase* idna_test_v2_all_cases(size_t* count) {
-            if (count) *count = IDNA_TEST_V2_CASES_COUNT;
+            *count = IDNA_TEST_V2_CASES_COUNT;
             return idna_test_v2_cases;
         }
 
