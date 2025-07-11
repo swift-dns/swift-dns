@@ -5,21 +5,31 @@ import CSwiftDNSIDNATesting
 import Foundation
 
 /// Represents a single test case from the IDNA Test V2 specification
-struct IDNATestV2Case: Sendable {
+struct IDNATestV2Case {
+    enum Status: String {
+        case A4_1, A4_2
+        case B1, B2, B3, B4, B5, B6
+        case C1, C2
+        case V1, V2, V3, V4, V6, V7
+        case U1
+        case P4
+        case X4_2
+    }
+
     /// The source string to be tested
     let source: String
     /// The result of applying toUnicode to the source, with Transitional_Processing=false
     let toUnicode: String
     /// A set of status codes for toUnicode operation
-    let toUnicodeStatus: [String]
+    let toUnicodeStatus: [Status]
     /// The result of applying toASCII to the source, with Transitional_Processing=false
     let toAsciiN: String
     /// A set of status codes for toAsciiN operation
-    let toAsciiNStatus: [String]
+    let toAsciiNStatus: [Status]
     /// The result of applying toASCII to the source, with Transitional_Processing=true
     let toAsciiT: String
     /// A set of status codes for toAsciiT operation
-    let toAsciiTStatus: [String]
+    let toAsciiTStatus: [Status]
 
     init(from cCase: IDNATestV2CCase) {
         self.source = String(cString: cCase.source)
@@ -33,6 +43,8 @@ struct IDNATestV2Case: Sendable {
             )
         ).map {
             String(cString: $0!)
+        }.map {
+            Status(rawValue: $0)!
         }
         self.toAsciiNStatus = Array(
             UnsafeBufferPointer(
@@ -41,6 +53,8 @@ struct IDNATestV2Case: Sendable {
             )
         ).map {
             String(cString: $0!)
+        }.map {
+            Status(rawValue: $0)!
         }
         self.toAsciiTStatus = Array(
             UnsafeBufferPointer(
@@ -49,6 +63,8 @@ struct IDNATestV2Case: Sendable {
             )
         ).map {
             String(cString: $0!)
+        }.map {
+            Status(rawValue: $0)!
         }
     }
 
@@ -58,5 +74,58 @@ struct IDNATestV2Case: Sendable {
             fatalError("Failed to get IDNA Test V2 cases")
         }
         return (0..<count).map { i in IDNATestV2Case(from: ptr[i]) }
+    }
+}
+
+extension IDNATestV2Case.Status: CustomStringConvertible {
+    var description: String {
+        ".\(self.rawValue)"
+    }
+}
+
+extension IDNATestV2Case.Status {
+    var isVerifyDnsLengthStatus: Bool {
+        switch self {
+        case .A4_1, .A4_2:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isCheckHyphensStatus: Bool {
+        switch self {
+        case .V2, .V3:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isCheckJoinersStatus: Bool {
+        switch self {
+        case .C1, .C2:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isCheckBidiStatus: Bool {
+        switch self {
+        case .B1, .B2, .B3, .B4, .B5, .B6:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isUseSTD3ASCIIRulesStatus: Bool {
+        switch self {
+        case .U1:
+            return true
+        default:
+            return false
+        }
     }
 }
