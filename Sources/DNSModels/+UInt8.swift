@@ -70,16 +70,6 @@ extension UInt8 {
     }
 
     @inlinable
-    static var asciiLowercasedX: UInt8 {
-        0x78
-    }
-
-    @inlinable
-    static var asciiLowercasedN: UInt8 {
-        0x6E
-    }
-
-    @inlinable
     static var nullByte: UInt8 {
         0x00
     }

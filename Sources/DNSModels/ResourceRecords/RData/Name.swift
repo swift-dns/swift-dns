@@ -584,6 +584,7 @@ extension Name: CustomStringConvertible {
         if self.isFQDN {
             scalars.append(".")
         }
+
         return String(String.UnicodeScalarView(scalars))
     }
 }

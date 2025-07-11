@@ -3,8 +3,8 @@ package enum IDNA {
         package enum Element: CustomStringConvertible {
             case domainNameContainsDisallowedCharacter(UnicodeScalar)
             case labelStartsWithXNDashDashButContainsNonASCII(UnicodeScalar)
-            case labelPunycodeEncodeFailed(label: Substring.UTF8View)
-            case labelPunycodeDecodeFailed(label: Substring.UTF8View)
+            case labelPunycodeEncodeFailed(label: Substring.UnicodeScalarView)
+            case labelPunycodeDecodeFailed(label: Substring.UnicodeScalarView)
             case labelIsEmptyAfterPunycodeConversion(label: Substring)
             case labelContainsOnlyASCIIAfterPunycodeConversion(label: Substring)
             case labelTooLongForDNS(label: Substring)
@@ -19,17 +19,15 @@ package enum IDNA {
                     return
                         ".labelStartsWithXNDashDashButContainsNonASCII(\(scalar.debugDescription))"
                 case .labelPunycodeEncodeFailed(let label):
-                    return
-                        ".labelPunycodeEncodeFailed(\(String(Substring(label)).debugDescription))"
+                    return ".labelPunycodeEncodeFailed(\(String(label).debugDescription))"
                 case .labelPunycodeDecodeFailed(let label):
-                    return
-                        ".labelPunycodeDecodeFailed(\(String(label).debugDescription))"
+                    return ".labelPunycodeDecodeFailed(\(String(label).debugDescription))"
                 case .labelIsEmptyAfterPunycodeConversion(let label):
                     return
-                        ".labelIsEmptyAfterPunycodeConversion(\(String(Substring(label)).debugDescription))"
+                        ".labelIsEmptyAfterPunycodeConversion(\(String(label).debugDescription))"
                 case .labelContainsOnlyASCIIAfterPunycodeConversion(let label):
                     return
-                        ".labelContainsOnlyASCIIAfterPunycodeConversion(\(String(Substring(label)).debugDescription))"
+                        ".labelContainsOnlyASCIIAfterPunycodeConversion(\(String(label).debugDescription))"
                 case .labelTooLongForDNS(let label):
                     return ".labelTooLongForDNS(\(String(label).debugDescription))"
                 case .labelEmptyForDNS(let label):
@@ -81,8 +79,8 @@ package enum IDNA {
         )
 
         // 2., 3.
-        let labels = domainName.utf8.split(
-            separator: UInt8.asciiDot
+        let labels = domainName.unicodeScalars.split(
+            separator: UnicodeScalar.asciiDot
         ).map { label -> Substring in
             if label.allSatisfy(\.isASCII) {
                 return Substring(label)
@@ -99,7 +97,7 @@ package enum IDNA {
 
             var totalLength = 0
             for label in labels {
-                let labelLength = label.utf8.count
+                let labelLength = label.unicodeScalars.count
                 totalLength += labelLength
                 if labelLength > 63 {
                     errors.append(.labelTooLongForDNS(label: label))
@@ -160,33 +158,33 @@ package enum IDNA {
         ignoreInvalidPunycode: Bool,
         errors: inout MappingErrors
     ) {
-        var newBytes: [UInt8] = []
+        var newUnicodeScalars: [UnicodeScalar] = []
         /// TODO: optimize reserve capacity
-        newBytes.reserveCapacity(domainName.utf8.count * 12 / 10)
+        newUnicodeScalars.reserveCapacity(domainName.unicodeScalars.count * 12 / 10)
 
         /// 1. Map
         for scalar in domainName.unicodeScalars {
             switch IDNAMapping.for(scalar: scalar) {
             case .valid(_):
-                newBytes.append(contentsOf: scalar.utf8)
+                newUnicodeScalars.append(scalar)
             case .mapped(let mappedScalars):
-                newBytes.append(contentsOf: mappedScalars.flatMap(\.utf8))
+                newUnicodeScalars.append(contentsOf: mappedScalars)
             case .deviation(_):
-                newBytes.append(contentsOf: scalar.utf8)
+                newUnicodeScalars.append(scalar)
             case .disallowed:
-                newBytes.append(contentsOf: scalar.utf8)
+                newUnicodeScalars.append(scalar)
             case .ignored:
                 break
             }
         }
 
         /// 2. Normalize
-        domainName = String(decoding: newBytes, as: UTF8.self)
+        domainName = String(String.UnicodeScalarView(newUnicodeScalars))
         domainName = domainName.asNFC
 
         /// 3. Break, 4. Convert/Validate.
-        domainName = domainName.utf8.split(
-            separator: UInt8.asciiDot
+        domainName = domainName.unicodeScalars.split(
+            separator: UnicodeScalar.asciiDot
         ).map { label in
             Substring(
                 convertAndValidateLabel(
@@ -199,18 +197,18 @@ package enum IDNA {
     }
 
     static func convertAndValidateLabel(
-        _ label: Substring.UTF8View,
+        _ label: Substring.UnicodeScalarView,
         ignoreInvalidPunycode: Bool,
         errors: inout MappingErrors
-    ) -> Substring.UTF8View {
+    ) -> Substring.UnicodeScalarView {
         var newLabel = Substring(label)
 
         /// Checks if the label starts with “xn--”
         if label.count > 3,
-            label[label.startIndex] == UInt8.asciiLowercasedX,
-            label[label.index(label.startIndex, offsetBy: 1)] == UInt8.asciiLowercasedN,
-            label[label.index(label.startIndex, offsetBy: 2)] == UInt8.asciiDash,
-            label[label.index(label.startIndex, offsetBy: 3)] == UInt8.asciiDash
+            label[label.startIndex] == UnicodeScalar.asciiLowercasedX,
+            label[label.index(label.startIndex, offsetBy: 1)] == UnicodeScalar.asciiLowercasedN,
+            label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiDash,
+            label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiDash
         {
             /// 4.1:
             if let nonASCII = label.first(where: { !$0.isASCII }) {
@@ -242,13 +240,13 @@ package enum IDNA {
             }
         }
 
-        verifyValidLabel(newLabel.utf8, errors: &errors)
+        verifyValidLabel(&newLabel, errors: &errors)
 
-        return newLabel.utf8
+        return newLabel.unicodeScalars
     }
 
     static func verifyValidLabel(
-        _ label: Substring.UTF8View,
+        _ label: inout Substring,
         errors: inout MappingErrors
     ) {
         // Do nothing for now

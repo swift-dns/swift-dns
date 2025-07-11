@@ -1,17 +1,32 @@
 extension Unicode.Scalar {
-    @usableFromInline
+    @inlinable
     var isHyphen: Bool {
         self.value == 0x2D
     }
 
-    @usableFromInline
+    @inlinable
     static var asciiDash: UnicodeScalar {
         UnicodeScalar(0x2D).unsafelyUnwrapped
+    }
+
+    @inlinable
+    static var asciiDot: UnicodeScalar {
+        UnicodeScalar(0x2E).unsafelyUnwrapped
+    }
+
+    @inlinable
+    static var asciiLowercasedX: UnicodeScalar {
+        UnicodeScalar(0x78).unsafelyUnwrapped
+    }
+
+    @inlinable
+    static var asciiLowercasedN: UnicodeScalar {
+        UnicodeScalar(0x6E).unsafelyUnwrapped
     }
 }
 
 extension Unicode.GeneralCategory {
-    @usableFromInline
+    @inlinable
     var isNumeric: Bool {
         switch self {
         case .decimalNumber, .letterNumber, .otherNumber:
@@ -21,7 +36,7 @@ extension Unicode.GeneralCategory {
         }
     }
 
-    @usableFromInline
+    @inlinable
     var isMark: Bool {
         switch self {
         case .spacingMark, .enclosingMark, .nonspacingMark:
