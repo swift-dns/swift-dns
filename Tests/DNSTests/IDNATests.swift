@@ -16,9 +16,9 @@ struct IDNATests {
         }
     )
     func idnaTestSuite(arg: IDNATestV2Case) throws {
-        var domainName = arg.source
+        var toAsciiN = arg.source
         try IDNA.toASCII(
-            domainName: &domainName,
+            domainName: &toAsciiN,
             checkHyphens: false,
             checkBidi: false,
             checkJoiners: false,
@@ -26,7 +26,18 @@ struct IDNATests {
             verifyDnsLength: false,
             ignoreInvalidPunycode: false
         )
-        #expect(domainName == arg.toAsciiN, "\(arg)")
+        #expect(toAsciiN == arg.toAsciiN, "\(arg)")
+
+        var toUnicode = arg.source
+        try IDNA.toUnicode(
+            domainName: &toUnicode,
+            checkHyphens: false,
+            checkBidi: false,
+            checkJoiners: false,
+            useSTD3ASCIIRules: false,
+            ignoreInvalidPunycode: false
+        )
+        #expect(toUnicode == arg.toUnicode, "\(arg)")
     }
 }
 
