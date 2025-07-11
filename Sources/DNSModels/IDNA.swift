@@ -57,6 +57,7 @@ package enum IDNA {
         }
     }
 
+    /// https://www.unicode.org/reports/tr46/#ToASCII
     package static func toASCII(
         domainName: inout String,
         checkHyphens: Bool,
@@ -67,6 +68,7 @@ package enum IDNA {
         ignoreInvalidPunycode: Bool
     ) throws(MappingErrors) {
         var errors = MappingErrors(domainName: domainName)
+
         // 1.
         IDNA.mainProcessing(
             domainName: &domainName,
@@ -120,7 +122,35 @@ package enum IDNA {
         domainName = labels.joined(separator: ".")
     }
 
-    /// An implementation of https://www.unicode.org/reports/tr46/#Processing
+    /// https://www.unicode.org/reports/tr46/#ToUnicode
+    package static func toUnicode(
+        domainName: inout String,
+        checkHyphens: Bool,
+        checkBidi: Bool,
+        checkJoiners: Bool,
+        useSTD3ASCIIRules: Bool,
+        ignoreInvalidPunycode: Bool
+    ) throws(MappingErrors) {
+        var errors = MappingErrors(domainName: domainName)
+
+        // 1.
+        mainProcessing(
+            domainName: &domainName,
+            useSTD3ASCIIRules: useSTD3ASCIIRules,
+            checkHyphens: checkHyphens,
+            checkBidi: checkBidi,
+            checkJoiners: checkJoiners,
+            ignoreInvalidPunycode: ignoreInvalidPunycode,
+            errors: &errors
+        )
+
+        // 2.
+        if !errors.isEmpty {
+            throw errors
+        }
+    }
+
+    /// https://www.unicode.org/reports/tr46/#Processing
     static func mainProcessing(
         domainName: inout String,
         useSTD3ASCIIRules: Bool,
