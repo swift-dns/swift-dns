@@ -18,4 +18,9 @@ extension String {
             as: UTF8.self
         )
     }
+
+    var isInNFC: Bool {
+        self.unicodeScalars.allSatisfy(\.isASCII)
+            || self.utf8.elementsEqual(self.nfcCodePoints)
+    }
 }

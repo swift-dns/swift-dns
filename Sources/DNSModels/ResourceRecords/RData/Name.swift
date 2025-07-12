@@ -407,11 +407,11 @@ extension Name {
         /// the third and fourth character positions and MUST NOT start or end
         /// with a "-" (hyphen).
         /// ```
-        if (scalars.first?.isHyphen == true)
-            || (scalars.last?.isHyphen == true)
+        if (scalars.first?.isHyphenMinus == true)
+            || (scalars.last?.isHyphenMinus == true)
             || (scalars.count > 3
-                && scalars[scalars.index(scalars.startIndex, offsetBy: 2)].isHyphen
-                && scalars[scalars.index(scalars.startIndex, offsetBy: 3)].isHyphen)
+                && scalars[scalars.index(scalars.startIndex, offsetBy: 2)].isHyphenMinus
+                && scalars[scalars.index(scalars.startIndex, offsetBy: 3)].isHyphenMinus)
         {
             // throw
         }
@@ -553,9 +553,10 @@ extension Name {
             }
         }
 
-        // TODO: should we consider checking this while the name is parsed?
+        /// TODO: should we consider checking this while the name is parsed?
+        /// TODO: `> Self.maxLength {` is correct or `>= Self.maxLength {`?
         let len = self.encodedLength
-        if len >= Self.maxLength {
+        if len > Self.maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 "Name",
                 actual: len,

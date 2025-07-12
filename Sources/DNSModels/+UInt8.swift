@@ -40,7 +40,7 @@ extension UInt8 {
     }
 
     @inlinable
-    static var asciiDash: UInt8 {
+    static var asciiHyphenMinus: UInt8 {
         0x2D
     }
 

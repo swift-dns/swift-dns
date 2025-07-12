@@ -1,11 +1,18 @@
 extension Unicode.Scalar {
     @inlinable
-    var isHyphen: Bool {
+    var isNumberOrLowercasedLetterOrHyphenMinusASCII: Bool {
+        (self.value >= 0x30 && self.value <= 0x39)
+            || (self.value >= 0x61 && self.value <= 0x7A)
+            || self.isHyphenMinus
+    }
+
+    @inlinable
+    var isHyphenMinus: Bool {
         self.value == 0x2D
     }
 
     @inlinable
-    static var asciiDash: UnicodeScalar {
+    static var asciiHyphenMinus: UnicodeScalar {
         UnicodeScalar(0x2D).unsafelyUnwrapped
     }
 

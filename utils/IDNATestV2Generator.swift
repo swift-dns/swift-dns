@@ -11,11 +11,11 @@ let outputPath = "Sources/CSwiftDNSIDNATesting/src/idna_test_v2_cases.c"
 
 struct IDNATestV2CCase {
     let source: String
-    let toUnicode: String
+    let toUnicode: String?
     let toUnicodeStatus: [String]
-    let toAsciiN: String
+    let toAsciiN: String?
     let toAsciiNStatus: [String]
-    let toAsciiT: String
+    let toAsciiT: String?
     let toAsciiTStatus: [String]
 }
 
@@ -26,19 +26,6 @@ func parseStatusString(_ statusStr: String) -> [String] {
     }
     let content = String(trimmed.trimmingPrefix("[").dropLast())
     return content.split(separator: ",").map { $0.trimmingWhitespaces() }
-}
-
-func escapeString(_ string: String) -> String {
-    var result = ""
-    for scalar in string.unicodeScalars {
-        switch scalar {
-        case #"""#:
-            result += #"\""#
-        default:
-            result.append(String(scalar))
-        }
-    }
-    return result
 }
 
 func generate() -> String {
@@ -56,62 +43,45 @@ func generate() -> String {
     let utf8String = String(decoding: file, as: UTF8.self)
 
     var testCases: [IDNATestV2CCase] = []
-    var buffer = ""
-    for rawLine in utf8String.split(separator: "\n", omittingEmptySubsequences: false) {
-        let line = String(rawLine)
-        if line.trimmingWhitespaces().hasPrefix("#") { continue }
-        if line.trimmingWhitespaces().isEmpty { continue }
-        if buffer.isEmpty {
-            buffer = line
-        } else {
-            buffer += "\n" + line
+    for var line in utf8String.split(separator: "\n", omittingEmptySubsequences: false) {
+        line = Substring(line.trimmingWhitespaces())
+        if line.hasPrefix("#") { continue }
+        if line.isEmpty { continue }
+        if let commentIndex = line.lastIndex(of: "#") {
+            line = Substring(String(line[..<commentIndex]).trimmingWhitespaces())
         }
-        let commentIdx = buffer.firstIndex(of: "#")
-        let semicolonCount: Int
-        if let idx = commentIdx {
-            semicolonCount = buffer[..<idx].reduce(0) { $1 == ";" ? $0 + 1 : $0 }
-        } else {
-            semicolonCount = buffer.reduce(0) { $1 == ";" ? $0 + 1 : $0 }
-        }
-        if semicolonCount < 6 { continue }
-        var record = buffer
-        buffer = ""
-        if let commentIndex = record.firstIndex(of: "#") {
-            record = String(record[..<commentIndex]).trimmingWhitespaces()
-        }
-        let parts = record.unicodeScalars.split(
+        let parts = line.unicodeScalars.split(
             separator: ";",
             omittingEmptySubsequences: false
         ).map {
             String($0).trimmingWhitespaces()
         }
-        let paddedParts = parts + Array(repeating: "", count: max(0, 7 - parts.count))
-        let source = paddedParts[0]
-        let toUnicode = paddedParts[1]
-        let toUnicodeStatus = parseStatusString(paddedParts[2])
-        let toAsciiN = paddedParts[3]
-        let toAsciiNStatus = parseStatusString(paddedParts[4])
-        let toAsciiT = paddedParts[5]
-        let toAsciiTStatus = parseStatusString(paddedParts[6])
+        guard parts.count == 7 else {
+            fatalError("Invalid parts count: \(parts.debugDescription)")
+        }
+        let source = parts[0]
+        let toUnicode = parts[1].emptyIfIsOnlyQuotesAndNilIfEmpty()
+        let toUnicodeStatus = parseStatusString(parts[2])
+        let toAsciiN = parts[3].emptyIfIsOnlyQuotesAndNilIfEmpty()
+        let toAsciiNStatus = parseStatusString(parts[4])
+        let toAsciiT = parts[5].emptyIfIsOnlyQuotesAndNilIfEmpty()
+        let toAsciiTStatus = parseStatusString(parts[6])
         let testCase = IDNATestV2CCase(
             source: source,
-            toUnicode: toUnicode.isEmpty ? source : toUnicode,
+            toUnicode: toUnicode,
             toUnicodeStatus: toUnicodeStatus,
-            toAsciiN: toAsciiN.isEmpty ? (toUnicode.isEmpty ? source : toUnicode) : toAsciiN,
-            toAsciiNStatus: toAsciiNStatus.isEmpty ? toUnicodeStatus : toAsciiNStatus,
-            toAsciiT: toAsciiT.isEmpty
-                ? (toAsciiN.isEmpty ? (toUnicode.isEmpty ? source : toUnicode) : toAsciiN)
-                : toAsciiT,
-            toAsciiTStatus: toAsciiTStatus.isEmpty
-                ? (toAsciiNStatus.isEmpty ? toUnicodeStatus : toAsciiNStatus) : toAsciiTStatus
+            toAsciiN: toAsciiN,
+            toAsciiNStatus: toAsciiNStatus,
+            toAsciiT: toAsciiT,
+            toAsciiTStatus: toAsciiTStatus
         )
         testCases.append(testCase)
     }
 
-    // Filter out test cases that contain \uD900 or \u0080 in toUnicode
+    // Filter out test cases that contain \uD900 or \u0080 in specific fields
     // Clang doesn't accept those characters in the generated code
     let filteredTestCases = testCases.filter { testCase in
-        !testCase.toUnicode.contains("\\uD900") && !testCase.toUnicode.contains("\\u0080")
+        !testCase.source.contains("\\uD900") && !(testCase.toUnicode?.contains("\\u0080") ?? false)
     }
 
     print("Parsed \(testCases.count) test cases, filtered to \(filteredTestCases.count) cases")
@@ -136,17 +106,17 @@ func generate() -> String {
         """
 
     for testCase in filteredTestCases {
-        let toUnicodeStatusArray = testCase.toUnicodeStatus.map { "\"\($0)\"" }.joined(
-            separator: ", "
-        )
+        let toUnicodeStatusArray = testCase.toUnicodeStatus.map {
+            "\"\($0)\""
+        }.joined(separator: ", ")
         generatedCode += "            { \(toUnicodeStatusArray) },\n"
-        let toAsciiNStatusArray = testCase.toAsciiNStatus.map { "\"\($0)\"" }.joined(
-            separator: ", "
-        )
+        let toAsciiNStatusArray = testCase.toAsciiNStatus.map {
+            "\"\($0)\""
+        }.joined(separator: ", ")
         generatedCode += "            { \(toAsciiNStatusArray) },\n"
-        let toAsciiTStatusArray = testCase.toAsciiTStatus.map { "\"\($0)\"" }.joined(
-            separator: ", "
-        )
+        let toAsciiTStatusArray = testCase.toAsciiTStatus.map {
+            "\"\($0)\""
+        }.joined(separator: ", ")
         generatedCode += "            { \(toAsciiTStatusArray) },\n"
     }
 
@@ -158,20 +128,16 @@ func generate() -> String {
         """
 
     for (index, testCase) in filteredTestCases.enumerated() {
-        let sourceEscaped = escapeString(testCase.source)
-        let toUnicodeEscaped = escapeString(testCase.toUnicode)
-        let toAsciiNEscaped = escapeString(testCase.toAsciiN)
-        let toAsciiTEscaped = escapeString(testCase.toAsciiT)
         generatedCode += """
                     {
-                        .source = "\(sourceEscaped)",
-                        .toUnicode = "\(toUnicodeEscaped)",
+                        .source = "\(testCase.source)",
+                        .toUnicode = \(testCase.toUnicode.quotedOrNULL()),
                         .toUnicodeStatus = idna_test_v2_status_arrays[\(index * 3)],
                         .toUnicodeStatusCount = \(testCase.toUnicodeStatus.count),
-                        .toAsciiN = "\(toAsciiNEscaped)",
+                        .toAsciiN = \(testCase.toAsciiN.quotedOrNULL()),
                         .toAsciiNStatus = idna_test_v2_status_arrays[\(index * 3 + 1)],
                         .toAsciiNStatusCount = \(testCase.toAsciiNStatus.count),
-                        .toAsciiT = "\(toAsciiTEscaped)",
+                        .toAsciiT = \(testCase.toAsciiT.quotedOrNULL()),
                         .toAsciiTStatus = idna_test_v2_status_arrays[\(index * 3 + 2)],
                         .toAsciiTStatusCount = \(testCase.toAsciiTStatus.count),
                     },
@@ -190,14 +156,38 @@ func generate() -> String {
 extension StringProtocol {
     func trimmingWhitespaces() -> String {
         String(
-            String(
-                self
-                    .trimmingPrefix(while: \.isWhitespace)
+            Substring.UnicodeScalarView(
+                self.unicodeScalars
+                    .drop(while: { $0.value == 32 })
+                    .reversed()
+                    .drop(while: { $0.value == 32 })
                     .reversed()
             )
-            .trimmingPrefix(while: \.isWhitespace)
-            .reversed()
         )
+    }
+
+    func emptyIfIsOnlyQuotesAndNilIfEmpty() -> String? {
+        if self.isEmpty {
+            return nil
+        } else if self.unicodeScalars.count == 2,
+            self.unicodeScalars.first == #"""#
+                && self.unicodeScalars.last == #"""#
+        {
+            return ""
+        } else {
+            return String(self)
+        }
+    }
+}
+
+extension String? {
+    func quotedOrNULL() -> String {
+        switch self {
+        case .some(let value):
+            return "\"\(value)\""
+        case .none:
+            return "NULL"
+        }
     }
 }
 

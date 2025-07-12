@@ -10,34 +10,110 @@ struct IDNATests {
         #expect(mapping == arg.expected)
     }
 
-    @Test(
-        arguments: IDNATestV2Case.allCases().filter {
-            $0.toAsciiNStatus.isEmpty
-        }
-    )
-    func idnaTestSuite(arg: IDNATestV2Case) throws {
-        var toAsciiN = arg.source
-        try IDNA.toASCII(
-            domainName: &toAsciiN,
-            checkHyphens: false,
-            checkBidi: false,
-            checkJoiners: false,
-            useSTD3ASCIIRules: false,
-            verifyDnsLength: false,
-            ignoreInvalidPunycode: false
+    /// For debugging you can choose a specific test case based on its index. For example
+    /// for index 188, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[188...188])`.
+    @Test(arguments: IDNATestV2Case.enumeratedAllCases())
+    func runIDNATestV2SuiteAgainstToASCIIFunction(index: Int, arg: IDNATestV2Case) throws {
+        var idna = IDNA(configuration: .strict)
+        /// Because ToASCII will go through ToUnicode too
+        var statuses = arg.toUnicodeStatus + arg.toAsciiNStatus
+        try runTestCase(
+            idna: &idna,
+            function: IDNA.toASCII,
+            source: arg.source,
+            expected: arg.toAsciiN,
+            remainingStatuses: &statuses
         )
-        #expect(toAsciiN == arg.toAsciiN, "\(arg)")
+    }
 
-        var toUnicode = arg.source
-        try IDNA.toUnicode(
-            domainName: &toUnicode,
-            checkHyphens: false,
-            checkBidi: false,
-            checkJoiners: false,
-            useSTD3ASCIIRules: false,
-            ignoreInvalidPunycode: false
+    /// For debugging you can choose a specific test case based on its index. For example
+    /// for index 188, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[188...188])`.
+    @Test(arguments: IDNATestV2Case.enumeratedAllCases())
+    func runIDNATestV2SuiteAgainstToUnicodeFunction(index: Int, arg: IDNATestV2Case) throws {
+        var idna = IDNA(configuration: .strict)
+        var statuses = arg.toUnicodeStatus
+        try runTestCase(
+            idna: &idna,
+            function: IDNA.toUnicode,
+            source: arg.source,
+            expected: arg.toUnicode,
+            remainingStatuses: &statuses
         )
-        #expect(toUnicode == arg.toUnicode, "\(arg)")
+    }
+
+    /// Runs the certain IDNA function using the source string and the makes sure it produces the
+    /// expected result according the the IDNA test V2 suite.
+    ///
+    /// How it works:
+    /// 1. Runs the `function` using `source`.
+    /// 2. If there are no errors thrown by `function`, then checks if the result is
+    ///     equal to `expected`.
+    /// 3. If there are errors thrown by `function`, then it disables one of the thrown errors
+    ///    by setting the corresponding flag in `idna.configuration` to a value that would disable
+    ///    that certain error. Then jumps back to step 1.
+    ///
+    /// This process continues until either the `function` succeeds or runs tries to make.
+    func runTestCase(
+        idna: inout IDNA,
+        function: (IDNA) -> ((inout String) throws(IDNA.MappingErrors) -> Void),
+        source: String,
+        expected: String?,
+        remainingStatuses: inout [IDNATestV2Case.Status],
+        tryNumber: Int = 0
+    ) throws {
+        guard let expected = expected else {
+            return
+        }
+
+        if tryNumber > 10 {
+            Issue.record("Too many tries: \(tryNumber), idna.configuration: \(idna.configuration)")
+            return
+        }
+
+        do {
+            var source = source
+            try function(idna)(&source)
+            #expect(source == expected, "tries: \(tryNumber)")
+        } catch let idnaError {
+            /// If there are multiple errors, we need to disable one of them and try again.
+            /// We try to do `ignoresInvalidPunycode = true` last, because it single-handedly
+            /// disables a lot of errors.
+            /// We also try to disable `P4` as late as possible because it'll disable checkHyphens
+            /// too, other than enabling `ignoresInvalidPunycode`.
+            guard
+                let error = idnaError.errors
+                    .sorted(by: { l, _ in !l.disablingWillRequireIgnoringInvalidPunycode })
+                    .sorted(by: { l, _ in !(l.correspondingIDNAStatus == .P4) })
+                    .first
+            else {
+                fatalError("No error element found in errors: \(idnaError)")
+            }
+            if let correspondingStatus = error.correspondingIDNAStatus {
+                #expect(
+                    remainingStatuses.containsRelatedStatusCode(to: correspondingStatus),
+                    "current error: \(error), errors: \(idnaError.errors)"
+                )
+            }
+            guard
+                error.disable(
+                    inConfiguration: &idna.configuration,
+                    removingFrom: &remainingStatuses
+                )
+            else {
+                Issue.record(
+                    "Failed to disable error: \(error), idna.configuration: \(idna.configuration)"
+                )
+                return
+            }
+            try self.runTestCase(
+                idna: &idna,
+                function: function,
+                source: source,
+                expected: expected,
+                remainingStatuses: &remainingStatuses,
+                tryNumber: tryNumber + 1
+            )
+        }
     }
 }
 

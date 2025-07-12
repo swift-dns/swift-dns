@@ -1,86 +1,57 @@
-package enum IDNA {
-    package struct MappingErrors: Error {
-        package enum Element: CustomStringConvertible {
-            case domainNameContainsDisallowedCharacter(UnicodeScalar)
-            case labelStartsWithXNDashDashButContainsNonASCII(UnicodeScalar)
-            case labelPunycodeEncodeFailed(label: Substring.UnicodeScalarView)
-            case labelPunycodeDecodeFailed(label: Substring.UnicodeScalarView)
-            case labelIsEmptyAfterPunycodeConversion(label: Substring)
-            case labelContainsOnlyASCIIAfterPunycodeConversion(label: Substring)
-            case labelTooLongForDNS(label: Substring)
-            case labelEmptyForDNS(label: Substring)
-            case domainNameTooLongForDNS(labels: [Substring])
+package struct IDNA {
+    package struct Configuration {
+        package var checkHyphens: Bool
+        package var checkBidi: Bool
+        package var checkJoiners: Bool
+        package var useSTD3ASCIIRules: Bool
+        package var verifyDnsLength: Bool
+        package var ignoreInvalidPunycode: Bool
 
-            package var description: String {
-                switch self {
-                case .domainNameContainsDisallowedCharacter(let scalar):
-                    return ".domainNameContainsDisallowedCharacter(\(scalar.debugDescription))"
-                case .labelStartsWithXNDashDashButContainsNonASCII(let scalar):
-                    return
-                        ".labelStartsWithXNDashDashButContainsNonASCII(\(scalar.debugDescription))"
-                case .labelPunycodeEncodeFailed(let label):
-                    return ".labelPunycodeEncodeFailed(\(String(label).debugDescription))"
-                case .labelPunycodeDecodeFailed(let label):
-                    return ".labelPunycodeDecodeFailed(\(String(label).debugDescription))"
-                case .labelIsEmptyAfterPunycodeConversion(let label):
-                    return
-                        ".labelIsEmptyAfterPunycodeConversion(\(String(label).debugDescription))"
-                case .labelContainsOnlyASCIIAfterPunycodeConversion(let label):
-                    return
-                        ".labelContainsOnlyASCIIAfterPunycodeConversion(\(String(label).debugDescription))"
-                case .labelTooLongForDNS(let label):
-                    return ".labelTooLongForDNS(\(String(label).debugDescription))"
-                case .labelEmptyForDNS(let label):
-                    return ".labelEmptyForDNS(\(String(label).debugDescription))"
-                case .domainNameTooLongForDNS(let labels):
-                    return ".domainNameTooLongForDNS(\(labels.map(String.init)))"
-                }
-            }
+        package static var strict: Configuration {
+            Configuration(
+                checkHyphens: true,
+                checkBidi: true,
+                checkJoiners: true,
+                useSTD3ASCIIRules: true,
+                verifyDnsLength: true,
+                ignoreInvalidPunycode: false
+            )
         }
 
-        package let domainName: String
-        package private(set) var errors: [Element]
-
-        var isEmpty: Bool {
-            self.errors.isEmpty
-        }
-
-        init(domainName: String) {
-            self.domainName = domainName
-            self.errors = []
-        }
-
-        mutating func append(_ error: Element) {
-            self.errors.append(error)
+        package init(
+            checkHyphens: Bool,
+            checkBidi: Bool,
+            checkJoiners: Bool,
+            useSTD3ASCIIRules: Bool,
+            verifyDnsLength: Bool,
+            ignoreInvalidPunycode: Bool
+        ) {
+            self.checkHyphens = checkHyphens
+            self.checkBidi = checkBidi
+            self.checkJoiners = checkJoiners
+            self.useSTD3ASCIIRules = useSTD3ASCIIRules
+            self.verifyDnsLength = verifyDnsLength
+            self.ignoreInvalidPunycode = ignoreInvalidPunycode
         }
     }
 
+    package var configuration: Configuration
+
+    package init(configuration: Configuration) {
+        self.configuration = configuration
+    }
+
     /// https://www.unicode.org/reports/tr46/#ToASCII
-    package static func toASCII(
-        domainName: inout String,
-        checkHyphens: Bool,
-        checkBidi: Bool,
-        checkJoiners: Bool,
-        useSTD3ASCIIRules: Bool,
-        verifyDnsLength: Bool,
-        ignoreInvalidPunycode: Bool
-    ) throws(MappingErrors) {
+    package func toASCII(domainName: inout String) throws(MappingErrors) {
         var errors = MappingErrors(domainName: domainName)
 
         // 1.
-        IDNA.mainProcessing(
-            domainName: &domainName,
-            useSTD3ASCIIRules: useSTD3ASCIIRules,
-            checkHyphens: checkHyphens,
-            checkBidi: checkBidi,
-            checkJoiners: checkJoiners,
-            ignoreInvalidPunycode: ignoreInvalidPunycode,
-            errors: &errors
-        )
+        self.mainProcessing(domainName: &domainName, errors: &errors)
 
         // 2., 3.
-        let labels = domainName.unicodeScalars.split(
-            separator: UnicodeScalar.asciiDot
+        var labels = domainName.unicodeScalars.split(
+            separator: UnicodeScalar.asciiDot,
+            omittingEmptySubsequences: false
         ).map { label -> Substring in
             if label.allSatisfy(\.isASCII) {
                 return Substring(label)
@@ -92,24 +63,52 @@ package enum IDNA {
             return "xn--" + Substring(newLabel)
         }
 
-        if verifyDnsLength {
+        if configuration.verifyDnsLength {
             /// FIXME: what about the trailing 0? make sure tests cover that
 
-            var totalLength = 0
+            if labels.last?.isEmpty == true {
+                errors.append(
+                    .trueVerifyDNSLengthArgumentDisallowsEmptyRootLabelWithTrailingDot(
+                        labels: labels
+                    )
+                )
+                labels.removeLast()
+            }
+
+            var totalByteLength = 0
             for label in labels {
-                let labelLength = label.unicodeScalars.count
-                totalLength += labelLength
-                if labelLength > 63 {
-                    errors.append(.labelTooLongForDNS(label: label))
+                /// All scalars are already ASCII so each scalar is 1 byte
+                /// So each scalar will only count 1 towards the DNS Domain Name byte limit
+                let labelByteLength = label.unicodeScalars.count
+                totalByteLength += labelByteLength
+                if labelByteLength > 63 {
+                    errors.append(
+                        .trueVerifyDNSLengthArgumentRequiresLabelToBe63BytesOrLess(
+                            length: labelByteLength,
+                            label: label
+                        )
+                    )
                 }
-                if labelLength == 0 {
-                    errors.append(.labelEmptyForDNS(label: label))
+                if labelByteLength == 0 {
+                    errors.append(
+                        .trueVerifyDNSLengthArgumentDisallowsEmptyLabel(label: label)
+                    )
                 }
             }
 
-            /// 254 but excluding the trailing null byte aka root label
-            if totalLength > 253 {
-                errors.append(.domainNameTooLongForDNS(labels: labels))
+            let dnsLength = totalByteLength + labels.count
+            if dnsLength > 254 {
+                errors.append(
+                    .trueVerifyDNSLengthArgumentRequiresDomainNameToBe254BytesOrLess(
+                        length: dnsLength,
+                        labels: labels
+                    )
+                )
+            }
+            if totalByteLength == 0 {
+                errors.append(
+                    .trueVerifyDNSLengthArgumentDisallowsEmptyDomainName(labels: labels)
+                )
             }
         }
 
@@ -121,26 +120,11 @@ package enum IDNA {
     }
 
     /// https://www.unicode.org/reports/tr46/#ToUnicode
-    package static func toUnicode(
-        domainName: inout String,
-        checkHyphens: Bool,
-        checkBidi: Bool,
-        checkJoiners: Bool,
-        useSTD3ASCIIRules: Bool,
-        ignoreInvalidPunycode: Bool
-    ) throws(MappingErrors) {
+    package func toUnicode(domainName: inout String) throws(MappingErrors) {
         var errors = MappingErrors(domainName: domainName)
 
         // 1.
-        mainProcessing(
-            domainName: &domainName,
-            useSTD3ASCIIRules: useSTD3ASCIIRules,
-            checkHyphens: checkHyphens,
-            checkBidi: checkBidi,
-            checkJoiners: checkJoiners,
-            ignoreInvalidPunycode: ignoreInvalidPunycode,
-            errors: &errors
-        )
+        self.mainProcessing(domainName: &domainName, errors: &errors)
 
         // 2.
         if !errors.isEmpty {
@@ -149,15 +133,7 @@ package enum IDNA {
     }
 
     /// https://www.unicode.org/reports/tr46/#Processing
-    static func mainProcessing(
-        domainName: inout String,
-        useSTD3ASCIIRules: Bool,
-        checkHyphens: Bool,
-        checkBidi: Bool,
-        checkJoiners: Bool,
-        ignoreInvalidPunycode: Bool,
-        errors: inout MappingErrors
-    ) {
+    func mainProcessing(domainName: inout String, errors: inout MappingErrors) {
         var newUnicodeScalars: [UnicodeScalar] = []
         /// TODO: optimize reserve capacity
         newUnicodeScalars.reserveCapacity(domainName.unicodeScalars.count * 12 / 10)
@@ -184,21 +160,15 @@ package enum IDNA {
 
         /// 3. Break, 4. Convert/Validate.
         domainName = domainName.unicodeScalars.split(
-            separator: UnicodeScalar.asciiDot
+            separator: UnicodeScalar.asciiDot,
+            omittingEmptySubsequences: false
         ).map { label in
-            Substring(
-                convertAndValidateLabel(
-                    label,
-                    ignoreInvalidPunycode: ignoreInvalidPunycode,
-                    errors: &errors
-                )
-            )
+            Substring(convertAndValidateLabel(label, errors: &errors))
         }.joined(separator: ".")
     }
 
-    static func convertAndValidateLabel(
+    func convertAndValidateLabel(
         _ label: Substring.UnicodeScalarView,
-        ignoreInvalidPunycode: Bool,
         errors: inout MappingErrors
     ) -> Substring.UnicodeScalarView {
         var newLabel = Substring(label)
@@ -207,13 +177,15 @@ package enum IDNA {
         if label.count > 3,
             label[label.startIndex] == UnicodeScalar.asciiLowercasedX,
             label[label.index(label.startIndex, offsetBy: 1)] == UnicodeScalar.asciiLowercasedN,
-            label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiDash,
-            label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiDash
+            label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
+            label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
         {
             /// 4.1:
-            if let nonASCII = label.first(where: { !$0.isASCII }) {
+            if !configuration.ignoreInvalidPunycode,
+                label.contains(where: { !$0.isASCII })
+            {
                 errors.append(
-                    .labelStartsWithXNDashDashButContainsNonASCII(UnicodeScalar(nonASCII))
+                    .labelStartsWithXNHyphenMinusHyphenMinusButContainsNonASCII(label: label)
                 )
                 return label/// continue to next label
             }
@@ -224,31 +196,242 @@ package enum IDNA {
             /// Drop the "xn--" prefix
             newLabel = Substring(newLabel.unicodeScalars.dropFirst(4))
 
-            if !Punycode.decode(&newLabel),
-                !ignoreInvalidPunycode
-            {
-                errors.append(.labelPunycodeDecodeFailed(label: label))
-                return label/// continue to next label
+            let conversionResult = Punycode.decode(&newLabel)
+            switch conversionResult {
+            case true:
+                break
+            case false:
+                switch configuration.ignoreInvalidPunycode {
+                case true:
+                    newLabel = Substring(label)
+                case false:
+                    errors.append(.labelPunycodeDecodeFailed(label: label))
+                    /// continue to next label
+                    return label
+                }
             }
 
-            if newLabel.isEmpty {
-                errors.append(.labelIsEmptyAfterPunycodeConversion(label: newLabel))
-            }
+            /// 4.3:
+            if !configuration.ignoreInvalidPunycode {
+                if newLabel.isEmpty {
+                    errors.append(.labelIsEmptyAfterPunycodeConversion(label: newLabel))
+                }
 
-            if newLabel.allSatisfy(\.isASCII) {
-                errors.append(.labelContainsOnlyASCIIAfterPunycodeConversion(label: newLabel))
+                if newLabel.allSatisfy(\.isASCII) {
+                    errors.append(.labelContainsOnlyASCIIAfterPunycodeDecode(label: newLabel))
+                }
             }
         }
 
-        verifyValidLabel(&newLabel, errors: &errors)
+        verifyValidLabel(newLabel.unicodeScalars, errors: &errors)
 
         return newLabel.unicodeScalars
     }
 
-    static func verifyValidLabel(
-        _ label: inout Substring,
-        errors: inout MappingErrors
-    ) {
-        // Do nothing for now
+    /// https://www.unicode.org/reports/tr46/#Validity_Criteria
+    func verifyValidLabel(_ label: Substring.UnicodeScalarView, errors: inout MappingErrors) {
+        if !configuration.ignoreInvalidPunycode,
+            !String(label).isInNFC
+        {
+            errors.append(.labelIsNotInNormalizationFormC(label: label))
+        }
+
+        switch configuration.checkHyphens {
+        case true:
+            if label.count > 3,
+                label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
+                label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
+            {
+                errors.append(
+                    .trueCheckHyphensArgumentRequiresLabelToNotContainHyphenMinusAtPostion3and4(
+                        label: label
+                    )
+                )
+            }
+            if label.first == UnicodeScalar.asciiHyphenMinus
+                || label.last == UnicodeScalar.asciiHyphenMinus
+            {
+                errors.append(
+                    .trueCheckHyphensArgumentRequiresLabelToNotStartOrEndWithHyphenMinus(
+                        label: label
+                    )
+                )
+            }
+        case false:
+            if !configuration.ignoreInvalidPunycode,
+                label.count > 3,
+                label[label.startIndex] == UnicodeScalar.asciiLowercasedX,
+                label[label.index(label.startIndex, offsetBy: 1)] == UnicodeScalar.asciiLowercasedN,
+                label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
+                label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
+            {
+                errors.append(
+                    .falseCheckHyphensArgumentRequiresLabelToNotStartWithXNHyphenMinusHyphenMinus(
+                        label: label
+                    )
+                )
+            }
+        }
+
+        if !configuration.ignoreInvalidPunycode,
+            label.first?.properties.generalCategory.isMark == true
+        {
+            errors.append(.labelStartsWithCombiningMark(label: label))
+        }
+
+        if !configuration.ignoreInvalidPunycode {
+            for codePoint in label {
+                switch IDNAMapping.for(scalar: codePoint) {
+                case .valid, .deviation:
+                    break
+                case .mapped, .disallowed, .ignored:
+                    errors.append(
+                        .labelContainsInvalidUnicode(codePoint, label: label)
+                    )
+                }
+            }
+        }
+
+        if configuration.useSTD3ASCIIRules {
+            for codePoint in label where codePoint.isASCII {
+                if !codePoint.isNumberOrLowercasedLetterOrHyphenMinusASCII {
+                    errors.append(
+                        .trueUseSTD3ASCIIRulesArgumentRequiresLabelToOnlyContainCertainASCIICharacters(
+                            label: label
+                        )
+                    )
+                }
+            }
+        }
+
+        if configuration.checkJoiners {
+            // TODO: implement
+        }
+
+        if configuration.checkBidi {
+            // TODO: implement
+        }
+    }
+}
+
+extension IDNA {
+    package struct MappingErrors: Error {
+        package enum Element: CustomStringConvertible {
+            case labelStartsWithXNHyphenMinusHyphenMinusButContainsNonASCII(
+                label: Substring.UnicodeScalarView
+            )
+            case labelPunycodeEncodeFailed(label: Substring.UnicodeScalarView)
+            case labelPunycodeDecodeFailed(label: Substring.UnicodeScalarView)
+            case labelIsEmptyAfterPunycodeConversion(label: Substring)
+            case labelContainsOnlyASCIIAfterPunycodeDecode(label: Substring)
+            case trueVerifyDNSLengthArgumentRequiresLabelToBe63BytesOrLess(
+                length: Int,
+                label: Substring
+            )
+            case trueVerifyDNSLengthArgumentDisallowsEmptyLabel(label: Substring)
+            case trueVerifyDNSLengthArgumentDisallowsEmptyRootLabelWithTrailingDot(
+                labels: [Substring]
+            )
+            case trueVerifyDNSLengthArgumentRequiresDomainNameToBe254BytesOrLess(
+                length: Int,
+                labels: [Substring]
+            )
+            case trueVerifyDNSLengthArgumentDisallowsEmptyDomainName(labels: [Substring])
+            case labelIsNotInNormalizationFormC(label: Substring.UnicodeScalarView)
+            case trueCheckHyphensArgumentRequiresLabelToNotContainHyphenMinusAtPostion3and4(
+                label: Substring.UnicodeScalarView
+            )
+            case trueCheckHyphensArgumentRequiresLabelToNotStartOrEndWithHyphenMinus(
+                label: Substring.UnicodeScalarView
+            )
+            case falseCheckHyphensArgumentRequiresLabelToNotStartWithXNHyphenMinusHyphenMinus(
+                label: Substring.UnicodeScalarView
+            )
+            case labelStartsWithCombiningMark(label: Substring.UnicodeScalarView)
+            case labelContainsInvalidUnicode(UnicodeScalar, label: Substring.UnicodeScalarView)
+            case trueUseSTD3ASCIIRulesArgumentRequiresLabelToOnlyContainCertainASCIICharacters(
+                label: Substring.UnicodeScalarView
+            )
+
+            package var description: String {
+                switch self {
+                case .labelStartsWithXNHyphenMinusHyphenMinusButContainsNonASCII(let label):
+                    return
+                        ".labelStartsWithXNHyphenMinusHyphenMinusButContainsNonASCII(\(String(label).debugDescription))"
+                case .labelPunycodeEncodeFailed(let label):
+                    return ".labelPunycodeEncodeFailed(\(String(label).debugDescription))"
+                case .labelPunycodeDecodeFailed(let label):
+                    return ".labelPunycodeDecodeFailed(\(String(label).debugDescription))"
+                case .labelIsEmptyAfterPunycodeConversion(let label):
+                    return
+                        ".labelIsEmptyAfterPunycodeConversion(\(String(label).debugDescription))"
+                case .labelContainsOnlyASCIIAfterPunycodeDecode(let label):
+                    return
+                        ".labelContainsOnlyASCIIAfterPunycodeDecode(\(String(label).debugDescription))"
+                case .trueVerifyDNSLengthArgumentRequiresLabelToBe63BytesOrLess(
+                    let length,
+                    let label
+                ):
+                    return
+                        ".trueVerifyDNSLengthArgumentRequiresLabelToBe63BytesOrLess(length: \(length), label: \(String(label).debugDescription))"
+                case .trueVerifyDNSLengthArgumentDisallowsEmptyLabel(let label):
+                    return
+                        ".trueVerifyDNSLengthArgumentDisallowsEmptyLabel(\(String(label).debugDescription))"
+                case .trueVerifyDNSLengthArgumentDisallowsEmptyRootLabelWithTrailingDot(let labels):
+                    return
+                        ".trueVerifyDNSLengthArgumentDisallowsEmptyRootLabelWithTrailingDot(labels: \(labels.map(String.init)))"
+                case .trueVerifyDNSLengthArgumentRequiresDomainNameToBe254BytesOrLess(
+                    let length,
+                    let labels
+                ):
+                    return
+                        ".trueVerifyDNSLengthArgumentRequiresDomainNameToBe254BytesOrLess(length: \(length), labels: \(labels.map(String.init)))"
+                case .trueVerifyDNSLengthArgumentDisallowsEmptyDomainName(let labels):
+                    return
+                        ".trueVerifyDNSLengthArgumentDisallowsEmptyDomainName(\(labels.map(String.init)))"
+                case .labelIsNotInNormalizationFormC(let label):
+                    return ".labelIsNotInNormalizationFormC(\(String(label).debugDescription))"
+                case .trueCheckHyphensArgumentRequiresLabelToNotContainHyphenMinusAtPostion3and4(
+                    let label
+                ):
+                    return
+                        ".trueCheckHyphensArgumentRequiresLabelToNotContainHyphenMinusAtPostion3and4(\(String(label).debugDescription))"
+                case .trueCheckHyphensArgumentRequiresLabelToNotStartOrEndWithHyphenMinus(let label):
+                    return
+                        ".trueCheckHyphensArgumentRequiresLabelToNotStartOrEndWithHyphenMinus(\(String(label).debugDescription))"
+                case .falseCheckHyphensArgumentRequiresLabelToNotStartWithXNHyphenMinusHyphenMinus(
+                    let label
+                ):
+                    return
+                        ".falseCheckHyphensArgumentRequiresLabelToNotStartWithXNHyphenMinusHyphenMinus(\(String(label).debugDescription))"
+                case .labelStartsWithCombiningMark(let label):
+                    return ".labelStartsWithCombiningMark(\(String(label).debugDescription))"
+                case .labelContainsInvalidUnicode(let codePoint, let label):
+                    return
+                        ".labelContainsInvalidUnicode(\(codePoint.debugDescription), label: \(String(label).debugDescription))"
+                case .trueUseSTD3ASCIIRulesArgumentRequiresLabelToOnlyContainCertainASCIICharacters(
+                    let label
+                ):
+                    return
+                        ".trueUseSTD3ASCIIRulesArgumentRequiresLabelToOnlyContainCertainASCIICharacters(\(String(label).debugDescription))"
+                }
+            }
+        }
+
+        package let domainName: String
+        package private(set) var errors: [Element]
+
+        var isEmpty: Bool {
+            self.errors.isEmpty
+        }
+
+        init(domainName: String) {
+            self.domainName = domainName
+            self.errors = []
+        }
+
+        mutating func append(_ error: Element) {
+            self.errors.append(error)
+        }
     }
 }

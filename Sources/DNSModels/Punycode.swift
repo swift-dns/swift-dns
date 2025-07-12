@@ -90,7 +90,7 @@ enum Punycode {
         let b = output.count
         var h = b
         if !output.isEmpty {
-            output.append(UnicodeScalar.asciiDash)
+            output.append(UnicodeScalar.asciiHyphenMinus)
         }
         /// FIXME: reserve extra capacity in output
 
@@ -239,7 +239,7 @@ enum Punycode {
         var bias = Constants.initialBias
         var output: [UnicodeScalar]
 
-        if let idx = input.unicodeScalars.lastIndex(of: UnicodeScalar.asciiDash) {
+        if let idx = input.unicodeScalars.lastIndex(of: UnicodeScalar.asciiHyphenMinus) {
             let afterDelimiterIdx = input.index(after: idx)
             output = Array(input.unicodeScalars[..<idx])
             guard output.allSatisfy(\.isASCII) else {
@@ -261,7 +261,9 @@ enum Punycode {
             for k in stride(from: Constants.base, to: .max, by: Constants.base) {
                 /// Above we check that input is not empty, so this is safe.
                 /// There are also extensive tests for this in the IDNATests.swift.
-                let codePoint = input.unicodeScalars.first.unsafelyUnwrapped
+                guard let codePoint = input.unicodeScalars.first else {
+                    return false
+                }
                 input = Substring(input.unicodeScalars.dropFirst())
                 guard let digit = unicodeScalarToDigitLookupTable[codePoint] else {
                     return false

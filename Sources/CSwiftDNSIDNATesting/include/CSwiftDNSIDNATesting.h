@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-// IDNA Test V2 case structure
 typedef struct {
     const char* source;
     const char* toUnicode;
@@ -17,7 +16,6 @@ typedef struct {
     size_t toAsciiTStatusCount;
 } IDNATestV2CCase;
 
-// Returns pointer to all test cases and sets count
 const IDNATestV2CCase* idna_test_v2_all_cases(size_t* count);
 
 #endif // CSWIFT_DNS_IDNA_TESTING_H

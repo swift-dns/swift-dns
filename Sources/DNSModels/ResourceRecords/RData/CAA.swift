@@ -274,7 +274,7 @@ extension CAA.Value {
                     )
                 /// push onto the existing key
                 case let char
-                where (char.isASCIIAlphanumeric || (!isFirstChar && char == UInt8.asciiDash))
+                where (char.isASCIIAlphanumeric || (!isFirstChar && char == UInt8.asciiHyphenMinus))
                     && (char != UInt8.asciiEqual) && (char != UInt8.asciiSemicolon):
 
                     key.append(Character(Unicode.Scalar(char)))
