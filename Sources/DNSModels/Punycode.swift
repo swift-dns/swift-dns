@@ -151,7 +151,7 @@ enum Punycode {
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
-    /// overflows are not possible for what matches Swift's `UnicodeScalar` type:
+    /// overflows are not possible for what matches the description of Swift's `UnicodeScalar` type:
     ///
     /// https://datatracker.ietf.org/doc/html/rfc3492#section-5:
     /// ```text
@@ -250,7 +250,7 @@ enum Punycode {
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
-    /// overflows are not possible for what matches Swift's `UnicodeScalar` type:
+    /// overflows are not possible for what matches the description of Swift's `UnicodeScalar` type:
     ///
     /// https://datatracker.ietf.org/doc/html/rfc3492#section-5:
     /// ```text
