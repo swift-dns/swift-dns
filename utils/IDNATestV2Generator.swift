@@ -99,9 +99,7 @@ func generate() -> String {
             return idna_test_v2_cases;
         }
 
-        static const char* empty_status[1] = {NULL};
-
-        static const char* idna_test_v2_status_arrays[][100] = {
+        const IDNATestV2CCase idna_test_v2_cases[] = {
 
         """
 
@@ -109,36 +107,24 @@ func generate() -> String {
         let toUnicodeStatusArray = testCase.toUnicodeStatus.map {
             "\"\($0)\""
         }.joined(separator: ", ")
-        generatedCode += "            { \(toUnicodeStatusArray) },\n"
         let toAsciiNStatusArray = testCase.toAsciiNStatus.map {
             "\"\($0)\""
         }.joined(separator: ", ")
-        generatedCode += "            { \(toAsciiNStatusArray) },\n"
         let toAsciiTStatusArray = testCase.toAsciiTStatus.map {
             "\"\($0)\""
         }.joined(separator: ", ")
-        generatedCode += "            { \(toAsciiTStatusArray) },\n"
-    }
 
-    generatedCode += """
-        };
-
-        const IDNATestV2CCase idna_test_v2_cases[] = {
-
-        """
-
-    for (index, testCase) in filteredTestCases.enumerated() {
         generatedCode += """
                     {
                         .source = "\(testCase.source)",
                         .toUnicode = \(testCase.toUnicode.quotedOrNULL()),
-                        .toUnicodeStatus = idna_test_v2_status_arrays[\(index * 3)],
+                        .toUnicodeStatus = (const char*[]){ \(toUnicodeStatusArray) },
                         .toUnicodeStatusCount = \(testCase.toUnicodeStatus.count),
                         .toAsciiN = \(testCase.toAsciiN.quotedOrNULL()),
-                        .toAsciiNStatus = idna_test_v2_status_arrays[\(index * 3 + 1)],
+                        .toAsciiNStatus = (const char*[]){ \(toAsciiNStatusArray) },
                         .toAsciiNStatusCount = \(testCase.toAsciiNStatus.count),
                         .toAsciiT = \(testCase.toAsciiT.quotedOrNULL()),
-                        .toAsciiTStatus = idna_test_v2_status_arrays[\(index * 3 + 2)],
+                        .toAsciiTStatus = (const char*[]){ \(toAsciiTStatusArray) },
                         .toAsciiTStatusCount = \(testCase.toAsciiTStatus.count),
                     },
 
