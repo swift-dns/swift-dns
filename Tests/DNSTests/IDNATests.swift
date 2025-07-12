@@ -45,14 +45,16 @@ struct IDNATests {
     /// expected result according the the IDNA test V2 suite.
     ///
     /// How it works:
-    /// 1. Runs the `function` using `source`.
-    /// 2. If there are no errors thrown by `function`, then checks if the result is
+    /// 1. If `expected` is `nil`, then it runs the `function` using `source` and makes sure the
+    ///    conversion is not successful or it simply results in the same `source` string.
+    /// 2. If `expected` is not `nil`, runs the `function` using `source`. Then:
+    /// 3. If there are no errors thrown by `function`, then checks if the result is
     ///     equal to `expected`.
-    /// 3. If there are errors thrown by `function`, then it disables one of the thrown errors
+    /// 4. If there are errors thrown by `function`, then it disables one of the thrown errors
     ///    by setting the corresponding flag in `idna.configuration` to a value that would disable
     ///    that certain error. Then jumps back to step 1.
     ///
-    /// This process continues until either the `function` succeeds or runs tries to make.
+    /// This process continues until either the `function` succeeds or runs out of tries to make.
     func runTestCase(
         idna: inout IDNA,
         function: (IDNA) -> ((inout String) throws(IDNA.MappingErrors) -> Void),

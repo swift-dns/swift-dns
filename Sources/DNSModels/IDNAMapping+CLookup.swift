@@ -17,7 +17,7 @@ extension IDNAMapping {
     @inlinable
     package static func `for`(scalar: UnicodeScalar) -> IDNAMapping {
         /// `unsafelyUnwrapped` because the C function is guaranteed to return a non-nil pointer.
-        /// There are also extensive tests in the DNSTests for this function.
+        /// There are also extensive tests in the IDNATests for this function.
         let result = idna_mapping_lookup(scalar.value).unsafelyUnwrapped.pointee
         switch result.type {
         case 0:
@@ -40,7 +40,7 @@ extension IDNAMapping {
                 )
             ).map {
                 /// `unsafelyUnwrapped` because the C function is guaranteed to return a UnicodeScalar.
-                /// There are also extensive tests in the DNSTests for this function.
+                /// There are also extensive tests in the IDNATests for this function.
                 UnicodeScalar($0).unsafelyUnwrapped
             }
             return .mapped(mappedCodePoints)
@@ -52,7 +52,7 @@ extension IDNAMapping {
                 )
             ).map {
                 /// `unsafelyUnwrapped` because the C function is guaranteed to return a UnicodeScalar.
-                /// There are also extensive tests in the DNSTests for this function.
+                /// There are also extensive tests in the IDNATests for this function.
                 UnicodeScalar($0).unsafelyUnwrapped
             }
             return .deviation(mappedCodePoints)

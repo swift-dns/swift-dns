@@ -6,7 +6,7 @@ import Testing
 struct DNSTests {
     @Test func encodeAExampleComQuery() throws {
         let query = Query(
-            name: try Name(string: "example.com"),
+            name: try Name(domainName: "example.com."),
             queryType: .A,
             queryClass: .IN
         )
@@ -71,9 +71,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "example.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "example.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -85,18 +84,18 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 130 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 130 }, "\(response.answers).")
         let ipv4s = response.answers.compactMap {
             switch $0.rdata {
             case .A(let a):
                 return a.value
             default:
-                Issue.record("rdata was not of type A: \($0.rdata)")
+                Issue.record("rdata was not of type A: \($0.rdata).")
                 return nil
             }
         }
@@ -129,7 +128,7 @@ struct DNSTests {
 
     @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
-            name: try Name(string: "cloudflare.com"),
+            name: try Name(domainName: "cloudflare.com."),
             queryType: .AAAA,
             queryClass: .IN
         )
@@ -194,9 +193,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "cloudflare.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "cloudflare.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .AAAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -208,18 +206,18 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(name.data); \(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 72 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 72 }, "\(response.answers).")
         let ipv6s = response.answers.compactMap {
             switch $0.rdata {
             case .AAAA(let aaaa):
                 return aaaa.value
             default:
-                Issue.record("rdata was not of type AAAA: \($0.rdata)")
+                Issue.record("rdata was not of type AAAA: \($0.rdata).")
                 return nil
             }
         }
@@ -255,7 +253,7 @@ struct DNSTests {
 
     @Test func encodeCAACloudflareComQuery() throws {
         let query = Query(
-            name: try Name(string: "cloudflare.com"),
+            name: try Name(domainName: "cloudflare.com."),
             queryType: .CAA,
             queryClass: .IN
         )
@@ -320,9 +318,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "cloudflare.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "cloudflare.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .CAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -334,18 +331,18 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers).")
         let caas = response.answers.compactMap {
             switch $0.rdata {
             case .CAA(let caa):
                 return caa
             default:
-                Issue.record("rdata was not of type CAA: \($0.rdata)")
+                Issue.record("rdata was not of type CAA: \($0.rdata).")
                 return nil
             }
         }
@@ -562,8 +559,7 @@ struct DNSTests {
             ),
         ]
         try #require(caas.count == 11)
-        // FXIME: use proper equality checking when I've figured out Name equality checking
-        #expect("\(caas)" == "\(expectedCAAs)")
+        #expect(caas == expectedCAAs)
 
         /// The 'additional' was an EDNS
         #expect(response.additionals.count == 0)
@@ -581,7 +577,7 @@ struct DNSTests {
 
     @Test func encodeCERTForDnsCertTestingMahdibmComQuery() throws {
         let query = Query(
-            name: try Name(string: "for-dns-cert-testing.mahdibm.com"),
+            name: try Name(domainName: "for-dns-cert-testing.mahdibm.com."),
             queryType: .CERT,
             queryClass: .IN
         )
@@ -646,9 +642,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "for-dns-cert-testing.mahdibm.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "for-dns-cert-testing.mahdibm.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .CERT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -660,18 +655,18 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers).")
         let certs = response.answers.compactMap {
             switch $0.rdata {
             case .CERT(let cert):
                 return cert
             default:
-                Issue.record("rdata was not of type CERT: \($0.rdata)")
+                Issue.record("rdata was not of type CERT: \($0.rdata).")
                 return nil
             }
         }
@@ -714,7 +709,7 @@ struct DNSTests {
 
     @Test func encodeCNAMEWwwGithubComQuery() throws {
         let query = Query(
-            name: try Name(string: "www.github.com"),
+            name: try Name(domainName: "www.github.com."),
             queryType: .CNAME,
             queryClass: .IN
         )
@@ -779,9 +774,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "www.github.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "www.github.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -789,8 +783,7 @@ struct DNSTests {
 
         #expect(response.answers.count == 1)
         let answer = try #require(response.answers.first)
-        #expect(answer.nameLabels.isFQDN == true)
-        #expect(answer.nameLabels.data == name.data)
+        #expect(answer.nameLabels.exactlyEquals(name))
         #expect(answer.recordType == .CNAME)
         #expect(answer.dnsClass == .IN)
         #expect(answer.ttl == 3550)
@@ -799,10 +792,11 @@ struct DNSTests {
         case .CNAME(let _cname):
             cname = _cname
         default:
-            Issue.record("rdata was not of type CNAME: \(answer.rdata)")
+            Issue.record("rdata was not of type CNAME: \(answer.rdata).")
             return
         }
-        #expect(cname.name.description == "github.com.")
+        let nameNoWWW = try Name(domainName: "github.com.")
+        #expect(cname.name.exactlyEquals(nameNoWWW))
 
         /// The 'additional' was an EDNS
         #expect(response.additionals.count == 0)
@@ -820,7 +814,7 @@ struct DNSTests {
 
     @Test func encodeCNAMERawGithubusercontentComQuery() throws {
         let query = Query(
-            name: try Name(string: "raw.githubusercontent.com"),
+            name: try Name(domainName: "raw.githubusercontent.com."),
             queryType: .CNAME,
             queryClass: .IN
         )
@@ -885,9 +879,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "raw.githubusercontent.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "raw.githubusercontent.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -895,15 +888,17 @@ struct DNSTests {
         let nameServer = try #require(response.nameServers.first)
         switch nameServer.rdata {
         case .SOA(let soa):
-            #expect(soa.mName.description == "ns-1411.awsdns-48.org.")
-            #expect(soa.rName.description == "awsdns-hostmaster.amazon.com.")
+            let mName = try Name(domainName: "ns-1411.awsdns-48.org.")
+            let rName = try Name(domainName: "awsdns-hostmaster.amazon.com.")
+            #expect(soa.mName.exactlyEquals(mName))
+            #expect(soa.rName.exactlyEquals(rName))
             #expect(soa.serial == 1)
             #expect(soa.refresh == 7200)
             #expect(soa.retry == 900)
             #expect(soa.expire == 1_209_600)
             #expect(soa.minimum == 86400)
         default:
-            Issue.record("rdata was not of type SOA: \(nameServer.rdata)")
+            Issue.record("rdata was not of type SOA: \(nameServer.rdata).")
         }
 
         #expect(response.answers.count == 0)
@@ -924,7 +919,7 @@ struct DNSTests {
 
     @Test func encodeMXMahdibmComQuery() throws {
         let query = Query(
-            name: try Name(string: "mahdibm.com"),
+            name: try Name(domainName: "mahdibm.com."),
             queryType: .MX,
             queryClass: .IN
         )
@@ -989,9 +984,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "mahdibm.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "mahdibm.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .MX)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -1003,31 +997,29 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 300 }, "\(response.answers).")
         let mxs = response.answers.compactMap {
             switch $0.rdata {
             case .MX(let mx):
                 return mx
             default:
-                Issue.record("rdata was not of type MX: \($0.rdata)")
+                Issue.record("rdata was not of type MX: \($0.rdata).")
                 return nil
             }
         }
         let expectedMXs = [
-            MX(preference: 10, exchange: try Name(string: "in1-smtp.messagingengine.com.")),
-            MX(preference: 20, exchange: try Name(string: "in2-smtp.messagingengine.com.")),
+            MX(preference: 10, exchange: try Name(domainName: "in1-smtp.messagingengine.com.")),
+            MX(preference: 20, exchange: try Name(domainName: "in2-smtp.messagingengine.com.")),
         ]
         #expect(mxs.count == expectedMXs.count)
         for (mx, expectedMX) in zip(mxs, expectedMXs) {
             #expect(mx.preference == expectedMX.preference)
-            #expect(mx.exchange.isFQDN == expectedMX.exchange.isFQDN)
-            #expect(mx.exchange.data == expectedMX.exchange.data)
-            #expect(mx.exchange.borders == expectedMX.exchange.borders)
+            #expect(mx.exchange.exactlyEquals(expectedMX.exchange))
         }
 
         /// The 'additional' was an EDNS
@@ -1046,7 +1038,7 @@ struct DNSTests {
 
     @Test func encodeNSAppleComQuery() throws {
         let query = Query(
-            name: try Name(string: "apple.com"),
+            name: try Name(domainName: "apple.com."),
             queryType: .NS,
             queryClass: .IN
         )
@@ -1111,9 +1103,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "apple.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "apple.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .NS)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -1125,32 +1116,30 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 11197 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 11197 }, "\(response.answers).")
         let nss = response.answers.compactMap {
             switch $0.rdata {
             case .NS(let ns):
                 return ns
             default:
-                Issue.record("rdata was not of type NS: \($0.rdata)")
+                Issue.record("rdata was not of type NS: \($0.rdata).")
                 return nil
             }
         }
         let expectedNSs = [
-            NS(name: try Name(string: "d.ns.apple.com.")),
-            NS(name: try Name(string: "c.ns.apple.com.")),
-            NS(name: try Name(string: "a.ns.apple.com.")),
-            NS(name: try Name(string: "b.ns.apple.com.")),
+            NS(name: try Name(domainName: "d.ns.apple.com.")),
+            NS(name: try Name(domainName: "c.ns.apple.com.")),
+            NS(name: try Name(domainName: "a.ns.apple.com.")),
+            NS(name: try Name(domainName: "b.ns.apple.com.")),
         ]
         #expect(nss.count == expectedNSs.count)
         for (ns, expectedNS) in zip(nss, expectedNSs) {
-            #expect(ns.name.isFQDN == expectedNS.name.isFQDN)
-            #expect(ns.name.data == expectedNS.name.data)
-            #expect(ns.name.borders == expectedNS.name.borders)
+            #expect(ns.name.exactlyEquals(expectedNS.name))
         }
 
         /// The 'additional' was an EDNS
@@ -1169,7 +1158,7 @@ struct DNSTests {
 
     @Test func encodeOPTCloudflareComQuery() throws {
         let query = Query(
-            name: try Name(string: "cloudflare.com"),
+            name: try Name(domainName: "cloudflare.com."),
             queryType: .OPT,
             queryClass: .IN
         )
@@ -1236,9 +1225,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .ServFail)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "cloudflare.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "cloudflare.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .OPT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -1528,7 +1516,7 @@ struct DNSTests {
 
     @Test func encodePTR9dot9dot9dot9Query() throws {
         let query = Query(
-            name: try Name(string: "9.9.9.9.in-addr.arpa"),
+            name: try Name(domainName: "9.9.9.9.in-addr.arpa."),
             queryType: .PTR,
             queryClass: .IN
         )
@@ -1593,9 +1581,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "9.9.9.9.in-addr.arpa")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "9.9.9.9.in-addr.arpa.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .PTR)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -1607,29 +1594,27 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 2176 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 2176 }, "\(response.answers).")
         let ptrs = response.answers.compactMap {
             switch $0.rdata {
             case .PTR(let ptr):
                 return ptr
             default:
-                Issue.record("rdata was not of type PTR: \($0.rdata)")
+                Issue.record("rdata was not of type PTR: \($0.rdata).")
                 return nil
             }
         }
         let expectedPTRs = [
-            PTR(name: try Name(string: "dns9.quad9.net."))
+            PTR(name: try Name(domainName: "dns9.quad9.net."))
         ]
         #expect(ptrs.count == expectedPTRs.count)
         for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
-            #expect(ptr.name.isFQDN == expectedPTR.name.isFQDN)
-            #expect(ptr.name.data == expectedPTR.name.data)
-            #expect(ptr.name.borders == expectedPTR.name.borders)
+            #expect(ptr.name.exactlyEquals(expectedPTR.name))
         }
 
         /// The 'additional' was an EDNS
@@ -1648,7 +1633,7 @@ struct DNSTests {
 
     @Test func encodeTXTExampleComQuery() throws {
         let query = Query(
-            name: try Name(string: "example.com"),
+            name: try Name(domainName: "example.com."),
             queryType: .TXT,
             queryClass: .IN
         )
@@ -1713,9 +1698,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "example.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "example.com.")
+        #expect(response.queries.first?.name.exactlyEquals(name) == true)
         #expect(response.queries.first?.queryType == .TXT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -1727,18 +1711,18 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.ttl == 80148 }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.ttl == 80148 }, "\(response.answers).")
         let txts = response.answers.compactMap {
             switch $0.rdata {
             case .TXT(let txt):
                 return txt
             default:
-                Issue.record("rdata was not of type TXT: \($0.rdata)")
+                Issue.record("rdata was not of type TXT: \($0.rdata).")
                 return nil
             }
         }

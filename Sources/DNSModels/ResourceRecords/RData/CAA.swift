@@ -1,9 +1,9 @@
 /// The CAA RR Type
 ///
 /// [RFC 8659, DNS Certification Authority Authorization, November 2019](https://www.rfc-editor.org/rfc/rfc8659)
-public struct CAA: Sendable {
+public struct CAA: Sendable, Equatable {
     /// Specifies in what contexts this key may be trusted for use
-    public enum Property: Sendable {
+    public enum Property: Sendable, Equatable {
         /// The issue property
         ///    entry authorizes the holder of the domain name `Issuer Domain
         ///    Name`` or a party acting under the explicit authority of the holder
@@ -36,13 +36,28 @@ public struct CAA: Sendable {
     /// `Unknown` => `Unknown`.
     ///
     /// `Unknown` is also used for invalid values of known Tag types that cannot be parsed.
-    public enum Value: Sendable {
+    public enum Value: Sendable, Equatable {
         /// Issuer authorized to issue certs for this zone, and any associated parameters
         case issuer(Name?, [(key: String, value: String)])
         /// Url to which to send CA errors
         case url(String)
         /// Uninterpreted data, either for a tag that is not known, or an invalid value
         case unknown([UInt8])
+
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+            case (.issuer(let lhsName, let lhsPairs), .issuer(let rhsName, let rhsPairs)):
+                return lhsName == rhsName
+                    && lhsPairs.lazy.map(\.key) == rhsPairs.lazy.map(\.key)
+                    && lhsPairs.lazy.map(\.value) == rhsPairs.lazy.map(\.value)
+            case (.url(let lhsUrl), .url(let rhsUrl)):
+                return lhsUrl == rhsUrl
+            case (.unknown(let lhsData), .unknown(let rhsData)):
+                return lhsData == rhsData
+            default:
+                return false
+            }
+        }
     }
 
     public var issuerCritical: Bool

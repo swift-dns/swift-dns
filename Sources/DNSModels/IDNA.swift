@@ -1,13 +1,13 @@
-package struct IDNA {
-    package struct Configuration {
-        package var checkHyphens: Bool
-        package var checkBidi: Bool
-        package var checkJoiners: Bool
-        package var useSTD3ASCIIRules: Bool
-        package var verifyDnsLength: Bool
-        package var ignoreInvalidPunycode: Bool
+public struct IDNA {
+    public struct Configuration {
+        public var checkHyphens: Bool
+        public var checkBidi: Bool
+        public var checkJoiners: Bool
+        public var useSTD3ASCIIRules: Bool
+        public var verifyDnsLength: Bool
+        public var ignoreInvalidPunycode: Bool
 
-        package static var strict: Configuration {
+        public static var mostStrict: Configuration {
             Configuration(
                 checkHyphens: true,
                 checkBidi: true,
@@ -18,7 +18,30 @@ package struct IDNA {
             )
         }
 
-        package init(
+        public static var mostLax: Configuration {
+            Configuration(
+                checkHyphens: false,
+                checkBidi: false,
+                checkJoiners: false,
+                useSTD3ASCIIRules: false,
+                verifyDnsLength: false,
+                ignoreInvalidPunycode: true
+            )
+        }
+
+        /// TODO: Is this a good default? Disables STD3 rules.
+        public static var `default`: Configuration {
+            Configuration(
+                checkHyphens: true,
+                checkBidi: true,
+                checkJoiners: true,
+                useSTD3ASCIIRules: false,
+                verifyDnsLength: true,
+                ignoreInvalidPunycode: false
+            )
+        }
+
+        public init(
             checkHyphens: Bool,
             checkBidi: Bool,
             checkJoiners: Bool,
@@ -37,11 +60,13 @@ package struct IDNA {
 
     package var configuration: Configuration
 
+    @usableFromInline
     package init(configuration: Configuration) {
         self.configuration = configuration
     }
 
     /// https://www.unicode.org/reports/tr46/#ToASCII
+    @usableFromInline
     package func toASCII(domainName: inout String) throws(MappingErrors) {
         var errors = MappingErrors(domainName: domainName)
 
@@ -120,6 +145,7 @@ package struct IDNA {
     }
 
     /// https://www.unicode.org/reports/tr46/#ToUnicode
+    @usableFromInline
     package func toUnicode(domainName: inout String) throws(MappingErrors) {
         var errors = MappingErrors(domainName: domainName)
 
@@ -133,6 +159,7 @@ package struct IDNA {
     }
 
     /// https://www.unicode.org/reports/tr46/#Processing
+    @usableFromInline
     func mainProcessing(domainName: inout String, errors: inout MappingErrors) {
         var newUnicodeScalars: [UnicodeScalar] = []
         /// TODO: optimize reserve capacity
@@ -167,6 +194,7 @@ package struct IDNA {
         }.joined(separator: ".")
     }
 
+    @usableFromInline
     func convertAndValidateLabel(
         _ label: Substring.UnicodeScalarView,
         errors: inout MappingErrors
@@ -229,6 +257,7 @@ package struct IDNA {
     }
 
     /// https://www.unicode.org/reports/tr46/#Validity_Criteria
+    @usableFromInline
     func verifyValidLabel(_ label: Substring.UnicodeScalarView, errors: inout MappingErrors) {
         if !configuration.ignoreInvalidPunycode,
             !String(label).isInNFC
@@ -315,6 +344,7 @@ package struct IDNA {
 }
 
 extension IDNA {
+    @usableFromInline
     package struct MappingErrors: Error {
         package enum Element: CustomStringConvertible {
             case labelStartsWithXNHyphenMinusHyphenMinusButContainsNonASCII(
