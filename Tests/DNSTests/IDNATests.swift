@@ -11,10 +11,10 @@ struct IDNATests {
     }
 
     /// For debugging you can choose a specific test case based on its index. For example
-    /// for index 188, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[188...188])`.
+    /// for index 5101, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[5101...5101])`.
     @Test(arguments: IDNATestV2Case.enumeratedAllCases())
     func runIDNATestV2SuiteAgainstToASCIIFunction(index: Int, arg: IDNATestV2Case) throws {
-        var idna = IDNA(configuration: .strict)
+        var idna = IDNA(configuration: .mostStrict)
         /// Because ToASCII will go through ToUnicode too
         var statuses = arg.toUnicodeStatus + arg.toAsciiNStatus
         try runTestCase(
@@ -27,10 +27,10 @@ struct IDNATests {
     }
 
     /// For debugging you can choose a specific test case based on its index. For example
-    /// for index 188, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[188...188])`.
+    /// for index 5101, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[5101...5101])`.
     @Test(arguments: IDNATestV2Case.enumeratedAllCases())
     func runIDNATestV2SuiteAgainstToUnicodeFunction(index: Int, arg: IDNATestV2Case) throws {
-        var idna = IDNA(configuration: .strict)
+        var idna = IDNA(configuration: .mostStrict)
         var statuses = arg.toUnicodeStatus
         try runTestCase(
             idna: &idna,
@@ -61,19 +61,32 @@ struct IDNATests {
         remainingStatuses: inout [IDNATestV2Case.Status],
         tryNumber: Int = 0
     ) throws {
-        guard let expected = expected else {
-            return
-        }
-
         if tryNumber > 10 {
             Issue.record("Too many tries: \(tryNumber), idna.configuration: \(idna.configuration)")
             return
         }
 
+        guard let expected = expected else {
+            var convertedSource = source
+            do {
+                try function(idna)(&convertedSource)
+                if convertedSource != source,
+                    convertedSource.uppercased() != source.uppercased()
+                {
+                    Issue.record(
+                        "Didn't expect a converted value for source: \(source.debugDescription) in the first try, but got: \(convertedSource.debugDescription)"
+                    )
+                }
+            } catch {
+                /// good
+            }
+            return
+        }
+
         do {
-            var source = source
-            try function(idna)(&source)
-            #expect(source == expected, "tries: \(tryNumber)")
+            var convertedSource = source
+            try function(idna)(&convertedSource)
+            #expect(convertedSource == expected, "tries: \(tryNumber)")
         } catch let idnaError {
             /// If there are multiple errors, we need to disable one of them and try again.
             /// We try to do `ignoresInvalidPunycode = true` last, because it single-handedly
