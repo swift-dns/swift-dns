@@ -18,10 +18,12 @@ let package = Package(
             name: "DNSCore",
             swiftSettings: settings
         ),
+        .target(name: "CSwiftDNSIDNA"),
         .target(
             name: "DNSModels",
             dependencies: [
                 "DNSCore",
+                "CSwiftDNSIDNA",
                 .product(name: "Collections", package: "swift-collections"),
                 .product(name: "NIOCore", package: "swift-nio"),
             ],
@@ -38,11 +40,16 @@ let package = Package(
             ],
             swiftSettings: settings
         ),
+        .target(
+            name: "CSwiftDNSIDNATesting",
+            cSettings: cSettingsIgnoringInvalidSourceCharacters
+        ),
         .testTarget(
             name: "DNSTests",
             dependencies: [
                 "DNSCore",
                 "DNSModels",
+                "CSwiftDNSIDNATesting",
             ],
             swiftSettings: settings
         ),
@@ -62,5 +69,16 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("ExistentialAny"),
+    ]
+}
+
+var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
+    [
+        .unsafeFlags(
+            [
+                "-Wno-unknown-escape-sequence",
+                "-Wno-invalid-source-encoding",
+            ]
+        )
     ]
 }

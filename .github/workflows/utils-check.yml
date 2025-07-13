@@ -1,0 +1,61 @@
+name: utils-check
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize] }
+  push: { branches: [main] }
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
+jobs:
+  check-utils:
+    runs-on: ubuntu-latest
+
+    container: swiftlang/swift:nightly-6.2-noble
+
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v4
+
+      - name: Configure git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Run utility scripts
+        run: |
+          echo "Running IDNA Mapping Table Generator..."
+          swift utils/IDNAMappingTableGenerator.swift
+          echo "Running IDNA Test V2 Generator..."
+          swift utils/IDNATestV2Generator.swift
+
+      - name: Check for modifications
+        id: check-modifications
+        run: |
+          MODIFICATIONS="$(git status --porcelain)"
+          if [ -n "$MODIFICATIONS" ]; then
+            echo "has-modifications=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-modifications=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Show diff if modifications detected
+        if: steps.check-modifications.outputs.has-modifications == 'true'
+        run: |
+          {
+            echo "## Utils Check Failed ❌"
+            echo ""
+            echo "**Generated files are out of date. Please run the utility scripts and commit the changes.**"
+            echo ""
+            echo "### Diff:"
+            echo '```diff'
+            git diff
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Fail if has modifications
+        if: steps.check-modifications.outputs.has-modifications == 'true'
+        run: exit 1

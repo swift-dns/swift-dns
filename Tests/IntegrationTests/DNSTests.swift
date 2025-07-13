@@ -13,7 +13,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<A>.forQuery(name: "example.com")
+        let factory = try MessageFactory<A>.forQuery(name: "example.com.")
         let message = factory.message
         let response = try await client.queryA(message: factory, options: .edns)
 
@@ -33,9 +33,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "example.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "example.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -47,11 +46,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let ipv4s = try response.answers.map {
             try $0.rdata.value
@@ -88,7 +87,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com")
+        let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
         let message = factory.message
         let response = try await client.queryAAAA(message: factory, options: .edns)
 
@@ -108,9 +107,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "cloudflare.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "cloudflare.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .AAAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -122,11 +120,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let ipv6s = try response.answers.map {
             try $0.rdata.value
@@ -163,7 +161,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com")
+        let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
         let message = factory.message
         let response = try await client.queryCAA(message: factory, options: .edns)
 
@@ -183,9 +181,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "cloudflare.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "cloudflare.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -197,11 +194,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let caa = try response.answers.map {
             try $0.rdata
@@ -233,7 +230,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com")
+        let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
         let message = factory.message
         let response = try await client.queryCERT(message: factory, options: .edns)
 
@@ -253,9 +250,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "for-dns-cert-testing.mahdibm.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "for-dns-cert-testing.mahdibm.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CERT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -267,11 +263,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let certs = try response.answers.map {
             try $0.rdata
@@ -320,7 +316,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com")
+        let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
         let message = factory.message
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
@@ -340,9 +336,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "www.github.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "www.github.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -350,13 +345,13 @@ struct DNSTests {
 
         #expect(response.answers.count == 1)
         let answer = try #require(response.answers.first)
-        #expect(answer.nameLabels.isFQDN == true)
-        #expect(answer.nameLabels.data == name.data)
+        #expect(answer.nameLabels == name)
         #expect(answer.recordType == .CNAME)
         #expect(answer.dnsClass == .IN)
         #expect(answer.ttl > 0)
+        let nameNoWWW = try Name(domainName: "github.com.")
         let cname = try answer.rdata
-        #expect(cname.name.asString() == "github.com.")
+        #expect(cname.name == nameNoWWW)
 
         /// The 'additional' was an EDNS
         #expect(response.additionals.count == 0)
@@ -379,7 +374,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com")
+        let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
         let message = factory.message
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
@@ -399,9 +394,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "raw.githubusercontent.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "raw.githubusercontent.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -410,12 +404,12 @@ struct DNSTests {
         let nameServer = try #require(response.nameServers.first)
         switch nameServer.rdata {
         case .SOA(let soa):
-            let mName = soa.mName.asString()
-            let rName = soa.rName.asString()
-            #expect(mName.count > 5, "mName: \(mName), soa: \(soa)")
-            #expect(rName.count > 5, "rName: \(rName), soa: \(soa)")
+            let mName = soa.mName.description
+            let rName = soa.rName.description
+            #expect(mName.count > 5, "mName: \(mName), soa: \(soa).")
+            #expect(rName.count > 5, "rName: \(rName), soa: \(soa).")
         default:
-            Issue.record("rdata was not of type SOA: \(nameServer.rdata)")
+            Issue.record("rdata was not of type SOA: \(nameServer.rdata).")
         }
 
         #expect(response.answers.count == 0)
@@ -438,7 +432,9 @@ struct DNSTests {
 
     @Test func queryHINFO() async throws {}
 
-    @Test func queryHTTPS() async throws {}
+    @Test func queryHTTPS() async throws {
+        /// TODO: try `education.github.com`
+    }
 
     @Test func queryMX() async throws {
         let client = DNSClient(
@@ -447,7 +443,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com")
+        let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
         let message = factory.message
         let response = try await client.queryMX(message: factory, options: .edns)
 
@@ -467,9 +463,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "mahdibm.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "mahdibm.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .MX)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -481,11 +476,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let mxs = try response.answers.map {
             try $0.rdata
@@ -493,15 +488,13 @@ struct DNSTests {
             $0.preference < $1.preference
         }
         let expectedMXs = [
-            MX(preference: 10, exchange: try Name(string: "in1-smtp.messagingengine.com.")),
-            MX(preference: 20, exchange: try Name(string: "in2-smtp.messagingengine.com.")),
+            MX(preference: 10, exchange: try Name(domainName: "in1-smtp.messagingengine.com.")),
+            MX(preference: 20, exchange: try Name(domainName: "in2-smtp.messagingengine.com.")),
         ]
         #expect(mxs.count == expectedMXs.count)
         for (mx, expectedMX) in zip(mxs, expectedMXs) {
             #expect(mx.preference == expectedMX.preference)
-            #expect(mx.exchange.isFQDN == expectedMX.exchange.isFQDN)
-            #expect(mx.exchange.data == expectedMX.exchange.data)
-            #expect(mx.exchange.borders == expectedMX.exchange.borders)
+            #expect(mx.exchange == expectedMX.exchange)
         }
 
         /// The 'additional' was an EDNS
@@ -527,7 +520,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<NS>.forQuery(name: "apple.com")
+        let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
         let message = factory.message
         let response = try await client.queryNS(message: factory, options: .edns)
 
@@ -547,9 +540,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "apple.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "apple.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .NS)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -561,28 +553,26 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let nss = try response.answers.map {
             try $0.rdata
         }.sorted {
-            $0.name.asString() < $1.name.asString()
+            $0.name.description < $1.name.description
         }
         let expectedNSs = [
-            NS(name: try Name(string: "a.ns.apple.com.")),
-            NS(name: try Name(string: "b.ns.apple.com.")),
-            NS(name: try Name(string: "c.ns.apple.com.")),
-            NS(name: try Name(string: "d.ns.apple.com.")),
+            NS(name: try Name(domainName: "a.ns.apple.com.")),
+            NS(name: try Name(domainName: "b.ns.apple.com.")),
+            NS(name: try Name(domainName: "c.ns.apple.com.")),
+            NS(name: try Name(domainName: "d.ns.apple.com.")),
         ]
         #expect(nss.count == expectedNSs.count)
         for (ns, expectedNS) in zip(nss, expectedNSs) {
-            #expect(ns.name.isFQDN == expectedNS.name.isFQDN)
-            #expect(ns.name.data == expectedNS.name.data)
-            #expect(ns.name.borders == expectedNS.name.borders)
+            #expect(ns.name == expectedNS.name)
         }
 
         /// The 'additional' was an EDNS
@@ -614,7 +604,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa")
+        let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
         let message = factory.message
         let response = try await client.queryPTR(message: factory, options: .edns)
 
@@ -634,9 +624,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "9.9.9.9.in-addr.arpa")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "9.9.9.9.in-addr.arpa.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .PTR)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -648,23 +637,21 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let ptrs = try response.answers.map {
             try $0.rdata
         }
         let expectedPTRs = [
-            PTR(name: try Name(string: "dns9.quad9.net."))
+            PTR(name: try Name(domainName: "dns9.quad9.net."))
         ]
         #expect(ptrs.count == expectedPTRs.count)
         for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
-            #expect(ptr.name.isFQDN == expectedPTR.name.isFQDN)
-            #expect(ptr.name.data == expectedPTR.name.data)
-            #expect(ptr.name.borders == expectedPTR.name.borders)
+            #expect(ptr.name == expectedPTR.name)
         }
 
         /// The 'additional' was an EDNS
@@ -687,7 +674,9 @@ struct DNSTests {
 
     @Test func querySSHFP() async throws {}
 
-    @Test func querySVCB() async throws {}
+    @Test func querySVCB() async throws {
+        /// TODO: try `_dns.resolver.arpa`
+    }
 
     @Test func queryTLSA() async throws {}
 
@@ -698,7 +687,7 @@ struct DNSTests {
             logger: Logger(label: "DNSTests")
         )
 
-        let factory = try MessageFactory<TXT>.forQuery(name: "example.com")
+        let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
         let message = factory.message
         let response = try await client.queryTXT(message: factory, options: .edns)
 
@@ -718,9 +707,8 @@ struct DNSTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        #expect(response.queries.first?.name.isFQDN == true)
-        let name = try Name(string: "example.com")
-        #expect(response.queries.first?.name.data == name.data)
+        let name = try Name(domainName: "example.com.")
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .TXT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -732,11 +720,11 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.data == name.data },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
-        #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers)")
-        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers)")
+        #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
         /// response.answers[].ttl is whatever
         let txts = try response.answers.map {
             try $0.rdata

@@ -10,12 +10,14 @@
 /// ```
 public struct Name: Sendable {
     /// Maximum allowed domain name length.
-    public static var maxLength: UInt8 {
+    @usableFromInline
+    static var maxLength: UInt8 {
         255
     }
 
     /// Maximum allowed label length.
-    public static var maxLabelLength: UInt8 {
+    @usableFromInline
+    static var maxLabelLength: UInt8 {
         63
     }
 
@@ -29,9 +31,14 @@ public struct Name: Sendable {
     /// A domain name whose last label identifies a root of the graph is fully qualified other domain names whose
     /// labels form a strict prefix of a fully qualified domain name are relative to its first omitted node.
     /// ```
-    public var isFQDN: Bool
-    /// FIXME: investigate performance improvements, with something like `ArraySlice<UInt8>` or `TinyVec`
-    /// The data of each label in the name.
+    @usableFromInline
+    package var isFQDN: Bool
+    /// The data of each label in the name. Lowercased ASCII bytes only.
+    /// non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
+    /// will never make it to the stored properties of `Name` such as `data`.
+    /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
+    /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
+    /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
     ///
     /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
     ///
@@ -41,9 +48,12 @@ public struct Name: Sendable {
     /// An ordered list of zero or more octets that makes up a portion of a domain name.
     /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
     /// ```
-    public var data: [UInt8]
+    /// FIXME: investigate performance improvements, with something like `ArraySlice<UInt8>` or `TinyVec`
+    @usableFromInline
+    package var data: [UInt8]
     /// The end of each label in the `data` array.
-    public var borders: [UInt8]
+    @usableFromInline
+    package var borders: [UInt8]
 
     /// Returns the encoded length of this name, ignoring compression.
     ///
@@ -54,17 +64,20 @@ public struct Name: Sendable {
     }
 
     /// The number of labels in the name, excluding `*`.
+    @inlinable
     public var labelsCount: Int {
         let count = self.borders.count
-        return (self.data.first == UInt8.asciiStar) ? count - 1 : count
+        return (self.data.first == UInt8.asciiStar) ? (count - 1) : count
     }
 
     /// Whether the name is the DNS root name, aka `.`.
+    @inlinable
     public var isRoot: Bool {
         self.isFQDN && self.borders.isEmpty
     }
 
-    public init(
+    @usableFromInline
+    package init(
         isFQDN: Bool = false,
         data: [UInt8] = [],
         borders: [UInt8] = []
@@ -72,6 +85,12 @@ public struct Name: Sendable {
         self.isFQDN = isFQDN
         self.data = data
         self.borders = borders
+
+        /// Make sure the name is valid
+        /// No empty labels
+        assert(self.allSatisfy({ !$0.isEmpty }))
+        assert(self.data.allSatisfy(\.isASCII))
+        assert(self.data.allSatisfy { $0.uncheckedASCIIToLowercase() == $0 })
     }
 }
 
@@ -82,102 +101,7 @@ extension Name {
     }
 }
 
-extension Name: Equatable {
-    /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
-    ///
-    /// ```text
-    /// For all parts of the DNS that are part of the official protocol, all
-    /// comparisons between character strings (e.g., labels, domain names, etc.)
-    /// are done in a case-insensitive manner.
-    /// ```
-    ///
-    /// Does a **case-insensitive** equality check of 2 domain names.
-    /// Not constant time if that matters to your usecase.
-    @inlinable
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.isFQDN == rhs.isFQDN
-            && lhs.borders == rhs.borders
-            && caseInsensitiveEquals(lhs.data, rhs.data)
-    }
-
-    /// TODO: check compatibility with RFC 3490 "Internationalizing Domain Names in Applications (IDNA)"
-    @usableFromInline
-    static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        /// Short circuit if the bytes are the same
-        if lhs == rhs {
-            return true
-        }
-
-        /// Slower path: See if both strings are ASCII, then compare case-insensitively
-        switch caseInsensitiveEqualsASCII(lhs, rhs) {
-        case .equal:
-            return true
-        case .notEqual:
-            return false
-        case .cannotDetermine:
-            break
-        }
-
-        /// Slowest path: Compare as UTF-8 strings
-        if caseInsensitiveEqualsAnyUTF8(lhs, rhs) {
-            return true
-        }
-
-        return false
-    }
-
-    @usableFromInline
-    enum ASCIIComparisonResult {
-        case equal
-        case notEqual
-        case cannotDetermine
-    }
-
-    @usableFromInline
-    static func caseInsensitiveEqualsASCII(
-        _ lhs: [UInt8],
-        _ rhs: [UInt8]
-    ) -> ASCIIComparisonResult {
-        guard lhs.count == rhs.count else {
-            return .cannotDetermine
-        }
-
-        for (l, r) in zip(lhs, rhs) {
-            /// ASCII bytes are less than 128, so the eighth bit is always 0
-            guard (r | l) & 0b1000_0000 == 0 else {
-                return .cannotDetermine
-            }
-            /// https://ss64.com/ascii.html
-            /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-            guard (l & 0b1101_1111) == (r & 0b1101_1111) else {
-                return .notEqual
-            }
-        }
-
-        return .equal
-    }
-
-    @usableFromInline
-    static func caseInsensitiveEqualsAnyUTF8(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        /// FIXME: find a more-efficient way than fully converting to a String just to compare?
-        let lhs = String(decoding: lhs, as: UTF8.self)
-        let rhs = String(decoding: rhs, as: UTF8.self)
-
-        guard lhs.utf8.count == rhs.utf8.count else {
-            return false
-        }
-
-        return lhs.uppercased() == rhs.uppercased()
-    }
-}
-
-extension Name: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(self.isFQDN)
-        hasher.combine(self.borders)
-        hasher.combine(self.data)
-    }
-}
+extension Name: Hashable {}
 
 extension Name: Sequence {
     public struct Iterator: IteratorProtocol {
@@ -187,7 +111,7 @@ extension Name: Sequence {
         var start: Int
         let end: Int
 
-        public init(base: Name) {
+        init(base: Name) {
             self.name = base
             self.start = 0
             self.end = base.borders.count
@@ -225,6 +149,7 @@ extension Name: Sequence {
 }
 
 extension Name {
+    @usableFromInline
     enum ParsingState: ~Copyable {
         case label
         case escape1
@@ -232,132 +157,83 @@ extension Name {
         case escape3(UInt8, UInt8)
     }
 
-    /// Parses the name from the string, and ensures the name is valid.
-    /// Example: try Name(string: "mahdibm.com")
-    public init(string: some StringProtocol, origin: Self? = nil) throws {
-        try self.init(bytes: string.utf8, origin: origin)
-    }
-
-    /// Parses the name from the bytes, and ensures the name is valid.
-    /// Example: try Name(bytes: "mahdibm.com".utf8)
-    /// DOES NOT parse based on the wire format. Use ``init(from:)`` instead for that.
-    public init(bytes: some Collection<UInt8>, origin: Self? = nil) throws {
+    /// Parses and case-folds the name from the string, and ensures the name is valid.
+    /// Example: try Name(domainName: "mahdibm.com")
+    /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
+    @inlinable
+    public init(domainName: String, idnaConfiguration: IDNA.Configuration = .default) throws {
         self.init()
+
         // short circuit root parse
-        if bytes.count == 1, bytes.first == UInt8.asciiDot {
+        if domainName.unicodeScalars.count == 1,
+            domainName.unicodeScalars.first == Unicode.Scalar.asciiDot
+        {
             self.isFQDN = true
             return
         }
 
-        var label = [UInt8]()
-        /// FIXME: try this line after we have benchmarks
-        // label.reserveCapacity(8)
+        var domainName = domainName
 
-        var state: ParsingState = .label
-
-        for char in bytes {
-            state = try self.iterate(
-                state: state,
-                label: &label,
-                char: char,
-                bytes: bytes
-            )
-        }
-
-        if !label.isEmpty {
-            try self.extendName(label)
-        }
-
-        // Check if the last character processed was an unescaped `.`
-        if label.isEmpty && !bytes.isEmpty {
+        /// Remove the trailing dot if it exists, and set the FQDN flag
+        /// The IDNA spec doesn't like the root label separator.
+        if domainName.unicodeScalars.last?.isIDNALabelSeparator == true {
             self.isFQDN = true
-        } else if let other = origin {
-            try self.appendDomain(other)
+            domainName = String(domainName.unicodeScalars.dropLast())
         }
+
+        /// TODO: make sure all initializations of Name go through a single initializer that
+        /// asserts lowercased ASCII?
+
+        /// short-circuit most domain names which won't change with IDNA anyway.
+        try IDNA(
+            configuration: idnaConfiguration
+        ).toASCII(
+            domainName: &domainName
+        )
+
+        try Self.from(guaranteedASCIIBytes: domainName.utf8, into: &self)
     }
 
-    mutating func iterate(
-        state: consuming ParsingState,
-        label: inout [UInt8],
-        char: UInt8,
-        bytes: some Collection<UInt8>
-    ) throws -> ParsingState {
-        switch consume state {
-        case .label:
-            switch char {
-            case UInt8.asciiDot:
-                if label.isEmpty {
-                    throw ProtocolError.failedToValidate("Name.bytes", DNSBuffer(bytes: bytes))
-                }
-                try self.extendName(label)
-                label.removeAll(keepingCapacity: true)
-                return .label
-            case UInt8.asciiBackslash:
-                return .escape1
-            case let char:
-                /// Allow any characters, even binary characters or whitespaces.
-                label.append(char)
-                return .label
-            }
-        case .escape1:
-            if Unicode.Scalar(char).properties.generalCategory.isNumeric {
-                return .escape2(char)
-            } else {
-                /// it's a single escaped char
-                label.append(char)
-                return .label
-            }
-        case .escape2(let i):
-            if Unicode.Scalar(char).properties.generalCategory.isNumeric {
-                return .escape3(i, char)
-            } else {
-                throw ProtocolError.badCharacter(
-                    in: "Name.bytes",
-                    character: char,
-                    DNSBuffer(bytes: bytes)
-                )
-            }
-        case .escape3(let i, let ii):
-            guard Unicode.Scalar(char).properties.generalCategory.isNumeric else {
-                throw ProtocolError.badCharacter(
-                    in: "Name.bytes",
-                    character: char,
-                    DNSBuffer(bytes: bytes)
-                )
-            }
-            /// octal conversion
-            let val: UInt32 =
-                (UInt32(i) * 8 * 8)
-                + (UInt32(ii) * 8)
-                + UInt32(char)
-            guard let new = Unicode.Scalar(val) else {
-                throw ProtocolError.badCharacter(
-                    in: "Name.bytes",
-                    character: char,
-                    DNSBuffer(bytes: bytes)
-                )
-            }
-            label.append(contentsOf: new.utf8)
-            return .label
+    @usableFromInline
+    init(expectingASCIIBytes bytes: some Collection<UInt8>, name: StaticString) throws {
+        guard bytes.allSatisfy(\.isASCII) else {
+            /// FIXME: throw a better error
+            throw ProtocolError.failedToValidate(name, DNSBuffer(bytes: bytes))
         }
+        self.init()
+        try Self.from(guaranteedASCIIBytes: bytes, into: &self)
     }
 
-    mutating func appendDomain(_ domain: Self) throws {
-        try self.appendName(domain)
-        self.isFQDN = true
+    @usableFromInline
+    init(guaranteedASCIIBytes bytes: some Collection<UInt8>) throws {
+        self.init()
+        try Self.from(guaranteedASCIIBytes: bytes, into: &self)
     }
 
-    mutating func appendName(_ name: Self) throws {
-        for label in name {
-            try self.extendName(label)
+    @usableFromInline
+    static func from(
+        guaranteedASCIIBytes bytes: some Collection<UInt8>,
+        into name: inout Name
+    ) throws {
+        assert(bytes.allSatisfy(\.isASCII))
+
+        name.data.reserveCapacity(Int(bytes.count))
+        /// FIXME: is 4 a good number of bytes to reserve capacity for?
+        name.borders.reserveCapacity(4)
+        for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
+            guard !label.isEmpty else {
+                /// FIXME: throw a better error
+                throw ProtocolError.failedToValidate("Name", DNSBuffer(bytes: bytes))
+            }
+            try name.extendName(Array(label))
         }
-        self.isFQDN = name.isFQDN
     }
 
     /// Extend the name with the offered label, and ensure maximum name length is not exceeded.
     /// Does not check if the label is not empty. That needs to be checked by the caller.
     /// In the wire format labels cannot be empty, but in the string format they can, so the caller
     /// will need to check that.
+    @usableFromInline
     mutating func extendName(_ label: [UInt8]) throws {
         let newLength = self.encodedLength + label.count + 1
 
@@ -391,6 +267,21 @@ extension Name {
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
         try self.read(from: &buffer)
+
+        switch self.performASCIICheck() {
+        case .containsOnlyASCII:
+            break
+        case .isASCIIButContainsUppercasedLetters:
+            /// Normalize to lowercase ASCII
+            self.data = self.data.map {
+                $0.uncheckedASCIIToLowercase()
+            }
+        case .containsNonASCII:
+            /// Attempt to repair the domain name if it was not ASCII.
+            /// non-ASCII bytes are technically not allowed in DNS.
+            let description = self.description(format: .unicode, options: .sourceAccurate)
+            self = try Self.init(domainName: description)
+        }
     }
 
     /// Reads the domain name from the buffer, adding it to the current name.
@@ -502,9 +393,10 @@ extension Name {
             }
         }
 
-        // TODO: should we consider checking this while the name is parsed?
+        /// TODO: should we consider checking this while the name is parsed?
+        /// TODO: `> Self.maxLength {` is correct or `>= Self.maxLength {`?
         let len = self.encodedLength
-        if len >= Self.maxLength {
+        if len > Self.maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 "Name",
                 actual: len,
@@ -513,27 +405,104 @@ extension Name {
             )
         }
     }
+
+    enum ASCIICheckResult {
+        case containsOnlyASCII
+        case isASCIIButContainsUppercasedLetters
+        case containsNonASCII
+    }
+
+    func performASCIICheck() -> ASCIICheckResult {
+        var containsUppercased = false
+
+        for byte in self.data {
+            if byte.isUppercasedASCII {
+                containsUppercased = true
+            } else if !byte.isASCII {
+                return .containsNonASCII
+            } else {
+                continue
+            }
+        }
+
+        return containsUppercased ? .isASCIIButContainsUppercasedLetters : .containsOnlyASCII
+    }
+}
+
+extension Name: CustomStringConvertible {
+    /// Unicode-friendly description of the domain name, excluding the possible root label separator.
+    public var description: String {
+        self.description(format: .unicode)
+    }
+}
+
+extension Name: CustomDebugStringConvertible {
+    /// Byte-accurate description of the domain name.
+    public var debugDescription: String {
+        self.description(format: .ascii, options: .includeRootLabelIndicator)
+    }
 }
 
 extension Name {
-    package func asString() -> String {
-        var scalars: [UnicodeScalar] = []
+    /// FIXME: public nonfrozen enum
+    public enum DescriptionFormat {
+        case ascii
+        case unicode
+    }
+
+    public struct DescriptionOptions: OptionSet {
+        public var rawValue: Int
+
+        @inlinable
+        public static var includeRootLabelIndicator: Self {
+            Self(rawValue: 1 << 0)
+        }
+
+        @inlinable
+        public static var sourceAccurate: Self {
+            .includeRootLabelIndicator
+        }
+
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+    }
+
+    public func description(
+        format: DescriptionFormat,
+        options: DescriptionOptions = []
+    ) -> String {
+        var scalars: [Unicode.Scalar] = []
         scalars.reserveCapacity(self.encodedLength)
 
         var iterator = self.makeIterator()
-        if let first = iterator.next() {
-            scalars.append(contentsOf: first.map(UnicodeScalar.init))
+        if let firstLabel = iterator.next() {
+            scalars.append(contentsOf: firstLabel.map(Unicode.Scalar.init))
         }
 
         while let label = iterator.next() {
             scalars.append(".")
-            scalars.append(contentsOf: label.map(UnicodeScalar.init))
+            scalars.append(contentsOf: label.map(Unicode.Scalar.init))
         }
 
-        if self.isFQDN {
-            scalars.append(".")
+        var domainName = String(String.UnicodeScalarView(scalars))
+
+        if format == .unicode {
+            do {
+                try IDNA(configuration: .mostLax)
+                    .toUnicode(domainName: &domainName)
+            } catch {
+                domainName = String(String.UnicodeScalarView(scalars))
+            }
         }
-        return String(String.UnicodeScalarView(scalars))
+
+        if self.isFQDN,
+            options.contains(.includeRootLabelIndicator)
+        {
+            domainName.append(".")
+        }
+
+        return domainName
     }
 }
 

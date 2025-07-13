@@ -54,10 +54,11 @@ public struct MessageFactory<QueryType: Queryable> {
     @inlinable
     public static func forQuery(
         name: String,
+        idnaConfiguration: IDNA.Configuration = .default,
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) throws -> Self {
-        let name = try Name(string: name)
+        let name = try Name(domainName: name, idnaConfiguration: idnaConfiguration)
         return Self.forQuery(
             name: name,
             recursionDesired: recursionDesired,

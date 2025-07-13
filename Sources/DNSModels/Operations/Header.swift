@@ -57,7 +57,7 @@ public struct Header: Sendable {
                 self.rawValue =
                     (self.rawValue & 0b01111111_11111111) | UInt16(
                         truncatingIfNeeded: newValue.rawValue
-                    ) << 15
+                    ) &<< 15
             }
         }
         public var opCode: OPCode {
@@ -68,7 +68,7 @@ public struct Header: Sendable {
                 self.rawValue =
                     (self.rawValue & 0b10000111_11111111) | UInt16(
                         truncatingIfNeeded: newValue.rawValue
-                    ) << 11
+                    ) &<< 11
             }
         }
         public var authoritative: Bool {

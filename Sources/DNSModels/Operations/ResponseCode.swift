@@ -154,6 +154,6 @@ extension ResponseCode {
     }
 
     package init(high: UInt8, low: UInt8) {
-        self.init((UInt16(high) << 4) | (UInt16(low) & 0x000F))
+        self.init((UInt16(high) &<< 4) | (UInt16(low) & 0x000F))
     }
 }

@@ -202,7 +202,7 @@ extension TSIG {
         )
         /// `timeHigh` and `timeLow` are `UInt16` and `UInt32` respectively, so it's safe to convert to `UInt64`
         self.time =
-            (UInt64(truncatingIfNeeded: timeHigh) << 32) | UInt64(truncatingIfNeeded: timeLow)
+            (UInt64(truncatingIfNeeded: timeHigh) &<< 32) | UInt64(truncatingIfNeeded: timeLow)
         self.fudge = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("TSIG.fudge", buffer)
         )
@@ -255,7 +255,7 @@ extension TSIG {
 extension TSIG.Algorithm {
     init(name: Name) {
         self =
-            switch name.asString() {
+            switch name.description {
             case "HMAC-MD5.SIG-ALG.REG.INT": .HMAC_MD5
             case "gss-tsig": .GSS
             case "hmac-sha1": .HMAC_SHA1
@@ -272,16 +272,16 @@ extension TSIG.Algorithm {
 
     func toName() throws -> Name {
         switch self {
-        case .HMAC_MD5: return try Name(string: "HMAC-MD5.SIG-ALG.REG.INT")
-        case .GSS: return try Name(string: "gss-tsig")
-        case .HMAC_SHA1: return try Name(string: "hmac-sha1")
-        case .HMAC_SHA224: return try Name(string: "hmac-sha224")
-        case .HMAC_SHA256: return try Name(string: "hmac-sha256")
-        case .HMAC_SHA256_128: return try Name(string: "hmac-sha256-128")
-        case .HMAC_SHA384: return try Name(string: "hmac-sha384")
-        case .HMAC_SHA384_192: return try Name(string: "hmac-sha384-192")
-        case .HMAC_SHA512: return try Name(string: "hmac-sha512")
-        case .HMAC_SHA512_256: return try Name(string: "hmac-sha512-256")
+        case .HMAC_MD5: return try Name(guaranteedASCIIBytes: "HMAC-MD5.SIG-ALG.REG.INT".utf8)
+        case .GSS: return try Name(guaranteedASCIIBytes: "gss-tsig".utf8)
+        case .HMAC_SHA1: return try Name(guaranteedASCIIBytes: "hmac-sha1".utf8)
+        case .HMAC_SHA224: return try Name(guaranteedASCIIBytes: "hmac-sha224".utf8)
+        case .HMAC_SHA256: return try Name(guaranteedASCIIBytes: "hmac-sha256".utf8)
+        case .HMAC_SHA256_128: return try Name(guaranteedASCIIBytes: "hmac-sha256-128".utf8)
+        case .HMAC_SHA384: return try Name(guaranteedASCIIBytes: "hmac-sha384".utf8)
+        case .HMAC_SHA384_192: return try Name(guaranteedASCIIBytes: "hmac-sha384-192".utf8)
+        case .HMAC_SHA512: return try Name(guaranteedASCIIBytes: "hmac-sha512".utf8)
+        case .HMAC_SHA512_256: return try Name(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
         case .unknown(let name): return name
         }
     }
