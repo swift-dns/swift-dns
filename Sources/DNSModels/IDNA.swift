@@ -423,6 +423,7 @@ public struct IDNA {
 
     func performASCIICheck(domainName: inout String) -> ASCIICheckResult {
         var containsUppercased = false
+
         for unicodeScalar in domainName.unicodeScalars {
             if unicodeScalar.isNumberOrLowercasedLetterOrDotASCII {
                 continue

@@ -326,15 +326,20 @@ extension Name {
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
         try self.read(from: &buffer)
-        /// Attempt to repair the domain name if it was not ASCII
-        if data.contains(where: { !$0.isASCII }) {
-            let description = self.description(format: .unicode, options: .sourceAccurate)
-            self = try Self.init(domainName: description)
-        } else {
+
+        switch self.performASCIICheck() {
+        case .containsOnlyASCII:
+            break
+        case .isASCIIButContainsUppercasedLetters:
             /// Normalize to lowercase ASCII
             self.data = self.data.map {
                 $0.uncheckedASCIIToLowercase()
             }
+        case .containsNonASCII:
+            /// Attempt to repair the domain name if it was not ASCII.
+            /// non-ASCII bytes are technically not allowed in DNS.
+            let description = self.description(format: .unicode, options: .sourceAccurate)
+            self = try Self.init(domainName: description)
         }
     }
 
@@ -458,6 +463,28 @@ extension Name {
                 buffer
             )
         }
+    }
+
+    enum ASCIICheckResult {
+        case containsOnlyASCII
+        case isASCIIButContainsUppercasedLetters
+        case containsNonASCII
+    }
+
+    func performASCIICheck() -> ASCIICheckResult {
+        var containsUppercased = false
+
+        for byte in self.data {
+            if byte.isUppercasedASCII {
+                containsUppercased = true
+            } else if !byte.isASCII {
+                return .containsNonASCII
+            } else {
+                continue
+            }
+        }
+
+        return containsUppercased ? .isASCIIButContainsUppercasedLetters : .containsOnlyASCII
     }
 }
 

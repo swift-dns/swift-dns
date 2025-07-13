@@ -20,6 +20,11 @@ extension UInt8 {
     }
 
     @inlinable
+    var isUppercasedASCII: Bool {
+        self >= 0x41 && self <= 0x5A
+    }
+
+    @inlinable
     static var asciiPrintableStart: UInt8 {
         0x20
     }
