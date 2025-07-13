@@ -138,8 +138,6 @@ public struct IDNA {
         }
 
         if configuration.verifyDNSLength {
-            /// FIXME: what about the trailing 0? make sure tests cover that
-
             if labels.last?.isEmpty == true {
                 errors.append(
                     .trueVerifyDNSLengthArgumentDisallowsEmptyRootLabelWithTrailingDot(

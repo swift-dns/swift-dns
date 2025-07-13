@@ -212,8 +212,6 @@ extension Name {
     /// Parses the name from the string, and ensures the name is valid.
     /// Example: try Name(domainName: "mahdibm.com")
     /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
-    /// TODO: normalize everything to ASCII lowercase? or can IDNA handle uppercase?
-    /// Basically make things consistent. Either respecting case across the board, or not.
     @inlinable
     public init(domainName: String, idnaConfiguration: IDNA.Configuration = .default) throws {
         self.init()
@@ -235,11 +233,17 @@ extension Name {
             domainName = String(domainName.unicodeScalars.dropLast())
         }
 
-        try IDNA(
-            configuration: idnaConfiguration
-        ).toASCII(
-            domainName: &domainName
-        )
+        /// TODO: normalize everything to ASCII lowercase? or can IDNA handle uppercase?
+        /// Basically make things consistent. Either respecting case across the board, or not.
+
+        /// short-circuit most domain names which won't change with IDNA anyway.
+        if domainName.unicodeScalars.contains(where: { !$0.isGuaranteedIDNANoOpCharacter }) {
+            try IDNA(
+                configuration: idnaConfiguration
+            ).toASCII(
+                domainName: &domainName
+            )
+        }
 
         try Self.from(guaranteedASCIIBytes: domainName.utf8, into: &self)
     }

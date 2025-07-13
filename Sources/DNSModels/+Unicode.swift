@@ -6,6 +6,16 @@ extension Unicode.Scalar {
             || self.isHyphenMinus
     }
 
+    /// These characters are guaranteed to not change with IDNA.
+    /// `0-9`, `A-Z`, `a-z`, `.`
+    @inlinable
+    var isGuaranteedIDNANoOpCharacter: Bool {
+        (self.value >= 0x30 && self.value <= 0x39)
+            || (self.value >= 0x41 && self.value <= 0x5A)
+            || (self.value >= 0x61 && self.value <= 0x7A)
+            || self == .asciiDot
+    }
+
     @inlinable
     var isHyphenMinus: Bool {
         self.value == 0x2D
