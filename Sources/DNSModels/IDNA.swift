@@ -117,6 +117,16 @@ public struct IDNA {
     /// https://www.unicode.org/reports/tr46/#ToASCII
     @usableFromInline
     package func toASCII(domainName: inout String) throws(MappingErrors) {
+        switch performASCIICheck(domainName: &domainName) {
+        case .containsOnlyIDNANoOpASCII:
+            return
+        case .isASCIIButContainsUppercasedLetters:
+            convertToLowercasedASCII(domainName: &domainName)
+            return
+        case .containsNonASCII:
+            break
+        }
+
         var errors = MappingErrors(domainName: domainName)
 
         // 1.
@@ -195,6 +205,16 @@ public struct IDNA {
     /// https://www.unicode.org/reports/tr46/#ToUnicode
     @usableFromInline
     package func toUnicode(domainName: inout String) throws(MappingErrors) {
+        switch performASCIICheck(domainName: &domainName) {
+        case .containsOnlyIDNANoOpASCII:
+            return
+        case .isASCIIButContainsUppercasedLetters:
+            convertToLowercasedASCII(domainName: &domainName)
+            return
+        case .containsNonASCII:
+            break
+        }
+
         var errors = MappingErrors(domainName: domainName)
 
         // 1.
@@ -393,6 +413,42 @@ public struct IDNA {
         // if configuration.checkBidi {
         // TODO: implement
         // }
+    }
+
+    enum ASCIICheckResult {
+        case containsOnlyIDNANoOpASCII
+        case isASCIIButContainsUppercasedLetters
+        case containsNonASCII
+    }
+
+    func performASCIICheck(domainName: inout String) -> ASCIICheckResult {
+        var containsUppercased = false
+        for unicodeScalar in domainName.unicodeScalars {
+            if unicodeScalar.isNumberOrLowercasedLetterOrDotASCII {
+                continue
+            } else if unicodeScalar.isUppercasedASCII {
+                containsUppercased = true
+            } else {
+                return .containsNonASCII
+            }
+        }
+
+        return containsUppercased
+            ? .isASCIIButContainsUppercasedLetters : .containsOnlyIDNANoOpASCII
+    }
+
+    @usableFromInline
+    func convertToLowercasedASCII(domainName: inout String) {
+        domainName = String(
+            String.UnicodeScalarView(
+                domainName.unicodeScalars.map {
+                    /// https://ss64.com/ascii.html
+                    /// The difference between an upper and lower cased ASCII byte is their sixth bit.
+                    /// Turn the sixth bit on to ensure lowercased ASCII byte.
+                    Unicode.Scalar($0.value | 0b0010_0000)!
+                }
+            )
+        )
     }
 }
 

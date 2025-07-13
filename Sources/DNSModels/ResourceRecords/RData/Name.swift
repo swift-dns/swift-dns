@@ -234,16 +234,11 @@ extension Name {
         }
 
         /// short-circuit most domain names which won't change with IDNA anyway.
-        if domainName.unicodeScalars.contains(where: { !$0.isGuaranteedIDNANoOpCharacter }) {
-            try IDNA(
-                configuration: idnaConfiguration
-            ).toASCII(
-                domainName: &domainName
-            )
-        } else {
-            /// Make sure the domain name is normalized in lowercase.
-            domainName = domainName.guaranteedASCIIStringToLowercase()
-        }
+        try IDNA(
+            configuration: idnaConfiguration
+        ).toASCII(
+            domainName: &domainName
+        )
 
         try Self.from(guaranteedASCIIBytes: domainName.utf8, into: &self)
     }
@@ -554,22 +549,5 @@ extension Name {
                 buffer
             )
         }
-    }
-}
-
-extension String {
-    @usableFromInline
-    func guaranteedASCIIStringToLowercase() -> String {
-        assert(self.allSatisfy(\.isASCII))
-        return String(
-            String.UnicodeScalarView(
-                self.unicodeScalars.map {
-                    /// https://ss64.com/ascii.html
-                    /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-                    /// Turn the sixth bit on to ensure lowercased ASCII byte.
-                    Unicode.Scalar($0.value | 0b0010_0000)!
-                }
-            )
-        )
     }
 }
