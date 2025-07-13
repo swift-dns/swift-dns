@@ -1,8 +1,10 @@
 public struct IDNA {
     public struct Configuration {
         public var checkHyphens: Bool
-        public var checkBidi: Bool
-        public var checkJoiners: Bool
+        /// `checkBidi` is currently a no-op.
+        package var checkBidi: Bool = true
+        /// `checkJoiners` is currently a no-op.
+        package var checkJoiners: Bool = true
         public var useSTD3ASCIIRules: Bool
         public var verifyDnsLength: Bool
         public var ignoreInvalidPunycode: Bool
@@ -41,7 +43,7 @@ public struct IDNA {
             )
         }
 
-        public init(
+        package init(
             checkHyphens: Bool,
             checkBidi: Bool,
             checkJoiners: Bool,
@@ -52,6 +54,22 @@ public struct IDNA {
             self.checkHyphens = checkHyphens
             self.checkBidi = checkBidi
             self.checkJoiners = checkJoiners
+            self.useSTD3ASCIIRules = useSTD3ASCIIRules
+            self.verifyDnsLength = verifyDnsLength
+            self.ignoreInvalidPunycode = ignoreInvalidPunycode
+        }
+
+        public init(
+            checkHyphens: Bool,
+            useSTD3ASCIIRules: Bool,
+            verifyDnsLength: Bool,
+            ignoreInvalidPunycode: Bool
+        ) {
+            self.checkHyphens = checkHyphens
+            /// `checkBidi` is currently a no-op.
+            self.checkBidi = false
+            /// `checkJoiners` is currently a no-op.
+            self.checkJoiners = false
             self.useSTD3ASCIIRules = useSTD3ASCIIRules
             self.verifyDnsLength = verifyDnsLength
             self.ignoreInvalidPunycode = ignoreInvalidPunycode
