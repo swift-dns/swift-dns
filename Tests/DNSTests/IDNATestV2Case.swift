@@ -188,9 +188,9 @@ extension IDNA.MappingErrors.Element {
 
         switch correspondingStatus {
         case .A4_1:
-            configuration.verifyDnsLength = false
+            configuration.verifyDNSLength = false
         case .A4_2:
-            configuration.verifyDnsLength = false
+            configuration.verifyDNSLength = false
         case .B1, .B2, .B3, .B4, .B5, .B6:
             configuration.checkBidi = false
         case .C1, .C2:

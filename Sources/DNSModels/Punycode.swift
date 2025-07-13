@@ -1,5 +1,6 @@
-/// https://datatracker.ietf.org/doc/html/rfc3492
+/// [Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)](https://datatracker.ietf.org/doc/html/rfc3492)
 enum Punycode {
+    /// [Punycode: A Bootstring encoding of Unicode for IDNA: Parameter values for Punycode](https://datatracker.ietf.org/doc/html/rfc3492#section-5)
     enum Constants {
         @usableFromInline
         static var base: Int {
@@ -36,7 +37,7 @@ enum Punycode {
             128
         }
 
-        /// https://datatracker.ietf.org/doc/html/rfc3492#section-5
+        /// [Punycode: A Bootstring encoding of Unicode for IDNA: Parameter values for Punycode](https://datatracker.ietf.org/doc/html/rfc3492#section-5)
         /// 0-25 -> a-z; 26-35 -> 0-9
         @usableFromInline
         static let digitToUnicodeScalarLookupTable: [Int: UnicodeScalar] = [
@@ -78,7 +79,7 @@ enum Punycode {
             35: UnicodeScalar(0x39),
         ]
 
-        /// https://datatracker.ietf.org/doc/html/rfc3492#section-5
+        /// [Punycode: A Bootstring encoding of Unicode for IDNA: Parameter values for Punycode](https://datatracker.ietf.org/doc/html/rfc3492#section-5)
         /// A-Z -> 0-25; a-z -> 0-25; 0-9 -> 26-35
         @usableFromInline
         static let unicodeScalarToDigitLookupTable: [UnicodeScalar: Int] = [
@@ -147,7 +148,7 @@ enum Punycode {
         ]
     }
 
-    /// https://datatracker.ietf.org/doc/html/rfc3492#section-6.3
+    /// [Punycode: A Bootstring encoding of Unicode for IDNA: Encoding procedure](https://datatracker.ietf.org/doc/html/rfc3492#section-6.3)
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
@@ -246,7 +247,7 @@ enum Punycode {
         return true
     }
 
-    /// https://datatracker.ietf.org/doc/html/rfc3492#section-6.2
+    /// [Punycode: A Bootstring encoding of Unicode for IDNA: Decoding procedure](https://datatracker.ietf.org/doc/html/rfc3492#section-6.2)
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
@@ -350,7 +351,8 @@ enum Punycode {
         return true
     }
 
-    /// https://datatracker.ietf.org/doc/html/rfc3492#section-6.1
+    /// [Punycode: A Bootstring encoding of Unicode for IDNA: Bias adaptation function](https://datatracker.ietf.org/doc/html/rfc3492#section-6.1)
+    @usableFromInline
     static func adapt(delta: Int, codePointCount: Int, isFirstTime: Bool) -> Int {
         var delta =
             if isFirstTime {

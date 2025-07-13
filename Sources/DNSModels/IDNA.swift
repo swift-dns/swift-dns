@@ -1,44 +1,64 @@
+/// Provides compatibility with IDNA: Internationalized Domain Names in Applications.
+/// [Unicode IDNA Compatibility Processing](https://www.unicode.org/reports/tr46/)
 public struct IDNA {
+    /// [Unicode IDNA Compatibility Processing: Processing](https://www.unicode.org/reports/tr46/#Processing)
+    /// All parameters are used in both `toASCII` and `toUnicode`, except for
+    /// `verifyDNSLength` which is only used in `toASCII`.
     public struct Configuration {
+        /// Disallows usage of "-" (U+002D HYPHEN-MINUS) in certain positions of a domain name.
+        /// [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
         public var checkHyphens: Bool
+        /// Checks if a domain name is valid if/when containing any bidirectional unicode characters.
+        /// [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
         /// `checkBidi` is currently a no-op.
         package var checkBidi: Bool = true
+        /// Checks if a domain name is valid if/when containing any joiner unicode characters.
+        /// [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
         /// `checkJoiners` is currently a no-op.
         package var checkJoiners: Bool = true
+        /// [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
         public var useSTD3ASCIIRules: Bool
-        public var verifyDnsLength: Bool
+        /// Verifies domain name length compatibility with DNS specification.
+        /// That is, each label length must be in range 1...63 and each full domain name length must
+        /// be in range 1...255.
+        /// [Unicode IDNA Compatibility Processing: ToASCII](https://www.unicode.org/reports/tr46/#ToASCII)
+        public var verifyDNSLength: Bool
+        /// Ignores invalid punycode in `toUnicode`/`mainProcessing` conversions and more, and
+        /// doesn't report errors for them.
         public var ignoreInvalidPunycode: Bool
 
+        /// The most strict configuration possible.
         public static var mostStrict: Configuration {
             Configuration(
                 checkHyphens: true,
                 checkBidi: true,
                 checkJoiners: true,
                 useSTD3ASCIIRules: true,
-                verifyDnsLength: true,
+                verifyDNSLength: true,
                 ignoreInvalidPunycode: false
             )
         }
 
+        /// The most lax configuration possible.
         public static var mostLax: Configuration {
             Configuration(
                 checkHyphens: false,
                 checkBidi: false,
                 checkJoiners: false,
                 useSTD3ASCIIRules: false,
-                verifyDnsLength: false,
+                verifyDNSLength: false,
                 ignoreInvalidPunycode: true
             )
         }
 
-        /// TODO: Is this a good default? Disables STD3 rules.
+        /// The default configuration.
         public static var `default`: Configuration {
             Configuration(
                 checkHyphens: true,
                 checkBidi: true,
                 checkJoiners: true,
                 useSTD3ASCIIRules: false,
-                verifyDnsLength: true,
+                verifyDNSLength: true,
                 ignoreInvalidPunycode: false
             )
         }
@@ -48,21 +68,31 @@ public struct IDNA {
             checkBidi: Bool,
             checkJoiners: Bool,
             useSTD3ASCIIRules: Bool,
-            verifyDnsLength: Bool,
+            verifyDNSLength: Bool,
             ignoreInvalidPunycode: Bool
         ) {
             self.checkHyphens = checkHyphens
             self.checkBidi = checkBidi
             self.checkJoiners = checkJoiners
             self.useSTD3ASCIIRules = useSTD3ASCIIRules
-            self.verifyDnsLength = verifyDnsLength
+            self.verifyDNSLength = verifyDNSLength
             self.ignoreInvalidPunycode = ignoreInvalidPunycode
         }
 
+        /// - Parameters:
+        ///   - checkHyphens: Disallows usage of "-" (U+002D HYPHEN-MINUS) in certain positions of a domain name.
+        ///     [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
+        ///   - useSTD3ASCIIRules: [Unicode IDNA Compatibility Processing: Validity Criteria](https://www.unicode.org/reports/tr46/#Validity_Criteria)
+        ///   - verifyDNSLength: Verifies domain name length compatibility with DNS specification.
+        ///     That is, each label length must be in range 1...63 and each full domain name length must
+        ///     be in range 1...255.
+        ///     [Unicode IDNA Compatibility Processing: ToASCII](https://www.unicode.org/reports/tr46/#ToASCII)
+        ///   - ignoreInvalidPunycode: Ignores invalid punycode in `toUnicode`/`mainProcessing` conversions and more,
+        ///     and doesn't report errors for them.
         public init(
             checkHyphens: Bool,
             useSTD3ASCIIRules: Bool,
-            verifyDnsLength: Bool,
+            verifyDNSLength: Bool,
             ignoreInvalidPunycode: Bool
         ) {
             self.checkHyphens = checkHyphens
@@ -71,7 +101,7 @@ public struct IDNA {
             /// `checkJoiners` is currently a no-op.
             self.checkJoiners = false
             self.useSTD3ASCIIRules = useSTD3ASCIIRules
-            self.verifyDnsLength = verifyDnsLength
+            self.verifyDNSLength = verifyDNSLength
             self.ignoreInvalidPunycode = ignoreInvalidPunycode
         }
     }
@@ -83,6 +113,7 @@ public struct IDNA {
         self.configuration = configuration
     }
 
+    /// `ToASCII` IDNA implementation.
     /// https://www.unicode.org/reports/tr46/#ToASCII
     @usableFromInline
     package func toASCII(domainName: inout String) throws(MappingErrors) {
@@ -106,7 +137,7 @@ public struct IDNA {
             return "xn--" + Substring(newLabel)
         }
 
-        if configuration.verifyDnsLength {
+        if configuration.verifyDNSLength {
             /// FIXME: what about the trailing 0? make sure tests cover that
 
             if labels.last?.isEmpty == true {
@@ -162,6 +193,7 @@ public struct IDNA {
         domainName = labels.joined(separator: ".")
     }
 
+    /// `ToUnicode` IDNA implementation.
     /// https://www.unicode.org/reports/tr46/#ToUnicode
     @usableFromInline
     package func toUnicode(domainName: inout String) throws(MappingErrors) {
@@ -176,6 +208,7 @@ public struct IDNA {
         }
     }
 
+    /// Main `Processing` IDNA implementation.
     /// https://www.unicode.org/reports/tr46/#Processing
     @usableFromInline
     func mainProcessing(domainName: inout String, errors: inout MappingErrors) {
@@ -212,6 +245,7 @@ public struct IDNA {
         }.joined(separator: ".")
     }
 
+    /// https://www.unicode.org/reports/tr46/#ProcessingStepConvertValidate
     @usableFromInline
     func convertAndValidateLabel(
         _ label: Substring.UnicodeScalarView,
@@ -351,13 +385,13 @@ public struct IDNA {
             }
         }
 
-        if configuration.checkJoiners {
-            // TODO: implement
-        }
+        // if configuration.checkJoiners {
+        // TODO: implement
+        // }
 
-        if configuration.checkBidi {
-            // TODO: implement
-        }
+        // if configuration.checkBidi {
+        // TODO: implement
+        // }
     }
 }
 
