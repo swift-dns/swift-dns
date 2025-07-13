@@ -39,10 +39,7 @@ struct NameTests {
     }
 
     @Test(
-        arguments: [
-            ".mahdibm.com",
-            "",
-        ]
+        arguments: [".mahdibm.com", ""]
     )
     func initInvalidFromString(name: String) throws {
         #expect(throws: (any Error).self) {

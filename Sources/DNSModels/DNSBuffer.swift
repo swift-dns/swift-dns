@@ -39,6 +39,7 @@ package struct DNSBuffer: Sendable {
         self._dnsStartIndex = _dnsStartIndex
     }
 
+    @usableFromInline
     package init() {
         self._buffer = ByteBuffer()
         self._dnsStartIndex = self._buffer.readerIndex

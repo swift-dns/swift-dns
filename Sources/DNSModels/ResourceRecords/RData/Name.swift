@@ -209,7 +209,7 @@ extension Name {
         case escape3(UInt8, UInt8)
     }
 
-    /// Parses the name from the string, and ensures the name is valid.
+    /// Parses and case-folds the name from the string, and ensures the name is valid.
     /// Example: try Name(domainName: "mahdibm.com")
     /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
     @inlinable
@@ -233,9 +233,6 @@ extension Name {
             domainName = String(domainName.unicodeScalars.dropLast())
         }
 
-        /// TODO: normalize everything to ASCII lowercase? or can IDNA handle uppercase?
-        /// Basically make things consistent. Either respecting case across the board, or not.
-
         /// short-circuit most domain names which won't change with IDNA anyway.
         if domainName.unicodeScalars.contains(where: { !$0.isGuaranteedIDNANoOpCharacter }) {
             try IDNA(
@@ -243,6 +240,9 @@ extension Name {
             ).toASCII(
                 domainName: &domainName
             )
+        } else {
+            /// Make sure the domain name is normalized in lowercase.
+            domainName = domainName.guaranteedASCIIStringToLowercase()
         }
 
         try Self.from(guaranteedASCIIBytes: domainName.utf8, into: &self)
@@ -274,7 +274,7 @@ extension Name {
         name.data.reserveCapacity(Int(bytes.count))
         /// FIXME: is 4 a good number of bytes to reserve capacity for?
         name.borders.reserveCapacity(4)
-        for label in bytes.split(separator: .asciiDot) {
+        for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
                 throw ProtocolError.failedToValidate("Name", DNSBuffer(bytes: bytes))
@@ -554,5 +554,22 @@ extension Name {
                 buffer
             )
         }
+    }
+}
+
+extension String {
+    @usableFromInline
+    func guaranteedASCIIStringToLowercase() -> String {
+        assert(self.allSatisfy(\.isASCII))
+        return String(
+            String.UnicodeScalarView(
+                self.unicodeScalars.map {
+                    /// https://ss64.com/ascii.html
+                    /// The difference between an upper and lower cased ASCII byte is their sixth bit.
+                    /// Turn the sixth bit on to ensure lowercased ASCII byte.
+                    Unicode.Scalar($0.value | 0b0010_0000)!
+                }
+            )
+        )
     }
 }
