@@ -69,6 +69,8 @@ for answer in response.answers {
 
 ## Checklist
 
+- [x] DNS Parsing
+  - [x] IDNA support for non-ASCII domain names. 
 - [x] DNS client
   - [x] DNS over UDP
   - [ ] DNS over TCP
