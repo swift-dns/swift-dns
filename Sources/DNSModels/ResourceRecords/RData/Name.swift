@@ -110,47 +110,15 @@ extension Name: Equatable {
     /// are done in a case-insensitive manner.
     /// ```
     ///
-    /// Does a **case-insensitive** equality check of 2 domain names.
+    /// Name converts non-ascii/non-lowercased names to ascii-lowercase, so at this point the 2
+    /// names already only contain lowercased ASCII bytes. Therefore this function
+    /// eventually results in a **case-insensitive** equality check of 2 domain names.
     /// Not constant time if that matters to your usecase.
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.isFQDN == rhs.isFQDN
             && lhs.borders == rhs.borders
-            && caseInsensitiveEquals(lhs.data, rhs.data)
-    }
-
-    /// Case-sensitive domain name equality check.
-    /// Use `==` for a case-insensitive check.
-    @inlinable
-    public func exactlyEquals(_ other: Self) -> Bool {
-        self.isFQDN == other.isFQDN
-            && self.borders == other.borders
-            && self.data == other.data
-    }
-
-    /// TODO: check compatibility with RFC 3490 "Internationalizing Domain Names in Applications (IDNA)"
-    @usableFromInline
-    static func caseInsensitiveEquals(_ lhs: [UInt8], _ rhs: [UInt8]) -> Bool {
-        /// Short circuit if the bytes are the same
-        if lhs == rhs {
-            return true
-        }
-
-        /// Slower path: Compare case-insensitively assuming ASCII.
-        /// Names are validated or converted to ASCII at initialization time.
-        guard lhs.count == rhs.count else {
-            return false
-        }
-
-        for (l, r) in zip(lhs, rhs) {
-            /// https://ss64.com/ascii.html
-            /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-            guard (l & 0b1101_1111) == (r & 0b1101_1111) else {
-                return false
-            }
-        }
-
-        return true
+            && lhs.data == rhs.data
     }
 }
 

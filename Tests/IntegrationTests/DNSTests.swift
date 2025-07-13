@@ -34,7 +34,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "example.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -46,7 +46,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
@@ -108,7 +108,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "cloudflare.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .AAAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -120,7 +120,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
@@ -182,7 +182,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "cloudflare.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CAA)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -194,7 +194,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers).")
@@ -251,7 +251,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "for-dns-cert-testing.mahdibm.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CERT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -263,7 +263,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers).")
@@ -337,7 +337,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "www.github.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -345,7 +345,7 @@ struct DNSTests {
 
         #expect(response.answers.count == 1)
         let answer = try #require(response.answers.first)
-        #expect(answer.nameLabels.exactlyEquals(name))
+        #expect(answer.nameLabels == name)
         #expect(answer.recordType == .CNAME)
         #expect(answer.dnsClass == .IN)
         #expect(answer.ttl > 0)
@@ -395,7 +395,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "raw.githubusercontent.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -464,7 +464,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "mahdibm.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .MX)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -476,7 +476,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers).")
@@ -494,7 +494,7 @@ struct DNSTests {
         #expect(mxs.count == expectedMXs.count)
         for (mx, expectedMX) in zip(mxs, expectedMXs) {
             #expect(mx.preference == expectedMX.preference)
-            #expect(mx.exchange.exactlyEquals(expectedMX.exchange))
+            #expect(mx.exchange == expectedMX.exchange)
         }
 
         /// The 'additional' was an EDNS
@@ -541,7 +541,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "apple.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .NS)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -553,7 +553,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers).")
@@ -572,7 +572,7 @@ struct DNSTests {
         ]
         #expect(nss.count == expectedNSs.count)
         for (ns, expectedNS) in zip(nss, expectedNSs) {
-            #expect(ns.name.exactlyEquals(expectedNS.name))
+            #expect(ns.name == expectedNS.name)
         }
 
         /// The 'additional' was an EDNS
@@ -625,7 +625,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "9.9.9.9.in-addr.arpa.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .PTR)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -637,7 +637,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers).")
@@ -651,7 +651,7 @@ struct DNSTests {
         ]
         #expect(ptrs.count == expectedPTRs.count)
         for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
-            #expect(ptr.name.exactlyEquals(expectedPTR.name))
+            #expect(ptr.name == expectedPTR.name)
         }
 
         /// The 'additional' was an EDNS
@@ -708,7 +708,7 @@ struct DNSTests {
 
         #expect(response.queries.count == 1)
         let name = try Name(domainName: "example.com.")
-        #expect(response.queries.first?.name.exactlyEquals(name) == true)
+        #expect(response.queries.first?.name == name)
         #expect(response.queries.first?.queryType == .TXT)
         #expect(response.queries.first?.queryClass == .IN)
 
@@ -720,7 +720,7 @@ struct DNSTests {
             "\(response.answers)"
         )
         #expect(
-            response.answers.allSatisfy { $0.nameLabels.exactlyEquals(name) },
+            response.answers.allSatisfy { $0.nameLabels == name },
             "\(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers).")

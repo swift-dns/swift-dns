@@ -85,7 +85,7 @@ struct NameTests {
         let nameASCII = try Name(domainName: ascii)
 
         /// If the names are the same then we don't need to compare their descriptions
-        #expect(name.exactlyEquals(nameASCII))
+        #expect(name == nameASCII)
 
         #expect(
             name.description(format: .ascii, options: .includeRootLabelIndicator)
