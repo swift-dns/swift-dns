@@ -33,9 +33,12 @@ public struct Name: Sendable {
     /// ```
     @usableFromInline
     package var isFQDN: Bool
-    /// The data of each label in the name. ASCII bytes only.
+    /// The data of each label in the name. Lowercased ASCII bytes only.
     /// non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
     /// will never make it to the stored properties of `Name` such as `data`.
+    /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
+    /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
+    /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
     ///
     /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
     ///
@@ -82,8 +85,12 @@ public struct Name: Sendable {
         self.isFQDN = isFQDN
         self.data = data
         self.borders = borders
+
+        /// Make sure the name is valid
         /// No empty labels
         assert(self.allSatisfy({ !$0.isEmpty }))
+        assert(self.data.allSatisfy(\.isASCII))
+        assert(self.data.allSatisfy { $0.uncheckedASCIIToLowercase() == $0 })
     }
 }
 
@@ -163,7 +170,7 @@ extension Name: Sequence {
         var start: Int
         let end: Int
 
-        public init(base: Name) {
+        init(base: Name) {
             self.name = base
             self.start = 0
             self.end = base.borders.count
@@ -232,6 +239,9 @@ extension Name {
             self.isFQDN = true
             domainName = String(domainName.unicodeScalars.dropLast())
         }
+
+        /// TODO: make sure all initializations of Name go through a single initializer that
+        /// asserts lowercased ASCII?
 
         /// short-circuit most domain names which won't change with IDNA anyway.
         try IDNA(
@@ -320,6 +330,11 @@ extension Name {
         if data.contains(where: { !$0.isASCII }) {
             let description = self.description(format: .unicode, options: .sourceAccurate)
             self = try Self.init(domainName: description)
+        } else {
+            /// Normalize to lowercase ASCII
+            self.data = self.data.map {
+                $0.uncheckedASCIIToLowercase()
+            }
         }
     }
 

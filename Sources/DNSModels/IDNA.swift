@@ -445,7 +445,7 @@ public struct IDNA {
                     /// https://ss64.com/ascii.html
                     /// The difference between an upper and lower cased ASCII byte is their sixth bit.
                     /// Turn the sixth bit on to ensure lowercased ASCII byte.
-                    Unicode.Scalar($0.value | 0b0010_0000)!
+                    Unicode.Scalar($0.value.uncheckedASCIIToLowercase())!
                 }
             )
         )
