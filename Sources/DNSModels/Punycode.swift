@@ -40,111 +40,111 @@ enum Punycode {
         /// [Punycode: A Bootstring encoding of Unicode for IDNA: Parameter values for Punycode](https://datatracker.ietf.org/doc/html/rfc3492#section-5)
         /// 0-25 -> a-z; 26-35 -> 0-9
         @usableFromInline
-        static let digitToUnicodeScalarLookupTable: [Int: UnicodeScalar] = [
-            0: UnicodeScalar(0x61),
-            1: UnicodeScalar(0x62),
-            2: UnicodeScalar(0x63),
-            3: UnicodeScalar(0x64),
-            4: UnicodeScalar(0x65),
-            5: UnicodeScalar(0x66),
-            6: UnicodeScalar(0x67),
-            7: UnicodeScalar(0x68),
-            8: UnicodeScalar(0x69),
-            9: UnicodeScalar(0x6a),
-            10: UnicodeScalar(0x6b),
-            11: UnicodeScalar(0x6c),
-            12: UnicodeScalar(0x6d),
-            13: UnicodeScalar(0x6e),
-            14: UnicodeScalar(0x6f),
-            15: UnicodeScalar(0x70),
-            16: UnicodeScalar(0x71),
-            17: UnicodeScalar(0x72),
-            18: UnicodeScalar(0x73),
-            19: UnicodeScalar(0x74),
-            20: UnicodeScalar(0x75),
-            21: UnicodeScalar(0x76),
-            22: UnicodeScalar(0x77),
-            23: UnicodeScalar(0x78),
-            24: UnicodeScalar(0x79),
-            25: UnicodeScalar(0x7a),
-            26: UnicodeScalar(0x30),
-            27: UnicodeScalar(0x31),
-            28: UnicodeScalar(0x32),
-            29: UnicodeScalar(0x33),
-            30: UnicodeScalar(0x34),
-            31: UnicodeScalar(0x35),
-            32: UnicodeScalar(0x36),
-            33: UnicodeScalar(0x37),
-            34: UnicodeScalar(0x38),
-            35: UnicodeScalar(0x39),
+        static let digitToUnicodeScalarLookupTable: [Int: Unicode.Scalar] = [
+            0: Unicode.Scalar(0x61),
+            1: Unicode.Scalar(0x62),
+            2: Unicode.Scalar(0x63),
+            3: Unicode.Scalar(0x64),
+            4: Unicode.Scalar(0x65),
+            5: Unicode.Scalar(0x66),
+            6: Unicode.Scalar(0x67),
+            7: Unicode.Scalar(0x68),
+            8: Unicode.Scalar(0x69),
+            9: Unicode.Scalar(0x6a),
+            10: Unicode.Scalar(0x6b),
+            11: Unicode.Scalar(0x6c),
+            12: Unicode.Scalar(0x6d),
+            13: Unicode.Scalar(0x6e),
+            14: Unicode.Scalar(0x6f),
+            15: Unicode.Scalar(0x70),
+            16: Unicode.Scalar(0x71),
+            17: Unicode.Scalar(0x72),
+            18: Unicode.Scalar(0x73),
+            19: Unicode.Scalar(0x74),
+            20: Unicode.Scalar(0x75),
+            21: Unicode.Scalar(0x76),
+            22: Unicode.Scalar(0x77),
+            23: Unicode.Scalar(0x78),
+            24: Unicode.Scalar(0x79),
+            25: Unicode.Scalar(0x7a),
+            26: Unicode.Scalar(0x30),
+            27: Unicode.Scalar(0x31),
+            28: Unicode.Scalar(0x32),
+            29: Unicode.Scalar(0x33),
+            30: Unicode.Scalar(0x34),
+            31: Unicode.Scalar(0x35),
+            32: Unicode.Scalar(0x36),
+            33: Unicode.Scalar(0x37),
+            34: Unicode.Scalar(0x38),
+            35: Unicode.Scalar(0x39),
         ]
 
         /// [Punycode: A Bootstring encoding of Unicode for IDNA: Parameter values for Punycode](https://datatracker.ietf.org/doc/html/rfc3492#section-5)
         /// A-Z -> 0-25; a-z -> 0-25; 0-9 -> 26-35
         @usableFromInline
-        static let unicodeScalarToDigitLookupTable: [UnicodeScalar: Int] = [
-            UnicodeScalar(0x41): 0,
-            UnicodeScalar(0x42): 1,
-            UnicodeScalar(0x43): 2,
-            UnicodeScalar(0x44): 3,
-            UnicodeScalar(0x45): 4,
-            UnicodeScalar(0x46): 5,
-            UnicodeScalar(0x47): 6,
-            UnicodeScalar(0x48): 7,
-            UnicodeScalar(0x49): 8,
-            UnicodeScalar(0x4a): 9,
-            UnicodeScalar(0x4b): 10,
-            UnicodeScalar(0x4c): 11,
-            UnicodeScalar(0x4d): 12,
-            UnicodeScalar(0x4e): 13,
-            UnicodeScalar(0x4f): 14,
-            UnicodeScalar(0x50): 15,
-            UnicodeScalar(0x51): 16,
-            UnicodeScalar(0x52): 17,
-            UnicodeScalar(0x53): 18,
-            UnicodeScalar(0x54): 19,
-            UnicodeScalar(0x55): 20,
-            UnicodeScalar(0x56): 21,
-            UnicodeScalar(0x57): 22,
-            UnicodeScalar(0x58): 23,
-            UnicodeScalar(0x59): 24,
-            UnicodeScalar(0x5a): 25,
-            UnicodeScalar(0x61): 0,
-            UnicodeScalar(0x62): 1,
-            UnicodeScalar(0x63): 2,
-            UnicodeScalar(0x64): 3,
-            UnicodeScalar(0x65): 4,
-            UnicodeScalar(0x66): 5,
-            UnicodeScalar(0x67): 6,
-            UnicodeScalar(0x68): 7,
-            UnicodeScalar(0x69): 8,
-            UnicodeScalar(0x6a): 9,
-            UnicodeScalar(0x6b): 10,
-            UnicodeScalar(0x6c): 11,
-            UnicodeScalar(0x6d): 12,
-            UnicodeScalar(0x6e): 13,
-            UnicodeScalar(0x6f): 14,
-            UnicodeScalar(0x70): 15,
-            UnicodeScalar(0x71): 16,
-            UnicodeScalar(0x72): 17,
-            UnicodeScalar(0x73): 18,
-            UnicodeScalar(0x74): 19,
-            UnicodeScalar(0x75): 20,
-            UnicodeScalar(0x76): 21,
-            UnicodeScalar(0x77): 22,
-            UnicodeScalar(0x78): 23,
-            UnicodeScalar(0x79): 24,
-            UnicodeScalar(0x7a): 25,
-            UnicodeScalar(0x30): 26,
-            UnicodeScalar(0x31): 27,
-            UnicodeScalar(0x32): 28,
-            UnicodeScalar(0x33): 29,
-            UnicodeScalar(0x34): 30,
-            UnicodeScalar(0x35): 31,
-            UnicodeScalar(0x36): 32,
-            UnicodeScalar(0x37): 33,
-            UnicodeScalar(0x38): 34,
-            UnicodeScalar(0x39): 35,
+        static let unicodeScalarToDigitLookupTable: [Unicode.Scalar: Int] = [
+            Unicode.Scalar(0x41): 0,
+            Unicode.Scalar(0x42): 1,
+            Unicode.Scalar(0x43): 2,
+            Unicode.Scalar(0x44): 3,
+            Unicode.Scalar(0x45): 4,
+            Unicode.Scalar(0x46): 5,
+            Unicode.Scalar(0x47): 6,
+            Unicode.Scalar(0x48): 7,
+            Unicode.Scalar(0x49): 8,
+            Unicode.Scalar(0x4a): 9,
+            Unicode.Scalar(0x4b): 10,
+            Unicode.Scalar(0x4c): 11,
+            Unicode.Scalar(0x4d): 12,
+            Unicode.Scalar(0x4e): 13,
+            Unicode.Scalar(0x4f): 14,
+            Unicode.Scalar(0x50): 15,
+            Unicode.Scalar(0x51): 16,
+            Unicode.Scalar(0x52): 17,
+            Unicode.Scalar(0x53): 18,
+            Unicode.Scalar(0x54): 19,
+            Unicode.Scalar(0x55): 20,
+            Unicode.Scalar(0x56): 21,
+            Unicode.Scalar(0x57): 22,
+            Unicode.Scalar(0x58): 23,
+            Unicode.Scalar(0x59): 24,
+            Unicode.Scalar(0x5a): 25,
+            Unicode.Scalar(0x61): 0,
+            Unicode.Scalar(0x62): 1,
+            Unicode.Scalar(0x63): 2,
+            Unicode.Scalar(0x64): 3,
+            Unicode.Scalar(0x65): 4,
+            Unicode.Scalar(0x66): 5,
+            Unicode.Scalar(0x67): 6,
+            Unicode.Scalar(0x68): 7,
+            Unicode.Scalar(0x69): 8,
+            Unicode.Scalar(0x6a): 9,
+            Unicode.Scalar(0x6b): 10,
+            Unicode.Scalar(0x6c): 11,
+            Unicode.Scalar(0x6d): 12,
+            Unicode.Scalar(0x6e): 13,
+            Unicode.Scalar(0x6f): 14,
+            Unicode.Scalar(0x70): 15,
+            Unicode.Scalar(0x71): 16,
+            Unicode.Scalar(0x72): 17,
+            Unicode.Scalar(0x73): 18,
+            Unicode.Scalar(0x74): 19,
+            Unicode.Scalar(0x75): 20,
+            Unicode.Scalar(0x76): 21,
+            Unicode.Scalar(0x77): 22,
+            Unicode.Scalar(0x78): 23,
+            Unicode.Scalar(0x79): 24,
+            Unicode.Scalar(0x7a): 25,
+            Unicode.Scalar(0x30): 26,
+            Unicode.Scalar(0x31): 27,
+            Unicode.Scalar(0x32): 28,
+            Unicode.Scalar(0x33): 29,
+            Unicode.Scalar(0x34): 30,
+            Unicode.Scalar(0x35): 31,
+            Unicode.Scalar(0x36): 32,
+            Unicode.Scalar(0x37): 33,
+            Unicode.Scalar(0x38): 34,
+            Unicode.Scalar(0x39): 35,
         ]
     }
 
@@ -152,7 +152,7 @@ enum Punycode {
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
-    /// overflows are not possible for what matches the description of Swift's `UnicodeScalar` type:
+    /// overflows are not possible for what matches the description of Swift's `Unicode.Scalar` type:
     ///
     /// https://datatracker.ietf.org/doc/html/rfc3492#section-5:
     /// ```text
@@ -181,7 +181,7 @@ enum Punycode {
         let b = output.count
         var h = b
         if !output.isEmpty {
-            output.append(UnicodeScalar.asciiHyphenMinus)
+            output.append(Unicode.Scalar.asciiHyphenMinus)
         }
         /// FIXME: reserve extra capacity in output
 
@@ -251,7 +251,7 @@ enum Punycode {
     /// Returns true if successful and false if conversion failed.
     ///
     /// This function does not do overflow handling because based on RFC 3492,
-    /// overflows are not possible for what matches the description of Swift's `UnicodeScalar` type:
+    /// overflows are not possible for what matches the description of Swift's `Unicode.Scalar` type:
     ///
     /// https://datatracker.ietf.org/doc/html/rfc3492#section-5:
     /// ```text
@@ -276,9 +276,9 @@ enum Punycode {
         var n = Constants.initialN
         var i = 0
         var bias = Constants.initialBias
-        var output: [UnicodeScalar]
+        var output: [Unicode.Scalar]
 
-        if let idx = input.unicodeScalars.lastIndex(of: UnicodeScalar.asciiHyphenMinus) {
+        if let idx = input.unicodeScalars.lastIndex(of: Unicode.Scalar.asciiHyphenMinus) {
             let afterDelimiterIdx = input.index(after: idx)
             output = Array(input.unicodeScalars[..<idx])
             guard output.allSatisfy(\.isASCII) else {
@@ -338,7 +338,7 @@ enum Punycode {
                 return false
             }
 
-            guard let newUnicodeScalar = UnicodeScalar(n) else {
+            guard let newUnicodeScalar = Unicode.Scalar(n) else {
                 return false
             }
             output.insert(newUnicodeScalar, at: i)

@@ -218,7 +218,7 @@ extension Name {
 
         // short circuit root parse
         if domainName.unicodeScalars.count == 1,
-            domainName.unicodeScalars.first == UnicodeScalar.asciiDot
+            domainName.unicodeScalars.first == Unicode.Scalar.asciiDot
         {
             self.isFQDN = true
             return

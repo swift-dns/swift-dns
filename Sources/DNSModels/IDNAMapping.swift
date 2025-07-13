@@ -6,8 +6,8 @@ package enum IDNAMapping: Equatable {
     }
 
     case valid(IDNA2008Status)
-    case mapped([UnicodeScalar])
-    case deviation([UnicodeScalar])
+    case mapped([Unicode.Scalar])
+    case deviation([Unicode.Scalar])
     case disallowed
     case ignored
 }

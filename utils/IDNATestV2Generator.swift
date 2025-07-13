@@ -81,7 +81,7 @@ func generate() -> String {
     // Filter out test cases that contain \uD900 or \u0080 in specific fields
     // Clang doesn't accept those characters in the generated code
     let filteredTestCases = testCases.filter { testCase in
-        !testCase.source.contains("\\uD900") && !(testCase.toUnicode?.contains("\\u0080") ?? false)
+        !testCase.source.contains("\\uD900") && !(testCase.toUnicode?.contains("\\u0080") == true)
     }
 
     print("Parsed \(testCases.count) test cases, filtered to \(filteredTestCases.count) cases")

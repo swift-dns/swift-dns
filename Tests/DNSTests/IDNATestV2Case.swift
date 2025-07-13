@@ -106,8 +106,7 @@ struct IDNATestV2Case {
     /// If a certain case is failing, we'll know what index it belongs to so we can
     /// try to investigate that case alone.
     static func enumeratedAllCases() -> [(index: Int, case: IDNATestV2Case)] {
-        let allCases = Self.allCases()
-        return allCases.enumerated().map { ($0, $1) }
+        Self.allCases().enumerated().map { ($0, $1) }
     }
 }
 

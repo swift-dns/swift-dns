@@ -1,21 +1,11 @@
 import CSwiftDNSIDNA
 
-// This file provides Swift bindings for the C-based IDNA mapping lookup functions
-
-// C struct definitions (matching the C header)
-private struct IDNAMappingResult {
-    let type: UInt8
-    let status: UInt8
-    let mapped_unicode_scalars: UnsafePointer<UInt32>?
-    let mapped_count: UInt8
-}
-
 extension IDNAMapping {
     /// Look up IDNA mapping for a given Unicode scalar using the C implementation
     /// - Parameter scalar: The Unicode scalar to look up
-    /// - Returns: The corresponding `IDNAMapping` value, or `nil` if lookup fails
+    /// - Returns: The corresponding `IDNAMapping` value
     @inlinable
-    package static func `for`(scalar: UnicodeScalar) -> IDNAMapping {
+    package static func `for`(scalar: Unicode.Scalar) -> IDNAMapping {
         /// `unsafelyUnwrapped` because the C function is guaranteed to return a non-nil pointer.
         /// There are also extensive tests in the IDNATests for this function.
         let result = idna_mapping_lookup(scalar.value).unsafelyUnwrapped.pointee
@@ -39,9 +29,9 @@ extension IDNAMapping {
                     count: Int(result.mapped_count)
                 )
             ).map {
-                /// `unsafelyUnwrapped` because the C function is guaranteed to return a UnicodeScalar.
+                /// `unsafelyUnwrapped` because the C function is guaranteed to return a Unicode.Scalar.
                 /// There are also extensive tests in the IDNATests for this function.
-                UnicodeScalar($0).unsafelyUnwrapped
+                Unicode.Scalar($0).unsafelyUnwrapped
             }
             return .mapped(mappedCodePoints)
         case 2:
@@ -51,9 +41,9 @@ extension IDNAMapping {
                     count: Int(result.mapped_count)
                 )
             ).map {
-                /// `unsafelyUnwrapped` because the C function is guaranteed to return a UnicodeScalar.
+                /// `unsafelyUnwrapped` because the C function is guaranteed to return a Unicode.Scalar.
                 /// There are also extensive tests in the IDNATests for this function.
-                UnicodeScalar($0).unsafelyUnwrapped
+                Unicode.Scalar($0).unsafelyUnwrapped
             }
             return .deviation(mappedCodePoints)
         case 3:

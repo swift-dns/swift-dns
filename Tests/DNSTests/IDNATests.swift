@@ -5,7 +5,7 @@ import Testing
 @Suite
 struct IDNATests {
     @Test(arguments: LookupWorksArg.all)
-    func lookupWorks(arg: LookupWorksArg) {
+    private func lookupWorks(arg: LookupWorksArg) {
         let mapping = IDNAMapping.for(scalar: arg.scalar)
         #expect(mapping == arg.expected)
     }
@@ -132,14 +132,14 @@ struct IDNATests {
     }
 }
 
-struct LookupWorksArg {
+private struct LookupWorksArg {
 
-    typealias U = UnicodeScalar
+    typealias U = Unicode.Scalar
 
-    let scalar: UnicodeScalar
+    let scalar: Unicode.Scalar
     let expected: IDNAMapping
 
-    init(_ scalar: UnicodeScalar, _ expected: IDNAMapping) {
+    init(_ scalar: Unicode.Scalar, _ expected: IDNAMapping) {
         self.scalar = scalar
         self.expected = expected
     }

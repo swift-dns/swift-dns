@@ -124,7 +124,7 @@ public struct IDNA {
 
         // 2., 3.
         var labels = domainName.unicodeScalars.split(
-            separator: UnicodeScalar.asciiDot,
+            separator: Unicode.Scalar.asciiDot,
             omittingEmptySubsequences: false
         ).map { label -> Substring in
             if label.allSatisfy(\.isASCII) {
@@ -210,7 +210,7 @@ public struct IDNA {
     /// https://www.unicode.org/reports/tr46/#Processing
     @usableFromInline
     func mainProcessing(domainName: inout String, errors: inout MappingErrors) {
-        var newUnicodeScalars: [UnicodeScalar] = []
+        var newUnicodeScalars: [Unicode.Scalar] = []
         /// TODO: optimize reserve capacity
         newUnicodeScalars.reserveCapacity(domainName.unicodeScalars.count * 12 / 10)
 
@@ -236,7 +236,7 @@ public struct IDNA {
 
         /// 3. Break, 4. Convert/Validate.
         domainName = domainName.unicodeScalars.split(
-            separator: UnicodeScalar.asciiDot,
+            separator: Unicode.Scalar.asciiDot,
             omittingEmptySubsequences: false
         ).map { label in
             Substring(convertAndValidateLabel(label, errors: &errors))
@@ -253,10 +253,10 @@ public struct IDNA {
 
         /// Checks if the label starts with “xn--”
         if label.count > 3,
-            label[label.startIndex] == UnicodeScalar.asciiLowercasedX,
-            label[label.index(label.startIndex, offsetBy: 1)] == UnicodeScalar.asciiLowercasedN,
-            label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
-            label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
+            label[label.startIndex] == Unicode.Scalar.asciiLowercasedX,
+            label[label.index(label.startIndex, offsetBy: 1)] == Unicode.Scalar.asciiLowercasedN,
+            label[label.index(label.startIndex, offsetBy: 2)] == Unicode.Scalar.asciiHyphenMinus,
+            label[label.index(label.startIndex, offsetBy: 3)] == Unicode.Scalar.asciiHyphenMinus
         {
             /// 4.1:
             if !configuration.ignoreInvalidPunycode,
@@ -318,8 +318,9 @@ public struct IDNA {
         switch configuration.checkHyphens {
         case true:
             if label.count > 3,
-                label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
-                label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
+                label[label.index(label.startIndex, offsetBy: 2)]
+                    == Unicode.Scalar.asciiHyphenMinus,
+                label[label.index(label.startIndex, offsetBy: 3)] == Unicode.Scalar.asciiHyphenMinus
             {
                 errors.append(
                     .trueCheckHyphensArgumentRequiresLabelToNotContainHyphenMinusAtPostion3and4(
@@ -327,8 +328,8 @@ public struct IDNA {
                     )
                 )
             }
-            if label.first == UnicodeScalar.asciiHyphenMinus
-                || label.last == UnicodeScalar.asciiHyphenMinus
+            if label.first == Unicode.Scalar.asciiHyphenMinus
+                || label.last == Unicode.Scalar.asciiHyphenMinus
             {
                 errors.append(
                     .trueCheckHyphensArgumentRequiresLabelToNotStartOrEndWithHyphenMinus(
@@ -339,10 +340,12 @@ public struct IDNA {
         case false:
             if !configuration.ignoreInvalidPunycode,
                 label.count > 3,
-                label[label.startIndex] == UnicodeScalar.asciiLowercasedX,
-                label[label.index(label.startIndex, offsetBy: 1)] == UnicodeScalar.asciiLowercasedN,
-                label[label.index(label.startIndex, offsetBy: 2)] == UnicodeScalar.asciiHyphenMinus,
-                label[label.index(label.startIndex, offsetBy: 3)] == UnicodeScalar.asciiHyphenMinus
+                label[label.startIndex] == Unicode.Scalar.asciiLowercasedX,
+                label[label.index(label.startIndex, offsetBy: 1)]
+                    == Unicode.Scalar.asciiLowercasedN,
+                label[label.index(label.startIndex, offsetBy: 2)]
+                    == Unicode.Scalar.asciiHyphenMinus,
+                label[label.index(label.startIndex, offsetBy: 3)] == Unicode.Scalar.asciiHyphenMinus
             {
                 errors.append(
                     .falseCheckHyphensArgumentRequiresLabelToNotStartWithXNHyphenMinusHyphenMinus(
@@ -428,7 +431,7 @@ extension IDNA {
                 label: Substring.UnicodeScalarView
             )
             case labelStartsWithCombiningMark(label: Substring.UnicodeScalarView)
-            case labelContainsInvalidUnicode(UnicodeScalar, label: Substring.UnicodeScalarView)
+            case labelContainsInvalidUnicode(Unicode.Scalar, label: Substring.UnicodeScalarView)
             case trueUseSTD3ASCIIRulesArgumentRequiresLabelToOnlyContainCertainASCIICharacters(
                 label: Substring.UnicodeScalarView
             )

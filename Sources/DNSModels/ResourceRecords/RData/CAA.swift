@@ -157,7 +157,7 @@ extension CAA.Property {
             or: .failedToRead("CAA.Property.tag", buffer)
         )
 
-        guard tag.utf8.allSatisfy(\.isASCIIAlphanumeric) else {
+        guard tag.unicodeScalars.allSatisfy(\.isASCIIAlphanumeric) else {
             throw ProtocolError.failedToValidate("CAA.Property.tag", buffer)
         }
 
