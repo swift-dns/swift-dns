@@ -123,7 +123,7 @@ let benchmarks: @Sendable () -> Void = {
             ]
         )
     ) { benchmark in
-        let name = try! Name(string: google)
+        let name = try! Name(domainName: google)
         blackHole(name)
     }
 
@@ -135,7 +135,7 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
         )
     ) { benchmark in
-        let name = try! Name(string: google)
+        let name = try! Name(domainName: google)
         blackHole(name)
     }
 
@@ -151,7 +151,7 @@ let benchmarks: @Sendable () -> Void = {
             ]
         )
     ) { benchmark in
-        let name = try! Name(string: appAnalyticsServices)
+        let name = try! Name(domainName: appAnalyticsServices)
         blackHole(name)
     }
 
@@ -163,12 +163,12 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
         )
     ) { benchmark in
-        let name = try! Name(string: appAnalyticsServices)
+        let name = try! Name(domainName: appAnalyticsServices)
         blackHole(name)
     }
 
-    let name1 = try! Name(string: "google.com.")
-    let name2 = try! Name(string: "google.com.")
+    let name1 = try! Name(domainName: "google.com.")
+    let name2 = try! Name(domainName: "google.com.")
     Benchmark(
         "Equality_Check_Identical_Throughput",
         configuration: .init(
@@ -194,8 +194,8 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name1 == name2)
     }
 
-    let lowercasedASCIIDomain = try! Name(string: "google.com.")
-    let uppercasedASCIIDomain = try! Name(string: "GOOGLE.COM.")
+    let lowercasedASCIIDomain = try! Name(domainName: "google.com.")
+    let uppercasedASCIIDomain = try! Name(domainName: "GOOGLE.COM.")
     Benchmark(
         "Equality_Check_Lowercased_VS_Full_Uppercased_ASCII_Throughput",
         configuration: .init(
@@ -221,7 +221,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(lowercasedASCIIDomain == uppercasedASCIIDomain)
     }
 
-    let uppercasedOneLetterASCIIDomain = try! Name(string: "googLe.com.")
+    let uppercasedOneLetterASCIIDomain = try! Name(domainName: "googLe.com.")
     Benchmark(
         "Equality_Check_Lowercased_VS_One_Letter_Uppercased_ASCII_Throughput",
         configuration: .init(
@@ -247,8 +247,8 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(lowercasedASCIIDomain == uppercasedOneLetterASCIIDomain)
     }
 
-    let lowercasedUTF8Domain = try! Name(string: "googße.com.")
-    let uppercasedUTF8Domain = try! Name(string: "GOOGSSe.COM.")
+    let lowercasedUTF8Domain = try! Name(domainName: "googße.com.")
+    let uppercasedUTF8Domain = try! Name(domainName: "GOOGSSe.COM.")
     Benchmark(
         "Equality_Check_Lowercased_VS_Full_Uppercased_UTF8_Throughput",
         configuration: .init(
@@ -274,7 +274,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(lowercasedUTF8Domain == uppercasedUTF8Domain)
     }
 
-    let uppercasedOneLetterUTF8Domain = try! Name(string: "googSSe.com.")
+    let uppercasedOneLetterUTF8Domain = try! Name(domainName: "googSSe.com.")
     Benchmark(
         "Equality_Check_Lowercased_VS_One_Letter_Uppercased_UTF8_Throughput",
         configuration: .init(
