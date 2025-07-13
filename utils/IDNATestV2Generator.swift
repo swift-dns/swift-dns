@@ -15,8 +15,6 @@ struct IDNATestV2CCase {
     let toUnicodeStatus: [String]
     let toAsciiN: String?
     let toAsciiNStatus: [String]
-    let toAsciiT: String?
-    let toAsciiTStatus: [String]
 }
 
 func parseStatusString(_ statusStr: String) -> [String] {
@@ -64,16 +62,12 @@ func generate() -> String {
         let toUnicodeStatus = parseStatusString(parts[2])
         let toAsciiN = parts[3].emptyIfIsOnlyQuotesAndNilIfEmpty()
         let toAsciiNStatus = parseStatusString(parts[4])
-        let toAsciiT = parts[5].emptyIfIsOnlyQuotesAndNilIfEmpty()
-        let toAsciiTStatus = parseStatusString(parts[6])
         let testCase = IDNATestV2CCase(
             source: source,
             toUnicode: toUnicode,
             toUnicodeStatus: toUnicodeStatus,
             toAsciiN: toAsciiN,
-            toAsciiNStatus: toAsciiNStatus,
-            toAsciiT: toAsciiT,
-            toAsciiTStatus: toAsciiTStatus
+            toAsciiNStatus: toAsciiNStatus
         )
         testCases.append(testCase)
     }
@@ -110,9 +104,6 @@ func generate() -> String {
         let toAsciiNStatusArray = testCase.toAsciiNStatus.map {
             "\"\($0)\""
         }.joined(separator: ", ")
-        let toAsciiTStatusArray = testCase.toAsciiTStatus.map {
-            "\"\($0)\""
-        }.joined(separator: ", ")
 
         generatedCode += """
                     {
@@ -123,9 +114,6 @@ func generate() -> String {
                         .toAsciiN = \(testCase.toAsciiN.quotedOrNULL()),
                         .toAsciiNStatus = (const char*[]){ \(toAsciiNStatusArray) },
                         .toAsciiNStatusCount = \(testCase.toAsciiNStatus.count),
-                        .toAsciiT = \(testCase.toAsciiT.quotedOrNULL()),
-                        .toAsciiTStatus = (const char*[]){ \(toAsciiTStatusArray) },
-                        .toAsciiTStatusCount = \(testCase.toAsciiTStatus.count),
                     },
 
             """

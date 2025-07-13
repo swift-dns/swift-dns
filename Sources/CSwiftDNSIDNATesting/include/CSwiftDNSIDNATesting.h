@@ -11,9 +11,6 @@ typedef struct {
     const char* toAsciiN;
     const char** toAsciiNStatus;
     size_t toAsciiNStatusCount;
-    const char* toAsciiT;
-    const char** toAsciiTStatus;
-    size_t toAsciiTStatusCount;
 } IDNATestV2CCase;
 
 const IDNATestV2CCase* idna_test_v2_all_cases(size_t* count);

@@ -52,16 +52,11 @@ struct IDNATestV2Case {
     let toAsciiN: String?
     /// A set of status codes for toAsciiN operation
     let toAsciiNStatus: [Status]
-    /// The result of applying toASCII to the source, with Transitional_Processing=true
-    let toAsciiT: String?
-    /// A set of status codes for toAsciiT operation
-    let toAsciiTStatus: [Status]
 
     init(from cCase: IDNATestV2CCase) {
         self.source = String(cString: cCase.source)
         self.toUnicode = cCase.toUnicode.map(String.init(cString:))
         self.toAsciiN = cCase.toAsciiN.map(String.init(cString:))
-        self.toAsciiT = cCase.toAsciiT.map(String.init(cString:))
         self.toUnicodeStatus = Array(
             UnsafeBufferPointer(
                 start: cCase.toUnicodeStatus!,
@@ -76,16 +71,6 @@ struct IDNATestV2Case {
             UnsafeBufferPointer(
                 start: cCase.toAsciiNStatus!,
                 count: Int(cCase.toAsciiNStatusCount)
-            )
-        ).map {
-            String(cString: $0!)
-        }.map {
-            Status(rawValue: $0)!
-        }
-        self.toAsciiTStatus = Array(
-            UnsafeBufferPointer(
-                start: cCase.toAsciiTStatus!,
-                count: Int(cCase.toAsciiTStatusCount)
             )
         ).map {
             String(cString: $0!)
@@ -112,7 +97,7 @@ struct IDNATestV2Case {
 
 extension IDNATestV2Case: CustomStringConvertible {
     var description: String {
-        "IDNATestV2Case(source: \(source.debugDescription), toUnicode: \(toUnicode?.debugDescription ?? "nil"), toUnicodeStatus: \(toUnicodeStatus.debugDescription), toAsciiN: \(toAsciiN?.debugDescription ?? "nil"), toAsciiNStatus: \(toAsciiNStatus.debugDescription), toAsciiT: \(toAsciiT?.debugDescription ?? "nil"), toAsciiTStatus: \(toAsciiTStatus.debugDescription))"
+        "IDNATestV2Case(source: \(source.debugDescription), toUnicode: \(toUnicode?.debugDescription ?? "nil"), toUnicodeStatus: \(toUnicodeStatus.debugDescription), toAsciiN: \(toAsciiN?.debugDescription ?? "nil"), toAsciiNStatus: \(toAsciiNStatus.debugDescription))"
     }
 }
 
