@@ -20,8 +20,7 @@ jobs:
 
     steps:
       - name: Configure git
-        run: |
-          git config --global --add safe.directory '*'
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v4
