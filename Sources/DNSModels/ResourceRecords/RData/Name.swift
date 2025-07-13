@@ -101,34 +101,7 @@ extension Name {
     }
 }
 
-extension Name: Equatable {
-    /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
-    ///
-    /// ```text
-    /// For all parts of the DNS that are part of the official protocol, all
-    /// comparisons between character strings (e.g., labels, domain names, etc.)
-    /// are done in a case-insensitive manner.
-    /// ```
-    ///
-    /// Name converts non-ascii/non-lowercased names to ascii-lowercase, so at this point the 2
-    /// names already only contain lowercased ASCII bytes. Therefore this function
-    /// eventually results in a **case-insensitive** equality check of 2 domain names.
-    /// Not constant time if that matters to your usecase.
-    @inlinable
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.isFQDN == rhs.isFQDN
-            && lhs.borders == rhs.borders
-            && lhs.data == rhs.data
-    }
-}
-
-extension Name: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(self.isFQDN)
-        hasher.combine(self.borders)
-        hasher.combine(self.data)
-    }
-}
+extension Name: Hashable {}
 
 extension Name: Sequence {
     public struct Iterator: IteratorProtocol {
