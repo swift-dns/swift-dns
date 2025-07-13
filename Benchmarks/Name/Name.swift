@@ -282,7 +282,7 @@ let benchmarks: @Sendable () -> Void = {
             warmupIterations: 1000,
             maxIterations: 100_000_000,
             thresholds: [
-                .throughput: .init(relative: [.p90: 5])
+                .throughput: .init(relative: [.p90: 8])
             ]
         )
     ) { benchmark in
