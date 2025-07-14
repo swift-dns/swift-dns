@@ -418,10 +418,10 @@ extension Name {
         for byte in self.data {
             if byte.isUppercasedASCII {
                 containsUppercased = true
-            } else if !byte.isASCII {
-                return .containsNonASCII
-            } else {
+            } else if byte.isASCII {
                 continue
+            } else {
+                return .containsNonASCII
             }
         }
 

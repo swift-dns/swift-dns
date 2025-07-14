@@ -120,10 +120,10 @@ public struct IDNA {
         switch performASCIICheck(domainName: &domainName) {
         case .containsOnlyIDNANoOpASCII:
             return
-        case .isASCIIButContainsUppercasedLetters:
+        case .isIDNASafeASCIIButContainsUppercasedLetters:
             convertToLowercasedASCII(domainName: &domainName)
             return
-        case .containsNonASCII:
+        case .containsUnicodeThatIsNotGuaranteedToBeIDNANoOp:
             break
         }
 
@@ -208,10 +208,10 @@ public struct IDNA {
         switch performASCIICheck(domainName: &domainName) {
         case .containsOnlyIDNANoOpASCII:
             return
-        case .isASCIIButContainsUppercasedLetters:
+        case .isIDNASafeASCIIButContainsUppercasedLetters:
             convertToLowercasedASCII(domainName: &domainName)
             return
-        case .containsNonASCII:
+        case .containsUnicodeThatIsNotGuaranteedToBeIDNANoOp:
             break
         }
 
@@ -417,8 +417,8 @@ public struct IDNA {
 
     enum ASCIICheckResult {
         case containsOnlyIDNANoOpASCII
-        case isASCIIButContainsUppercasedLetters
-        case containsNonASCII
+        case isIDNASafeASCIIButContainsUppercasedLetters
+        case containsUnicodeThatIsNotGuaranteedToBeIDNANoOp
     }
 
     func performASCIICheck(domainName: inout String) -> ASCIICheckResult {
@@ -430,12 +430,12 @@ public struct IDNA {
             } else if unicodeScalar.isUppercasedASCII {
                 containsUppercased = true
             } else {
-                return .containsNonASCII
+                return .containsUnicodeThatIsNotGuaranteedToBeIDNANoOp
             }
         }
 
         return containsUppercased
-            ? .isASCIIButContainsUppercasedLetters : .containsOnlyIDNANoOpASCII
+            ? .isIDNASafeASCIIButContainsUppercasedLetters : .containsOnlyIDNANoOpASCII
     }
 
     @usableFromInline
@@ -443,9 +443,6 @@ public struct IDNA {
         domainName = String(
             String.UnicodeScalarView(
                 domainName.unicodeScalars.map {
-                    /// https://ss64.com/ascii.html
-                    /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-                    /// Turn the sixth bit on to ensure lowercased ASCII byte.
                     Unicode.Scalar($0.value.uncheckedASCIIToLowercase())!
                 }
             )

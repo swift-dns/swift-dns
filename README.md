@@ -63,14 +63,14 @@ let response = try await client.queryA(
 for answer in response.answers {
     let a = try answer.rdata /// type of value is `A`
     let ipv4 = a.value /// type of value is `IPv4Address`
-    print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.asString() ?? "n/a")")
+    print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
 }
 ```
 
 ## Checklist
 
 - [x] DNS Parsing
-  - [x] IDNA support for non-ASCII domain names. 
+  - [x] IDNA support for non-ASCII domain names.
 - [x] DNS client
   - [x] DNS over UDP
   - [ ] DNS over TCP
