@@ -15,9 +15,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 5])
-            ],
             setup: {
                 buffer = DNSBuffer(bytes: [
                     0x06, 0x67, 0x6f, 0x6f,
@@ -62,9 +59,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 6])
-            ],
             setup: {
                 buffer = DNSBuffer(bytes: [
                     0x16, 0x61, 0x70, 0x70,
@@ -118,9 +112,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 6])
-            ]
         )
     ) { benchmark in
         let name = try! Name(domainName: google)
@@ -146,9 +137,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 5])
-            ]
         )
     ) { benchmark in
         let name = try! Name(domainName: appAnalyticsServices)
@@ -175,9 +163,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 100_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 10])
-            ]
         )
     ) { benchmark in
         blackHole(name1 == name2)

@@ -1,3 +1,6 @@
 {
-  "throughput": 800000
+  "throughput": {
+    "min": 720000,
+    "max": 880000
+  }
 }
