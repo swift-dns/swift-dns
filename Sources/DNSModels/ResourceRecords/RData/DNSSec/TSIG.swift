@@ -252,11 +252,48 @@ extension TSIG {
     }
 }
 
-extension TSIG.Algorithm {
-    init(name: Name) {
+extension TSIG.Algorithm: RawRepresentable {
+    public init?(rawValue: String) {
+        switch rawValue {
+        case "hmac-md5.sig-alg.reg.int": self = .HMAC_MD5
+        case "gss-tsig": self = .GSS
+        case "hmac-sha1": self = .HMAC_SHA1
+        case "hmac-sha224": self = .HMAC_SHA224
+        case "hmac-sha256": self = .HMAC_SHA256
+        case "hmac-sha256-128": self = .HMAC_SHA256_128
+        case "hmac-sha384": self = .HMAC_SHA384
+        case "hmac-sha384-192": self = .HMAC_SHA384_192
+        case "hmac-sha512": self = .HMAC_SHA512
+        case "hmac-sha512-256": self = .HMAC_SHA512_256
+        default:
+            if let name = try? Name(domainName: rawValue) {
+                self = .unknown(name)
+            } else {
+                return nil
+            }
+        }
+    }
+
+    public var rawValue: String {
+        switch self {
+        case .HMAC_MD5: return "hmac-md5.sig-alg.reg.int"
+        case .GSS: return "gss-tsig"
+        case .HMAC_SHA1: return "hmac-sha1"
+        case .HMAC_SHA224: return "hmac-sha224"
+        case .HMAC_SHA256: return "hmac-sha256"
+        case .HMAC_SHA256_128: return "hmac-sha256-128"
+        case .HMAC_SHA384: return "hmac-sha384"
+        case .HMAC_SHA384_192: return "hmac-sha384-192"
+        case .HMAC_SHA512: return "hmac-sha512"
+        case .HMAC_SHA512_256: return "hmac-sha512-256"
+        case .unknown(let name): return name.description
+        }
+    }
+
+    package init(name: Name) {
         self =
             switch name.description {
-            case "HMAC-MD5.SIG-ALG.REG.INT": .HMAC_MD5
+            case "hmac-md5.sig-alg.reg.int": .HMAC_MD5
             case "gss-tsig": .GSS
             case "hmac-sha1": .HMAC_SHA1
             case "hmac-sha224": .HMAC_SHA224
@@ -270,9 +307,9 @@ extension TSIG.Algorithm {
             }
     }
 
-    func toName() throws -> Name {
+    package func toName() throws -> Name {
         switch self {
-        case .HMAC_MD5: return try Name(guaranteedASCIIBytes: "HMAC-MD5.SIG-ALG.REG.INT".utf8)
+        case .HMAC_MD5: return try Name(guaranteedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
         case .GSS: return try Name(guaranteedASCIIBytes: "gss-tsig".utf8)
         case .HMAC_SHA1: return try Name(guaranteedASCIIBytes: "hmac-sha1".utf8)
         case .HMAC_SHA224: return try Name(guaranteedASCIIBytes: "hmac-sha224".utf8)
@@ -284,6 +321,33 @@ extension TSIG.Algorithm {
         case .HMAC_SHA512_256: return try Name(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
         case .unknown(let name): return name
         }
+    }
+}
+
+extension TSIG.Algorithm: Hashable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue == rhs.rawValue
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.rawValue)
+    }
+}
+
+extension TSIG.Algorithm: CaseIterable {
+    public static var allCases: [TSIG.Algorithm] {
+        [
+            .HMAC_MD5,
+            .GSS,
+            .HMAC_SHA1,
+            .HMAC_SHA224,
+            .HMAC_SHA256,
+            .HMAC_SHA256_128,
+            .HMAC_SHA384,
+            .HMAC_SHA384_192,
+            .HMAC_SHA512,
+            .HMAC_SHA512_256,
+        ]
     }
 }
 
