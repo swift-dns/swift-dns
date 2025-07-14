@@ -1,5 +1,5 @@
 {
-  "originHash" : "a16f64cccf896af6cf3f4dc5d519865dee1ebdad3dee16c25f7dffab076c385c",
+  "originHash" : "a4dccb5b7eacf17186b85ad84b5be8fe3306ae36344368009cffc2679c064caf",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -13,10 +13,10 @@
     {
       "identity" : "package-benchmark",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ordo-one/package-benchmark.git",
+      "location" : "https://github.com/MahdiBM/package-benchmark.git",
       "state" : {
-        "revision" : "5c4569a9e7e9acac4db43f31e58252539ca71f0b",
-        "version" : "1.29.3"
+        "branch" : "mmbm-threshold-improvements",
+        "revision" : "b55b2483d35e9c30aac0a9adedd40cd6e4c30c28"
       }
     },
     {
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
       "state" : {
-        "revision" : "011f0c765fb46d9cac61bca19be0527e99c98c8b",
-        "version" : "1.5.1"
+        "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
+        "version" : "1.6.1"
       }
     },
     {
