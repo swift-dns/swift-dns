@@ -16,6 +16,8 @@ jobs:
 
     container: swiftlang/swift:nightly-6.2-noble
 
+    timeout-minutes: 60
+
     permissions:
       contents: write
 
@@ -87,6 +89,6 @@ jobs:
           git add Benchmarks/Thresholds/
           git commit -m "Update benchmark thresholds
 
-          Triggered by workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          Committed by https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           git push origin "HEAD:${{ github.ref }}"
