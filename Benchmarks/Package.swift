@@ -89,7 +89,10 @@ var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
 // MARK: - Add benchmark stuff now
 
 package.dependencies.append(
-    .package(url: "https://github.com/ordo-one/package-benchmark.git", from: "1.29.3"),
+    .package(
+        url: "https://github.com/MahdiBM/package-benchmark.git",
+        branch: "mmbm-range-relative-thresholds-options"
+    ),
 )
 
 package.targets += [

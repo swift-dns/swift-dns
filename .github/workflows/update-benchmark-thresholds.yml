@@ -1,0 +1,95 @@
+name: Update Benchmark Thresholds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
+env:
+  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  update-thresholds:
+    runs-on: [self-hosted, linux, x64]
+
+    container: swiftlang/swift:nightly-6.2-noble
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update -q && apt install -yq libjemalloc-dev zstd curl jq
+
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: Benchmarks/.build
+          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+          restore-keys: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-"
+
+      - name: Update benchmark thresholds
+        run: |
+          swift package -c release \
+            --allow-writing-to-package-directory \
+            --package-path Benchmarks \
+            benchmark thresholds update \
+            --path Benchmarks/Thresholds \
+            --range \
+            --relative \
+            --run-count 15
+
+      - name: Cache .build
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: Benchmarks/.build
+          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+
+      - name: Format threshold files with jq
+        run: |
+          echo "Processing threshold files..."
+          for file in Benchmarks/Thresholds/*.json; do
+            echo "Processing: $file"
+            jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+          done
+
+      - name: Check for modifications
+        id: check-modifications
+        run: |
+          MODIFICATIONS="$(git status --porcelain)"
+          if [ -n "$MODIFICATIONS" ]; then
+            echo "has-modifications=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-modifications=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check-modifications.outputs.has-modifications == 'true'
+        run: |
+          git add Benchmarks/Thresholds/
+          git commit -m "Update benchmark thresholds
+
+          Triggered by workflow run: ${{ github.run_id }}"
+
+          git push origin "HEAD:${{ github.ref }}"

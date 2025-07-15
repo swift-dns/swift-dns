@@ -15,9 +15,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 6])
-            ],
             setup: {
                 buffer = Resources.dnsResponseAExampleComPacket.buffer()
                 buffer.moveReaderIndex(forwardBy: 42)
@@ -72,9 +69,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 5])
-            ],
             setup: {
                 buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
                 buffer.moveReaderIndex(forwardBy: 42)
@@ -112,9 +106,6 @@ let benchmarks: @Sendable () -> Void = {
             metrics: [.throughput],
             warmupIterations: 1000,
             maxIterations: 10_000_000,
-            thresholds: [
-                .throughput: .init(relative: [.p90: 5])
-            ],
             setup: {
                 buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
                 buffer.moveReaderIndex(forwardBy: 42)
