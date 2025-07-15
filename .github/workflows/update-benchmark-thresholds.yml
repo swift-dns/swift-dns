@@ -57,7 +57,7 @@ jobs:
             --path Benchmarks/Thresholds \
             --range \
             --relative \
-            --run-count 10
+            --run-count 15
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
