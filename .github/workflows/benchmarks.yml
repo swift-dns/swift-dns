@@ -95,7 +95,7 @@ jobs:
         run: |
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark baseline update \
             '${{ steps.commit-info.outputs.title }}'
 
@@ -103,7 +103,7 @@ jobs:
         run: |
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark baseline read \
             '${{ steps.commit-info.outputs.title }}' \
             --no-progress \
@@ -122,7 +122,7 @@ jobs:
           set +e
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \

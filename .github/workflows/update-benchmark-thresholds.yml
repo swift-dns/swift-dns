@@ -48,8 +48,8 @@ jobs:
       - name: Update benchmark thresholds
         run: |
           swift package -c release \
-            --allow-writing-to-package-directory \
             --package-path Benchmarks \
+            --allow-writing-to-package-directory \
             benchmark thresholds update \
             --path Benchmarks/Thresholds \
             --range \
