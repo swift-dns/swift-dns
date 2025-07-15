@@ -52,9 +52,9 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds update \
             --path Benchmarks/Thresholds \
+            --run-count 5 \
             --range \
-            --relative \
-            --run-count 15
+            --relative
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -87,6 +87,6 @@ jobs:
           git add Benchmarks/Thresholds/
           git commit -m "Update benchmark thresholds
 
-          Triggered by workflow run: ${{ github.run_id }}"
+          Triggered by workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           git push origin "HEAD:${{ github.ref }}"
