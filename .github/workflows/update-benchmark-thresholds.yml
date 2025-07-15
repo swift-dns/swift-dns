@@ -5,10 +5,18 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
+        required: false
+        type: string
 
 defaults:
   run:
     shell: bash --noprofile --norc -e -u -o pipefail {0}
+
+env:
+  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
   update-thresholds:
@@ -19,12 +27,27 @@ jobs:
     timeout-minutes: 60
 
     permissions:
-      contents: write
+      pull-requests: write # For the comment action
+      contents: write # For the committing the changes
 
     steps:
       - name: Install dependencies
         run: |
           apt update -q && apt install -yq libjemalloc-dev zstd curl jq
+
+      - name: Construct in-progress comment
+        if: ${{ inputs.pr_number != '' }}
+        run: |
+          echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> in-progress-comment.md
+          echo 'Thresholds update in progress...' >> in-progress-comment.md
+
+      - name: Comment in PR
+        if: ${{ inputs.pr_number != '' }}
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          pr-number: ${{ inputs.pr_number }}
+          file-path: in-progress-comment.md
+          comment-tag: benchmark-thresholds-update-comment
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -79,8 +102,10 @@ jobs:
           MODIFICATIONS="$(git status --porcelain)"
           if [ -n "$MODIFICATIONS" ]; then
             echo "has-modifications=true" >> $GITHUB_OUTPUT
+            echo "changes-count=$(git status --porcelain | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
           else
             echo "has-modifications=false" >> $GITHUB_OUTPUT
+            echo "changes-count=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit and push changes
@@ -92,3 +117,24 @@ jobs:
           Committed by https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           git push origin "HEAD:${{ github.ref }}"
+
+      - name: Construct result comment
+        run: |
+          echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> comment.md
+          echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files added/updated.' >> comment.md
+
+      - name: Update comment in PR
+        if: ${{ inputs.pr_number != '' }}
+        id: pr-comment
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          pr-number: ${{ inputs.pr_number }}
+          file-path: comment.md
+          comment-tag: benchmark-thresholds-update-comment
+
+      - name: Output the comment as job summary
+        run: |
+          cat comment.md >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -n '${{ inputs.pr_number }}' ]]; then
+            echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
+          fi
