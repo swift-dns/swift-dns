@@ -91,7 +91,7 @@ var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
 package.dependencies.append(
     .package(
         url: "https://github.com/MahdiBM/package-benchmark.git",
-        branch: "mmbm-threshold-improvements"
+        branch: "mmbm-fix-units-mismatch"
     ),
 )
 
