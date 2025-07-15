@@ -1,5 +1,5 @@
 {
-  "originHash" : "e8d68ca308c3edd11b8715a905269077465a9dfe30c7b40907bebcfdc133a605",
+  "originHash" : "db21d347103d48162d6275b6d94883a6c8408bd64472933117eb81f4ecf06381",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/MahdiBM/package-benchmark.git",
       "state" : {
-        "branch" : "mmbm-range-relative-thresholds",
-        "revision" : "04291aafc03db9f6f1ff0f5f2ffc311d680dde8b"
+        "branch" : "mmbm-range-relative-thresholds-options",
+        "revision" : "ff9629b7612eb5f39c7f31b4f3b392dc8fb3ff31"
       }
     },
     {

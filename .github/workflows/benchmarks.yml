@@ -126,6 +126,7 @@ jobs:
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \
+            --skip-loading-benchmark-targets \
             --no-progress \
             --format markdown \
             >> comparison.md
