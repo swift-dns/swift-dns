@@ -5,6 +5,11 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
+        required: false
+        type: string
 
 defaults:
   run:
@@ -14,7 +19,7 @@ env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
-  update-thresholds:
+  update-benchmark-thresholds:
     runs-on: [self-hosted, linux, x64]
 
     container: swiftlang/swift:nightly-6.2-noble
@@ -30,51 +35,17 @@ jobs:
         run: |
           apt update -q && apt install -yq libjemalloc-dev zstd curl jq
 
-      - name: Find commit info
-        id: commit-info
-        run: |
-          # 'github.event.pull_request.head.sha' is needed for certain 'pull_request' events, such
-          # as 'opened' and 'reopened' events.
-          COMMIT_SHA="${{ github.event.after || github.event.pull_request.head.sha }}"
-
-          if [[ -n "${COMMIT_SHA}" ]]; then
-            FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_SHA}" | jq -r '.sha')"
-            SHORT_NAME="$(echo $FULL_SHA | cut -c 1-7)"
-
-            # Get the oldest PR that contains the commit
-            PR="$(
-              curl "https://api.github.com/search/issues?q=${FULL_SHA}" | \
-                jq 'select(.items[].pull_request.url | contains("/${{ github.repository }}/")) | .items[-1]'
-            )"
-            PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
-
-            if [[ -z "${PR_NUMBER}" ]]; then
-              echo "Failed to find PR info for commit ${COMMIT_SHA}"
-              echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-              FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
-            else
-              echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
-              FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
-            fi
-          else
-            echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-            SHORT_NAME='${{ github.ref_name }}'
-            FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
-          fi
-
-          echo "md_link=[${SHORT_NAME}](${FILES_LINK})" >> "${GITHUB_OUTPUT}"
-
       - name: Construct in-progress comment
-        if: steps.commit-info.outputs.pr_number != ''
+        if: ${{ inputs.pr_number != '' }}
         run: |
-          echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> in-progress-comment.md
+          echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> in-progress-comment.md
           echo 'Thresholds update in progress...' >> in-progress-comment.md
 
       - name: Comment in PR
-        if: steps.commit-info.outputs.pr_number != ''
+        if: ${{ inputs.pr_number != '' }}
         uses: thollander/actions-comment-pull-request@v3
         with:
-          pr-number: ${{ steps.commit-info.outputs.pr_number }}
+          pr-number: ${{ inputs.pr_number }}
           file-path: in-progress-comment.md
           comment-tag: benchmark-thresholds-update-comment
 
@@ -153,17 +124,17 @@ jobs:
           echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files changed.' >> comment.md
 
       - name: Update comment in PR
-        if: steps.commit-info.outputs.pr_number != ''
+        if: ${{ inputs.pr_number != '' }}
         id: pr-comment
         uses: thollander/actions-comment-pull-request@v3
         with:
-          pr-number: ${{ steps.commit-info.outputs.pr_number }}
+          pr-number: ${{ inputs.pr_number }}
           file-path: comment.md
           comment-tag: benchmark-thresholds-update-comment
 
       - name: Output the comment as job summary
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
-          if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
+          if [[ -n '${{ inputs.pr_number }}' ]]; then
             echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
           fi
