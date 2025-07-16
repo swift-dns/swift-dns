@@ -41,7 +41,7 @@ jobs:
 
     container: swiftlang/swift:nightly-6.2-noble
 
-    timeout-minutes: 60
+    timeout-minutes: 360
 
     permissions:
       pull-requests: write # For the comment action
