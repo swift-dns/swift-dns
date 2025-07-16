@@ -77,7 +77,7 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds update \
             --path Benchmarks/Thresholds \
-            --run-count 20 \
+            --run-count 30 \
             --range \
             --relative
 
