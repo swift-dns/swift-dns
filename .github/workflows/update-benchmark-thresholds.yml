@@ -41,7 +41,7 @@ jobs:
 
     container: swiftlang/swift:nightly-6.2-noble
 
-    timeout-minutes: 360
+    timeout-minutes: 1440
 
     permissions:
       pull-requests: write # For the comment action
@@ -110,7 +110,7 @@ jobs:
             COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
           fi
 
-          eval $COMMAND
+          eval "$COMMAND"
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
