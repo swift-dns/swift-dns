@@ -121,7 +121,7 @@ jobs:
       - name: Construct result comment
         run: |
           echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> comment.md
-          echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files added/updated.' >> comment.md
+          echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files changed.' >> comment.md
 
       - name: Update comment in PR
         if: ${{ inputs.pr_number != '' }}
