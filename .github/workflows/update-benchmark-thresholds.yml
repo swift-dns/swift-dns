@@ -10,6 +10,18 @@ on:
         description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
         required: false
         type: string
+      target:
+        description: "Regex filter for benchmark target names that contains the benchmarks to run. If not provided, all targets will be run."
+        required: false
+        type: string
+      filter:
+        description: "Regex filter for benchmark names. If not provided, all benchmarks will be run."
+        required: false
+        type: string
+      skip:
+        description: "Regex filter for benchmark names to skip. If not provided, no benchmarks will be skipped."
+        required: false
+        type: string
 
 defaults:
   run:
@@ -72,14 +84,28 @@ jobs:
 
       - name: Update benchmark thresholds
         run: |
-          swift package -c release \
+          COMMAND="swift package -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark thresholds update \
             --path Benchmarks/Thresholds \
             --run-count 30 \
             --range \
-            --relative
+            --relative"
+
+          if [[ -n '${{ inputs.target }}' ]]; then
+            COMMAND="$COMMAND --target '${{ inputs.target }}'"
+          fi
+
+          if [[ -n '${{ inputs.filter }}' ]]; then
+            COMMAND="$COMMAND --filter '${{ inputs.filter }}'"
+          fi
+
+          if [[ -n '${{ inputs.skip }}' ]]; then
+            COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
+          fi
+
+          eval $COMMAND
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
