@@ -6,6 +6,11 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
+      run_count:
+        description: "Number of times to run each benchmark and update the thresholds."
+        required: true
+        type: string
+        default: "30"
       pr_number:
         description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
         required: false
@@ -89,7 +94,7 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds update \
             --path Benchmarks/Thresholds \
-            --run-count 30 \
+            --run-count ${{ inputs.run_count }} \
             --range \
             --relative"
 
