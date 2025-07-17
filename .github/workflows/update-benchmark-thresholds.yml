@@ -9,12 +9,12 @@ on:
       run_count:
         description: "Number of times to run each benchmark and update the thresholds."
         required: true
-        type: string
-        default: "30"
+        type: number
+        default: 1000
       pr_number:
         description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
         required: false
-        type: string
+        type: number
       target:
         description: "Regex filter for benchmark target names that contains the benchmarks to run. If not provided, all targets will be run."
         required: false
@@ -145,7 +145,7 @@ jobs:
           git add Benchmarks/Thresholds/
           git commit -m "Update benchmark thresholds
 
-          Committed by https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          Committed by $RUN_LINK"
 
           git push origin "HEAD:${{ github.ref }}"
 

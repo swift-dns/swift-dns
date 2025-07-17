@@ -69,6 +69,7 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("MemberImportVisibility"),
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("ExistentialAny"),
+        .enableUpcomingFeature("StrictMemorySafety"),
     ]
 }
 
