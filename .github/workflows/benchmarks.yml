@@ -41,14 +41,14 @@ jobs:
             PR_NUMBER="${{ github.event.pull_request.number }}"
             echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
-            echo "title=${{ github.event.pull_request.title }}" >> "${GITHUB_OUTPUT}"
+            echo "title=Current-PR" >> "${GITHUB_OUTPUT}"
             echo "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
           elif [[ "${{ github.event_name }}" == "push" ]]; then
             echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
-            echo "title=${{ github.event.head_commit.message }}" >> "${GITHUB_OUTPUT}"
+            echo "title=Current-Branch" >> "${GITHUB_OUTPUT}"
             echo "pr_number=" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
@@ -95,7 +95,7 @@ jobs:
         run: |
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark baseline update \
             '${{ steps.commit-info.outputs.title }}'
 
@@ -103,7 +103,7 @@ jobs:
         run: |
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark baseline read \
             '${{ steps.commit-info.outputs.title }}' \
             --no-progress \
@@ -122,7 +122,7 @@ jobs:
           set +e
           swift package -c release \
             --package-path Benchmarks \
-            --disable-sandbox \
+            --allow-writing-to-package-directory \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \
