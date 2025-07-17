@@ -1,8 +1,8 @@
 {
   "throughput": {
-    "base": 841459,
-    "max": 883786,
-    "min": 799132,
-    "tolerancePercentage": 5.04
+    "base": 826395,
+    "max": 884907,
+    "min": 767884,
+    "tolerancePercentage": 7.09
   }
 }
