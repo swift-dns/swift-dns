@@ -13,7 +13,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.82.1"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
 
-        /// For the connection pool implementation copied from PostgresNIO
+        /// For the connection pool implementation copied from `PostgresNIO`.
+        /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
     targets: [
