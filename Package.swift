@@ -12,6 +12,10 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.4"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.82.1"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
+
+        /// For the connection pool implementation copied from `PostgresNIO`.
+        /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
+        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
     targets: [
         .target(
@@ -39,6 +43,14 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
             ],
             swiftSettings: settings
+        ),
+        .target(
+            name: "DNSConnectionPool",
+            dependencies: [
+                .product(name: "Atomics", package: "swift-atomics"),
+                .product(name: "DequeModule", package: "swift-collections"),
+            ],
+            swiftSettings: []/// Intentional. This module is copied from PostgresNIO.
         ),
         .target(
             name: "CSwiftDNSIDNATesting",
