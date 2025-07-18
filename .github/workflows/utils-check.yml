@@ -31,6 +31,8 @@ jobs:
           swift utils/IDNAMappingTableGenerator.swift
           echo "Running IDNA Test V2 Generator..."
           swift utils/IDNATestV2Generator.swift
+          echo "Running ConnectionPoolModule Downloader..."
+          swift utils/ConnectionPoolModuleDownloader.swift
 
       - name: Check for modifications
         id: check-modifications
