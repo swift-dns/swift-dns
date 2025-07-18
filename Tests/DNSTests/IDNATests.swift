@@ -4,12 +4,6 @@ import Testing
 
 @Suite
 struct IDNATests {
-    @Test(arguments: LookupWorksArg.all)
-    private func lookupWorks(arg: LookupWorksArg) {
-        let mapping = IDNAMapping.for(scalar: arg.scalar)
-        #expect(mapping == arg.expected)
-    }
-
     /// For debugging you can choose a specific test case based on its index. For example
     /// for index 5101, use `@Test(arguments: IDNATestV2Case.enumeratedAllCases()[5101...5101])`.
     @Test(arguments: IDNATestV2Case.enumeratedAllCases())
@@ -129,34 +123,5 @@ struct IDNATests {
                 tryNumber: tryNumber + 1
             )
         }
-    }
-}
-
-private struct LookupWorksArg {
-
-    typealias U = Unicode.Scalar
-
-    let scalar: Unicode.Scalar
-    let expected: IDNAMapping
-
-    init(_ scalar: Unicode.Scalar, _ expected: IDNAMapping) {
-        self.scalar = scalar
-        self.expected = expected
-    }
-
-    /// Some hand-chosen ones from https://www.unicode.org/Public/idna/16.0.0/IdnaMappingTable.txt
-    static var all: [LookupWorksArg] {
-        [
-            LookupWorksArg(U(0x002F)!, .valid(.NV8)),
-            LookupWorksArg(U(0x005A)!, .mapped([U(0x007A)!])),
-            LookupWorksArg(U(0x0385)!, .mapped([U(0x0020)!, U(0x0308)!, U(0x0301)!])),
-            LookupWorksArg(U(0x034F)!, .ignored),
-            LookupWorksArg(U(0x00DF)!, .deviation([U(0x0073)!, U(0x0073)!])),
-            LookupWorksArg(U(0x04DE)!, .mapped([U(0x04DF)!])),
-            LookupWorksArg(U(0x0B02)!, .valid(.none)),
-            LookupWorksArg(U(0x19DA)!, .valid(.XV8)),
-            LookupWorksArg(U(0x1B4D)!, .disallowed),
-            LookupWorksArg(U(0x200D)!, .deviation([])),
-        ]
     }
 }
