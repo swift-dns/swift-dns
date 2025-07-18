@@ -102,7 +102,6 @@ func generate() -> String {
 
         #include "../include/CSwiftDNSIDNA.h"
         #include <stdint.h>
-        #include <stdbool.h>
         #include <stddef.h>
 
         #define UNICODE_MAX_CODE_POINT 0x10FFFFU

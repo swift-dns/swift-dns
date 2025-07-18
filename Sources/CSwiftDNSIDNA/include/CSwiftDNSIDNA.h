@@ -2,7 +2,6 @@
 #define CSWIFT_DNS_IDNA_H
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stddef.h>
 
 // IDNA2008 status enum values (matching IDNAMapping.IDNA2008Status)
@@ -30,8 +29,7 @@ typedef struct {
 } IDNAMappingResult;
 
 // Look up IDNA mapping for a given Unicode code point
-// Returns a pointer to a static IDNAMappingResult (do not free)
-// Returns NULL if lookup fails
-const IDNAMappingResult* idna_mapping_lookup(uint32_t code_point);
+// Returns a pointer to a static IDNAMappingResult
+const IDNAMappingResult *idna_mapping_lookup(uint32_t code_point);
 
 #endif // CSWIFT_DNS_IDNA_H
