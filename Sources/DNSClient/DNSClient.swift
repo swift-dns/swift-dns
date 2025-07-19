@@ -1,8 +1,9 @@
 public import DNSModels
-package import struct Logging.Logger
-package import protocol NIOCore.EventLoopGroup
 import Synchronization
 import _DNSConnectionPool
+
+package import struct Logging.Logger
+package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 public import ServiceLifecycle
