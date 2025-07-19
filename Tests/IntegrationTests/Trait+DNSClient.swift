@@ -1,0 +1,42 @@
+import DNSClient
+import Logging
+import NIOPosix
+import Testing
+
+struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
+    @TaskLocal static var current: DNSClient?
+
+    func provideScope(
+        for test: Test,
+        testCase: Test.Case?,
+        performing function: @Sendable () async throws -> Void
+    ) async throws {
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
+            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
+            logger: Logger(label: "DNSTests")
+        )
+        try await DNSClientTrait.$current.withValue(client) {
+            try await withThrowingTaskGroup { taskGroup in
+                taskGroup.addTask {
+                    await client.run()
+                }
+                try await function()
+                taskGroup.cancelAll()
+                try await taskGroup.waitForAll()
+            }
+        }
+    }
+}
+
+extension Trait where Self == DNSClientTrait {
+    static var withDNSClient: Self {
+        DNSClientTrait()
+    }
+}
+
+extension SuiteTrait {
+    static var withDNSClient: any SuiteTrait {
+        DNSClientTrait()
+    }
+}
