@@ -117,7 +117,7 @@ public struct IDNA {
     /// https://www.unicode.org/reports/tr46/#ToASCII
     @usableFromInline
     package func toASCII(domainName: inout String) throws(MappingErrors) {
-        switch performASCIICheck(domainName: &domainName) {
+        switch performASCIICheck(domainName: domainName) {
         case .containsOnlyIDNANoOpASCII:
             return
         case .isIDNASafeASCIIButContainsUppercasedLetters:
@@ -205,7 +205,7 @@ public struct IDNA {
     /// https://www.unicode.org/reports/tr46/#ToUnicode
     @usableFromInline
     package func toUnicode(domainName: inout String) throws(MappingErrors) {
-        switch performASCIICheck(domainName: &domainName) {
+        switch performASCIICheck(domainName: domainName) {
         case .containsOnlyIDNANoOpASCII:
             return
         case .isIDNASafeASCIIButContainsUppercasedLetters:
@@ -301,6 +301,7 @@ public struct IDNA {
             case false:
                 switch configuration.ignoreInvalidPunycode {
                 case true:
+                    /// reset back to original label
                     newLabel = Substring(label)
                 case false:
                     errors.append(.labelPunycodeDecodeFailed(label: label))
@@ -421,7 +422,7 @@ public struct IDNA {
         case containsUnicodeThatIsNotGuaranteedToBeIDNANoOp
     }
 
-    func performASCIICheck(domainName: inout String) -> ASCIICheckResult {
+    func performASCIICheck(domainName: String) -> ASCIICheckResult {
         var containsUppercased = false
 
         for unicodeScalar in domainName.unicodeScalars {

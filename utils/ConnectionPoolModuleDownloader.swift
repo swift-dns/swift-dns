@@ -44,7 +44,7 @@ func downloadFile(from url: String, to outputPath: String) throws -> Int {
 
     // Replace _ConnectionPoolModule with DNSConnectionPool
     let oldBytes = Data("_ConnectionPoolModule".utf8)
-    let newBytes = Data("DNSConnectionPool".utf8)
+    let newBytes = Data("_DNSConnectionPool".utf8)
 
     var searchIndex = data.startIndex
     while let range = data.range(of: oldBytes, in: searchIndex..<data.endIndex) {

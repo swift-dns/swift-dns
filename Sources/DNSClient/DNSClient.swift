@@ -1,75 +1,130 @@
 public import DNSModels
-public import Logging
-/// as of writing this comment we only need EventLoopGroup as public, but Swift 6.2 doesn't
-/// accept multiple access levels for the same module, so can't import the symbols one by one with
-/// different access levels.
-public import NIOCore
-import NIOPosix
+package import struct Logging.Logger
+package import protocol NIOCore.EventLoopGroup
+import Synchronization
+import _DNSConnectionPool
 
-public struct DNSClient {
-    public var connectionTarget: ConnectionTarget
+#if ServiceLifecycleSupport
+public import ServiceLifecycle
+#endif
+
+/// FIXME: The module and the type are both named `DNSClient`.
+public actor DNSClient {
+    typealias Pool = ConnectionPool<
+        DNSConnection,
+        DNSConnection.ID,
+        ConnectionIDGenerator,
+        ConnectionRequest<DNSConnection>,
+        ConnectionRequest.ID,
+        /// DNS uses negotiation mechanisms through EDNS for keeping connections alive.
+        NoOpKeepAliveBehavior<DNSConnection>,
+        DNSClientMetrics,
+        ContinuousClock
+    >
+
+    public var serverAddress: DNSServerAddress
+    public let configuration: DNSClientConfiguration
+    let connectionPool: Pool
     let eventLoopGroup: any EventLoopGroup
-    let queryPool: QueryPool
     let logger: Logger
+    let isRunning: Atomic<Bool>
 
-    /// FIXME: shouldn't expose EventLoopGroup anymore?
-    public init(
-        connectionTarget: ConnectionTarget,
+    package init(
+        serverAddress: DNSServerAddress,
+        configuration: DNSClientConfiguration = .init(),
         eventLoopGroup: any EventLoopGroup,
         logger: Logger = .noopLogger
-    ) {
-        self.connectionTarget = connectionTarget
+    ) throws {
+        let connectionFactory = try ConnectionFactory(
+            configuration: configuration.connectionConfiguration,
+            serverAddress: serverAddress
+        )
+        self.serverAddress = serverAddress
+        self.configuration = configuration
+        self.connectionPool = .init(
+            configuration: configuration.connectionPool,
+            idGenerator: ConnectionIDGenerator(),
+            requestType: ConnectionRequest<DNSConnection>.self,
+            keepAliveBehavior: NoOpKeepAliveBehavior(connectionType: DNSConnection.self),
+            observabilityDelegate: DNSClientMetrics(logger: logger),
+            clock: .continuous
+        ) { (connectionID, pool) in
+            var logger = logger
+            logger[metadataKey: "dns_connection_id"] = "\(connectionID)"
+
+            let connection = try await connectionFactory.makeConnection(
+                address: serverAddress,
+                connectionID: connectionID,
+                eventLoop: eventLoopGroup.any(),
+                logger: logger
+            )
+
+            return ConnectionAndMetadata(connection: connection, maximalStreamsOnConnection: 1)
+        }
         self.eventLoopGroup = eventLoopGroup
-        self.queryPool = QueryPool()
         self.logger = logger
+        self.isRunning = Atomic(false)
     }
 
-    public init(
-        connectionTarget: ConnectionTarget,
-        logger: Logger = .noopLogger
-    ) {
-        self.connectionTarget = connectionTarget
-        self.eventLoopGroup = MultiThreadedEventLoopGroup.singleton
-        self.queryPool = QueryPool()
-        self.logger = logger
+    /// Run DNSClient connection pool
+    public func run() async {
+        let (_, old) = self.isRunning.compareExchange(
+            expected: false,
+            desired: true,
+            ordering: .relaxed
+        )
+        precondition(!old, "DNSClient.run() should just be called once!")
+        #if ServiceLifecycleSupport
+        await cancelWhenGracefulShutdown {
+            await self.connectionPool.run()
+        }
+        #else
+        await self.connectionPool.run()
+        #endif
     }
 
-    public func query<RDataType: RDataConvertible>(
-        message factory: MessageFactory<RDataType>,
-        options: DNSRequestOptions = .init()
+    /// Get connection from connection pool and run operation using connection
+    ///
+    /// - Parameters:
+    ///   - isolation: Actor isolation
+    ///   - operation: Closure handling DNS connection
+    /// - Returns: Value returned by closure
+    public func withConnection<Value>(
+        isolation: isolated (any Actor)? = #isolation,
+        operation: (DNSConnection) async throws -> sending Value
+    ) async throws -> Value {
+        let connection = try await self.leaseConnection()
+
+        defer { self.connectionPool.releaseConnection(connection) }
+
+        return try await operation(connection)
+    }
+
+    func leaseConnection() async throws -> DNSConnection {
+        if !self.isRunning.load(ordering: .relaxed) {
+            self.logger.warning(
+                "Trying to lease connection from `DNSClient`, but `DNSClient.run()` hasn't been called yet."
+            )
+        }
+        return try await self.connectionPool.leaseConnection()
+    }
+
+    public func query(
+        message factory: MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions = []
     ) async throws -> Message {
         var factory = factory
         factory.apply(options: options)
-
-        // FIXME: catch connection target to socket address translation errors
-        let connectionFactory = try ConnectionFactory(
-            queryPool: queryPool,
-            connectionTarget: connectionTarget
-        )
-        /// FIXME: use a connection pool and all
-        let channel = try await connectionFactory.makeChannel(
-            deadline: .now() + .seconds(10),
-            eventLoop: eventLoopGroup.next(),
-            logger: logger
-        ).get()
-        return try await withCheckedThrowingContinuation { (continuation: QueryPool.Continuation) in
-            queryPool.insert(factory.message, continuation: continuation)
-            // FIXME: what if the channel is closed and rejects this write?
-            channel.writeAndFlush(factory.message).whenComplete { result in
-                switch result {
-                case .success:
-                    // Good
-                    break
-                case .failure(let error):
-                    // FIXME: should have a better way to handle this
-                    preconditionFailure(
-                        "Failed to write message: \(String(reflecting: error))"
-                    )
-                }
-            }
+        return try await self.withConnection { conn in
+            try await conn.send(message: factory.message)
         }
     }
 }
+
+#if ServiceLifecycleSupport
+@available(swiftDNS 1.0, *)
+extension DNSClient: Service {}
+#endif  // ServiceLifecycle
 
 extension DNSClient {
     @usableFromInline

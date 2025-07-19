@@ -7,11 +7,15 @@ import Testing
 @Suite(.serialized)
 struct DNSTests {
     @Test func queryA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
+
+        let run = Task {
+            await client.run()
+        }
 
         let factory = try MessageFactory<A>.forQuery(name: "example.com.")
         let message = factory.message
@@ -78,11 +82,13 @@ struct DNSTests {
         /// edns.flags.z is whatever
         /// edns.maxPayload is whatever
         /// edns.options.options is whatever
+
+        run.cancel()
     }
 
     @Test func queryAAAA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -155,8 +161,8 @@ struct DNSTests {
     }
 
     @Test func queryCAA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -224,8 +230,8 @@ struct DNSTests {
     }
 
     @Test func queryCERT() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -310,8 +316,8 @@ struct DNSTests {
     }
 
     @Test func queryCNAMEWwwGithubCom() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -368,8 +374,8 @@ struct DNSTests {
     }
 
     @Test func queryCNAMERawGithubusercontentCom() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -437,8 +443,8 @@ struct DNSTests {
     }
 
     @Test func queryMX() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -514,8 +520,8 @@ struct DNSTests {
     @Test func queryNAPTR() async throws {}
 
     @Test func queryNS() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -598,8 +604,8 @@ struct DNSTests {
     @Test func queryOPT() async throws {}
 
     @Test func queryPTR() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
@@ -681,8 +687,8 @@ struct DNSTests {
     @Test func queryTLSA() async throws {}
 
     @Test func queryTXT() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
+        let client = try DNSClient(
+            serverAddress: .domain(name: "8.8.4.4", port: 53),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )

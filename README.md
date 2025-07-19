@@ -49,7 +49,7 @@ import DNSModels
 
 /// Create a `DNSClient`
 let client = DNSClient(
-    connectionTarget: .domain(name: "8.8.4.4", port: 53),
+    serverAddress: .domain(name: "8.8.4.4", port: 53),
     logger: Logger(label: "DNSTests")
 )
 
@@ -87,3 +87,5 @@ for answer in response.answers {
   - The networking library used to implement this library.
 - https://github.com/hickory-dns/hickory-dns
   - Some data type / parsing implementations were heavily inspired by hickory-dns.
+- https://github.com/valkey-io/valkey-swift
+  - Helped a lot in putting an initial version of the connection handling together.
