@@ -6,7 +6,7 @@ on:
   pull_request: { types: [opened, reopened, synchronize] }
   push: { branches: [main] }
   schedule:
-    - cron: '0 6 * * 6'
+    - cron: "0 6 * * 6"
 
 defaults:
   run:
@@ -37,7 +37,8 @@ jobs:
         run: |
           # 'github.event.pull_request.head.sha' is needed for certain 'pull_request' events, such
           # as 'opened' and 'reopened' events.
-          COMMIT_SHA="${{ github.event.after || github.event.pull_request.head.sha }}"
+          # 'github.sha' is needed for 'schedule' events.
+          COMMIT_SHA="${{ github.event.after || github.event.pull_request.head.sha || github.sha }}"
 
           if [[ "${{ github.event_name }}" == *"pull_request"* ]]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -47,7 +48,7 @@ jobs:
             echo "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
+          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" ]]; then
             echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "title=Current-Branch" >> "${GITHUB_OUTPUT}"
