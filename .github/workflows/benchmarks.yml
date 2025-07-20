@@ -48,7 +48,7 @@ jobs:
             echo "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
-          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule"]]; then
+          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" ]]; then
             echo "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
             echo "title=Current-Branch" >> "${GITHUB_OUTPUT}"
