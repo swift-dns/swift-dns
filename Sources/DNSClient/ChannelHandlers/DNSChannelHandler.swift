@@ -7,7 +7,7 @@ public import NIOCore
 @usableFromInline
 final class DNSChannelHandler: ChannelDuplexHandler {
 
-    struct DNSDeadlineSchedule: NIOScheduledCallbackHandler {
+    struct DeadlineSchedule: NIOScheduledCallbackHandler {
         let channelHandler: NIOLoopBound<DNSChannelHandler>
 
         func handleScheduledCallback(eventLoop: some EventLoop) {
@@ -25,7 +25,6 @@ final class DNSChannelHandler: ChannelDuplexHandler {
                 channelHandler.scheduleDeadlineCallback(deadline: deadline)
             case .clearCallback:
                 channelHandler.deadlineCallback = nil
-                break
             }
         }
     }
@@ -64,7 +63,9 @@ final class DNSChannelHandler: ChannelDuplexHandler {
         self.logger = logger
         self.state = StateMachine()
     }
+}
 
+extension DNSChannelHandler {
     @usableFromInline
     func write(
         message: Message,
@@ -73,6 +74,7 @@ final class DNSChannelHandler: ChannelDuplexHandler {
     ) {
         self.eventLoop.assertInEventLoop()
 
+        let deadline: NIODeadline = .now() + TimeAmount(self.configuration.queryTimeout)
         let pendingMessage = PendingMessage(
             promise: DynamicPromise.swift(continuation),
             requestID: requestID,
@@ -90,13 +92,15 @@ final class DNSChannelHandler: ChannelDuplexHandler {
             }
             /// FIXME: do we need to handle channel-already-closed being thrown from the promise below?
             context.writeAndFlush(self.wrapOutboundOut(ByteBuffer(dnsBuffer: buffer)), promise: nil)
+
+            if self.deadlineCallback == nil {
+                self.scheduleDeadlineCallback(deadline: deadline)
+            }
         case .throwError(let error):
             continuation.resume(throwing: error)
         }
     }
-}
 
-extension DNSChannelHandler {
     func handleResponse(context: ChannelHandlerContext, message: Message) {
         switch self.state.receivedResponse(message: message) {
         case .respond(let pendingMessage, let deadlineAction):
@@ -124,7 +128,6 @@ extension DNSChannelHandler {
         case .doNothing:
             // only call fireErrorCaught here as it is called from `closeConnection`
             context.fireErrorCaught(error)
-            break
         }
     }
 
@@ -132,7 +135,7 @@ extension DNSChannelHandler {
     func scheduleDeadlineCallback(deadline: NIODeadline) {
         self.deadlineCallback = try? self.eventLoop.scheduleCallback(
             at: deadline,
-            handler: DNSDeadlineSchedule(channelHandler: .init(self, eventLoop: self.eventLoop))
+            handler: DeadlineSchedule(channelHandler: .init(self, eventLoop: self.eventLoop))
         )
     }
 

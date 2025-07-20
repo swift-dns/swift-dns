@@ -7,6 +7,7 @@ public import struct DequeModule.Deque
 extension DNSChannelHandler {
     @usableFromInline
     struct StateMachine<Context>: ~Copyable {
+
         @usableFromInline
         enum State: ~Copyable {
             case initialized
@@ -26,8 +27,17 @@ extension DNSChannelHandler {
                 }
             }
         }
+
         @usableFromInline
         var state: State
+
+        init() {
+            self.state = .initialized
+        }
+
+        private init(_ state: consuming State) {
+            self.state = state
+        }
 
         @usableFromInline
         struct ActiveState {
@@ -50,22 +60,12 @@ extension DNSChannelHandler {
             }
         }
 
-        init() {
-            self.state = .initialized
-        }
-
-        private init(_ state: consuming State) {
-            self.state = state
-        }
-
         /// handler has become active
         @usableFromInline
         mutating func setActive(context: Context) {
             switch consume self.state {
             case .initialized:
-                self = .active(
-                    .init(context: context, pendingQueries: [])
-                )
+                self = .active(ActiveState(context: context, pendingQueries: []))
             case .active:
                 preconditionFailure("Cannot set connected state when state is active")
             case .closing:
@@ -76,27 +76,19 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum sendQueryAction {
+        enum SendQueryAction {
             case sendQuery(Context)
             case throwError(any Error)
         }
 
         /// handler wants to send a message
         @usableFromInline
-        mutating func sendQuery(_ pendingQuery: PendingMessage) -> sendQueryAction {
-            self.sendQueries(CollectionOfOne(pendingQuery))
-        }
-
-        /// handler wants to send pipelined commands
-        @usableFromInline
-        mutating func sendQueries(
-            _ pendingQueries: some Collection<PendingMessage>
-        ) -> sendQueryAction {
+        mutating func sendQuery(_ pendingQuery: PendingMessage) -> SendQueryAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
-                state.pendingQueries.append(contentsOf: pendingQueries)
+                state.pendingQueries.append(pendingQuery)
                 self = .active(state)
                 return .sendQuery(state.context)
             case .closing(let state):
@@ -129,7 +121,7 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
-                guard let message = state.pendingQueries.popFirst() else {
+                guard let pendingMessage = state.pendingQueries.popFirst() else {
                     self = .closed(nil)
                     return .closeWithError(
                         DNSClientError.unsolicitedResponse
@@ -137,38 +129,37 @@ extension DNSChannelHandler {
                 }
                 self = .active(state)
                 let deadlineCallback: DeadlineCallbackAction =
-                    if let nextCommand = state.pendingQueries.first {
-                        if nextCommand.deadline < message.deadline {
+                    if let nextMessage = state.pendingQueries.first {
+                        if nextMessage.deadline < pendingMessage.deadline {
                             // if the next message has an earlier deadline than the current then reschedule the callback
-                            .reschedule(nextCommand.deadline)
+                            .reschedule(nextMessage.deadline)
                         } else {
                             // otherwise do nothing
                             .doNothing
                         }
                     } else {
-                        // if there are no more commands cancel the callback
+                        // if there are no more messages cancel the callback
                         .cancel
                     }
-                return .respond(message, deadlineCallback)
+                return .respond(pendingMessage, deadlineCallback)
             case .closing(var state):
-                guard let message = state.pendingQueries.popFirst() else {
-                    preconditionFailure("Cannot be in closing state with no pending commands")
+                guard let pendingMessage = state.pendingQueries.popFirst() else {
+                    preconditionFailure("Cannot be in closing state with no pending messages")
                 }
-                if let nextCommand = state.pendingQueries.first {
-                    self = .closing(state)
-                    let deadlineCallback: DeadlineCallbackAction =
-                        if nextCommand.deadline < message.deadline {
-                            // if the next message has an earlier deadline than the current then reschedule the callback
-                            .reschedule(nextCommand.deadline)
-                        } else {
-                            // otherwise do nothing
-                            .doNothing
-                        }
-                    return .respond(message, deadlineCallback)
-                } else {
+                guard let nextMessage = state.pendingQueries.first else {
                     self = .closed(nil)
-                    return .respondAndClose(message, nil)
+                    return .respondAndClose(pendingMessage, nil)
                 }
+                self = .closing(state)
+                let deadlineCallback: DeadlineCallbackAction =
+                    if nextMessage.deadline < pendingMessage.deadline {
+                        // if the next message has an earlier deadline than the current then reschedule the callback
+                        .reschedule(nextMessage.deadline)
+                    } else {
+                        // otherwise do nothing
+                        .doNothing
+                    }
+                return .respond(pendingMessage, deadlineCallback)
             case .closed:
                 preconditionFailure("Cannot receive message on closed connection")
             }
@@ -187,28 +178,27 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
             case .active(let state):
-                if let firstCommand = state.pendingQueries.first {
-                    if firstCommand.deadline <= now {
-                        self = .closed(DNSClientError.queryTimeout)
-                        return .failPendingQueriesAndClose(state.context, state.pendingQueries)
-                    } else {
-                        self = .active(state)
-                        return .reschedule(firstCommand.deadline)
-                    }
-                } else {
+                guard let firstMessage = state.pendingQueries.first else {
                     self = .active(state)
                     return .clearCallback
                 }
-            case .closing(let state):
-                guard let firstCommand = state.pendingQueries.first else {
-                    preconditionFailure("Cannot be in closing state with no pending commands")
+                if firstMessage.deadline <= now {
+                    self = .closed(DNSClientError.queryTimeout)
+                    return .failPendingQueriesAndClose(state.context, state.pendingQueries)
+                } else {
+                    self = .active(state)
+                    return .reschedule(firstMessage.deadline)
                 }
-                if firstCommand.deadline <= now {
+            case .closing(let state):
+                guard let firstMessage = state.pendingQueries.first else {
+                    preconditionFailure("Cannot be in closing state with no pending messages")
+                }
+                if firstMessage.deadline <= now {
                     self = .closed(DNSClientError.queryTimeout)
                     return .failPendingQueriesAndClose(state.context, state.pendingQueries)
                 } else {
                     self = .closing(state)
-                    return .reschedule(firstCommand.deadline)
+                    return .reschedule(firstMessage.deadline)
                 }
             case .closed(let error):
                 self = .closed(error)
@@ -226,7 +216,7 @@ extension DNSChannelHandler {
             case doNothing
         }
 
-        /// handler wants to send a message
+        /// handler wants to cancel a message
         @usableFromInline
         mutating func cancel(requestID: Int) -> CancelAction {
             switch consume self.state {
@@ -270,6 +260,7 @@ extension DNSChannelHandler {
             case closeConnection(Context)
             case doNothing
         }
+
         /// Want to gracefully shutdown the handler
         @usableFromInline
         mutating func gracefulShutdown() -> GracefulShutdownAction {
@@ -279,9 +270,7 @@ extension DNSChannelHandler {
                 return .doNothing
             case .active(let state):
                 if state.pendingQueries.count > 0 {
-                    self = .closing(
-                        .init(context: state.context, pendingQueries: state.pendingQueries)
-                    )
+                    self = .closing(state)
                     return .waitForPendingQueries(state.context)
                 } else {
                     self = .closed(nil)
@@ -301,6 +290,7 @@ extension DNSChannelHandler {
             case failPendingQueriesAndClose(Context, Deque<PendingMessage>)
             case doNothing
         }
+
         /// Want to close the connection
         @usableFromInline
         mutating func close() -> CloseAction {
