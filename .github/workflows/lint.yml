@@ -6,6 +6,10 @@ on:
   pull_request: { types: [opened, reopened, synchronize] }
   push: { branches: [main] }
 
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
