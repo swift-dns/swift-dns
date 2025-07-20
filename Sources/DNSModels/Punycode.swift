@@ -151,6 +151,9 @@ enum Punycode {
     /// [Punycode: A Bootstring encoding of Unicode for IDNA: Encoding procedure](https://datatracker.ietf.org/doc/html/rfc3492#section-6.3)
     /// Returns true if successful and false if conversion failed.
     ///
+    /// This function uses unchecked/unsafe handling of some values. These are all safe.
+    /// This function is heavily tested with 12_000+ tests from Unicode's IDNA V2 test suite.
+    ///
     /// This function does not do overflow handling because based on RFC 3492,
     /// overflows are not possible for what matches the description of Swift's `Unicode.Scalar` type:
     ///
@@ -177,13 +180,15 @@ enum Punycode {
         var n = Constants.initialN
         var delta = 0
         var bias = Constants.initialBias
-        var output = input.unicodeScalars.filter(\.isASCII)
+        var output: [Unicode.Scalar] = []
+        /// ``input.count == output.count`` is guaranteed, so we reserve the capacity.
+        output.reserveCapacity(input.count)
+        output.append(contentsOf: input.unicodeScalars.filter(\.isASCII))
         let b = output.count
         var h = b
         if !output.isEmpty {
             output.append(Unicode.Scalar.asciiHyphenMinus)
         }
-        /// FIXME: reserve extra capacity in output
 
         if input.unicodeScalars.contains(where: { !$0.isASCII && $0.value < n }) {
             return false
@@ -191,10 +196,9 @@ enum Punycode {
 
         while h < input.unicodeScalars.count {
             let m = Int(
-                /// FIXME: Is the force unwrap safe?
                 input.unicodeScalars.lazy.filter {
                     !$0.isASCII && $0.value >= n
-                }.min()!.value
+                }.min().unsafelyUnwrapped.value
             )
 
             delta = delta &+ ((m &- n) &* (h &+ 1))
@@ -250,6 +254,9 @@ enum Punycode {
     /// [Punycode: A Bootstring encoding of Unicode for IDNA: Decoding procedure](https://datatracker.ietf.org/doc/html/rfc3492#section-6.2)
     /// Returns true if successful and false if conversion failed.
     ///
+    /// This function uses unchecked/unsafe handling of some values. These are all safe.
+    /// This function is heavily tested with 12_000+ tests from Unicode's IDNA V2 test suite.
+    ///
     /// This function does not do overflow handling because based on RFC 3492,
     /// overflows are not possible for what matches the description of Swift's `Unicode.Scalar` type:
     ///
@@ -276,7 +283,8 @@ enum Punycode {
         var n = Constants.initialN
         var i = 0
         var bias = Constants.initialBias
-        var output: [Unicode.Scalar]
+        var output: [Unicode.Scalar] = []
+        output.reserveCapacity(max(input.count, 4))
 
         if let idx = input.unicodeScalars.lastIndex(of: Unicode.Scalar.asciiHyphenMinus) {
             let afterDelimiterIdx = input.index(after: idx)
@@ -292,7 +300,6 @@ enum Punycode {
         } else {
             output = []
         }
-        /// FIXME: reserve extra capacity in output
 
         while !input.unicodeScalars.isEmpty {
             let oldi = i
@@ -338,10 +345,7 @@ enum Punycode {
                 return false
             }
 
-            guard let newUnicodeScalar = Unicode.Scalar(n) else {
-                return false
-            }
-            output.insert(newUnicodeScalar, at: i)
+            output.insert(Unicode.Scalar(n).unsafelyUnwrapped, at: i)
 
             i += 1
         }
