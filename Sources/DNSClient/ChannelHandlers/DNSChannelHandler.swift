@@ -1,6 +1,5 @@
 import DNSCore
 public import DNSModels
-import DequeModule
 import Logging
 public import NIOCore
 
@@ -13,10 +12,8 @@ final class DNSChannelHandler: ChannelDuplexHandler {
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
             switch channelHandler.state.hitDeadline(now: .now()) {
-            case .failPendingQueriesAndClose(let context, let queries):
-                for query in queries {
-                    query.promise.fail(with: DNSClientError.queryTimeout)
-                }
+            case .failPendingQueryAndClose(let context, let query):
+                query.promise.fail(with: DNSClientError.queryTimeout)
                 channelHandler.closeConnection(
                     context: context,
                     error: DNSClientError.queryTimeout
@@ -75,7 +72,7 @@ extension DNSChannelHandler {
         self.eventLoop.assertInEventLoop()
 
         let deadline: NIODeadline = .now() + TimeAmount(self.configuration.queryTimeout)
-        let pendingMessage = PendingMessage(
+        let pendingMessage = PendingQuery(
             promise: DynamicPromise.swift(continuation),
             requestID: requestID,
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
@@ -120,10 +117,8 @@ extension DNSChannelHandler {
             metadata: ["error": "\(String(reflecting: error))"]
         )
         switch self.state.close() {
-        case .failPendingQueriesAndClose(let context, let queries):
-            for query in queries {
-                query.promise.fail(with: error)
-            }
+        case .failPendingQueryAndClose(let context, let query):
+            query?.promise.fail(with: error)
             self.closeConnection(context: context, error: error)
         case .doNothing:
             // only call fireErrorCaught here as it is called from `closeConnection`
@@ -146,8 +141,6 @@ extension DNSChannelHandler {
         case .cancel:
             self.deadlineCallback?.cancel()
             self.deadlineCallback = nil
-        case .reschedule(let deadline):
-            self.scheduleDeadlineCallback(deadline: deadline)
         case .doNothing:
             break
         }
@@ -197,22 +190,12 @@ extension DNSChannelHandler {
     func cancel(requestID: Int) {
         self.eventLoop.assertInEventLoop()
         switch self.state.cancel(requestID: requestID) {
-        case .failPendingQueriesAndClose(
-            let context,
-            let cancelled,
-            let closeConnectionDueToCancel
-        ):
-            for query in cancelled {
-                query.promise.fail(with: DNSClientError.cancelled)
-            }
-            for query in closeConnectionDueToCancel {
-                query.promise.fail(with: DNSClientError.connectionClosedDueToCancellation)
-            }
+        case .cancelPendingQueryAndClose(let context, let pendingQuery):
+            pendingQuery.promise.fail(with: DNSClientError.cancelled)
             self.closeConnection(
                 context: context,
                 error: DNSClientError.cancelled
             )
-
         case .doNothing:
             break
         }
@@ -220,10 +203,8 @@ extension DNSChannelHandler {
 
     private func setClosed() {
         switch self.state.setClosed() {
-        case .failPendingQueries(let queries):
-            for query in queries {
-                query.promise.fail(with: DNSClientError.connectionClosed)
-            }
+        case .failPendingQuery(let query):
+            query?.promise.fail(with: DNSClientError.connectionClosed)
             self.deadlineCallback?.cancel()
         case .doNothing:
             break

@@ -3,7 +3,7 @@ public import struct NIOCore.EventLoopPromise
 public import struct NIOCore.NIODeadline
 
 @usableFromInline
-struct PendingMessage {
+struct PendingQuery {
     @usableFromInline
     init(promise: DynamicPromise<Message>, requestID: Int, deadline: NIODeadline) {
         self.promise = promise

@@ -62,8 +62,7 @@ let package = Package(
         .target(
             name: "_DNSConnectionPool",
             dependencies: [
-                .product(name: "Atomics", package: "swift-atomics"),
-                .product(name: "DequeModule", package: "swift-collections"),
+                .product(name: "Atomics", package: "swift-atomics")
             ],
             path: "Sources/DNSConnectionPool",
             swiftSettings: []/// Intentional. This module is copied from PostgresNIO.

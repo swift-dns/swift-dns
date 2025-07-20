@@ -5,5 +5,4 @@ public enum DNSClientError: Error {
     case connectionClosed
     case unsolicitedResponse
     case queryTimeout
-    case connectionClosedDueToCancellation
 }
