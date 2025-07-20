@@ -3,18 +3,17 @@ import DNSModels
 import NIOCore
 
 let benchmarks: @Sendable () -> Void = {
-    Benchmark.defaultConfiguration.units = [.throughput: .kilo]
     Benchmark.defaultConfiguration.maxDuration = .seconds(5)
 
     var buffer = DNSBuffer()
     var startIndex = 0
 
     Benchmark(
-        "google_dot_com_Binary_Parsing_Throughput",
+        "google_dot_com_Binary_Parsing_CPU_2M",
         configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
-            maxIterations: 10_000_000,
+            metrics: [.cpuUser],
+            warmupIterations: 10,
+            maxIterations: 1000,
             setup: {
                 buffer = DNSBuffer(bytes: [
                     0x06, 0x67, 0x6f, 0x6f,
@@ -25,10 +24,11 @@ let benchmarks: @Sendable () -> Void = {
             }
         )
     ) { benchmark in
-        buffer.moveReaderIndex(to: startIndex)
-        benchmark.startMeasurement()
-        let name = try Name(from: &buffer)
-        blackHole(name)
+        for _ in 0..<2_000_000 {
+            buffer.moveReaderIndex(to: startIndex)
+            let name = try Name(from: &buffer)
+            blackHole(name)
+        }
     }
 
     Benchmark(
@@ -54,11 +54,11 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "app-analytics-services_dot_com_Binary_Parsing_Throughput",
+        "app-analytics-services_dot_com_Binary_Parsing_CPU_2M",
         configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
-            maxIterations: 10_000_000,
+            metrics: [.cpuUser],
+            warmupIterations: 10,
+            maxIterations: 1000,
             setup: {
                 buffer = DNSBuffer(bytes: [
                     0x16, 0x61, 0x70, 0x70,
@@ -73,10 +73,11 @@ let benchmarks: @Sendable () -> Void = {
             }
         )
     ) { benchmark in
-        buffer.moveReaderIndex(to: startIndex)
-        benchmark.startMeasurement()
-        let name = try Name(from: &buffer)
-        blackHole(name)
+        for _ in 0..<2_000_000 {
+            buffer.moveReaderIndex(to: startIndex)
+            let name = try Name(from: &buffer)
+            blackHole(name)
+        }
     }
 
     Benchmark(
@@ -107,15 +108,17 @@ let benchmarks: @Sendable () -> Void = {
 
     let google = "google.com"
     Benchmark(
-        "google_dot_com_String_Parsing_Throughput",
+        "google_dot_com_String_Parsing_CPU_200K",
         configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
-            maxIterations: 10_000_000,
+            metrics: [.cpuUser],
+            warmupIterations: 10,
+            maxIterations: 1000,
         )
     ) { benchmark in
-        let name = try! Name(domainName: google)
-        blackHole(name)
+        for _ in 0..<200_000 {
+            let name = try! Name(domainName: google)
+            blackHole(name)
+        }
     }
 
     Benchmark(
@@ -132,15 +135,17 @@ let benchmarks: @Sendable () -> Void = {
 
     let appAnalyticsServices = "app-analytics-services.com"
     Benchmark(
-        "app-analytics-services_dot_com_String_Parsing_Throughput",
+        "app-analytics-services_dot_com_String_Parsing_CPU_200K",
         configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
-            maxIterations: 10_000_000,
+            metrics: [.cpuUser],
+            warmupIterations: 10,
+            maxIterations: 1000,
         )
     ) { benchmark in
-        let name = try! Name(domainName: appAnalyticsServices)
-        blackHole(name)
+        for _ in 0..<200_000 {
+            let name = try! Name(domainName: appAnalyticsServices)
+            blackHole(name)
+        }
     }
 
     Benchmark(
@@ -158,14 +163,16 @@ let benchmarks: @Sendable () -> Void = {
     let name1 = try! Name(domainName: "google.com.")
     let name2 = try! Name(domainName: "google.com.")
     Benchmark(
-        "Equality_Check_Identical_Throughput",
+        "Equality_Check_Identical_CPU_200M",
         configuration: .init(
-            metrics: [.throughput],
-            warmupIterations: 1000,
+            metrics: [.cpuUser],
+            warmupIterations: 10,
             maxIterations: 100_000_000,
         )
     ) { benchmark in
-        blackHole(name1 == name2)
+        for _ in 0..<200_000_000 {
+            blackHole(name1 == name2)
+        }
     }
 
     Benchmark(
