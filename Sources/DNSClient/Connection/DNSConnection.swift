@@ -17,7 +17,7 @@ public final actor DNSConnection: Sendable {
 
     /// Request ID generator
     @usableFromInline
-    static let requestIDGenerator: IDGenerator = .init()
+    static let requestIDGenerator: NonCopyableIDGenerator = .init()
     /// Connection ID, used by connection pool
     public let id: ID
     /// Logger used by Server
@@ -93,23 +93,5 @@ public final actor DNSConnection: Sendable {
                 $0.channelHandler.cancel(requestID: requestID)
             }
         }
-    }
-}
-
-// Used in DNSConnection.pipeline
-@usableFromInline
-struct AutoIncrementingInteger {
-    @usableFromInline
-    var value: Int = 0
-
-    @inlinable
-    init() {
-        self.value = 0
-    }
-
-    @inlinable
-    mutating func next() -> Int {
-        value += 1
-        return value - 1
     }
 }

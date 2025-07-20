@@ -1,16 +1,16 @@
 import Synchronization
+import _DNSConnectionPool
 
+/// Connection id generator for DNS connection pool
 @available(swiftDNS 1.0, *)
-@usableFromInline
-struct IDGenerator: ~Copyable, Sendable {
-    let atomic: Atomic<Int>
+package final class IDGenerator: ConnectionIDGeneratorProtocol {
+    private let atomic: Atomic<Int>
 
-    public init() {
+    init() {
         self.atomic = .init(0)
     }
 
-    @usableFromInline
-    func next() -> Int {
-        self.atomic.wrappingAdd(1, ordering: .relaxed).newValue
+    package func next() -> Int {
+        self.atomic.wrappingAdd(1, ordering: .relaxed).oldValue
     }
 }
