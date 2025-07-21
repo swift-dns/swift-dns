@@ -193,7 +193,7 @@ jobs:
 
           git checkout -b "${NEW_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
-          git commit -m "Auto-update of benchmark thresholds after failure
+          git commit -m "Update of benchmark thresholds with the deviated baselines
 
           Triggered by: ${RUN_LINK}"
           git push origin "${NEW_BRANCH}"
@@ -225,8 +225,9 @@ jobs:
           esac
 
           if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
+            SHORT_SHA="$(echo '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
             echo '' >> comment.md
-            echo 'Pushed [this commit](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}) to [this branch](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}) which contains an update of current thresholds using the deviated baseline.' >> comment.md
+            echo 'Pushed commit [${SHORT_SHA}](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}) to [this branch](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}) containing an update of current thresholds using the deviated baselines.' >> comment.md
             echo 'You can review the commit and merge it into the current branch if the updated thresholds are desired.' >> comment.md
           fi
 

@@ -24,7 +24,7 @@ public enum DNSServerAddress: Hashable, Sendable {
         } else {
             precondition(
                 !remoteHost.isEmpty,
-                "HTTPClient.Request should already reject empty remote hostnames"
+                "Empty remote hostname \(remoteHost)"
             )
             self = .domain(name: remoteHost, port: port)
         }
