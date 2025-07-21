@@ -187,7 +187,7 @@ jobs:
         id: commit-update
         run: |
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
-          NEW_BRANCH="gha-bench-update/${{ github.run_id }}/${CURRENT_BRANCH}"
+          NEW_BRANCH="thresholds-update/${{ github.run_id }}/${CURRENT_BRANCH}"
 
           echo "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
 
