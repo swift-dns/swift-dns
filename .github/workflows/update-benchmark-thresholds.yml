@@ -34,7 +34,7 @@ defaults:
 
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
+  THRESHOLDS_PATH: "Benchmarks/Thresholds/"
 jobs:
   update-benchmark-thresholds:
     runs-on: [self-hosted, linux, x64]
@@ -93,7 +93,7 @@ jobs:
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark thresholds update \
-            --path Benchmarks/Thresholds \
+            --path "${{ env.THRESHOLDS_PATH }}" \
             --run-count ${{ inputs.run_count }} \
             --range \
             --relative"
@@ -122,7 +122,7 @@ jobs:
       - name: Format threshold files with jq
         run: |
           echo "Processing threshold files..."
-          for file in Benchmarks/Thresholds/*.json; do
+          for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
             echo "Processing: $file"
             jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
           done
@@ -130,10 +130,10 @@ jobs:
       - name: Check for modifications
         id: check-modifications
         run: |
-          MODIFICATIONS="$(git status --porcelain)"
+          MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
           if [ -n "$MODIFICATIONS" ]; then
             echo "has-modifications=true" >> $GITHUB_OUTPUT
-            echo "changes-count=$(git status --porcelain | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
+            echo "changes-count=$(git status --porcelain "${{ env.THRESHOLDS_PATH }}" | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
           else
             echo "has-modifications=false" >> $GITHUB_OUTPUT
             echo "changes-count=0" >> $GITHUB_OUTPUT
@@ -142,7 +142,7 @@ jobs:
       - name: Commit and push changes
         if: steps.check-modifications.outputs.has-modifications == 'true'
         run: |
-          git add Benchmarks/Thresholds/
+          git add "${{ env.THRESHOLDS_PATH }}"
           git commit -m "Update benchmark thresholds
 
           Committed by $RUN_LINK"
