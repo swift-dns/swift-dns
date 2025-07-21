@@ -16,7 +16,7 @@
       "location" : "https://github.com/MahdiBM/package-benchmark.git",
       "state" : {
         "branch" : "mmbm-range-relative-thresholds-options",
-        "revision" : "36b8d15d6263abc7834fcf44c42769db2c7b356c"
+        "revision" : "4303330075abdb9fec03991b2656117793468200"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "ad6b5f17270a7008f60d35ec5378e6144a575162",
-        "version" : "2.84.0"
+        "revision" : "a5fea865badcb1c993c85b0f0e8d05a4bd2270fb",
+        "version" : "2.85.0"
       }
     },
     {
