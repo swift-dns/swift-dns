@@ -181,7 +181,7 @@ enum Punycode {
         var delta = 0
         var bias = Constants.initialBias
         var output: [Unicode.Scalar] = []
-        /// ``input.count == output.count`` is guaranteed, so we reserve the capacity.
+        /// ``input.count <= output.count`` is guaranteed, so we reserve the capacity.
         output.reserveCapacity(input.count)
         output.append(contentsOf: input.unicodeScalars.filter(\.isASCII))
         let b = output.count
