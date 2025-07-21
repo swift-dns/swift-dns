@@ -6,9 +6,11 @@ import Testing
 
 @Suite(.serialized, .withDNSClient)
 struct DNSTests {
-    @Test func queryA() async throws {
-        let client = DNSClientTrait.currentClient!
+    var client: DNSClient {
+        DNSClientTrait.currentClient!
+    }
 
+    @Test func queryA() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "example.com.")
         let message = factory.message
         let response = try await client.queryA(message: factory, options: .edns)
@@ -76,13 +78,9 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryANonASCIIDomain() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "210.2.4.8", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
-        )
 
+    @Test(.withDNSClient(serverAddress: .domain(name: "210.2.4.8", port: 53)))
+    func queryANonASCIIDomain() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
         let message = factory.message
         let response = try await client.queryA(message: factory, options: .edns)
@@ -151,8 +149,6 @@ struct DNSTests {
     }
 
     @Test func queryAAAA() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
         let message = factory.message
         let response = try await client.queryAAAA(message: factory, options: .edns)
@@ -221,8 +217,6 @@ struct DNSTests {
     }
 
     @Test func queryCAA() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
         let message = factory.message
         let response = try await client.queryCAA(message: factory, options: .edns)
@@ -286,8 +280,6 @@ struct DNSTests {
     }
 
     @Test func queryCERT() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
         let message = factory.message
         let response = try await client.queryCERT(message: factory, options: .edns)
@@ -368,8 +360,6 @@ struct DNSTests {
     }
 
     @Test func queryCNAMEWwwGithubCom() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
         let message = factory.message
         let response = try await client.queryCNAME(message: factory, options: .edns)
@@ -422,8 +412,6 @@ struct DNSTests {
     }
 
     @Test func queryCNAMERawGithubusercontentCom() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
         let message = factory.message
         let response = try await client.queryCNAME(message: factory, options: .edns)
@@ -487,8 +475,6 @@ struct DNSTests {
     }
 
     @Test func queryMX() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
         let message = factory.message
         let response = try await client.queryMX(message: factory, options: .edns)
@@ -560,8 +546,6 @@ struct DNSTests {
     @Test func queryNAPTR() async throws {}
 
     @Test func queryNS() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
         let message = factory.message
         let response = try await client.queryNS(message: factory, options: .edns)
@@ -640,8 +624,6 @@ struct DNSTests {
     @Test func queryOPT() async throws {}
 
     @Test func queryPTR() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
         let message = factory.message
         let response = try await client.queryPTR(message: factory, options: .edns)
@@ -719,8 +701,6 @@ struct DNSTests {
     @Test func queryTLSA() async throws {}
 
     @Test func queryTXT() async throws {
-        let client = DNSClientTrait.currentClient!
-
         let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
         let message = factory.message
         let response = try await client.queryTXT(message: factory, options: .edns)
