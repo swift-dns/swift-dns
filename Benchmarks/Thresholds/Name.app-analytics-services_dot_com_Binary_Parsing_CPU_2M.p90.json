@@ -1,8 +1,8 @@
 {
-  "throughput": {
-    "base": 4191774,
-    "max": 4552249,
-    "min": 3831299,
-    "tolerancePercentage": 8.6
+  "cpuUser": {
+    "base": 425000000,
+    "max": 460000000,
+    "min": 390000000,
+    "tolerancePercentage": 8.24
   }
 }
