@@ -165,8 +165,8 @@ jobs:
         run: |
           echo "Processing threshold files..."
           for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
-            echo "Processing: $file"
-            jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+            echo "Processing: ${file}"
+            jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
 
       - name: Check for modifications
@@ -226,8 +226,8 @@ jobs:
 
           if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
             echo '' >> comment.md
-            echo 'Benchmark thresholds have been automatically updated and committed to branch [${{ steps.commit-update.outputs.new-branch }}](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}).' >> comment.md
-            echo 'Updated ${{ steps.check-modifications.outputs.changes-count }} threshold files through commit [${{ steps.commit-update.outputs.commit-sha }}](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}).' >> comment.md
+            echo 'Pushed [this commit](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}) to [this branch](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}) which contains an update of current thresholds using the deviated baseline.' >> comment.md
+            echo 'You can review the commit and merge it into the current branch if the updated thresholds are desired.' >> comment.md
           fi
 
           echo '<details>' >> comment.md
