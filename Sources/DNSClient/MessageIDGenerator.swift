@@ -8,6 +8,12 @@ package struct MessageIDGenerator: ~Copyable {
     var ids: BitSet
     var count: Int
 
+    /// Only half the UInt16 namespace is allowed.
+    /// More than that it starts to get slow to generate unique IDs.
+    static var maxAllowed: Int {
+        32768
+    }
+
     package init() {
         self.ids = BitSet()
         self.ids.reserveCapacity(Int(UInt16.max))
@@ -16,51 +22,56 @@ package struct MessageIDGenerator: ~Copyable {
 
     @inlinable
     package mutating func next() throws(Errors) -> UInt16 {
-        let random = UInt16.random(in: 0...UInt16.max)
-        if let result = try validate(Int(random), function: self.firstGreaterThan) {
-            /// Will be in UInt16 range, there are exhaustive tests for this
-            return UInt16(result)
+        if self.count == Self.maxAllowed {
+            throw Errors.overloaded
         }
-        if let result = try validate(Int(random), function: self.firstLessThan) {
-            /// Will be in UInt16 range, there are exhaustive tests for this
-            return UInt16(result)
-        }
-        throw Errors.overloaded
-    }
 
-    mutating func validate(
-        _ int: Int,
-        function: (Int) -> Int?
-    ) throws(Errors) -> Int? {
+        let random = UInt16.random(in: 0...UInt16.max)
+        let int = Int(random)
         switch ids.contains(int) {
         case true:
-            if let next = function(int) {
-                return try validate(next, function: function)
-            } else {
-                return nil
-            }
+            /// `unsafelyUnwrapped` is safe here, there are extensive tests for this.
+            /// If the value evaluates to `nil`, that would mean we've exhausted the UInt16 namespace
+            /// but that cannot happen with the `Self.maxAllowed` limit imposed above.
+            let next = (self.firstGreaterThan(int) ?? self.firstLessThan(int)).unsafelyUnwrapped
+            ids.insert(next)
+            count += 1
+            /// Will be in UInt16 range, there are exhaustive tests for this
+            return UInt16(next)
         case false:
             ids.insert(int)
             count += 1
-            return int
+            return random
         }
     }
 
     @inlinable
-    package mutating func removeExisting(_ id: UInt16) {
+    package mutating func remove(_ id: UInt16) {
         switch ids.remove(Int(id)) {
-        case .none:
-            assertionFailure("ID \(id) was not found in the set \(ids)")
         case .some:
             count -= 1
+        case .none:
+            break
         }
     }
 
     private func firstGreaterThan(_ id: Int) -> Int? {
-        self.ids.first(where: { $0 > id })
+        guard id < Int(UInt16.max) else { return nil }
+        for newId in (id + 1)...Int(UInt16.max) {
+            if !self.ids.contains(newId) {
+                return newId
+            }
+        }
+        return nil
     }
 
     private func firstLessThan(_ id: Int) -> Int? {
-        self.ids.first(where: { $0 < id })
+        guard id > 0 else { return nil }
+        for newId in 0..<id {
+            if !self.ids.contains(newId) {
+                return newId
+            }
+        }
+        return nil
     }
 }
