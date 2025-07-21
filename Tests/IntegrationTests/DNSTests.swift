@@ -76,6 +76,80 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
+    @Test func queryANonASCIIDomain() async throws {
+        let client = DNSClient(
+            connectionTarget: .domain(name: "210.2.4.8", port: 53),
+            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
+            logger: Logger(label: "DNSTests")
+        )
+
+        let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
+        let message = factory.message
+        let response = try await client.queryA(message: factory, options: .edns)
+
+        #expect(response.header.id == message.header.id)
+        #expect(response.header.queryCount > 0)
+        #expect(response.header.answerCount > 0)
+        /// response.header.nameServerCount is whatever
+        #expect(response.header.additionalCount > 0)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        /// `response.header.authenticData` is whatever
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        let name = try Name(domainName: "新华网.中国.")
+        #expect(response.queries.first?.name == name)
+        #expect(response.queries.first?.queryType == .A)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count > 0)
+
+        #expect(response.answers.count > 1)
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels.isFQDN },
+            "\(response.answers)"
+        )
+        #expect(
+            response.answers.allSatisfy { $0.nameLabels == name },
+            "\(response.answers)"
+        )
+        #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
+        #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        /// response.answers[].ttl is whatever
+        let ipv4s = try response.answers.map {
+            try $0.rdata.value
+        }
+        #expect(
+            ipv4s.allSatisfy {
+                /// Weird way to check if the IPv4 is not just some zero bytes
+                var sum: UInt32 = 0
+                for idx in $0.bytes.indices {
+                    sum += UInt32($0.bytes[idx])
+                }
+                return sum != 0
+            }
+        )
+
+        /// Not only had 'additional's, but also an EDNS
+        #expect(response.additionals.count > 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        /// edns.flags.z is whatever
+        /// edns.maxPayload is whatever
+        /// edns.options.options is whatever
+    }
+
     @Test func queryAAAA() async throws {
         let client = DNSClientTrait.currentClient!
 
