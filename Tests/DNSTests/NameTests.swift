@@ -197,28 +197,26 @@ struct NameTests {
         )
     }
 
-    /// Testing `helloß.co.uk.` which turns into `www.xn--hello-pqa.co.uk.` based on punycode.
+    /// Testing `新华网.中国.` which turns into `xn--xkrr14bows.xn--fiqs8s.` based on punycode.
     /// There are non-ascii bytes in this buffer which is technically not correct.
     /// The initializer is expected to repair the bytes into ASCII.
     @Test func decodeInvalidNonASCIIDomainAndRepairItIntoASCII() throws {
         var buffer = DNSBuffer(bytes: [
-            0x3, 0x77, 0x77, 0x77,
-            0xd, 0x78, 0x6e, 0x2d,
-            0x2d, 0x68, 0x65, 0x6c,
-            0x6c, 0x6f, 0x2d, 0x70,
-            0x71, 0x61, 0x2, 0x63,
-            0x6f, 0x2, 0x75, 0x6b,
-            0x0,
+            0x9, 0xe6, 0x96, 0xb0,
+            0xe5, 0x8d, 0x8e, 0xe7,
+            0xbd, 0x91, 0x6, 0xe4,
+            0xb8, 0xad, 0xe5, 0x9b,
+            0xbd, 0x0,
         ])
         let name = try Name(from: &buffer)
-        #expect(name.description == "www.helloß.co.uk")
+        #expect(name.description == "新华网.中国")
         #expect(
             name.description(format: .unicode, options: .sourceAccurate)
-                == "www.helloß.co.uk."
+                == "新华网.中国."
         )
         #expect(
             name.description(format: .ascii, options: .sourceAccurate)
-                == "www.xn--hello-pqa.co.uk."
+                == "xn--xkrr14bows.xn--fiqs8s."
         )
     }
 }
