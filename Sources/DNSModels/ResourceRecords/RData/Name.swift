@@ -279,7 +279,7 @@ extension Name {
         case .containsNonASCII:
             /// Attempt to repair the domain name if it was not ASCII.
             /// non-ASCII bytes are technically not allowed in DNS.
-            let description = self.description(format: .unicode, options: .sourceAccurate)
+            let description = self.utf8Representation()
             self = try Self.init(domainName: description)
         }
     }
@@ -406,6 +406,16 @@ extension Name {
         }
     }
 
+    private func utf8Representation() -> String {
+        var name = self.map {
+            String(decoding: $0, as: UTF8.self)
+        }.joined(separator: ".")
+        if self.isFQDN {
+            name.append(".")
+        }
+        return name
+    }
+
     enum ASCIICheckResult {
         case containsOnlyASCII
         case isASCIIButContainsUppercasedLetters
@@ -446,7 +456,9 @@ extension Name: CustomDebugStringConvertible {
 extension Name {
     /// FIXME: public nonfrozen enum
     public enum DescriptionFormat {
+        /// ASCII-only description of the domain name, as in the wire format and IDNA.
         case ascii
+        /// Unicode representation of the domain name, converting IDNA names to Unicode.
         case unicode
     }
 
