@@ -15,6 +15,7 @@ defaults:
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
+  THRESHOLDS_PATH: "Benchmarks/Thresholds/"
 
 jobs:
   benchmark-vs-thresholds:
@@ -24,6 +25,7 @@ jobs:
 
     permissions:
       pull-requests: write # For the comment action
+      contents: write # For committing threshold updates
 
     steps:
       # jemalloc is a dependency of the Benchmarking package
@@ -83,7 +85,10 @@ jobs:
           fetch-depth: 0
 
       - name: Configure git
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -128,7 +133,7 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
-            --path "$PWD/Benchmarks/Thresholds/" \
+            --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
             --skip-loading-benchmark-targets \
             --no-progress \
             --format markdown \
@@ -142,6 +147,76 @@ jobs:
         with:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
+
+      - name: Update commit status
+        if: steps.commit-info.outputs.pr_number != ''
+        run: |
+          STATE=$([ "${{ steps.comparison.outputs.exit-status }}" == '0' ] && echo 'success' || echo 'failure')
+          BODY="$(
+            jq -n \
+              --arg state "${STATE}" \
+              --arg url "${RUN_LINK}" \
+              --arg context "${CHECK_NAME}" \
+              '{state: $state, target_url: $url, context: $context}'
+          )"
+          curl -L \
+            -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.sha }}' \
+            -d "${BODY}"
+
+      - name: Update benchmark thresholds
+        if: steps.comparison.outputs.exit-status != '0'
+        run: |
+          swift package -c release \
+            --package-path Benchmarks \
+            --allow-writing-to-package-directory \
+            benchmark thresholds update \
+            '${{ steps.commit-info.outputs.title }}' \
+            --range \
+            --relative
+
+      - name: Format threshold files with jq
+        if: steps.comparison.outputs.exit-status != '0'
+        run: |
+          echo "Processing threshold files..."
+          for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
+            echo "Processing: $file"
+            jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+          done
+
+      - name: Check for modifications
+        if: steps.comparison.outputs.exit-status != '0'
+        id: check-modifications
+        run: |
+          MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
+          if [ -n "$MODIFICATIONS" ]; then
+            echo "has-modifications=true" >> $GITHUB_OUTPUT
+            echo "changes-count=$(git status --porcelain "${{ env.THRESHOLDS_PATH }}" | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
+          else
+            echo "has-modifications=false" >> $GITHUB_OUTPUT
+            echo "changes-count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit threshold changes
+        if: steps.check-modifications.outputs.has-modifications == 'true'
+        id: commit-update
+        run: |
+          CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
+          NEW_BRANCH="gha-bench-update/${{ github.run_id }}/${CURRENT_BRANCH}"
+
+          echo "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
+
+          git checkout -b "${NEW_BRANCH}"
+          git add "${{ env.THRESHOLDS_PATH }}"
+          git commit -m "Auto-update of benchmark thresholds after failure
+
+          Triggered by: ${RUN_LINK}"
+          git push origin "${NEW_BRANCH}"
+
+          echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
       - name: Construct result comment
         run: |
@@ -167,6 +242,12 @@ jobs:
                   ;;
           esac
 
+          if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
+            echo '' >> comment.md
+            echo 'Benchmark thresholds have been automatically updated and committed to branch [${{ steps.commit-update.outputs.new-branch }}](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}).' >> comment.md
+            echo 'Updated ${{ steps.check-modifications.outputs.changes-count }} threshold files through commit [${{ steps.commit-update.outputs.commit-sha }}](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}).' >> comment.md
+          fi
+
           echo '<details>' >> comment.md
           echo '  <summary> Click to expand comparison result </summary>' >> comment.md
           echo '' >> comment.md
@@ -183,6 +264,13 @@ jobs:
           echo '' >> comment.md
           echo '</details>' >> comment.md
 
+      - name: Output the comment as job summary
+        run: |
+          cat comment.md >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
+            echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
       - name: Update comment in PR
         if: steps.commit-info.outputs.pr_number != ''
         id: pr-comment
@@ -191,32 +279,6 @@ jobs:
           pr-number: ${{ steps.commit-info.outputs.pr_number }}
           file-path: comment.md
           comment-tag: benchmark-ci-comment
-
-      - name: Output the comment as job summary
-        run: |
-          cat comment.md >> "${GITHUB_STEP_SUMMARY}"
-          if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
-            echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
-          fi
-
-      - name: Update commit status
-        if: steps.commit-info.outputs.pr_number != ''
-        run: |
-          STATE=$([ "${{ steps.comparison.outputs.exit-status }}" == '0' ] && echo 'success' || echo 'failure')
-          BODY="$(
-            jq -n \
-              --arg state "${STATE}" \
-              --arg url "${RUN_LINK}" \
-              --arg context "${CHECK_NAME}" \
-              '{state: $state, target_url: $url, context: $context}'
-          )"
-          curl -L \
-            -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            'https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.sha }}' \
-            -d "${BODY}"
 
       - name: Exit with correct status
         run: exit ${{ steps.comparison.outputs.exit-status }}
