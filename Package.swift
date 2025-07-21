@@ -81,6 +81,16 @@ let package = Package(
             swiftSettings: settings
         ),
         .testTarget(
+            name: "DNSClientTests",
+            dependencies: [
+                "DNSModels",
+                "DNSClient",
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOPosix", package: "swift-nio"),
+            ],
+            swiftSettings: settings
+        ),
+        .testTarget(
             name: "IntegrationTests",
             dependencies: [
                 "DNSModels",

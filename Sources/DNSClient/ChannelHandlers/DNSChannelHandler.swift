@@ -4,14 +4,14 @@ import Logging
 public import NIOCore
 
 @usableFromInline
-final class DNSChannelHandler: ChannelDuplexHandler {
+package final class DNSChannelHandler: ChannelDuplexHandler {
 
     struct DeadlineSchedule: NIOScheduledCallbackHandler {
         let channelHandler: NIOLoopBound<DNSChannelHandler>
 
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
-            switch channelHandler.state.hitDeadline(now: .now()) {
+            switch channelHandler.stateMachine.hitDeadline(now: .now()) {
             case .failPendingQueryAndClose(let context, let query):
                 query.promise.fail(with: DNSClientError.queryTimeout)
                 channelHandler.closeConnection(
@@ -27,14 +27,14 @@ final class DNSChannelHandler: ChannelDuplexHandler {
     }
 
     @usableFromInline
-    typealias InboundIn = ByteBuffer
+    package typealias InboundIn = ByteBuffer
     @usableFromInline
-    typealias InboundOut = Never
+    package typealias InboundOut = Never
 
     @usableFromInline
-    typealias OutboundIn = Message
+    package typealias OutboundIn = Message
     @usableFromInline
-    typealias OutboundOut = ByteBuffer
+    package typealias OutboundOut = ByteBuffer
 
     @usableFromInline
     let eventLoop: any EventLoop
@@ -43,7 +43,7 @@ final class DNSChannelHandler: ChannelDuplexHandler {
     let decoder: NIOSingleStepByteToMessageProcessor<DNSMessageDecoder>
     @usableFromInline
     private(set) var deadlineCallback: NIOScheduledCallback?
-    var state: StateMachine<ChannelHandlerContext>
+    var stateMachine: StateMachine<ChannelHandlerContext>
     let isOverUDP: Bool
     let logger: Logger
 
@@ -58,7 +58,7 @@ final class DNSChannelHandler: ChannelDuplexHandler {
         self.decoder = NIOSingleStepByteToMessageProcessor(DNSMessageDecoder())
         self.isOverUDP = isOverUDP
         self.logger = logger
-        self.state = StateMachine()
+        self.stateMachine = StateMachine()
     }
 }
 
@@ -78,7 +78,7 @@ extension DNSChannelHandler {
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
         )
 
-        switch self.state.sendQuery(pendingMessage) {
+        switch self.stateMachine.sendQuery(pendingMessage) {
         case .sendQuery(let context):
             var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 256))
             do {
@@ -99,7 +99,7 @@ extension DNSChannelHandler {
     }
 
     func handleResponse(context: ChannelHandlerContext, message: Message) {
-        switch self.state.receivedResponse(message: message) {
+        switch self.stateMachine.receivedResponse(message: message) {
         case .respond(let pendingMessage, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
             pendingMessage.promise.succeed(message)
@@ -116,7 +116,7 @@ extension DNSChannelHandler {
             "DNSChannelHandler error",
             metadata: ["error": "\(String(reflecting: error))"]
         )
-        switch self.state.close() {
+        switch self.stateMachine.close() {
         case .failPendingQueryAndClose(let context, let query):
             query?.promise.fail(with: error)
             self.closeConnection(context: context, error: error)
@@ -149,18 +149,18 @@ extension DNSChannelHandler {
 
 extension DNSChannelHandler {
     @usableFromInline
-    func handlerRemoved(context: ChannelHandlerContext) {
+    package func handlerRemoved(context: ChannelHandlerContext) {
         self.setClosed()
     }
 
     @usableFromInline
-    func channelActive(context: ChannelHandlerContext) {
-        self.state.setActive(context: context)
+    package func channelActive(context: ChannelHandlerContext) {
+        self.stateMachine.setActive(context: context)
         self.logger.trace("Channel active.")
     }
 
     @usableFromInline
-    func channelInactive(context: ChannelHandlerContext) {
+    package func channelInactive(context: ChannelHandlerContext) {
         do {
             try self.decoder.finishProcessing(seenEOF: true) { message in
                 self.handleResponse(context: context, message: message)
@@ -174,7 +174,7 @@ extension DNSChannelHandler {
     }
 
     @usableFromInline
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    package func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let buffer = self.unwrapInboundIn(data)
 
         do {
@@ -189,7 +189,7 @@ extension DNSChannelHandler {
     @usableFromInline
     func cancel(requestID: Int) {
         self.eventLoop.assertInEventLoop()
-        switch self.state.cancel(requestID: requestID) {
+        switch self.stateMachine.cancel(requestID: requestID) {
         case .cancelPendingQueryAndClose(let context, let pendingQuery):
             pendingQuery.promise.fail(with: DNSClientError.cancelled)
             self.closeConnection(
@@ -202,7 +202,7 @@ extension DNSChannelHandler {
     }
 
     private func setClosed() {
-        switch self.state.setClosed() {
+        switch self.stateMachine.setClosed() {
         case .failPendingQuery(let query):
             query?.promise.fail(with: DNSClientError.connectionClosed)
             self.deadlineCallback?.cancel()

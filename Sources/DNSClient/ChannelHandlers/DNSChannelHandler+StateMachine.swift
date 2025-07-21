@@ -4,17 +4,17 @@ public import NIOCore
 @available(swiftDNS 1.0, *)
 extension DNSChannelHandler {
     @usableFromInline
-    struct StateMachine<Context>: ~Copyable {
+    package struct StateMachine<Context>: ~Copyable {
 
         @usableFromInline
-        enum State: ~Copyable {
+        package enum State: ~Copyable {
             case initialized
             case active(ActiveState)
             case closing(ActiveState)
             case closed((any Error)?)
 
             @usableFromInline
-            var description: String {
+            package var description: String {
                 borrowing get {
                     switch self {
                     case .initialized: "initialized"
@@ -27,9 +27,9 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        var state: State
+        package var state: State
 
-        init() {
+        package init() {
             self.state = .initialized
         }
 
@@ -38,19 +38,24 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        struct ActiveState {
-            let context: Context
-            var pendingQuery: PendingQuery?
+        package struct ActiveState {
+            package let context: Context
+            package var pendingQuery: PendingQuery?
 
             mutating func takePendingQuery() -> PendingQuery? {
                 defer { self.pendingQuery = nil }
                 return self.pendingQuery
             }
+
+            package init(context: Context, pendingQuery: PendingQuery?) {
+                self.context = context
+                self.pendingQuery = pendingQuery
+            }
         }
 
         /// handler has become active
         @usableFromInline
-        mutating func setActive(context: Context) {
+        package mutating func setActive(context: Context) {
             switch consume self.state {
             case .initialized:
                 self = .active(ActiveState(context: context, pendingQuery: nil))
@@ -64,14 +69,14 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum SendQueryAction {
+        package enum SendQueryAction {
             case sendQuery(Context)
             case throwError(any Error)
         }
 
         /// handler wants to send a query
         @usableFromInline
-        mutating func sendQuery(_ pendingQuery: PendingQuery) -> SendQueryAction {
+        package mutating func sendQuery(_ pendingQuery: PendingQuery) -> SendQueryAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot send query when initialized")
@@ -89,13 +94,13 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum DeadlineCallbackAction {
+        package enum DeadlineCallbackAction {
             case cancel
             case doNothing
         }
 
         @usableFromInline
-        enum ReceivedResponseAction {
+        package enum ReceivedResponseAction {
             case respond(PendingQuery, DeadlineCallbackAction)
             case respondAndClose(PendingQuery, (any Error)?)
             case closeWithError(any Error)
@@ -103,7 +108,7 @@ extension DNSChannelHandler {
 
         /// handler wants to send a message
         @usableFromInline
-        mutating func receivedResponse(message: Message) -> ReceivedResponseAction {
+        package mutating func receivedResponse(message: Message) -> ReceivedResponseAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot send query when initialized")
@@ -126,14 +131,14 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum HitDeadlineAction {
+        package enum HitDeadlineAction {
             case failPendingQueryAndClose(Context, PendingQuery)
             case reschedule(NIODeadline)
             case clearCallback
         }
 
         @usableFromInline
-        mutating func hitDeadline(now: NIODeadline) -> HitDeadlineAction {
+        package mutating func hitDeadline(now: NIODeadline) -> HitDeadlineAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
@@ -167,14 +172,14 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum CancelAction {
+        package enum CancelAction {
             case cancelPendingQueryAndClose(Context, pendingQuery: PendingQuery)
             case doNothing
         }
 
         /// handler wants to cancel a query
         @usableFromInline
-        mutating func cancel(requestID: Int) -> CancelAction {
+        package mutating func cancel(requestID: Int) -> CancelAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
@@ -209,7 +214,7 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum GracefulShutdownAction {
+        package enum GracefulShutdownAction {
             case waitForPendingQuery(Context)
             case closeConnection(Context)
             case doNothing
@@ -217,7 +222,7 @@ extension DNSChannelHandler {
 
         /// Want to gracefully shutdown the handler
         @usableFromInline
-        mutating func gracefulShutdown() -> GracefulShutdownAction {
+        package mutating func gracefulShutdown() -> GracefulShutdownAction {
             switch consume self.state {
             case .initialized:
                 self = .closed(nil)
@@ -240,14 +245,14 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum CloseAction {
+        package enum CloseAction {
             case failPendingQueryAndClose(Context, PendingQuery?)
             case doNothing
         }
 
         /// Want to close the connection
         @usableFromInline
-        mutating func close() -> CloseAction {
+        package mutating func close() -> CloseAction {
             switch consume self.state {
             case .initialized:
                 self = .closed(nil)
@@ -266,14 +271,14 @@ extension DNSChannelHandler {
         }
 
         @usableFromInline
-        enum SetClosedAction {
+        package enum SetClosedAction {
             case failPendingQuery(PendingQuery?)
             case doNothing
         }
 
         /// The connection has been closed
         @usableFromInline
-        mutating func setClosed() -> SetClosedAction {
+        package mutating func setClosed() -> SetClosedAction {
             switch consume self.state {
             case .initialized:
                 self = .closed(nil)
