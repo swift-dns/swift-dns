@@ -6,7 +6,7 @@ package struct MessageIDGenerator: ~Copyable {
     }
 
     var ids: BitSet
-    var count: Int
+    var count: UInt16
 
     /// Only half the UInt16 namespace is allowed.
     /// More than that it starts to get slow to generate unique IDs.
@@ -45,13 +45,14 @@ package struct MessageIDGenerator: ~Copyable {
         }
     }
 
-    @inlinable
-    package mutating func remove(_ id: UInt16) {
+    @discardableResult @inlinable
+    package mutating func remove(_ id: UInt16) -> Bool {
         switch ids.remove(Int(id)) {
         case .some:
             count -= 1
+            return true
         case .none:
-            break
+            return false
         }
     }
 
