@@ -1,4 +1,4 @@
-name: nightly-unit-tests
+name: nightly-tests
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -67,7 +67,6 @@ jobs:
       - name: Run tests
         run: |
           swift test \
-            --skip "IntegrationTests." \
             --skip-build \
             # keeping code coverage flag to check for regressions
             --enable-code-coverage \
