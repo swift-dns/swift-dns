@@ -20,14 +20,18 @@ struct ConnectionFactory {
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)? = #isolation
     ) async throws -> DNSConnection {
-        let (channelFuture, channelHandler) = self.makeInitializedUDPChannel(
+        let (channelFuture, _channelHandler) = self.makeInitializedUDPChannel(
             deadline: .now() + .seconds(10),
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let channel = try await channelFuture.get()
+        /// FIXME: This is safe but better solution than using nonisolated(unsafe)?
+        nonisolated(unsafe) let channelHandler = _channelHandler
         return DNSConnection(
             channel: channel,
             connectionID: connectionID,
@@ -41,15 +45,19 @@ struct ConnectionFactory {
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)? = #isolation
     ) async throws -> DNSConnection {
-        let (channelFuture, channelHandler) = self.makeInitializedTCPChannel(
+        let (channelFuture, _channelHandler) = self.makeInitializedTCPChannel(
             address: address,
             connectionID: connectionID,
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let channel = try await channelFuture.get()
+        /// FIXME: This is safe but better solution than using nonisolated(unsafe)?
+        nonisolated(unsafe) let channelHandler = _channelHandler
         return DNSConnection(
             channel: channel,
             connectionID: connectionID,
@@ -62,7 +70,13 @@ struct ConnectionFactory {
 
 // MARK: - UDP
 extension ConnectionFactory {
-    private func makeUDPBootstrap(eventLoop: any EventLoop) -> DatagramBootstrap {
+    private func makeUDPBootstrap(
+        eventLoop: any EventLoop,
+        isolation: isolated (any Actor)?
+    ) -> DatagramBootstrap {
+        /// FIXME: is this needed?
+        // eventLoop.assertInEventLoop()
+
         DatagramBootstrap(group: eventLoop)
             .channelOption(
                 ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
@@ -76,7 +90,8 @@ extension ConnectionFactory {
 
     private func makeUDPChannelHandler(
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> DNSChannelHandler {
         DNSChannelHandler(
             eventLoop: eventLoop,
@@ -90,14 +105,17 @@ extension ConnectionFactory {
         /// FXIME: what about deadline?
         deadline: NIODeadline,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> (DatagramBootstrap, DNSChannelHandler) {
         nonisolated(unsafe) let channelHandler = self.makeUDPChannelHandler(
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let bootstrap = self.makeUDPBootstrap(
-            eventLoop: eventLoop
+            eventLoop: eventLoop,
+            isolation: isolation
         ).channelInitializer { channel in
             channel.eventLoop.makeCompletedFuture {
                 try channel.pipeline.syncOperations.addHandler(
@@ -117,14 +135,16 @@ extension ConnectionFactory {
     private func makeInitializedUDPChannel(
         deadline: NIODeadline,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
         // FIXME: some things are commented out for now
         // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
         let (bootstrap, channelHandler) = self.makeInitializedUDPBootstrap(
             deadline: deadline,
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let channelFuture = bootstrap.connect(to: self.socketAddress).flatMapErrorThrowing {
             error throws -> any Channel in
@@ -148,12 +168,18 @@ extension ConnectionFactory {
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> any NIOClientTCPBootstrapProtocol {
-        eventLoop.assertInEventLoop()
+        /// FIXME: is this needed?
+        // eventLoop.assertInEventLoop()
 
         #if canImport(Network)
-        if let tsBootstrap = self.createTSBootstrap(eventLoop: eventLoop, tlsOptions: nil) {
+        if let tsBootstrap = self.createTSBootstrap(
+            eventLoop: eventLoop,
+            tlsOptions: nil,
+            isolation: isolation
+        ) {
             return tsBootstrap
         } else {
             #if os(iOS) || os(tvOS)
@@ -161,7 +187,10 @@ extension ConnectionFactory {
                 "Running BSD sockets on iOS or tvOS is not recommended. Please use NIOTSEventLoopGroup, to run with the Network framework"
             )
             #endif
-            return self.createSocketsBootstrap(eventLoop: eventLoop)
+            return self.createSocketsBootstrap(
+                eventLoop: eventLoop,
+                isolation: isolation
+            )
         }
         #else
         return self.createSocketsBootstrap(eventLoop: eventLoop)
@@ -169,7 +198,10 @@ extension ConnectionFactory {
     }
 
     /// create a BSD sockets based bootstrap
-    private func createSocketsBootstrap(eventLoop: any EventLoop) -> ClientBootstrap {
+    private func createSocketsBootstrap(
+        eventLoop: any EventLoop,
+        isolation: isolated (any Actor)?
+    ) -> ClientBootstrap {
         ClientBootstrap(group: eventLoop)
             .channelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
     }
@@ -178,7 +210,8 @@ extension ConnectionFactory {
     /// create a NIOTransportServices bootstrap using Network.framework
     private func createTSBootstrap(
         eventLoop: any EventLoop,
-        tlsOptions: NWProtocolTLS.Options?
+        tlsOptions: NWProtocolTLS.Options?,
+        isolation: isolated (any Actor)?
     ) -> NIOTSConnectionBootstrap? {
         guard
             let bootstrap = NIOTSConnectionBootstrap(validatingGroup: eventLoop)?
@@ -195,7 +228,8 @@ extension ConnectionFactory {
 
     private func makeTCPChannelHandler(
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> DNSChannelHandler {
         DNSChannelHandler(
             eventLoop: eventLoop,
@@ -209,19 +243,28 @@ extension ConnectionFactory {
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> (any NIOClientTCPBootstrapProtocol, DNSChannelHandler) {
         nonisolated(unsafe) let channelHandler = self.makeTCPChannelHandler(
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let bootstrap = self.makeTCPBootstrap(
             address: address,
             connectionID: connectionID,
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         ).channelInitializer { channel in
             channel.eventLoop.makeCompletedFuture {
+                try channel.pipeline.syncOperations.addHandler(
+                    ByteToMessageHandler(TCPFrameDecoder())
+                )
+                try channel.pipeline.syncOperations.addHandler(
+                    MessageToByteHandler(TCPFrameEncoder())
+                )
                 try channel.pipeline.syncOperations.addHandler(
                     channelHandler
                 )
@@ -234,7 +277,8 @@ extension ConnectionFactory {
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
-        logger: Logger
+        logger: Logger,
+        isolation: isolated (any Actor)?
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
         // FIXME: some things are commented out for now
         // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
@@ -242,7 +286,8 @@ extension ConnectionFactory {
             address: address,
             connectionID: connectionID,
             eventLoop: eventLoop,
-            logger: logger
+            logger: logger,
+            isolation: isolation
         )
         let channelFuture = bootstrap.connect(to: self.socketAddress).flatMapErrorThrowing {
             error throws -> any Channel in

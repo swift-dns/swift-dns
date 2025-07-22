@@ -19,6 +19,11 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
     ) async throws {
         let client = try DNSClient(
             serverAddress: serverAddress,
+            configuration: .init(
+                connectionConfiguration: .init(queryTimeout: .seconds(2)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(2)),
+                keepAliveBehavior: .init()
+            ),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )

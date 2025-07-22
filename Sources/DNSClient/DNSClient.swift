@@ -56,7 +56,7 @@ public actor DNSClient {
         )
         self.serverAddress = serverAddress
         self.configuration = configuration
-        self.tcpConnectionPool = .init(
+        self.tcpConnectionPool = TCPConnectionPool(
             configuration: configuration.tcpConnectionPoolConfiguration,
             idGenerator: IDGenerator(),
             requestType: ConnectionRequest<DNSConnection>.self,
@@ -98,36 +98,80 @@ public actor DNSClient {
         #endif
     }
 
+    /// Send a query to the DNS server.
+    /// - Parameters:
+    ///   - factory: The factory to produce a query message with.
+    ///   - options: The options for producing the query message.
+    ///   - channel: The channel type to send the query on.
+    ///   - isolation: The isolation on which the query will be sent.
+    ///
+    /// - Returns: The query response.
     @inlinable
     public func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = []
-    ) async throws -> Message {
-        try await self.udpConnection.send(
-            message: factory,
-            options: options
-        )
-    }
-
-    @inlinable
-    public func tcpQuery(
-        message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions = [],
+        channelKind: QueryChannelKind = .udp,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> Message {
-        try await self.withTCPConnection(
+        try await self.withConnection(
             message: factory,
-            options: options
+            options: options,
+            channelKind: channelKind,
+            isolation: isolation
         ) { factory, options, conn in
-            try await conn.send(
+            try await self.query(
                 message: factory,
-                options: options
+                options: options,
+                connection: conn,
+                isolation: isolation
             )
         }
     }
 }
 
 extension DNSClient {
+    @inlinable
+    func query(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions = [],
+        connection: DNSConnection,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> Message {
+        try await connection.send(
+            message: factory,
+            options: options
+        )
+    }
+
+    @usableFromInline
+    func withConnection<RData: RDataConvertible>(
+        message factory: consuming MessageFactory<RData>,
+        options: DNSRequestOptions,
+        channelKind: QueryChannelKind,
+        isolation: isolated (any Actor)? = #isolation,
+        operation: (
+            consuming MessageFactory<RData>,
+            DNSRequestOptions,
+            DNSConnection
+        ) async throws -> Message
+    ) async throws -> Message {
+        switch channelKind {
+        case .udp:
+            try await operation(
+                factory,
+                options,
+                self.udpConnection
+            )
+        case .tcp:
+            try await self.withTCPConnection(
+                message: factory,
+                options: options,
+                isolation: isolation,
+                operation: operation
+            )
+        }
+    }
+
     /// Get connection from connection pool and run operation using connection
     ///
     /// - Parameters:
