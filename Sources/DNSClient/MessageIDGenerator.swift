@@ -1,15 +1,20 @@
-import Collections
+public import Collections
 
+@usableFromInline
 package struct MessageIDGenerator: ~Copyable {
+    @usableFromInline
     package enum Errors: Error {
         case overloaded
     }
 
+    @usableFromInline
     var ids: BitSet
+    @usableFromInline
     var count: UInt16
 
     /// Only half the UInt16 namespace is allowed.
     /// More than that it starts to get slow to generate unique IDs.
+    @usableFromInline
     static var maxAllowed: Int {
         32768
     }
@@ -56,7 +61,8 @@ package struct MessageIDGenerator: ~Copyable {
         }
     }
 
-    private func firstGreaterThan(_ id: Int) -> Int? {
+    @usableFromInline
+    func firstGreaterThan(_ id: Int) -> Int? {
         guard id < Int(UInt16.max) else { return nil }
         for newId in (id + 1)...Int(UInt16.max) {
             if !self.ids.contains(newId) {
@@ -66,7 +72,8 @@ package struct MessageIDGenerator: ~Copyable {
         return nil
     }
 
-    private func firstLessThan(_ id: Int) -> Int? {
+    @usableFromInline
+    func firstLessThan(_ id: Int) -> Int? {
         guard id > 0 else { return nil }
         for newId in 0..<id {
             if !self.ids.contains(newId) {

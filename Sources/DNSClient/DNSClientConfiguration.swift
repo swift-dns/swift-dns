@@ -25,10 +25,12 @@ public struct DNSClientConfiguration: Sendable {
         }
     }
 
-    /// Connection configuration
+    /// UDP connection configuration
     public var connectionConfiguration: DNSConnectionConfiguration
+    /// TCP connection configuration
+    public var tcpConnectionConfiguration: DNSConnectionConfiguration
     /// Connection pool configuration
-    public var connectionPool: ConnectionPoolConfiguration
+    public var tcpConnectionPoolConfiguration: ConnectionPoolConfiguration
     /// Keep-alive behavior
     public var keepAliveBehavior: KeepAliveBehavior
 
@@ -39,11 +41,13 @@ public struct DNSClientConfiguration: Sendable {
     ///   - keepAliveBehavior: Connection keep alive behavior
     public init(
         connectionConfiguration: DNSConnectionConfiguration = .init(),
-        connectionPool: ConnectionPoolConfiguration = .init(),
+        tcpConnectionConfiguration: DNSConnectionConfiguration = .init(),
+        tcpConnectionPoolConfiguration: ConnectionPoolConfiguration = .init(),
         keepAliveBehavior: KeepAliveBehavior = .init()
     ) {
         self.connectionConfiguration = connectionConfiguration
-        self.connectionPool = connectionPool
+        self.tcpConnectionConfiguration = tcpConnectionConfiguration
+        self.tcpConnectionPoolConfiguration = tcpConnectionPoolConfiguration
         self.keepAliveBehavior = keepAliveBehavior
     }
 }

@@ -12,10 +12,16 @@ struct DNSTests {
 
     @Test func queryA() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "example.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryA(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -82,10 +88,16 @@ struct DNSTests {
     @Test(.withDNSClient(serverAddress: .domain(name: "210.2.4.8", port: 53)))
     func queryANonASCIIDomain() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryA(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -150,10 +162,16 @@ struct DNSTests {
 
     @Test func queryAAAA() async throws {
         let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryAAAA(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -218,10 +236,16 @@ struct DNSTests {
 
     @Test func queryCAA() async throws {
         let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryCAA(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -281,10 +305,16 @@ struct DNSTests {
 
     @Test func queryCERT() async throws {
         let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryCERT(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -361,10 +391,16 @@ struct DNSTests {
 
     @Test func queryCNAMEWwwGithubCom() async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 1)
         #expect(response.header.nameServerCount == 0)
@@ -413,10 +449,16 @@ struct DNSTests {
 
     @Test func queryCNAMERawGithubusercontentCom() async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 0)
         #expect(response.header.nameServerCount > 0)
@@ -476,10 +518,16 @@ struct DNSTests {
 
     @Test func queryMX() async throws {
         let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryMX(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -547,10 +595,16 @@ struct DNSTests {
 
     @Test func queryNS() async throws {
         let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryNS(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 4)
         /// response.header.nameServerCount is whatever
@@ -625,10 +679,16 @@ struct DNSTests {
 
     @Test func queryPTR() async throws {
         let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryPTR(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 1)
         /// response.header.nameServerCount is whatever
@@ -702,10 +762,16 @@ struct DNSTests {
 
     @Test func queryTXT() async throws {
         let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
-        let message = factory.message
+        let message = factory.__testing_copyMessage()
         let response = try await client.queryTXT(message: factory, options: .edns)
 
-        #expect(response.header.id == message.header.id)
+        #expect(
+            response.header.id != message.header.id,
+            """
+            The channel handler reassigns the id, so we expect them to be different.
+            This is only possible because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever

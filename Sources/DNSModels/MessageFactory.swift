@@ -1,12 +1,16 @@
-public struct MessageFactory<QueryType: Queryable> {
-    public var message: Message
+public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
+    @usableFromInline
+    /*private*/ var message: Message
 
-    /// Directly initilizes the factory.
-    /// This is not recommended.
+    /// Directly initializes the factory.
     /// Use convenience methods such as `forQuery(name:recursionDesired:checkingDisabled:)` instead.
     @inlinable
-    public init(message: Message) {
+    init(message: consuming Message) {
         self.message = message
+    }
+
+    package consuming func takeMessage() -> Message {
+        self.message
     }
 
     /// Creates a message for a query.
@@ -77,5 +81,15 @@ public struct MessageFactory<QueryType: Queryable> {
                 options: OPT(options: [])
             )
         }
+    }
+
+    public mutating func apply(requestID: UInt16) {
+        self.message.header.id = requestID
+    }
+}
+
+extension MessageFactory {
+    package func __testing_copyMessage() -> Message {
+        self.message
     }
 }

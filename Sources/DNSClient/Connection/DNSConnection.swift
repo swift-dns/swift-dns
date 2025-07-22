@@ -15,9 +15,6 @@ import NIOTransportServices
 public final actor DNSConnection: Sendable {
     nonisolated public let unownedExecutor: UnownedSerialExecutor
 
-    /// Request ID generator
-    @usableFromInline
-    static let requestIDGenerator: NonCopyableIDGenerator = .init()
     /// Connection ID, used by connection pool
     public let id: ID
     /// Logger used by Server
@@ -68,8 +65,15 @@ public final actor DNSConnection: Sendable {
     /// - Parameter message: The query DNS message
     /// - Returns: The response DNS message
     @inlinable
-    func send(message: Message) async throws -> Message {
-        let requestID = Self.requestIDGenerator.next()
+    func send(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions
+    ) async throws -> Message {
+        let message = try self.channelHandler.produceMessage(
+            message: factory,
+            options: options
+        )
+        let requestID = message.header.id
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
                 throw DNSClientError.cancelled
@@ -77,8 +81,7 @@ public final actor DNSConnection: Sendable {
             return try await withCheckedThrowingContinuation { continuation in
                 self.channelHandler.write(
                     message: message,
-                    continuation: continuation,
-                    requestID: requestID
+                    continuation: continuation
                 )
             }
         } onCancel: {
@@ -87,7 +90,7 @@ public final actor DNSConnection: Sendable {
     }
 
     @usableFromInline
-    nonisolated func cancel(requestID: Int) {
+    nonisolated func cancel(requestID: UInt16) {
         self.channel.eventLoop.execute {
             self.assumeIsolated {
                 $0.channelHandler.cancel(requestID: requestID)

@@ -13,7 +13,10 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: .now()) {
             case .failPendingQueryAndClose(let context, let query):
-                query.promise.fail(with: DNSClientError.queryTimeout)
+                query.fail(
+                    with: DNSClientError.queryTimeout,
+                    removingIDFrom: &channelHandler.messageIDGenerator
+                )
                 channelHandler.closeConnection(
                     context: context,
                     error: DNSClientError.queryTimeout
@@ -43,6 +46,8 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     let decoder: NIOSingleStepByteToMessageProcessor<DNSMessageDecoder>
     @usableFromInline
     private(set) var deadlineCallback: NIOScheduledCallback?
+    @usableFromInline
+    var messageIDGenerator: MessageIDGenerator
     var stateMachine: StateMachine<ChannelHandlerContext>
     let isOverUDP: Bool
     let logger: Logger
@@ -58,23 +63,34 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.decoder = NIOSingleStepByteToMessageProcessor(DNSMessageDecoder())
         self.isOverUDP = isOverUDP
         self.logger = logger
+        self.messageIDGenerator = MessageIDGenerator()
         self.stateMachine = StateMachine()
     }
 }
 
 extension DNSChannelHandler {
     @usableFromInline
+    func produceMessage(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions
+    ) throws(MessageIDGenerator.Errors) -> Message {
+        let requestID = try self.messageIDGenerator.next()
+        factory.apply(options: options)
+        factory.apply(requestID: requestID)
+        return factory.takeMessage()
+    }
+
+    @usableFromInline
     func write(
         message: Message,
-        continuation: CheckedContinuation<Message, any Error>,
-        requestID: Int
+        continuation: CheckedContinuation<Message, any Error>
     ) {
         self.eventLoop.assertInEventLoop()
 
         let deadline: NIODeadline = .now() + TimeAmount(self.configuration.queryTimeout)
         let pendingMessage = PendingQuery(
             promise: DynamicPromise.swift(continuation),
-            requestID: requestID,
+            requestID: message.header.id,
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
         )
 
@@ -102,9 +118,15 @@ extension DNSChannelHandler {
         switch self.stateMachine.receivedResponse(message: message) {
         case .respond(let pendingMessage, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
-            pendingMessage.promise.succeed(message)
+            pendingMessage.succeed(
+                with: message,
+                removingIDFrom: &self.messageIDGenerator
+            )
         case .respondAndClose(let pendingMessage, let error):
-            pendingMessage.promise.succeed(message)
+            pendingMessage.succeed(
+                with: message,
+                removingIDFrom: &self.messageIDGenerator
+            )
             self.closeConnection(context: context, error: error)
         case .closeWithError(let error):
             self.closeConnection(context: context, error: error)
@@ -118,7 +140,10 @@ extension DNSChannelHandler {
         )
         switch self.stateMachine.close() {
         case .failPendingQueryAndClose(let context, let query):
-            query?.promise.fail(with: error)
+            query?.fail(
+                with: error,
+                removingIDFrom: &self.messageIDGenerator
+            )
             self.closeConnection(context: context, error: error)
         case .doNothing:
             // only call fireErrorCaught here as it is called from `closeConnection`
@@ -187,11 +212,15 @@ extension DNSChannelHandler {
     }
 
     @usableFromInline
-    func cancel(requestID: Int) {
+    func cancel(requestID: UInt16) {
         self.eventLoop.assertInEventLoop()
+
         switch self.stateMachine.cancel(requestID: requestID) {
         case .cancelPendingQueryAndClose(let context, let pendingQuery):
-            pendingQuery.promise.fail(with: DNSClientError.cancelled)
+            pendingQuery.fail(
+                with: DNSClientError.cancelled,
+                removingIDFrom: &self.messageIDGenerator
+            )
             self.closeConnection(
                 context: context,
                 error: DNSClientError.cancelled
@@ -204,7 +233,10 @@ extension DNSChannelHandler {
     private func setClosed() {
         switch self.stateMachine.setClosed() {
         case .failPendingQuery(let query):
-            query?.promise.fail(with: DNSClientError.connectionClosed)
+            query?.fail(
+                with: DNSClientError.connectionClosed,
+                removingIDFrom: &self.messageIDGenerator
+            )
             self.deadlineCallback?.cancel()
         case .doNothing:
             break

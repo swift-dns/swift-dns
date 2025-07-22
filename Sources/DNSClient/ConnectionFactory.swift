@@ -2,6 +2,11 @@ import Logging
 import NIOCore
 import NIOPosix
 
+#if canImport(Network)
+import Network
+import NIOTransportServices
+#endif
+
 struct ConnectionFactory {
     let socketAddress: SocketAddress
     let configuration: DNSConnectionConfiguration
@@ -11,13 +16,13 @@ struct ConnectionFactory {
         self.socketAddress = try serverAddress.asSocketAddress()
     }
 
-    func makeConnection(
+    func makeUDPConnection(
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
         logger: Logger
     ) async throws -> DNSConnection {
-        let (channelFuture, channelHandler) = self.makeChannel(
+        let (channelFuture, channelHandler) = self.makeInitializedUDPChannel(
             deadline: .now() + .seconds(10),
             eventLoop: eventLoop,
             logger: logger
@@ -27,22 +32,102 @@ struct ConnectionFactory {
             channel: channel,
             connectionID: connectionID,
             channelHandler: channelHandler,
-            configuration: configuration,
+            configuration: self.configuration,
             logger: logger
         )
     }
 
-    func makeChannel(
+    func makeTCPConnection(
+        address: DNSServerAddress,
+        connectionID: Int,
+        eventLoop: any EventLoop,
+        logger: Logger
+    ) async throws -> DNSConnection {
+        let (channelFuture, channelHandler) = self.makeInitializedTCPChannel(
+            address: address,
+            connectionID: connectionID,
+            eventLoop: eventLoop,
+            logger: logger
+        )
+        let channel = try await channelFuture.get()
+        return DNSConnection(
+            channel: channel,
+            connectionID: connectionID,
+            channelHandler: channelHandler,
+            configuration: self.configuration,
+            logger: logger
+        )
+    }
+}
+
+// MARK: - UDP
+extension ConnectionFactory {
+    private func makeUDPBootstrap(eventLoop: any EventLoop) -> DatagramBootstrap {
+        DatagramBootstrap(group: eventLoop)
+            .channelOption(
+                ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
+                value: 1
+            )
+            .channelOption(
+                ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEPORT),
+                value: 1
+            )
+    }
+
+    private func makeUDPChannelHandler(
+        eventLoop: any EventLoop,
+        logger: Logger
+    ) -> DNSChannelHandler {
+        DNSChannelHandler(
+            eventLoop: eventLoop,
+            configuration: configuration,
+            isOverUDP: true,
+            logger: logger
+        )
+    }
+
+    private func makeInitializedUDPBootstrap(
+        /// FXIME: what about deadline?
+        deadline: NIODeadline,
+        eventLoop: any EventLoop,
+        logger: Logger
+    ) -> (DatagramBootstrap, DNSChannelHandler) {
+        nonisolated(unsafe) let channelHandler = self.makeUDPChannelHandler(
+            eventLoop: eventLoop,
+            logger: logger
+        )
+        let bootstrap = self.makeUDPBootstrap(
+            eventLoop: eventLoop
+        ).channelInitializer { channel in
+            channel.eventLoop.makeCompletedFuture {
+                try channel.pipeline.syncOperations.addHandler(
+                    AddressedEnvelopeInboundChannelHandler()
+                )
+                try channel.pipeline.syncOperations.addHandler(
+                    AddressedEnvelopeOutboundChannelHandler(address: self.socketAddress)
+                )
+                try channel.pipeline.syncOperations.addHandler(
+                    channelHandler
+                )
+            }
+        }
+        return (bootstrap, channelHandler)
+    }
+
+    private func makeInitializedUDPChannel(
         deadline: NIODeadline,
         eventLoop: any EventLoop,
         logger: Logger
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
-        var (channelFuture, channelHandler) = self.makePlainChannel(
+        // FIXME: some things are commented out for now
+        // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
+        let (bootstrap, channelHandler) = self.makeInitializedUDPBootstrap(
             deadline: deadline,
             eventLoop: eventLoop,
             logger: logger
         )
-        channelFuture = channelFuture.flatMapErrorThrowing { error throws -> any Channel in
+        let channelFuture = bootstrap.connect(to: self.socketAddress).flatMapErrorThrowing {
+            error throws -> any Channel in
             // FIXME: map `ChannelError.connectTimeout` into a `DNSClientError.connectTimeout` or smth
 
             // switch error {
@@ -54,72 +139,127 @@ struct ConnectionFactory {
         }
         return (channelFuture, channelHandler)
     }
+}
 
-    private func makePlainBootstrap(
-        /// FXIME: what about deadline?
-        deadline: NIODeadline,
+// MARK: - TCP
+extension ConnectionFactory {
+    @inlinable
+    func makeTCPBootstrap(
+        address: DNSServerAddress,
+        connectionID: Int,
         eventLoop: any EventLoop,
         logger: Logger
-    ) -> (DatagramBootstrap, DNSChannelHandler) {
+    ) -> any NIOClientTCPBootstrapProtocol {
+        eventLoop.assertInEventLoop()
 
-        // FIXME: some things are commented out for now
         #if canImport(Network)
-        // FIXME: need to do anything Network specific?
-        #endif
-
-        if let datagramBootstrap = DatagramBootstrap(validatingGroup: eventLoop) {
-            nonisolated(unsafe) let channelHandler = DNSChannelHandler(
-                eventLoop: eventLoop,
-                configuration: configuration,
-                isOverUDP: true,
-                logger: logger
+        if let tsBootstrap = self.createTSBootstrap(eventLoop: eventLoop, tlsOptions: nil) {
+            return tsBootstrap
+        } else {
+            #if os(iOS) || os(tvOS)
+            self.logger.warning(
+                "Running BSD sockets on iOS or tvOS is not recommended. Please use NIOTSEventLoopGroup, to run with the Network framework"
             )
-            let bootstrap =
-                datagramBootstrap
-                .channelOption(
-                    ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
-                    value: 1
-                )
-                .channelOption(
-                    ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEPORT),
-                    value: 1
-                )
-                .channelInitializer { channel in
-                    channel.eventLoop.makeCompletedFuture {
-                        try channel.pipeline.syncOperations.addHandler(
-                            AddressedEnvelopeInboundChannelHandler()
-                        )
-                        try channel.pipeline.syncOperations.addHandler(
-                            AddressedEnvelopeOutboundChannelHandler(address: self.socketAddress)
-                        )
-                        try channel.pipeline.syncOperations.addHandler(
-                            channelHandler
-                        )
-                    }
-                }
-            return (bootstrap, channelHandler)
+            #endif
+            return self.createSocketsBootstrap(eventLoop: eventLoop)
         }
-
-        preconditionFailure("No matching bootstrap found")
+        #else
+        return self.createSocketsBootstrap(eventLoopGroup: eventLoop)
+        #endif
     }
 
-    private func makePlainChannel(
-        deadline: NIODeadline,
+    /// create a BSD sockets based bootstrap
+    private func createSocketsBootstrap(eventLoop: any EventLoop) -> ClientBootstrap {
+        ClientBootstrap(group: eventLoop)
+            .channelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
+    }
+
+    #if canImport(Network)
+    /// create a NIOTransportServices bootstrap using Network.framework
+    private func createTSBootstrap(
+        eventLoop: any EventLoop,
+        tlsOptions: NWProtocolTLS.Options?
+    ) -> NIOTSConnectionBootstrap? {
+        guard
+            let bootstrap = NIOTSConnectionBootstrap(validatingGroup: eventLoop)?
+                .channelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
+        else {
+            return nil
+        }
+        if let tlsOptions {
+            return bootstrap.tlsOptions(tlsOptions)
+        }
+        return bootstrap
+    }
+    #endif
+
+    private func makeTCPChannelHandler(
+        eventLoop: any EventLoop,
+        logger: Logger
+    ) -> DNSChannelHandler {
+        DNSChannelHandler(
+            eventLoop: eventLoop,
+            configuration: self.configuration,
+            isOverUDP: false,
+            logger: logger
+        )
+    }
+
+    private func makeInitializedTCPBootstrap(
+        address: DNSServerAddress,
+        connectionID: Int,
+        eventLoop: any EventLoop,
+        logger: Logger
+    ) -> (any NIOClientTCPBootstrapProtocol, DNSChannelHandler) {
+        nonisolated(unsafe) let channelHandler = self.makeTCPChannelHandler(
+            eventLoop: eventLoop,
+            logger: logger
+        )
+        let bootstrap = self.makeTCPBootstrap(
+            address: address,
+            connectionID: connectionID,
+            eventLoop: eventLoop,
+            logger: logger
+        ).channelInitializer { channel in
+            channel.eventLoop.makeCompletedFuture {
+                try channel.pipeline.syncOperations.addHandler(
+                    channelHandler
+                )
+            }
+        }
+        return (bootstrap, channelHandler)
+    }
+
+    private func makeInitializedTCPChannel(
+        address: DNSServerAddress,
+        connectionID: Int,
         eventLoop: any EventLoop,
         logger: Logger
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
         // FIXME: some things are commented out for now
         // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
-        let (bootstrap, channelHandler) = self.makePlainBootstrap(
-            deadline: deadline,
+        let (bootstrap, channelHandler) = self.makeInitializedTCPBootstrap(
+            address: address,
+            connectionID: connectionID,
             eventLoop: eventLoop,
             logger: logger
         )
-        let channelFuture = bootstrap.connect(to: self.socketAddress)
+        let channelFuture = bootstrap.connect(to: self.socketAddress).flatMapErrorThrowing {
+            error throws -> any Channel in
+            // FIXME: map `ChannelError.connectTimeout` into a `DNSClientError.connectTimeout` or smth
+
+            // switch error {
+            // case ChannelError.connectTimeout:
+            //     throw HTTPClientError.connectTimeout
+            // default:
+            throw error
+            // }
+        }
         return (channelFuture, channelHandler)
     }
 }
 
+// MARK: - +NIOClientTCPBootstrapProtocol
 extension NIOClientTCPBootstrapProtocol {
     func connect(target: DNSServerAddress) -> EventLoopFuture<any Channel> {
         switch target {

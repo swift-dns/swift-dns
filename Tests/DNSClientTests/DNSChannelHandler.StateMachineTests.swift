@@ -17,11 +17,12 @@ struct DNSChannelHandlerStateMachineTests {
         deadline: .now() + .seconds(1)
     )
 
-    let message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").message
+    let message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
 
     @Test func fullChainResponseWorks() {
         typealias State = DNSChannelHandler.StateMachine<Int>.State
         var stateMachine = DNSChannelHandler.StateMachine<Int>()
+        var noOpMessageIDGenerator = MessageIDGenerator()
 
         stateMachine.setActive(context: 1)
         expect(stateMachine.state == State.active(.init(context: 1, pendingQuery: nil)))
@@ -32,7 +33,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action2 = stateMachine.receivedResponse(message: message)
         #expect(action2 == .respond(pendingQuery, .cancel))
-        pendingQuery.promise.succeed(message)
+        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
         expect(stateMachine.state == State.active(.init(context: 1, pendingQuery: nil)))
 
         let action3 = stateMachine.setClosed()

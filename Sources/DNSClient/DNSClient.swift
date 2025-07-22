@@ -11,7 +11,7 @@ public import ServiceLifecycle
 
 /// FIXME: The module and the type are both named `DNSClient`.
 public actor DNSClient {
-    typealias Pool = ConnectionPool<
+    typealias TCPConnectionPool = ConnectionPool<
         DNSConnection,
         DNSConnection.ID,
         IDGenerator,
@@ -25,7 +25,21 @@ public actor DNSClient {
 
     public var serverAddress: DNSServerAddress
     public let configuration: DNSClientConfiguration
-    let connectionPool: Pool
+    /// FIXME: using DNSConnection for now to have something sendable.
+    @usableFromInline
+    var _udpConnection: DNSConnection?
+    @usableFromInline
+    var udpConnection: DNSConnection {
+        get async throws {
+            if let connection = self._udpConnection {
+                return connection
+            } else {
+                self._udpConnection = try await self.makeUDPConnection()
+                return self._udpConnection!
+            }
+        }
+    }
+    let tcpConnectionPool: TCPConnectionPool
     let eventLoopGroup: any EventLoopGroup
     let logger: Logger
     let isRunning: Atomic<Bool>
@@ -36,14 +50,14 @@ public actor DNSClient {
         eventLoopGroup: any EventLoopGroup,
         logger: Logger = .noopLogger
     ) throws {
-        let connectionFactory = try ConnectionFactory(
-            configuration: configuration.connectionConfiguration,
+        let tcpConnectionFactory = try ConnectionFactory(
+            configuration: configuration.tcpConnectionConfiguration,
             serverAddress: serverAddress
         )
         self.serverAddress = serverAddress
         self.configuration = configuration
-        self.connectionPool = .init(
-            configuration: configuration.connectionPool,
+        self.tcpConnectionPool = .init(
+            configuration: configuration.tcpConnectionPoolConfiguration,
             idGenerator: IDGenerator(),
             requestType: ConnectionRequest<DNSConnection>.self,
             keepAliveBehavior: NoOpKeepAliveBehavior(connectionType: DNSConnection.self),
@@ -51,9 +65,9 @@ public actor DNSClient {
             clock: .continuous
         ) { (connectionID, pool) in
             var logger = logger
-            logger[metadataKey: "dns_connection_id"] = "\(connectionID)"
+            logger[metadataKey: "dns_tcp_conn_id"] = "\(connectionID)"
 
-            let connection = try await connectionFactory.makeConnection(
+            let connection = try await tcpConnectionFactory.makeTCPConnection(
                 address: serverAddress,
                 connectionID: connectionID,
                 eventLoop: eventLoopGroup.next(),
@@ -77,22 +91,38 @@ public actor DNSClient {
         precondition(!old, "DNSClient.run() should just be called once!")
         #if ServiceLifecycleSupport
         await cancelWhenGracefulShutdown {
-            await self.connectionPool.run()
+            await self.tcpConnectionPool.run()
         }
         #else
-        await self.connectionPool.run()
+        await self.tcpConnectionPool.run()
         #endif
     }
 
     @inlinable
     public func query(
-        message factory: MessageFactory<some RDataConvertible>,
+        message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions = []
     ) async throws -> Message {
-        var factory = factory
-        factory.apply(options: options)
-        return try await self.withConnection { conn in
-            try await conn.send(message: factory.message)
+        try await self.udpConnection.send(
+            message: factory,
+            options: options
+        )
+    }
+
+    @inlinable
+    public func tcpQuery(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions = [],
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> Message {
+        try await self.withTCPConnection(
+            message: factory,
+            options: options
+        ) { factory, options, conn in
+            try await conn.send(
+                message: factory,
+                options: options
+            )
         }
     }
 }
@@ -105,15 +135,21 @@ extension DNSClient {
     ///   - operation: Closure handling DNS connection
     /// - Returns: Value returned by closure
     @usableFromInline
-    func withConnection(
+    func withTCPConnection<RData: RDataConvertible>(
+        message factory: consuming MessageFactory<RData>,
+        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
-        operation: (DNSConnection) async throws -> Message
+        operation: (
+            consuming MessageFactory<RData>,
+            DNSRequestOptions,
+            DNSConnection
+        ) async throws -> Message
     ) async throws -> Message {
         let connection = try await self.leaseConnection()
 
-        defer { self.connectionPool.releaseConnection(connection) }
+        defer { self.tcpConnectionPool.releaseConnection(connection) }
 
-        return try await operation(connection)
+        return try await operation(factory, options, connection)
     }
 
     func leaseConnection() async throws -> DNSConnection {
@@ -122,8 +158,23 @@ extension DNSClient {
                 "Trying to lease connection from `DNSClient`, but `DNSClient.run()` hasn't been called yet."
             )
         }
-        return try await self.connectionPool.leaseConnection()
+        return try await self.tcpConnectionPool.leaseConnection()
     }
+
+    func makeUDPConnection() async throws -> DNSConnection {
+        let udpConnectionFactory = try ConnectionFactory(
+            configuration: configuration.connectionConfiguration,
+            serverAddress: serverAddress
+        )
+        let udpConnection = try await udpConnectionFactory.makeUDPConnection(
+            address: serverAddress,
+            connectionID: 0,
+            eventLoop: eventLoopGroup.any(),
+            logger: logger
+        )
+        return udpConnection
+    }
+
 }
 
 #if ServiceLifecycleSupport

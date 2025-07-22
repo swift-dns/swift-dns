@@ -5,15 +5,29 @@ public import struct NIOCore.NIODeadline
 @usableFromInline
 package struct PendingQuery {
     @usableFromInline
-    package init(promise: DynamicPromise<Message>, requestID: Int, deadline: NIODeadline) {
+    package init(promise: DynamicPromise<Message>, requestID: UInt16, deadline: NIODeadline) {
         self.promise = promise
         self.requestID = requestID
         self.deadline = deadline
     }
 
+    @usableFromInline
     package var promise: DynamicPromise<Message>
-    package let requestID: Int
+    @usableFromInline
+    package let requestID: UInt16
     package let deadline: NIODeadline
+
+    @inlinable
+    package func succeed(with value: Message, removingIDFrom: inout MessageIDGenerator) {
+        self.promise._succeed(with: value)
+        removingIDFrom.remove(self.requestID)
+    }
+
+    @inlinable
+    package func fail(with error: any Error, removingIDFrom: inout MessageIDGenerator) {
+        self.promise._fail(with: error)
+        removingIDFrom.remove(self.requestID)
+    }
 }
 
 @usableFromInline
@@ -21,7 +35,8 @@ package enum DynamicPromise<T: Sendable>: Sendable {
     case nio(EventLoopPromise<T>)
     case swift(CheckedContinuation<T, any Error>)
 
-    package func succeed(_ value: T) {
+    @usableFromInline
+    func _succeed(with value: T) {
         switch self {
         case .nio(let eventLoopPromise):
             eventLoopPromise.succeed(value)
@@ -30,7 +45,8 @@ package enum DynamicPromise<T: Sendable>: Sendable {
         }
     }
 
-    package func fail(with error: any Error) {
+    @usableFromInline
+    func _fail(with error: any Error) {
         switch self {
         case .nio(let eventLoopPromise):
             eventLoopPromise.fail(error)

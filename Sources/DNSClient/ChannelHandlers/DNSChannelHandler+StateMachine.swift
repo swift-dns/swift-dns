@@ -179,7 +179,7 @@ extension DNSChannelHandler {
 
         /// handler wants to cancel a query
         @usableFromInline
-        package mutating func cancel(requestID: Int) -> CancelAction {
+        package mutating func cancel(requestID: UInt16) -> CancelAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
