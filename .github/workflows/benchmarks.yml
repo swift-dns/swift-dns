@@ -227,9 +227,10 @@ jobs:
           if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
             SHORT_SHA="$(echo '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
             COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}"
+            RUN_ID="${{ github.run_id }}"
             BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}"
             echo '' >> comment.md
-            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to a new [branch](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
+            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to branch [${RUN_ID}](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
           fi
 
           echo '<details>' >> comment.md

@@ -49,9 +49,9 @@ jobs:
 
       - name: Build ${{ github.event.repository.name }}
         run: |
+          # keeping code coverage flag to check for regressions
           swift build \
             --build-tests \
-            # keeping code coverage flag to check for regressions
             --enable-code-coverage \
             --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
@@ -66,9 +66,9 @@ jobs:
 
       - name: Run tests
         run: |
+          # keeping code coverage flag to check for regressions
           swift test \
             --skip-build \
-            # keeping code coverage flag to check for regressions
             --enable-code-coverage \
             --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \

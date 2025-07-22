@@ -31,7 +31,7 @@ struct MessageIDGeneratorTests {
         }
     }
 
-    @Test func generate32768IDsPlus100() throws {
+    @Test func generate32668IDsThenRemove100ThenAdd200() throws {
         var generator = MessageIDGenerator()
         var generated = Set<UInt16>()
         var count = 32668
@@ -52,7 +52,8 @@ struct MessageIDGeneratorTests {
             if removedCount == 100 {
                 break
             }
-            if generator.remove(UInt16(idx)) {
+            if generator.remove(idx) {
+                #expect(generated.remove(idx) != nil)
                 removedCount += 1
             }
         }
@@ -67,7 +68,7 @@ struct MessageIDGeneratorTests {
                 Issue.record("Failed to generate ID at idx \(idx)")
             }
         }
-        #expect(generated.count == count + 32668)
+        #expect(generated.count == 32668 - 100 + count)
 
         /// Next one should throw an error
         #expect(throws: MessageIDGenerator.Errors.self) {
