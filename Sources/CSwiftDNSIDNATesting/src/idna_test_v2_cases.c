@@ -1,7 +1,7 @@
 #include "../include/CSwiftDNSIDNATesting.h"
 #include <stddef.h>
 
-#define IDNA_TEST_V2_CASES_COUNT 6386
+#define IDNA_TEST_V2_CASES_COUNT 6388
 
 extern const IDNATestV2CCase idna_test_v2_cases[];
 
@@ -36896,20 +36896,20 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲤱20.音.ꡦ1.",
             .toUnicode = NULL,
-            .toUnicodeStatus = (const char*[]){ "V7" },
-            .toUnicodeStatusCount = 1,
+            .toUnicodeStatus = (const char*[]){  },
+            .toUnicodeStatusCount = 0,
             .toAsciiN = "xn--20-9802c.xn--0w5a.xn--1-eg4e.",
-            .toAsciiNStatus = (const char*[]){ "V7", "A4_2" },
-            .toAsciiNStatusCount = 2,
+            .toAsciiNStatus = (const char*[]){ "A4_2" },
+            .toAsciiNStatusCount = 1,
         },
         {
             .source = "xn--20-9802c.xn--0w5a.xn--1-eg4e.",
             .toUnicode = "𲤱20.音.ꡦ1.",
-            .toUnicodeStatus = (const char*[]){ "V7" },
-            .toUnicodeStatusCount = 1,
+            .toUnicodeStatus = (const char*[]){  },
+            .toUnicodeStatusCount = 0,
             .toAsciiN = "xn--20-9802c.xn--0w5a.xn--1-eg4e.",
-            .toAsciiNStatus = (const char*[]){ "V7", "A4_2" },
-            .toAsciiNStatusCount = 2,
+            .toAsciiNStatus = (const char*[]){ "A4_2" },
+            .toAsciiNStatusCount = 1,
         },
         {
             .source = "xn--dth6033bzbvx.xn--tsh9439b",
@@ -38534,8 +38534,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚９ꍩ\u17D3．\u200Dß",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dß",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--zca770n",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38543,8 +38543,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚9ꍩ\u17D3.\u200Dß",
             .toUnicode = NULL,
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--zca770n",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38552,8 +38552,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚9ꍩ\u17D3.\u200DSS",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38561,8 +38561,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚9ꍩ\u17D3.\u200Dss",
             .toUnicode = NULL,
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38570,8 +38570,26 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "xn--9-i0j5967eg3qz.ss",
             .toUnicode = "𲮚9ꍩ\u17D3.ss",
-            .toUnicodeStatus = (const char*[]){ "V7" },
-            .toUnicodeStatusCount = 1,
+            .toUnicodeStatus = (const char*[]){  },
+            .toUnicodeStatusCount = 0,
+            .toAsciiN = "xn--9-i0j5967eg3qz.ss",
+            .toAsciiNStatus = (const char*[]){  },
+            .toAsciiNStatusCount = 0,
+        },
+        {
+            .source = "𲮚9ꍩ\u17D3.ss",
+            .toUnicode = NULL,
+            .toUnicodeStatus = (const char*[]){  },
+            .toUnicodeStatusCount = 0,
+            .toAsciiN = "xn--9-i0j5967eg3qz.ss",
+            .toAsciiNStatus = (const char*[]){  },
+            .toAsciiNStatusCount = 0,
+        },
+        {
+            .source = "𲮚9ꍩ\u17D3.SS",
+            .toUnicode = "𲮚9ꍩ\u17D3.ss",
+            .toUnicodeStatus = (const char*[]){  },
+            .toUnicodeStatusCount = 0,
             .toAsciiN = "xn--9-i0j5967eg3qz.ss",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38579,8 +38597,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38588,8 +38606,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "xn--9-i0j5967eg3qz.xn--zca770n",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dß",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--zca770n",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38597,8 +38615,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚９ꍩ\u17D3．\u200DSS",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38606,8 +38624,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚９ꍩ\u17D3．\u200Dss",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38615,8 +38633,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚9ꍩ\u17D3.\u200DSs",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -38624,8 +38642,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𲮚９ꍩ\u17D3．\u200DSs",
             .toUnicode = "𲮚9ꍩ\u17D3.\u200Dss",
-            .toUnicodeStatus = (const char*[]){ "C2", "V7" },
-            .toUnicodeStatusCount = 2,
+            .toUnicodeStatus = (const char*[]){ "C2" },
+            .toUnicodeStatusCount = 1,
             .toAsciiN = "xn--9-i0j5967eg3qz.xn--ss-l1t",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -55877,8 +55895,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "𑄳。\u1ADC𐹻",
             .toUnicode = "𑄳.\u1ADC𐹻",
-            .toUnicodeStatus = (const char*[]){ "B1", "B5", "B6", "V6", "V7" },
-            .toUnicodeStatusCount = 5,
+            .toUnicodeStatus = (const char*[]){ "B1", "V6" },
+            .toUnicodeStatusCount = 2,
             .toAsciiN = "xn--v80d.xn--2rf1154i",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
@@ -55886,8 +55904,8 @@ const IDNATestV2CCase idna_test_v2_cases[] = {
         {
             .source = "xn--v80d.xn--2rf1154i",
             .toUnicode = "𑄳.\u1ADC𐹻",
-            .toUnicodeStatus = (const char*[]){ "B1", "B5", "B6", "V6", "V7" },
-            .toUnicodeStatusCount = 5,
+            .toUnicodeStatus = (const char*[]){ "B1", "V6" },
+            .toUnicodeStatusCount = 2,
             .toAsciiN = "xn--v80d.xn--2rf1154i",
             .toAsciiNStatus = (const char*[]){  },
             .toAsciiNStatusCount = 0,
