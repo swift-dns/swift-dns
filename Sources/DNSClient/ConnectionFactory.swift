@@ -164,7 +164,7 @@ extension ConnectionFactory {
             return self.createSocketsBootstrap(eventLoop: eventLoop)
         }
         #else
-        return self.createSocketsBootstrap(eventLoopGroup: eventLoop)
+        return self.createSocketsBootstrap(eventLoop: eventLoop)
         #endif
     }
 

@@ -1,6 +1,7 @@
 public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
+    /// private
     @usableFromInline
-    /*private*/ var message: Message
+    var message: Message
 
     /// Directly initializes the factory.
     /// Use convenience methods such as `forQuery(name:recursionDesired:checkingDisabled:)` instead.

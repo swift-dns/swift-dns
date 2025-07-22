@@ -84,7 +84,6 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-
     @Test(.withDNSClient(serverAddress: .domain(name: "210.2.4.8", port: 53)))
     func queryANonASCIIDomain() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
