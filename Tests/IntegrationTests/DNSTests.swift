@@ -16,9 +16,9 @@ struct DNSTests {
         let response = try await client.queryA(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -91,9 +91,9 @@ struct DNSTests {
         let response = try await client.queryA(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -165,9 +165,9 @@ struct DNSTests {
         let response = try await client.queryAAAA(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -239,9 +239,9 @@ struct DNSTests {
         let response = try await client.queryCAA(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -308,9 +308,9 @@ struct DNSTests {
         let response = try await client.queryCERT(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -394,9 +394,9 @@ struct DNSTests {
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -452,9 +452,9 @@ struct DNSTests {
         let response = try await client.queryCNAME(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -521,9 +521,9 @@ struct DNSTests {
         let response = try await client.queryMX(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -598,9 +598,9 @@ struct DNSTests {
         let response = try await client.queryNS(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -682,9 +682,9 @@ struct DNSTests {
         let response = try await client.queryPTR(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )
@@ -765,9 +765,9 @@ struct DNSTests {
         let response = try await client.queryTXT(message: factory, options: .edns)
 
         #expect(
-            response.header.id != message.header.id,
+            message.header.id == 0 && response.header.id != 0,
             """
-            The channel handler reassigns the id, so we expect them to be different.
+            The channel handler reassigns the id, so we expect it to be 0 initially.
             This is only possible because we're illegally using `factory.__testing_copyMessage()`.
             """
         )

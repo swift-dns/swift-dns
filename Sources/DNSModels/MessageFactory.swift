@@ -24,7 +24,8 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         self.init(
             message: Message(
                 header: Header(
-                    id: .random(in: .min ... .max),
+                    /// Channel handler will reassign an appropriate id
+                    id: 0,
                     messageType: .Query,
                     opCode: .Query,
                     authoritative: false,

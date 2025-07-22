@@ -159,7 +159,7 @@ public final class ConnectionPool<
     @usableFromInline
     let keepAliveBehavior: KeepAliveBehavior
 
-    @usableFromInline
+    @usableFromInline 
     let observabilityDelegate: ObservabilityDelegate
 
     @usableFromInline
@@ -538,7 +538,7 @@ public final class ConnectionPool<
                     self.runStateMachineActions(action)
 
                 case .timerCancelled:
-                    // the only way to reach this, is if the state machine decided to cancel the
+                    // the only way to reach this, is if the state machine decided to cancel the 
                     // timer. therefore we don't need to report it back!
                     break
                 }
