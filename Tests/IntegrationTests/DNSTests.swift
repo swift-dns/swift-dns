@@ -902,7 +902,7 @@ struct DNSTests {
         await withTaskGroup(of: Void.self) { group in
             let withAnswers = Atomic(0)
 
-            for domain in cloudflareTop100Domains {
+            for domain in self.loadTop100Domains() {
                 group.addTask { @Sendable () -> Void in
                     await #expect(throws: Never.self, "\(domain)") {
                         let name = try Name(domainName: domain + ".")
@@ -949,7 +949,7 @@ struct DNSTests {
     func query100DomainsSequentially(channelKind: DNSClient.QueryChannelKind) async throws {
         var withAnswers = 0
 
-        for domain in cloudflareTop100Domains {
+        for domain in self.loadTop100Domains() {
             await #expect(throws: Never.self, "\(domain)") {
                 let name = try Name(domainName: domain)
                 let response = try await client.queryA(
@@ -973,109 +973,16 @@ struct DNSTests {
 
         #expect(withAnswers > 70)
     }
-}
 
-/// Not all these have A records although I think all have NS records.
-/// https://radar.cloudflare.com/domains @ 2025-07-23
-private let cloudflareTop100Domains = [
-    "google.com",
-    "googleapis.com",
-    "apple.com",
-    "gstatic.com",
-    "cloudflare.com",
-    "microsoft.com",
-    "facebook.com",
-    "googlevideo.com",
-    "amazonaws.com",
-    "whatsapp.net",
-    "fbcdn.net",
-    "doubleclick.net",
-    "youtube.com",
-    "amazon.com",
-    "instagram.com",
-    "icloud.com",
-    "googleusercontent.com",
-    "akadns.net",
-    "ntp.org",
-    "tiktokcdn.com",
-    "live.com",
-    "googlesyndication.com",
-    "bing.com",
-    "apple-dns.net",
-    "cloudfront.net",
-    "gvt2.com",
-    "netflix.com",
-    "tiktokv.com",
-    "akamai.net",
-    "cloudflare-dns.com",
-    "ytimg.com",
-    "yahoo.com",
-    "aaplimg.com",
-    "cdninstagram.com",
-    "akamaiedge.net",
-    "office.com",
-    "ui.com",
-    "spotify.com",
-    "samsung.com",
-    "googleadservices.com",
-    "gvt1.com",
-    "msn.com",
-    "dns.google",
-    "one.one",
-    "app-analytics-services.com",
-    "roblox.com",
-    "google-analytics.com",
-    "msftncsi.com",
-    "snapchat.com",
-    "amazon-adsystem.com",
-    "trafficmanager.net",
-    "googletagmanager.com",
-    "wikipedia.org",
-    "azure.com",
-    "app-measurement.com",
-    "applovin.com",
-    "fastly.net",
-    "criteo.com",
-    "steamserver.net",
-    "unity3d.com",
-    "3gppnetwork.org",
-    "appsflyersdk.com",
-    "sentry.io",
-    "linkedin.com",
-    "ggpht.com",
-    "a2z.com",
-    "office.net",
-    "rubiconproject.com",
-    "microsoftonline.com",
-    "baidu.com",
-    "rbxcdn.com",
-    "windows.com",
-    "windows.net",
-    "skype.com",
-    "tiktokcdn-us.com",
-    "adnxs.com",
-    "taboola.com",
-    "windowsupdate.com",
-    "digicert.com",
-    "xiaomi.com",
-    "inmobi.com",
-    "doubleverify.com",
-    "gmail.com",
-    "whatsapp.com",
-    "sharepoint.com",
-    "office365.com",
-    "vungle.com",
-    "android.com",
-    "pubmatic.com",
-    "cdn-apple.com",
-    "casalemedia.com",
-    "amazon.dev",
-    "qq.com",
-    "cdn77.org",
-    "msftconnecttest.com",
-    "capcutapi.com",
-    "mikrotik.com",
-    "miui.com",
-    "fastly-edge.com",
-    "adsrvr.org",
-]
+    /// Not all these have A records although I think all have NS records.
+    func loadTop100Domains() -> [String] {
+        String(
+            decoding: Resources.topDomains.data(),
+            as: UTF8.self
+        )
+        .split(separator: "\n")
+        .dropFirst()
+        .prefix(100)
+        .map(String.init)
+    }
+}
