@@ -55,7 +55,7 @@ let client = DNSClient(
 
 /// Send the query
 let response = try await client.queryA(
-    message: .forQuery(name: "example.com"),
+    message: .forQuery(name: "mahdibm.com"),
     options: .edns
 ) /// type of value is `Message`
 
@@ -67,13 +67,26 @@ for answer in response.answers {
 }
 ```
 
+You can also explicitly specify a `channelKind` if you so desire:
+
+```swift
+/// Send the query
+let response = try await client.queryA(
+    message: .forQuery(name: "mahdibm.com"),
+    options: .edns,
+    channelKind: .tcp
+)
+```
+
+Default `channelKind` is `.udp`. Currently `.tcp` is also supported.
+
 ## Checklist
 
 - [x] DNS Parsing
   - [x] IDNA support for non-ASCII domain names.
 - [x] DNS client
   - [x] DNS over UDP
-  - [ ] DNS over TCP
+  - [x] DNS over TCP
   - [ ] DoT (DNS Over TLS)
   - [ ] DoH (DNS Over HTTPS)
   - [ ] DoQ (DNS Over Quic)
