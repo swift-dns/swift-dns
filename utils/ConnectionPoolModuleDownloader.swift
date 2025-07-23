@@ -37,8 +37,8 @@ func fetchWithRetries(url: URL) throws -> Data {
                 throw error
             } else {
                 print("✗ Failed to fetch latest release: \(String(reflecting: error))")
-                print("Retrying in 1 second...")
-                sleep(1)
+                print("Retrying in 3 seconds...")
+                sleep(3)
             }
         }
     }

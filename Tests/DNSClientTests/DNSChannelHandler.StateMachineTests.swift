@@ -3,6 +3,7 @@ import DNSModels
 import NIOCore
 import NIOPosix
 import Testing
+
 import struct DequeModule.Deque
 
 @Suite
@@ -30,7 +31,9 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery(1))
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [pendingQuery])))
+        expect(
+            stateMachine.state == State.active(.init(context: 1, pendingQueries: [pendingQuery]))
+        )
 
         let action2 = stateMachine.receivedResponse(message: message)
         #expect(action2 == .respond(pendingQuery, .cancel))

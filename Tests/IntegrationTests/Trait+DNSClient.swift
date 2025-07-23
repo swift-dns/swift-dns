@@ -29,7 +29,7 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
         )
         try await DNSClientTrait.$currentClient.withValue(client) {
             try await withThrowingTaskGroup { taskGroup in
-                taskGroup.addTask {
+                taskGroup.addImmediateTask {
                     await client.run()
                 }
                 try await function()

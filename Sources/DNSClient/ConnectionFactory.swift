@@ -193,7 +193,10 @@ extension ConnectionFactory {
             )
         }
         #else
-        return self.createSocketsBootstrap(eventLoop: eventLoop)
+        return self.createSocketsBootstrap(
+            eventLoop: eventLoop,
+            isolation: isolation
+        )
         #endif
     }
 
