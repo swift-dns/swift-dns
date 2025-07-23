@@ -44,7 +44,7 @@ enum Resources: String {
     case dnsQueryOPTCloudflareComPacket = "cloudflare.com-opt-query-packet"
     case dnsResponseOPTCloudflareComPacket = "cloudflare.com-opt-response-packet"
 
-    case top1mDomains = "top-1m-domains.csv"
+    case topDomains = "top-domains.csv"
 
     func buffer() -> DNSBuffer {
         DNSBuffer(bytes: self.data())
@@ -54,12 +54,6 @@ enum Resources: String {
         FileManager.default.contents(
             atPath: self.qualifiedPath()
         )!
-    }
-
-    func fileExists() -> Bool {
-        FileManager.default.fileExists(
-            atPath: self.qualifiedPath()
-        )
     }
 
     private func qualifiedPath() -> String {

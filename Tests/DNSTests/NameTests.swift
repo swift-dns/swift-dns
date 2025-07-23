@@ -220,25 +220,23 @@ struct NameTests {
         )
     }
 
+    /// The file pointing to `Resources.topDomains` contains only 200 top domains, but you can
+    /// try bigger files too.
+    /// For example you can manually go to cloudflare radar (https://radar.cloudflare.com/domains)
+    /// and download the top 1 million domains csv file (or really top any-number, just csv).
+    /// Just make sure the download file is only 1 column (so only a new domain on each new line).
+    /// Then put it in Tests/Resources/ directory named exactly as `top-domains.csv`.
+    /// And untrack the file so it's not committed to git (it's 14+ MiB).
+    /// The file is 14+ MiB in size so it's not included in the repo.
     @Test(
-        .tags(.veryTimeConsuming),
-        .enabled(
-            if: Resources.top1mDomains.fileExists(),
-            """
-            Need to manually go to cloudflare radar (https://radar.cloudflare.com/domains) and download
-            the top 1 million domains csv file (or really top any-number, just csv).
-            Then put it in Tests/Resources/ directory named exactly as `top-1m-domains.csv`.
-            The file is 14+ MiB in size so it's not included in the repo.
-            """
-        ),
         arguments: String(
-            decoding: Resources.top1mDomains.data(),
+            decoding: Resources.topDomains.data(),
             as: UTF8.self
         ).split(
             whereSeparator: \.isNewline
         ).dropFirst().map(String.init)
     )
-    func handleTop1MillionDomains(domainName: String) throws {
+    func testAgainstTopCloudflareRadarDomains(domainName: String) throws {
         let name = try Name(domainName: domainName)
         let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
         #expect(recreatedDomainName == domainName)
