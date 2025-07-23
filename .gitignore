@@ -9,3 +9,6 @@ DerivedData/
 .vscode/settings.json
 *.vsix
 __LocalProfilingTests.swift
+
+# 14 MiB+ file so we don't commit it
+Tests/Resources/top-1m-domains.csv

@@ -219,4 +219,28 @@ struct NameTests {
                 == "xn--xkrr14bows.xn--fiqs8s."
         )
     }
+
+    @Test(
+        .tags(.veryTimeConsuming),
+        .enabled(
+            if: Resources.top1mDomains.fileExists(),
+            """
+            Need to manually go to cloudflare radar (https://radar.cloudflare.com/domains) and download
+            the top 1 million domains csv file (or really top any-number, just csv).
+            Then put it in Tests/Resources/ directory named exactly as `top-1m-domains.csv`.
+            The file is 14+ MiB in size so it's not included in the repo.
+            """
+        ),
+        arguments: String(
+            decoding: Resources.top1mDomains.data(),
+            as: UTF8.self
+        ).split(
+            whereSeparator: \.isNewline
+        ).dropFirst().map(String.init)
+    )
+    func handleTop1MillionDomains(domainName: String) throws {
+        let name = try Name(domainName: domainName)
+        let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
+        #expect(recreatedDomainName == domainName)
+    }
 }

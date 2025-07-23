@@ -44,13 +44,26 @@ enum Resources: String {
     case dnsQueryOPTCloudflareComPacket = "cloudflare.com-opt-query-packet"
     case dnsResponseOPTCloudflareComPacket = "cloudflare.com-opt-response-packet"
 
+    case top1mDomains = "top-1m-domains.csv"
+
     func buffer() -> DNSBuffer {
-        DNSBuffer(bytes: Resources.data(at: self.rawValue))
+        DNSBuffer(bytes: self.data())
     }
 
-    private static func data(at relativePath: String) -> Data {
+    func data() -> Data {
+        FileManager.default.contents(
+            atPath: self.qualifiedPath()
+        )!
+    }
+
+    func fileExists() -> Bool {
+        FileManager.default.fileExists(
+            atPath: self.qualifiedPath()
+        )
+    }
+
+    private func qualifiedPath() -> String {
         let dropCount = "DNSTests/Resources.swift".count
-        let path = #filePath.dropLast(dropCount) + "Resources/\(relativePath)"
-        return FileManager.default.contents(atPath: String(path))!
+        return #filePath.dropLast(dropCount) + "Resources/\(self.rawValue)"
     }
 }
