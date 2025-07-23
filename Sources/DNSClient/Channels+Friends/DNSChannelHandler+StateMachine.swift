@@ -1,7 +1,7 @@
 public import DNSModels
 public import NIOCore
 
-public import struct DequeModule.Deque
+package import struct OrderedCollections.OrderedDictionary
 
 @available(swiftDNS 1.0, *)
 extension DNSChannelHandler {
@@ -42,25 +42,37 @@ extension DNSChannelHandler {
         @usableFromInline
         package struct ActiveState {
             package let context: Context
-            package var pendingQueries: Deque<PendingQuery>
+            package var pendingQueries: OrderedDictionary<UInt16, PendingQuery>
 
-            package init(context: Context, pendingQueries: Deque<PendingQuery> = []) {
+            var firstPendingQuery: PendingQuery? {
+                self.pendingQueries.values.first
+            }
+
+            package init(context: Context, firstQuery pendingQuery: PendingQuery) {
                 self.context = context
-                self.pendingQueries = pendingQueries
+                self.pendingQueries = [pendingQuery.requestID: pendingQuery]
+            }
+
+            package init(context: Context) {
+                self.context = context
+                self.pendingQueries = [:]
+            }
+
+            mutating func append(_ pendingQuery: PendingQuery) {
+                self.pendingQueries[pendingQuery.requestID] = pendingQuery
+            }
+
+            mutating func removeValue(requestID: UInt16) -> PendingQuery? {
+                self.pendingQueries.removeValue(forKey: requestID)
             }
 
             func cancel(
                 requestID: UInt16
-            ) -> (cancel: [PendingQuery], connectionClosedDueToCancellation: [PendingQuery]) {
-                var withRequestID = [PendingQuery]()
-                var withoutRequestID = [PendingQuery]()
-                for message in pendingQueries {
-                    if message.requestID == requestID {
-                        withRequestID.append(message)
-                    } else {
-                        withoutRequestID.append(message)
-                    }
-                }
+            ) -> (cancel: PendingQuery?, connectionClosedDueToCancellation: [PendingQuery]) {
+                let withRequestID = self.pendingQueries[requestID]
+                let withoutRequestID = self.pendingQueries
+                    .filter({ $0.key != requestID })
+                    .map(\.value)
                 return (withRequestID, withoutRequestID)
             }
         }
@@ -70,7 +82,7 @@ extension DNSChannelHandler {
         package mutating func setActive(context: Context) {
             switch consume self.state {
             case .initialized:
-                self = .active(ActiveState(context: context, pendingQueries: []))
+                self = .active(ActiveState(context: context))
             case .active:
                 preconditionFailure("Cannot set connected state when state is active")
             case .closing:
@@ -93,7 +105,7 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
-                state.pendingQueries.append(pendingQuery)
+                state.append(pendingQuery)
                 self = .active(state)
                 return .sendQuery(state.context)
             case .closing(let state):
@@ -126,7 +138,7 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
-                guard let pendingMessage = state.pendingQueries.popFirst() else {
+                guard let pendingMessage = state.removeValue(requestID: message.header.id) else {
                     self = .closed(nil)
                     return .closeWithError(
                         DNSClientError.unsolicitedResponse
@@ -134,7 +146,7 @@ extension DNSChannelHandler {
                 }
                 self = .active(state)
                 let deadlineCallback: DeadlineCallbackAction =
-                    if let nextMessage = state.pendingQueries.first {
+                    if let nextMessage = state.firstPendingQuery {
                         if nextMessage.deadline < pendingMessage.deadline {
                             // if the next message has an earlier deadline than the current then reschedule the callback
                             .reschedule(nextMessage.deadline)
@@ -148,10 +160,10 @@ extension DNSChannelHandler {
                     }
                 return .respond(pendingMessage, deadlineCallback)
             case .closing(var state):
-                guard let pendingMessage = state.pendingQueries.popFirst() else {
+                guard let pendingMessage = state.removeValue(requestID: message.header.id) else {
                     preconditionFailure("Cannot be in closing state with no pending messages")
                 }
-                guard let nextMessage = state.pendingQueries.first else {
+                guard let nextMessage = state.firstPendingQuery else {
                     self = .closed(nil)
                     return .respondAndClose(pendingMessage, nil)
                 }
@@ -172,7 +184,7 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum HitDeadlineAction {
-            case failPendingQueriesAndClose(Context, Deque<PendingQuery>)
+            case failPendingQueriesAndClose(Context, [PendingQuery])
             case reschedule(NIODeadline)
             case clearCallback
         }
@@ -183,24 +195,30 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
             case .active(let state):
-                guard let firstMessage = state.pendingQueries.first else {
+                guard let firstMessage = state.firstPendingQuery else {
                     self = .active(state)
                     return .clearCallback
                 }
                 if firstMessage.deadline <= now {
                     self = .closed(DNSClientError.queryTimeout)
-                    return .failPendingQueriesAndClose(state.context, state.pendingQueries)
+                    return .failPendingQueriesAndClose(
+                        state.context,
+                        Array(state.pendingQueries.values)
+                    )
                 } else {
                     self = .active(state)
                     return .reschedule(firstMessage.deadline)
                 }
             case .closing(let state):
-                guard let firstMessage = state.pendingQueries.first else {
+                guard let firstMessage = state.firstPendingQuery else {
                     preconditionFailure("Cannot be in closing state with no pending messages")
                 }
                 if firstMessage.deadline <= now {
                     self = .closed(DNSClientError.queryTimeout)
-                    return .failPendingQueriesAndClose(state.context, state.pendingQueries)
+                    return .failPendingQueriesAndClose(
+                        state.context,
+                        Array(state.pendingQueries.values)
+                    )
                 } else {
                     self = .closing(state)
                     return .reschedule(firstMessage.deadline)
@@ -215,7 +233,7 @@ extension DNSChannelHandler {
         package enum CancelAction {
             case failPendingQueriesAndClose(
                 Context,
-                cancel: [PendingQuery],
+                cancel: PendingQuery,
                 closeConnectionDueToCancel: [PendingQuery]
             )
             case doNothing
@@ -229,7 +247,7 @@ extension DNSChannelHandler {
                 preconditionFailure("Cannot cancel when initialized")
             case .active(let state):
                 let (cancel, closeConnectionDueToCancel) = state.cancel(requestID: requestID)
-                if cancel.count > 0 {
+                if let cancel {
                     self = .closed(CancellationError())
                     return .failPendingQueriesAndClose(
                         state.context,
@@ -242,7 +260,7 @@ extension DNSChannelHandler {
                 }
             case .closing(let state):
                 let (cancel, closeConnectionDueToCancel) = state.cancel(requestID: requestID)
-                if cancel.count > 0 {
+                if let cancel {
                     self = .closed(CancellationError())
                     return .failPendingQueriesAndClose(
                         state.context,
@@ -292,7 +310,7 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum CloseAction {
-            case failPendingQueriesAndClose(Context, Deque<PendingQuery>)
+            case failPendingQueriesAndClose(Context, [PendingQuery])
             case doNothing
         }
 
@@ -305,10 +323,16 @@ extension DNSChannelHandler {
                 return .doNothing
             case .active(let state):
                 self = .closed(nil)
-                return .failPendingQueriesAndClose(state.context, state.pendingQueries)
+                return .failPendingQueriesAndClose(
+                    state.context,
+                    Array(state.pendingQueries.values)
+                )
             case .closing(let state):
                 self = .closed(nil)
-                return .failPendingQueriesAndClose(state.context, state.pendingQueries)
+                return .failPendingQueriesAndClose(
+                    state.context,
+                    Array(state.pendingQueries.values)
+                )
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing
@@ -317,7 +341,7 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum SetClosedAction {
-            case failPendingQueries(Deque<PendingQuery>)
+            case failPendingQueries([PendingQuery])
             case doNothing
         }
 
@@ -330,10 +354,10 @@ extension DNSChannelHandler {
                 return .doNothing
             case .active(let state):
                 self = .closed(nil)
-                return .failPendingQueries(state.pendingQueries)
+                return .failPendingQueries(Array(state.pendingQueries.values))
             case .closing(let state):
                 self = .closed(nil)
-                return .failPendingQueries(state.pendingQueries)
+                return .failPendingQueries(Array(state.pendingQueries.values))
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing

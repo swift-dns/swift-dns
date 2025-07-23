@@ -4,7 +4,7 @@ import NIOCore
 import NIOPosix
 import Testing
 
-import struct DequeModule.Deque
+import struct OrderedCollections.OrderedDictionary
 
 @Suite
 struct DNSChannelHandlerStateMachineTests {
@@ -13,40 +13,75 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(value, sourceLocation: sourceLocation)
     }
 
-    let pendingQuery = PendingQuery(
-        promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
-        requestID: 1,
-        deadline: .now() + .seconds(1)
-    )
-
-    let message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
-
     @Test func fullChainResponseWorks() {
-        typealias State = DNSChannelHandler.StateMachine<Int>.State
-        var stateMachine = DNSChannelHandler.StateMachine<Int>()
+        typealias StateMachine = DNSChannelHandler.StateMachine<Int>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
         var noOpMessageIDGenerator = MessageIDGenerator()
+        let (message, pendingQuery) = self.makeMessageAndPendingQuery()
 
         stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [])))
+        expect(stateMachine.state == State.active(.init(context: 1)))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery(1))
         expect(
-            stateMachine.state == State.active(.init(context: 1, pendingQueries: [pendingQuery]))
+            stateMachine.state == State.active(.init(context: 1, firstQuery: pendingQuery))
         )
 
         let action2 = stateMachine.receivedResponse(message: message)
         #expect(action2 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [])))
+        expect(stateMachine.state == State.active(.init(context: 1)))
 
         let action3 = stateMachine.setClosed()
         #expect(action3 == .failPendingQueries([]))
         expect(stateMachine.state == State.closed(nil))
     }
+
+    @Test func cancelledBeforeResponse() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var noOpMessageIDGenerator = MessageIDGenerator()
+        let (_, pendingQuery) = self.makeMessageAndPendingQuery()
+
+        stateMachine.setActive(context: "context!")
+        expect(stateMachine.state == State.active(.init(context: "context!")))
+
+        let action1 = stateMachine.sendQuery(pendingQuery)
+        #expect(action1 == .sendQuery("context!"))
+        expect(
+            stateMachine.state
+                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+        )
+
+        let action2 = stateMachine.cancel(requestID: pendingQuery.requestID)
+        #expect(
+            action2
+                == .failPendingQueriesAndClose(
+                    "context!",
+                    cancel: pendingQuery,
+                    closeConnectionDueToCancel: []
+                )
+        )
+        pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        expect(stateMachine.state == State.closed(CancellationError()))
+    }
+
+    func makeMessageAndPendingQuery() -> (Message, PendingQuery) {
+        let pendingQuery = PendingQuery(
+            promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
+            requestID: .random(in: .min ... .max),
+            deadline: .now() + .seconds(1)
+        )
+        var message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
+        message.header.id = pendingQuery.requestID
+        return (message, pendingQuery)
+    }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.State {
+extension DNSChannelHandler.StateMachine.State where Context: Equatable {
     static func == (_ lhs: borrowing Self, _ rhs: borrowing Self) -> Bool {
         switch lhs {
         case .initialized:
@@ -94,7 +129,7 @@ extension DNSChannelHandler.StateMachine<Int>.State {
     }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.ActiveState: Equatable {
+extension DNSChannelHandler.StateMachine.ActiveState: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.context == rhs.context
             && lhs.pendingQueries == rhs.pendingQueries
@@ -108,7 +143,7 @@ extension PendingQuery: Equatable {
     }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.SendQueryAction: Equatable {
+extension DNSChannelHandler.StateMachine.SendQueryAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.sendQuery(let lhs), .sendQuery(let rhs)):
@@ -121,7 +156,8 @@ extension DNSChannelHandler.StateMachine<Int>.SendQueryAction: Equatable {
     }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.DeadlineCallbackAction: Equatable {
+extension DNSChannelHandler.StateMachine.DeadlineCallbackAction: Equatable
+where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.cancel, .cancel):
@@ -136,7 +172,8 @@ extension DNSChannelHandler.StateMachine<Int>.DeadlineCallbackAction: Equatable 
     }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.ReceivedResponseAction: Equatable {
+extension DNSChannelHandler.StateMachine.ReceivedResponseAction: Equatable
+where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.respond(let lhs1, let lhs2), .respond(let rhs1, let rhs2)):
@@ -153,11 +190,29 @@ extension DNSChannelHandler.StateMachine<Int>.ReceivedResponseAction: Equatable 
     }
 }
 
-extension DNSChannelHandler.StateMachine<Int>.SetClosedAction: Equatable {
+extension DNSChannelHandler.StateMachine.SetClosedAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.failPendingQueries(let lhs), .failPendingQueries(let rhs)):
             return lhs == rhs
+        case (.doNothing, .doNothing):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+extension DNSChannelHandler.StateMachine.CancelAction: Equatable where Context: Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (
+            .failPendingQueriesAndClose(let lhs, let lhs2, let lhs3),
+            .failPendingQueriesAndClose(let rhs, let rhs2, let rhs3)
+        ):
+            return lhs == rhs
+                && lhs2 == rhs2
+                && lhs3 == rhs3
         case (.doNothing, .doNothing):
             return true
         default:

@@ -228,12 +228,10 @@ extension DNSChannelHandler {
             let cancelled,
             let closeConnectionDueToCancel
         ):
-            for query in cancelled {
-                query.fail(
-                    with: DNSClientError.cancelled,
-                    removingIDFrom: &self.messageIDGenerator
-                )
-            }
+            cancelled.fail(
+                with: DNSClientError.cancelled,
+                removingIDFrom: &self.messageIDGenerator
+            )
             for query in closeConnectionDueToCancel {
                 query.fail(
                     with: DNSClientError.connectionClosedDueToCancellation,
