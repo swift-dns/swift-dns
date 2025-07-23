@@ -930,6 +930,7 @@ struct DNSTests {
     }
 
     @Test(
+        .tags(.timeConsuming),
         .serialized,
         .withDNSClient(
             configuration: DNSClientConfiguration(
@@ -974,7 +975,7 @@ struct DNSTests {
     }
 }
 
-/// Not all these have A records although i think all have NS records.
+/// Not all these have A records although I think all have NS records.
 /// https://radar.cloudflare.com/domains @ 2025-07-23
 private let cloudflareTop100Domains = [
     "google.com",
