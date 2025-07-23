@@ -57,7 +57,7 @@ public actor DNSClient {
         self.serverAddress = serverAddress
         self.configuration = configuration
         self.tcpConnectionPool = TCPConnectionPool(
-            configuration: configuration.tcpConnectionPoolConfiguration,
+            configuration: configuration.tcpConnectionPoolConfiguration.toConnectionPoolConfig(),
             idGenerator: IDGenerator(),
             requestType: ConnectionRequest<DNSConnection>.self,
             keepAliveBehavior: NoOpKeepAliveBehavior(connectionType: DNSConnection.self),
@@ -225,3 +225,14 @@ extension DNSClient {
 @available(swiftDNS 1.0, *)
 extension DNSClient: Service {}
 #endif  // ServiceLifecycle
+
+extension DNSClientConfiguration.ConnectionPoolConfiguration {
+    func toConnectionPoolConfig() -> _DNSConnectionPool.ConnectionPoolConfiguration {
+        var config = _DNSConnectionPool.ConnectionPoolConfiguration()
+        config.minimumConnectionCount = self.minimumConnectionCount
+        config.maximumConnectionSoftLimit = self.maximumConnectionSoftLimit
+        config.maximumConnectionHardLimit = self.maximumConnectionHardLimit
+        config.idleTimeout = self.idleTimeout
+        return config
+    }
+}

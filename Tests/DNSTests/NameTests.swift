@@ -219,4 +219,6 @@ struct NameTests {
                 == "xn--xkrr14bows.xn--fiqs8s."
         )
     }
+
+    /// TODO: add a test parsing top 1000 or something domain, get the list from cloudflare
 }

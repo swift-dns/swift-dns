@@ -101,7 +101,17 @@ extension Name {
     }
 }
 
-extension Name: Hashable {}
+extension Name: Hashable {
+    /// Equality check without considering FQDN flag.
+    /// Uses usually instantiate `Name` using a domain name which doesn't end in a dot.
+    /// That mean user-instantiate `Name`s usually have `isFQDN` set to `false`.
+    /// On the wire though, the root label is almost always present, so `isFQDN` is almost always `true`.
+    /// So this method is useful to make sure a comparison of two `Name`s doesn't fail just because
+    /// of the root-label indicator / FQN flag.
+    public func isEssentiallyEqual(to other: Self) -> Bool {
+        self.data == other.data && self.borders == other.borders
+    }
+}
 
 extension Name: Sequence {
     public struct Iterator: IteratorProtocol {

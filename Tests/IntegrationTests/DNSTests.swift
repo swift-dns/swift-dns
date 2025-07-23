@@ -2,6 +2,7 @@ import DNSClient
 import DNSModels
 import Logging
 import NIOPosix
+import Synchronization
 import Testing
 
 @Suite(.serialized, .withDNSClient)
@@ -880,4 +881,200 @@ struct DNSTests {
     @Test func queryUnknown() async throws {}
 
     @Test func queryUpdate0() async throws {}
+
+    @Test(
+        .serialized,
+        .withDNSClient(
+            configuration: DNSClientConfiguration(
+                connectionConfiguration: .init(queryTimeout: .seconds(3)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                tcpConnectionPoolConfiguration: .init(
+                    minimumConnectionCount: 0,
+                    maximumConnectionSoftLimit: 40,
+                    maximumConnectionHardLimit: 50,
+                    idleTimeout: .seconds(10)
+                )
+            )
+        ),
+        arguments: DNSClient.QueryChannelKind.allCases
+    )
+    func query100DomainsConcurrently(channelKind: DNSClient.QueryChannelKind) async throws {
+        await withTaskGroup(of: Void.self) { group in
+            let withAnswers = Atomic(0)
+
+            for domain in cloudflareTop100Domains {
+                group.addTask { @Sendable () -> Void in
+                    await #expect(throws: Never.self, "\(domain)") {
+                        let name = try Name(domainName: domain + ".")
+                        let response = try await client.queryA(
+                            message: .forQuery(name: name),
+                            options: .edns,
+                            channelKind: channelKind
+                        )
+                        #expect(response.header.responseCode == .NoError, "\(domain)")
+                        #expect(response.header.messageType == .Response, "\(domain)")
+                        #expect(response.header.opCode == .Query, "\(domain)")
+                        #expect(response.queries.first?.name == name, "\(domain)")
+                        if response.header.answerCount > 0 {
+                            #expect(response.answers.count > 0, "\(domain)")
+                            withAnswers.add(1, ordering: .relaxed)
+                        }
+                    }
+                }
+            }
+
+            await group.waitForAll()
+
+            #expect(withAnswers.load(ordering: .relaxed) > 70)
+        }
+    }
+
+    @Test(
+        .serialized,
+        .withDNSClient(
+            configuration: DNSClientConfiguration(
+                connectionConfiguration: .init(queryTimeout: .seconds(30)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(30)),
+                tcpConnectionPoolConfiguration: .init(
+                    minimumConnectionCount: 0,
+                    maximumConnectionSoftLimit: 1,
+                    maximumConnectionHardLimit: 1,
+                    idleTimeout: .seconds(30)
+                )
+            )
+        ),
+        arguments: DNSClient.QueryChannelKind.allCases
+    )
+    func query100DomainsSequentially(channelKind: DNSClient.QueryChannelKind) async throws {
+        var withAnswers = 0
+
+        for domain in cloudflareTop100Domains {
+            await #expect(throws: Never.self, "\(domain)") {
+                let name = try Name(domainName: domain)
+                let response = try await client.queryA(
+                    message: .forQuery(name: name),
+                    options: .edns,
+                    channelKind: channelKind
+                )
+                #expect(response.header.responseCode == .NoError, "\(domain)")
+                #expect(response.header.messageType == .Response, "\(domain)")
+                #expect(response.header.opCode == .Query, "\(domain)")
+                #expect(
+                    response.queries.first?.name.isEssentiallyEqual(to: name) == true,
+                    "\(domain)"
+                )
+                if response.header.answerCount > 0 {
+                    #expect(response.answers.count > 0, "\(domain)")
+                    withAnswers += 1
+                }
+            }
+        }
+
+        #expect(withAnswers > 70)
+    }
 }
+
+/// Not all these have A records although i think all have NS records.
+/// https://radar.cloudflare.com/domains @ 2025-07-23
+private let cloudflareTop100Domains = [
+    "google.com",
+    "googleapis.com",
+    "apple.com",
+    "gstatic.com",
+    "cloudflare.com",
+    "microsoft.com",
+    "facebook.com",
+    "googlevideo.com",
+    "amazonaws.com",
+    "whatsapp.net",
+    "fbcdn.net",
+    "doubleclick.net",
+    "youtube.com",
+    "amazon.com",
+    "instagram.com",
+    "icloud.com",
+    "googleusercontent.com",
+    "akadns.net",
+    "ntp.org",
+    "tiktokcdn.com",
+    "live.com",
+    "googlesyndication.com",
+    "bing.com",
+    "apple-dns.net",
+    "cloudfront.net",
+    "gvt2.com",
+    "netflix.com",
+    "tiktokv.com",
+    "akamai.net",
+    "cloudflare-dns.com",
+    "ytimg.com",
+    "yahoo.com",
+    "aaplimg.com",
+    "cdninstagram.com",
+    "akamaiedge.net",
+    "office.com",
+    "ui.com",
+    "spotify.com",
+    "samsung.com",
+    "googleadservices.com",
+    "gvt1.com",
+    "msn.com",
+    "dns.google",
+    "one.one",
+    "app-analytics-services.com",
+    "roblox.com",
+    "google-analytics.com",
+    "msftncsi.com",
+    "snapchat.com",
+    "amazon-adsystem.com",
+    "trafficmanager.net",
+    "googletagmanager.com",
+    "wikipedia.org",
+    "azure.com",
+    "app-measurement.com",
+    "applovin.com",
+    "fastly.net",
+    "criteo.com",
+    "steamserver.net",
+    "unity3d.com",
+    "3gppnetwork.org",
+    "appsflyersdk.com",
+    "sentry.io",
+    "linkedin.com",
+    "ggpht.com",
+    "a2z.com",
+    "office.net",
+    "rubiconproject.com",
+    "microsoftonline.com",
+    "baidu.com",
+    "rbxcdn.com",
+    "windows.com",
+    "windows.net",
+    "skype.com",
+    "tiktokcdn-us.com",
+    "adnxs.com",
+    "taboola.com",
+    "windowsupdate.com",
+    "digicert.com",
+    "xiaomi.com",
+    "inmobi.com",
+    "doubleverify.com",
+    "gmail.com",
+    "whatsapp.com",
+    "sharepoint.com",
+    "office365.com",
+    "vungle.com",
+    "android.com",
+    "pubmatic.com",
+    "cdn-apple.com",
+    "casalemedia.com",
+    "amazon.dev",
+    "qq.com",
+    "cdn77.org",
+    "msftconnecttest.com",
+    "capcutapi.com",
+    "mikrotik.com",
+    "miui.com",
+    "fastly-edge.com",
+    "adsrvr.org",
+]
