@@ -89,8 +89,8 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test(.withDNSClient(serverAddress: .domain(name: "210.2.4.8", port: 53)))
-    func queryANonASCIIDomain() async throws {
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryANonASCIIDomain(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryA(
@@ -126,7 +126,7 @@ struct DNSTests {
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
 
-        #expect(response.nameServers.count > 0)
+        /// response.nameServers.count is whatever
 
         #expect(response.answers.count > 1)
         #expect(

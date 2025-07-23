@@ -63,7 +63,7 @@ extension Unicode.Scalar {
         Unicode.Scalar(0x6E).unsafelyUnwrapped
     }
 
-    /// IDNA domain name separators.
+    /// IDNA label separators.
     /// U+002E ( . ) FULL STOP
     /// U+FF0E ( ． ) FULLWIDTH FULL STOP
     /// U+3002 ( 。 ) IDEOGRAPHIC FULL STOP

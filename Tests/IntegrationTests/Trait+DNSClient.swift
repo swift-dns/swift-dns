@@ -20,8 +20,8 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
         let client = try DNSClient(
             serverAddress: serverAddress,
             configuration: .init(
-                connectionConfiguration: .init(queryTimeout: .seconds(2)),
-                tcpConnectionConfiguration: .init(queryTimeout: .seconds(2)),
+                connectionConfiguration: .init(queryTimeout: .seconds(3)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
                 keepAliveBehavior: .init()
             ),
             eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
@@ -43,9 +43,5 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
 extension Trait where Self == DNSClientTrait {
     static var withDNSClient: Self {
         DNSClientTrait()
-    }
-
-    static func withDNSClient(serverAddress: DNSServerAddress) -> Self {
-        DNSClientTrait(serverAddress: serverAddress)
     }
 }

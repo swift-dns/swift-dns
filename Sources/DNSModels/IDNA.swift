@@ -26,6 +26,10 @@ public struct IDNA {
         /// Ignores invalid punycode in `toUnicode`/`mainProcessing` conversions and more, and
         /// doesn't report errors for them.
         public var ignoreInvalidPunycode: Bool
+        /// Implementations may make further modifications to the resulting Unicode string when showing it to the user. For example, it is recommended that disallowed characters be replaced by a U+FFFD to make them visible to the user. Similarly, labels that fail processing during step 4 may be marked by the insertion of a U+FFFD or other visual device.
+        /// Not a necessary parameter of the IDNA handling according to the Unicode document.
+        /// `replaceBadCharacters` is currently a no-op.
+        package var replaceBadCharacters: Bool
 
         /// The most strict configuration possible.
         public static var mostStrict: Configuration {
@@ -35,7 +39,8 @@ public struct IDNA {
                 checkJoiners: true,
                 useSTD3ASCIIRules: true,
                 verifyDNSLength: true,
-                ignoreInvalidPunycode: false
+                ignoreInvalidPunycode: false,
+                replaceBadCharacters: false
             )
         }
 
@@ -47,7 +52,8 @@ public struct IDNA {
                 checkJoiners: false,
                 useSTD3ASCIIRules: false,
                 verifyDNSLength: false,
-                ignoreInvalidPunycode: true
+                ignoreInvalidPunycode: true,
+                replaceBadCharacters: false
             )
         }
 
@@ -59,7 +65,8 @@ public struct IDNA {
                 checkJoiners: true,
                 useSTD3ASCIIRules: false,
                 verifyDNSLength: true,
-                ignoreInvalidPunycode: false
+                ignoreInvalidPunycode: false,
+                replaceBadCharacters: false
             )
         }
 
@@ -69,7 +76,8 @@ public struct IDNA {
             checkJoiners: Bool,
             useSTD3ASCIIRules: Bool,
             verifyDNSLength: Bool,
-            ignoreInvalidPunycode: Bool
+            ignoreInvalidPunycode: Bool,
+            replaceBadCharacters: Bool
         ) {
             self.checkHyphens = checkHyphens
             self.checkBidi = checkBidi
@@ -77,6 +85,7 @@ public struct IDNA {
             self.useSTD3ASCIIRules = useSTD3ASCIIRules
             self.verifyDNSLength = verifyDNSLength
             self.ignoreInvalidPunycode = ignoreInvalidPunycode
+            self.replaceBadCharacters = replaceBadCharacters
         }
 
         /// - Parameters:
@@ -103,6 +112,8 @@ public struct IDNA {
             self.useSTD3ASCIIRules = useSTD3ASCIIRules
             self.verifyDNSLength = verifyDNSLength
             self.ignoreInvalidPunycode = ignoreInvalidPunycode
+            /// `replaceBadCharacters` is currently a no-op.
+            self.replaceBadCharacters = false
         }
     }
 
