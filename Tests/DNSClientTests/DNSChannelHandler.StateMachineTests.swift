@@ -3,6 +3,7 @@ import DNSModels
 import NIOCore
 import NIOPosix
 import Testing
+import struct DequeModule.Deque
 
 @Suite
 struct DNSChannelHandlerStateMachineTests {
@@ -25,19 +26,19 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
 
         stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQuery: nil)))
+        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [])))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery(1))
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQuery: pendingQuery)))
+        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [pendingQuery])))
 
         let action2 = stateMachine.receivedResponse(message: message)
         #expect(action2 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: 1, pendingQuery: nil)))
+        expect(stateMachine.state == State.active(.init(context: 1, pendingQueries: [])))
 
         let action3 = stateMachine.setClosed()
-        #expect(action3 == .failPendingQuery(nil))
+        #expect(action3 == .failPendingQueries([]))
         expect(stateMachine.state == State.closed(nil))
     }
 }
@@ -56,7 +57,7 @@ extension DNSChannelHandler.StateMachine<Int>.State {
             switch rhs {
             case .active(let rhs):
                 return lhs.context == rhs.context
-                    && lhs.pendingQuery == rhs.pendingQuery
+                    && lhs.pendingQueries == rhs.pendingQueries
             default:
                 return false
             }
@@ -64,7 +65,7 @@ extension DNSChannelHandler.StateMachine<Int>.State {
             switch rhs {
             case .closing(let rhs):
                 return lhs.context == rhs.context
-                    && lhs.pendingQuery == rhs.pendingQuery
+                    && lhs.pendingQueries == rhs.pendingQueries
             default:
                 return false
             }
@@ -93,7 +94,7 @@ extension DNSChannelHandler.StateMachine<Int>.State {
 extension DNSChannelHandler.StateMachine<Int>.ActiveState: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.context == rhs.context
-            && lhs.pendingQuery == rhs.pendingQuery
+            && lhs.pendingQueries == rhs.pendingQueries
     }
 }
 
@@ -111,6 +112,21 @@ extension DNSChannelHandler.StateMachine<Int>.SendQueryAction: Equatable {
             return lhs == rhs
         case (.throwError(let lhs), .throwError(let rhs)):
             return "\(String(describing: lhs))" == "\(String(describing: rhs))"
+        default:
+            return false
+        }
+    }
+}
+
+extension DNSChannelHandler.StateMachine<Int>.DeadlineCallbackAction: Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.cancel, .cancel):
+            return true
+        case (.reschedule(let lhs), .reschedule(let rhs)):
+            return lhs == rhs
+        case (.doNothing, .doNothing):
+            return true
         default:
             return false
         }
@@ -137,7 +153,7 @@ extension DNSChannelHandler.StateMachine<Int>.ReceivedResponseAction: Equatable 
 extension DNSChannelHandler.StateMachine<Int>.SetClosedAction: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case (.failPendingQuery(let lhs), .failPendingQuery(let rhs)):
+        case (.failPendingQueries(let lhs), .failPendingQueries(let rhs)):
             return lhs == rhs
         case (.doNothing, .doNothing):
             return true

@@ -1,5 +1,6 @@
 import DNSCore
 public import DNSModels
+import DequeModule
 import Logging
 public import NIOCore
 
@@ -12,11 +13,13 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: .now()) {
-            case .failPendingQueryAndClose(let context, let query):
-                query.fail(
-                    with: DNSClientError.queryTimeout,
-                    removingIDFrom: &channelHandler.messageIDGenerator
-                )
+            case .failPendingQueriesAndClose(let context, let queries):
+                for query in queries {
+                    query.fail(
+                        with: DNSClientError.queryTimeout,
+                        removingIDFrom: &channelHandler.messageIDGenerator
+                    )
+                }
                 channelHandler.closeConnection(
                     context: context,
                     error: DNSClientError.queryTimeout
@@ -139,11 +142,13 @@ extension DNSChannelHandler {
             metadata: ["error": "\(String(reflecting: error))"]
         )
         switch self.stateMachine.close() {
-        case .failPendingQueryAndClose(let context, let query):
-            query?.fail(
-                with: error,
-                removingIDFrom: &self.messageIDGenerator
-            )
+        case .failPendingQueriesAndClose(let context, let queries):
+            for query in queries {
+                query.fail(
+                    with: error,
+                    removingIDFrom: &self.messageIDGenerator
+                )
+            }
             self.closeConnection(context: context, error: error)
         case .doNothing:
             // only call fireErrorCaught here as it is called from `closeConnection`
@@ -166,6 +171,8 @@ extension DNSChannelHandler {
         case .cancel:
             self.deadlineCallback?.cancel()
             self.deadlineCallback = nil
+        case .reschedule(let deadline):
+            self.scheduleDeadlineCallback(deadline: deadline)
         case .doNothing:
             break
         }
@@ -216,15 +223,28 @@ extension DNSChannelHandler {
         self.eventLoop.assertInEventLoop()
 
         switch self.stateMachine.cancel(requestID: requestID) {
-        case .cancelPendingQueryAndClose(let context, let pendingQuery):
-            pendingQuery.fail(
-                with: DNSClientError.cancelled,
-                removingIDFrom: &self.messageIDGenerator
-            )
+        case .failPendingQueriesAndClose(
+            let context,
+            let cancelled,
+            let closeConnectionDueToCancel
+        ):
+            for query in cancelled {
+                query.fail(
+                    with: DNSClientError.cancelled,
+                    removingIDFrom: &self.messageIDGenerator
+                )
+            }
+            for query in closeConnectionDueToCancel {
+                query.fail(
+                    with: DNSClientError.connectionClosedDueToCancellation,
+                    removingIDFrom: &self.messageIDGenerator
+                )
+            }
             self.closeConnection(
                 context: context,
                 error: DNSClientError.cancelled
             )
+
         case .doNothing:
             break
         }
@@ -232,11 +252,13 @@ extension DNSChannelHandler {
 
     private func setClosed() {
         switch self.stateMachine.setClosed() {
-        case .failPendingQuery(let query):
-            query?.fail(
-                with: DNSClientError.connectionClosed,
-                removingIDFrom: &self.messageIDGenerator
-            )
+        case .failPendingQueries(let queries):
+            for query in queries {
+                query.fail(
+                    with: DNSClientError.connectionClosed,
+                    removingIDFrom: &self.messageIDGenerator
+                )
+            }
             self.deadlineCallback?.cancel()
         case .doNothing:
             break
