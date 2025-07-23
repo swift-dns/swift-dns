@@ -228,17 +228,29 @@ struct NameTests {
     /// Then put it in Tests/Resources/ directory named exactly as `top-domains.csv`.
     /// And untrack the file so it's not committed to git (it's 14+ MiB).
     /// The file is 14+ MiB in size so it's not included in the repo.
-    @Test(
-        arguments: String(
-            decoding: Resources.topDomains.data(),
-            as: UTF8.self
-        ).split(
-            whereSeparator: \.isNewline
-        ).dropFirst().map(String.init)
-    )
-    func testAgainstTopCloudflareRadarDomains(domainName: String) throws {
-        let name = try Name(domainName: domainName)
-        let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
-        #expect(recreatedDomainName == domainName)
+    ///
+    /// Not using swift-testing arguments because that slows things down significantly if we're
+    /// testing against 1 million domains.
+    @Test func testAgainstTopCloudflareRadarDomains() throws {
+        for (index, domainName) in enumeratedTopDomains() {
+            let comment: Comment = "index: \(index), domainName: \(domainName)"
+            #expect(throws: Never.self, comment) {
+                let name = try Name(domainName: domainName)
+                let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
+                #expect(recreatedDomainName == domainName, comment)
+            }
+        }
     }
+}
+
+private func enumeratedTopDomains() -> EnumeratedSequence<[String]> {
+    String(
+        decoding: Resources.topDomains.data(),
+        as: UTF8.self
+    ).split(
+        whereSeparator: \.isNewline
+    )
+    .dropFirst()
+    .map(String.init)
+    .enumerated()
 }
