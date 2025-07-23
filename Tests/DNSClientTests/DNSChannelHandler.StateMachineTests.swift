@@ -39,7 +39,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine.state == State.closed(nil))
     }
 
-    @Test func cancelledBeforeResponse() {
+    @Test func cancelledBeforeResponse() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
@@ -67,6 +67,12 @@ struct DNSChannelHandlerStateMachineTests {
         )
         pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
         expect(stateMachine.state == State.closed(CancellationError()))
+
+        nonisolated(unsafe) var _stateMachine = stateMachine
+        /// Already closed
+        await #expect(processExitsWith: .failure) {
+            _ = _stateMachine.setClosed()
+        }
     }
 
     func makeMessageAndPendingQuery() -> (Message, PendingQuery) {

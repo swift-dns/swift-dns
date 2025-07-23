@@ -1,5 +1,4 @@
 import NIOSSL
-public import _DNSConnectionPool
 
 /// Configuration for the DNS client
 @available(swiftDNS 1.0, *)
