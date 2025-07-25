@@ -65,6 +65,6 @@ enum Resources: String {
 
         components.append(contentsOf: ["Tests", "Resources", self.rawValue])
 
-        return components.joined(separator: ".")
+        return components.joined(separator: "/")
     }
 }

@@ -34,8 +34,9 @@ public actor DNSClient {
             if let connection = self._udpConnection {
                 return connection
             } else {
-                self._udpConnection = try await self.makeUDPConnection()
-                return self._udpConnection!
+                let connection = try await self.makeUDPConnection()
+                self._udpConnection = connection
+                return connection
             }
         }
     }
@@ -179,12 +180,12 @@ extension DNSClient {
     ///   - operation: Closure handling DNS connection
     /// - Returns: Value returned by closure
     @usableFromInline
-    func withTCPConnection<RData: RDataConvertible>(
-        message factory: consuming MessageFactory<RData>,
+    func withTCPConnection<RDataConv: RDataConvertible>(
+        message factory: consuming MessageFactory<RDataConv>,
         options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
         operation: (
-            consuming MessageFactory<RData>,
+            consuming MessageFactory<RDataConv>,
             DNSRequestOptions,
             DNSConnection
         ) async throws -> Message

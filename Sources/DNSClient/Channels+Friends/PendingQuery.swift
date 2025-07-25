@@ -23,6 +23,7 @@ package struct PendingQuery {
         removingIDFrom.remove(self.requestID)
     }
 
+    /// FIXME: This "removing ID" should happen in the channel handler?
     @inlinable
     package func fail(with error: any Error, removingIDFrom: inout MessageIDGenerator) {
         self.promise._fail(with: error)

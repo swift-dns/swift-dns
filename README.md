@@ -54,15 +54,18 @@ let client = DNSClient(
 )
 
 /// Send the query
+/// `response` will be of type `Message`
 let response = try await client.queryA(
     message: .forQuery(name: "mahdibm.com"),
     options: .edns
-) /// type of value is `Message`
+)
 
 /// Read the answers
 for answer in response.answers {
-    let a = try answer.rdata /// type of value is `A`
-    let ipv4 = a.value /// type of value is `IPv4Address`
+    /// `a` will be of type `A`
+    let a = try answer.rdata
+    /// `ipv4` will be of type `IPv4Address`
+    let ipv4 = a.value
     print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
 }
 ```
@@ -90,6 +93,7 @@ Default `channelKind` is `.udp`. Currently `.tcp` is also supported.
   - [ ] DoT (DNS Over TLS)
   - [ ] DoH (DNS Over HTTPS)
   - [ ] DoQ (DNS Over Quic)
+  - [ ] MDNS
 - [ ] DNS resolver (DNS client but with caching etc...)
 - [ ] DNS server
 - [ ] DNSSEC

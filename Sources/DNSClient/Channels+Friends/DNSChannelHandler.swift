@@ -106,7 +106,6 @@ extension DNSChannelHandler {
                 continuation.resume(throwing: error)
                 return
             }
-            /// FIXME: do we need to handle channel-already-closed being thrown from the promise below?
             context.writeAndFlush(self.wrapOutboundOut(ByteBuffer(dnsBuffer: buffer)), promise: nil)
 
             if self.deadlineCallback == nil {
@@ -185,6 +184,8 @@ extension DNSChannelHandler {
         self.setClosed()
     }
 
+    /// This triggered before when the connection-factory is done so virtually a
+    /// new channel is always active in the beginning of its lifecycle.
     @usableFromInline
     package func channelActive(context: ChannelHandlerContext) {
         self.stateMachine.setActive(context: context)

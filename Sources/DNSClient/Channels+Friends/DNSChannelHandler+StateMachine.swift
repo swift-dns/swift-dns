@@ -1,7 +1,7 @@
 public import DNSModels
 public import NIOCore
 
-package import struct OrderedCollections.OrderedDictionary
+import struct OrderedCollections.OrderedDictionary
 
 @available(swiftDNS 1.0, *)
 extension DNSChannelHandler {
@@ -42,35 +42,48 @@ extension DNSChannelHandler {
         @usableFromInline
         package struct ActiveState {
             package let context: Context
-            package var pendingQueries: OrderedDictionary<UInt16, PendingQuery>
-
-            var firstPendingQuery: PendingQuery? {
-                self.pendingQueries.values.first
-            }
+            /// [MessageID: PendingQuery] where MessageID == PendingQuery.id & MessageID == message.header.id
+            var _pendingQueriesLookupTable: OrderedDictionary<UInt16, PendingQuery>
 
             package init(context: Context, firstQuery pendingQuery: PendingQuery) {
                 self.context = context
-                self.pendingQueries = [pendingQuery.requestID: pendingQuery]
+                self._pendingQueriesLookupTable = [pendingQuery.requestID: pendingQuery]
+            }
+
+            package init(context: Context, pendingQueries: [PendingQuery]) {
+                self.context = context
+                self._pendingQueriesLookupTable = OrderedDictionary(
+                    pendingQueries.map { ($0.requestID, $0) },
+                    uniquingKeysWith: { l, _ in l }
+                )
             }
 
             package init(context: Context) {
                 self.context = context
-                self.pendingQueries = [:]
+                self._pendingQueriesLookupTable = [:]
+            }
+
+            package var pendingQueries: [PendingQuery] {
+                Array(self._pendingQueriesLookupTable.values)
+            }
+
+            var firstPendingQuery: PendingQuery? {
+                self._pendingQueriesLookupTable.values.first
             }
 
             mutating func append(_ pendingQuery: PendingQuery) {
-                self.pendingQueries[pendingQuery.requestID] = pendingQuery
+                self._pendingQueriesLookupTable[pendingQuery.requestID] = pendingQuery
             }
 
             mutating func removeValue(requestID: UInt16) -> PendingQuery? {
-                self.pendingQueries.removeValue(forKey: requestID)
+                self._pendingQueriesLookupTable.removeValue(forKey: requestID)
             }
 
             func cancel(
                 requestID: UInt16
             ) -> (cancel: PendingQuery?, connectionClosedDueToCancellation: [PendingQuery]) {
-                let withRequestID = self.pendingQueries[requestID]
-                let withoutRequestID = self.pendingQueries
+                let withRequestID = self._pendingQueriesLookupTable[requestID]
+                let withoutRequestID = self._pendingQueriesLookupTable
                     .filter({ $0.key != requestID })
                     .map(\.value)
                 return (withRequestID, withoutRequestID)
@@ -203,7 +216,7 @@ extension DNSChannelHandler {
                     self = .closed(DNSClientError.queryTimeout)
                     return .failPendingQueriesAndClose(
                         state.context,
-                        Array(state.pendingQueries.values)
+                        state.pendingQueries
                     )
                 } else {
                     self = .active(state)
@@ -217,7 +230,7 @@ extension DNSChannelHandler {
                     self = .closed(DNSClientError.queryTimeout)
                     return .failPendingQueriesAndClose(
                         state.context,
-                        Array(state.pendingQueries.values)
+                        state.pendingQueries
                     )
                 } else {
                     self = .closing(state)
@@ -325,13 +338,13 @@ extension DNSChannelHandler {
                 self = .closed(nil)
                 return .failPendingQueriesAndClose(
                     state.context,
-                    Array(state.pendingQueries.values)
+                    state.pendingQueries
                 )
             case .closing(let state):
                 self = .closed(nil)
                 return .failPendingQueriesAndClose(
                     state.context,
-                    Array(state.pendingQueries.values)
+                    state.pendingQueries
                 )
             case .closed(let error):
                 self = .closed(error)
@@ -354,10 +367,10 @@ extension DNSChannelHandler {
                 return .doNothing
             case .active(let state):
                 self = .closed(nil)
-                return .failPendingQueries(Array(state.pendingQueries.values))
+                return .failPendingQueries(state.pendingQueries)
             case .closing(let state):
                 self = .closed(nil)
-                return .failPendingQueries(Array(state.pendingQueries.values))
+                return .failPendingQueries(state.pendingQueries)
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing
@@ -378,6 +391,10 @@ extension DNSChannelHandler {
 
         private static func closed(_ error: (any Error)?) -> Self {
             StateMachine(.closed(error))
+        }
+
+        package static func __for_testing(state: consuming State) -> Self {
+            StateMachine(state)
         }
     }
 }
