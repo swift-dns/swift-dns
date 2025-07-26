@@ -6,7 +6,7 @@ import Synchronization
 import Testing
 
 @Suite(.serialized, .withDNSClient)
-struct DNSTests {
+struct IntegrationTests {
     var client: DNSClient {
         DNSClientTrait.currentClient!
     }
