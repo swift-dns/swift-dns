@@ -92,34 +92,52 @@ extension DNSChannelHandler {
     ) {
         self.eventLoop.assertInEventLoop()
 
-        let deadline: NIODeadline = .now() + TimeAmount(self.configuration.queryTimeout)
         let pendingMessage = PendingQuery(
-            promise: DynamicPromise.swift(continuation),
+            promise: .swift(continuation),
             requestID: message.header.id,
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
         )
 
         switch self.stateMachine.sendQuery(pendingMessage) {
-        case .sendQuery(let context):
+        case .sendQuery(let context, let deadlineCallbackAction):
+            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+
             var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 512))
             do {
                 try message.encode(into: &buffer)
             } catch {
-                continuation.resume(throwing: error)
+                /// Act as if we received an early response for the query
+                switch self.stateMachine.receivedResponse(requestID: message.header.id) {
+                case .respond(let pendingMessage, let deadlineAction):
+                    self.processDeadlineCallbackAction(action: deadlineAction)
+                    pendingMessage.fail(
+                        with: error,
+                        removingIDFrom: &self.messageIDGenerator
+                    )
+                case .respondAndClose(let pendingMessage):
+                    pendingMessage.fail(
+                        with: error,
+                        removingIDFrom: &self.messageIDGenerator
+                    )
+                    /// The error we got is unrelated to connection closure, so we don't pass it
+                    self.closeConnection(context: context, error: nil)
+                case .doNothing:
+                    break
+                }
+
                 return
             }
             context.writeAndFlush(self.wrapOutboundOut(ByteBuffer(dnsBuffer: buffer)), promise: nil)
-
-            if self.deadlineCallback == nil {
-                self.scheduleDeadlineCallback(deadline: deadline)
-            }
         case .throwError(let error):
-            continuation.resume(throwing: error)
+            pendingMessage.fail(
+                with: error,
+                removingIDFrom: &self.messageIDGenerator
+            )
         }
     }
 
     func handleResponse(context: ChannelHandlerContext, message: Message) {
-        switch self.stateMachine.receivedResponse(message: message) {
+        switch self.stateMachine.receivedResponse(requestID: message.header.id) {
         case .respond(let pendingMessage, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
             pendingMessage.succeed(
@@ -143,8 +161,8 @@ extension DNSChannelHandler {
             "DNSChannelHandler error",
             metadata: ["error": "\(String(reflecting: error))"]
         )
-        switch self.stateMachine.close() {
-        case .failPendingQueriesAndClose(let context, let queries):
+        switch self.stateMachine.forceClose() {
+        case .failPendingQueriesAndClose(let queries):
             for query in queries {
                 query.fail(
                     with: error,

@@ -1,4 +1,3 @@
-public import DNSModels
 public import NIOCore
 
 import struct OrderedCollections.OrderedDictionary
@@ -91,6 +90,10 @@ extension DNSChannelHandler {
                     """
                     State machine must not have been asked to add duplicate pending queries.
                     This will result in a query leak where the query is never fulfilled.
+                    This is a bug in the channel handler. The channel handler must not have passed a
+                    pending query with a duplicate in-flight request ID.
+                    Please report this bug at https://github.com/mahdibm/swift-dns/issues.
+                    The new pending query is: \(pendingQuery), the original pending query is: \(original!).
                     """
                 )
             }
@@ -126,7 +129,7 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum SendQueryAction {
-            case sendQuery(Context)
+            case sendQuery(Context, DeadlineCallbackAction)
             case throwError(any Error)
         }
 
@@ -137,8 +140,16 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
+                let wasEmpty = state.isEmpty
                 state.append(pendingQuery)
-                let action: SendQueryAction = .sendQuery(state.context)
+                /// If wasn't empty, then already has a deadline callback scheduled with a deadline
+                /// that will occur sooner than `pendingQuery`'s deadline.
+                /// We are sure that `pendingQuery`'s deadline will be later, because we have an
+                /// agreement that the query timeouts are the same for a given channel.
+                /// For example the query function doesn't currently accept a custom query timeout.
+                let deadlineCallback: DeadlineCallbackAction =
+                    wasEmpty ? .reschedule(pendingQuery.deadline) : .doNothing
+                let action: SendQueryAction = .sendQuery(state.context, deadlineCallback)
                 self = .active(state)
                 return action
             case .closing(let state):
@@ -166,35 +177,25 @@ extension DNSChannelHandler {
 
         /// handler wants to send a message
         @usableFromInline
-        package mutating func receivedResponse(message: Message) -> ReceivedResponseAction {
+        package mutating func receivedResponse(requestID: UInt16) -> ReceivedResponseAction {
             switch consume self.state {
             case .initialized:
                 preconditionFailure("Cannot send message when initialized")
             case .active(var state):
-                guard let pendingMessage = state.removeValue(requestID: message.header.id) else {
+                guard let pendingMessage = state.removeValue(requestID: requestID) else {
                     /// PendingQuery is no longer there. Maybe it was cancelled.
                     self = .active(state)
                     return .doNothing
                 }
-                let deadlineCallback: DeadlineCallbackAction =
-                    if let nextMessage = state.firstPendingQuery {
-                        if nextMessage.deadline < pendingMessage.deadline {
-                            // if the next message has an earlier deadline than the current then reschedule the callback
-                            .reschedule(nextMessage.deadline)
-                        } else {
-                            // otherwise do nothing
-                            .doNothing
-                        }
-                    } else {
-                        // if there are no more messages cancel the callback
-                        .cancel
-                    }
-
+                let deadlineCallback = Self.calculateDeadlineCallbackAction(
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
+                    nextDeadline: state.firstPendingQuery?.deadline
+                )
                 let action: ReceivedResponseAction = .respond(pendingMessage, deadlineCallback)
                 self = .active(state)
                 return action
             case .closing(var state):
-                guard let pendingMessage = state.removeValue(requestID: message.header.id) else {
+                guard let pendingMessage = state.removeValue(requestID: requestID) else {
                     /// PendingQuery is no longer there. Maybe it was cancelled.
                     /// Still there must be another messages pending, so we can't close the connection.
                     assert(!state.isEmpty)
@@ -206,15 +207,11 @@ extension DNSChannelHandler {
                     self = .closed(nil)
                     return .respondAndClose(pendingMessage)
                 }
+                let deadlineCallback = Self.calculateDeadlineCallbackAction(
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
+                    nextDeadline: nextMessage.deadline
+                )
                 self = .closing(state)
-                let deadlineCallback: DeadlineCallbackAction =
-                    if nextMessage.deadline < pendingMessage.deadline {
-                        // if the next message has an earlier deadline than the current then reschedule the callback
-                        .reschedule(nextMessage.deadline)
-                    } else {
-                        // otherwise do nothing
-                        .doNothing
-                    }
                 return .respond(pendingMessage, deadlineCallback)
             case .closed:
                 preconditionFailure("Cannot receive message on closed connection")
@@ -240,12 +237,10 @@ extension DNSChannelHandler {
                 }
                 if firstMessage.deadline <= now {
                     state.removeValue(requestID: firstMessage.requestID)
-                    let deadlineCallback: DeadlineCallbackAction =
-                        if let nextMessage = state.firstPendingQuery {
-                            .reschedule(nextMessage.deadline)
-                        } else {
-                            .cancel
-                        }
+                    let deadlineCallback = Self.calculateDeadlineCallbackAction(
+                        pendingQueryThatWillBeImmediatelyFulfilled: firstMessage,
+                        nextDeadline: state.firstPendingQuery?.deadline
+                    )
                     self = .active(state)
                     return .failAndReschedule(firstMessage, deadlineCallback)
                 } else {
@@ -290,12 +285,10 @@ extension DNSChannelHandler {
                 preconditionFailure("Cannot cancel when initialized")
             case .active(var state):
                 if let existingQuery = state.removeValue(requestID: requestID) {
-                    let deadlineCallback: DeadlineCallbackAction =
-                        if let nextMessage = state.firstPendingQuery {
-                            .reschedule(nextMessage.deadline)
-                        } else {
-                            .cancel
-                        }
+                    let deadlineCallback = Self.calculateDeadlineCallbackAction(
+                        pendingQueryThatWillBeImmediatelyFulfilled: existingQuery,
+                        nextDeadline: state.firstPendingQuery?.deadline
+                    )
                     let action: CancelAction = .cancel(existingQuery, deadlineCallback)
                     self = .active(state)
                     return action
@@ -316,15 +309,11 @@ extension DNSChannelHandler {
                     self = .closed(nil)
                     return .cancelAndClose(state.context, pendingMessage)
                 }
+                let deadlineCallback = Self.calculateDeadlineCallbackAction(
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
+                    nextDeadline: nextMessage.deadline
+                )
                 self = .closing(state)
-                let deadlineCallback: DeadlineCallbackAction =
-                    if nextMessage.deadline < pendingMessage.deadline {
-                        // if the next message has an earlier deadline than the current then reschedule the callback
-                        .reschedule(nextMessage.deadline)
-                    } else {
-                        // otherwise do nothing
-                        .doNothing
-                    }
                 return .cancel(pendingMessage, deadlineCallback)
             case .closed(let error):
                 self = .closed(error)
@@ -366,25 +355,25 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum CloseAction {
-            case failPendingQueriesAndClose(Context, [PendingQuery])
+            case failPendingQueriesAndClose([PendingQuery])
             case doNothing
         }
 
         /// Want to close the connection
         @usableFromInline
-        package mutating func close() -> CloseAction {
+        package mutating func forceClose() -> CloseAction {
             switch consume self.state {
             case .initialized:
                 self = .closed(nil)
                 return .doNothing
             case .active(let state):
-                let (context, pendingQueries) = state.discard()
+                let (_, pendingQueries) = state.discard()
                 self = .closed(nil)
-                return .failPendingQueriesAndClose(context, pendingQueries)
+                return .failPendingQueriesAndClose(pendingQueries)
             case .closing(let state):
-                /// Already closing, do nothing
-                self = .closing(state)
-                return .doNothing
+                let (_, pendingQueries) = state.discard()
+                self = .closed(nil)
+                return .failPendingQueriesAndClose(pendingQueries)
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing
@@ -415,6 +404,22 @@ extension DNSChannelHandler {
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing
+            }
+        }
+
+        static func calculateDeadlineCallbackAction(
+            /// Ignoring because the query is not inflight so the deadline doesn't matter anymore
+            pendingQueryThatWillBeImmediatelyFulfilled _: PendingQuery,
+            nextDeadline: NIODeadline?
+        ) -> DeadlineCallbackAction {
+            if let nextDeadline {
+                /// if there are any remaining deadlines, reschedule the callback.
+                /// Even if the last query already had a deadline callback scheduled, that's
+                /// no longer accurate so let's just reschedule
+                return .reschedule(nextDeadline)
+            } else {
+                /// otherwise cancel the callback
+                return .cancel
             }
         }
 
