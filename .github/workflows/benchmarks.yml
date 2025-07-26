@@ -182,7 +182,7 @@ jobs:
             echo "changes-count=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit threshold changes
+      - name: Commit threshold changes to a new branch
         if: steps.check-modifications.outputs.has-modifications == 'true'
         id: commit-update
         run: |
