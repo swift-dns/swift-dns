@@ -2,7 +2,6 @@ public import DNSModels
 import Logging
 public import NIOCore
 import NIOPosix
-import NIOSSL
 import Synchronization
 
 #if canImport(Network)

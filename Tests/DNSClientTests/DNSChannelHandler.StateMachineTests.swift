@@ -227,25 +227,35 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .sendQuery("context!"))
         expect(
             stateMachine.state
-                == State.active(.init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery2]))
+                == State.active(
+                    .init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery2])
+                )
         )
 
         let action3 = stateMachine.receivedResponse(message: message2)
         #expect(action3 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
         pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!", pendingQueries: [pendingQuery1])))
+        expect(
+            stateMachine.state
+                == State.active(.init(context: "context!", pendingQueries: [pendingQuery1]))
+        )
 
         let action4 = stateMachine.sendQuery(pendingQuery3)
         #expect(action4 == .sendQuery("context!"))
         expect(
             stateMachine.state
-                == State.active(.init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery3]))
+                == State.active(
+                    .init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery3])
+                )
         )
 
         let action5 = stateMachine.close()
         #expect(
             action5
-                == StateMachine.CloseAction.failPendingQueriesAndClose("context!", [pendingQuery1, pendingQuery3])
+                == StateMachine.CloseAction.failPendingQueriesAndClose(
+                    "context!",
+                    [pendingQuery1, pendingQuery3]
+                )
         )
         expect(stateMachine.state == .closed(nil))
 

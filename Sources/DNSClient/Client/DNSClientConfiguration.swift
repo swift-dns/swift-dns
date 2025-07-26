@@ -1,5 +1,3 @@
-import NIOSSL
-
 /// Configuration for the DNS client
 @available(swiftDNS 1.0, *)
 public struct DNSClientConfiguration: Sendable {
