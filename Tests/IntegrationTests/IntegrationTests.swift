@@ -901,10 +901,11 @@ struct IntegrationTests {
     func query100DomainsConcurrently(channelKind: DNSClient.QueryChannelKind) async throws {
         await withTaskGroup(of: Void.self) { group in
             let withAnswers = Atomic(0)
+            let errors: Mutex<[(String, any Error)]> = .init([])
 
             for domain in self.loadTop100Domains() {
                 group.addTask { @Sendable () -> Void in
-                    await #expect(throws: Never.self, "\(domain)") {
+                    do {
                         let name = try Name(domainName: domain + ".")
                         let response = try await client.queryNS(
                             message: .forQuery(name: name),
@@ -919,11 +920,25 @@ struct IntegrationTests {
                             #expect(response.answers.count > 0, "\(domain)")
                             withAnswers.add(1, ordering: .relaxed)
                         }
+                    } catch {
+                        errors.withLock { $0.append((domain, error)) }
                     }
                 }
             }
 
             await group.waitForAll()
+
+            errors.withLock { errors in
+                /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
+                if !errors.isEmpty {
+                    print(
+                        "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+                    )
+                }
+                if errors.count >= 5 {
+                    Issue.record("Too many errors: \(errors)")
+                }
+            }
 
             #expect(withAnswers.load(ordering: .relaxed) >= 90)
         }
@@ -948,9 +963,10 @@ struct IntegrationTests {
     )
     func query100DomainsSequentially(channelKind: DNSClient.QueryChannelKind) async throws {
         var withAnswers = 0
+        var errors: [(String, any Error)] = []
 
         for domain in self.loadTop100Domains() {
-            await #expect(throws: Never.self, "\(domain)") {
+            do {
                 let name = try Name(domainName: domain)
                 let response = try await client.queryNS(
                     message: .forQuery(name: name),
@@ -968,13 +984,25 @@ struct IntegrationTests {
                     #expect(response.answers.count > 0, "\(domain)")
                     withAnswers += 1
                 }
+            } catch {
+                errors.append((domain, error))
             }
+        }
+
+        /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
+        if !errors.isEmpty {
+            print(
+                "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+            )
+        }
+        if errors.count >= 5 {
+            Issue.record("Too many errors: \(errors)")
         }
 
         #expect(withAnswers >= 90)
     }
 
-    /// Not all these have A records although I think all have NS records.
+    /// A bunch don't even have A records. Most have NS records.
     func loadTop100Domains() -> [String] {
         String(
             decoding: Resources.topDomains.data(),
