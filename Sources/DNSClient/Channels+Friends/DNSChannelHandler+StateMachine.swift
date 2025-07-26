@@ -223,10 +223,9 @@ extension DNSChannelHandler {
 
         @usableFromInline
         package enum HitDeadlineAction {
-            case fail(PendingQuery)
+            case failAndReschedule(PendingQuery, DeadlineCallbackAction)
             case failAndClose(Context, PendingQuery)
-            case reschedule(NIODeadline)
-            case clearCallback
+            case deadlineCallbackAction(DeadlineCallbackAction)
         }
 
         @usableFromInline
@@ -237,15 +236,21 @@ extension DNSChannelHandler {
             case .active(var state):
                 guard let firstMessage = state.firstPendingQuery else {
                     self = .active(state)
-                    return .clearCallback
+                    return .deadlineCallbackAction(.cancel)
                 }
                 if firstMessage.deadline <= now {
                     state.removeValue(requestID: firstMessage.requestID)
+                    let deadlineCallback: DeadlineCallbackAction =
+                        if let nextMessage = state.firstPendingQuery {
+                            .reschedule(nextMessage.deadline)
+                        } else {
+                            .cancel
+                        }
                     self = .active(state)
-                    return .fail(firstMessage)
+                    return .failAndReschedule(firstMessage, deadlineCallback)
                 } else {
                     self = .active(state)
-                    return .reschedule(firstMessage.deadline)
+                    return .deadlineCallbackAction(.reschedule(firstMessage.deadline))
                 }
             case .closing(var state):
                 guard let firstMessage = state.firstPendingQuery else {
@@ -253,20 +258,20 @@ extension DNSChannelHandler {
                 }
                 if firstMessage.deadline <= now {
                     state.removeValue(requestID: firstMessage.requestID)
-                    if state.isEmpty {
+                    if let nextMessage = state.firstPendingQuery {
+                        self = .closing(state)
+                        return .failAndReschedule(firstMessage, .reschedule(nextMessage.deadline))
+                    } else {
                         self = .closed(nil)
                         return .failAndClose(state.context, firstMessage)
-                    } else {
-                        self = .closing(state)
-                        return .fail(firstMessage)
                     }
                 } else {
                     self = .closing(state)
-                    return .reschedule(firstMessage.deadline)
+                    return .deadlineCallbackAction(.reschedule(firstMessage.deadline))
                 }
             case .closed(let error):
                 self = .closed(error)
-                return .clearCallback
+                return .deadlineCallbackAction(.cancel)
             }
         }
 

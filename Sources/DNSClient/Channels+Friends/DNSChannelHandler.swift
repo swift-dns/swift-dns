@@ -13,11 +13,12 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: .now()) {
-            case .fail(let query):
+            case .failAndReschedule(let query, let deadlineCallbackAction):
                 query.fail(
                     with: DNSClientError.queryTimeout,
                     removingIDFrom: &channelHandler.messageIDGenerator
                 )
+                channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             case .failAndClose(let context, let query):
                 query.fail(
                     with: DNSClientError.queryTimeout,
@@ -27,10 +28,8 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
                     context: context,
                     error: DNSClientError.queryTimeout
                 )
-            case .reschedule(let deadline):
-                channelHandler.scheduleDeadlineCallback(deadline: deadline)
-            case .clearCallback:
-                channelHandler.deadlineCallback = nil
+            case .deadlineCallbackAction(let deadlineCallbackAction):
+                channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             }
         }
     }

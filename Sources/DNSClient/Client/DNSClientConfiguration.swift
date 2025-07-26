@@ -31,10 +31,10 @@ public struct DNSClientConfiguration: Sendable {
 
         /// initializer
         public init(
-            minimumConnectionCount: Int = 0,
-            maximumConnectionSoftLimit: Int = 16,
-            maximumConnectionHardLimit: Int = 16,
-            idleTimeout: Duration = .seconds(60)
+            minimumConnectionCount: Int = 4,
+            maximumConnectionSoftLimit: Int = 32,
+            maximumConnectionHardLimit: Int = 64,
+            idleTimeout: Duration = .seconds(30)
         ) {
             self.minimumConnectionCount = minimumConnectionCount
             self.maximumConnectionSoftLimit = maximumConnectionSoftLimit
