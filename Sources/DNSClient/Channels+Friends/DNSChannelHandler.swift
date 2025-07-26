@@ -13,13 +13,16 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: .now()) {
-            case .failPendingQueriesAndClose(let context, let queries):
-                for query in queries {
-                    query.fail(
-                        with: DNSClientError.queryTimeout,
-                        removingIDFrom: &channelHandler.messageIDGenerator
-                    )
-                }
+            case .fail(let query):
+                query.fail(
+                    with: DNSClientError.queryTimeout,
+                    removingIDFrom: &channelHandler.messageIDGenerator
+                )
+            case .failAndClose(let context, let query):
+                query.fail(
+                    with: DNSClientError.queryTimeout,
+                    removingIDFrom: &channelHandler.messageIDGenerator
+                )
                 channelHandler.closeConnection(
                     context: context,
                     error: DNSClientError.queryTimeout
@@ -124,14 +127,14 @@ extension DNSChannelHandler {
                 with: message,
                 removingIDFrom: &self.messageIDGenerator
             )
-        case .respondAndClose(let pendingMessage, let error):
+        case .respondAndClose(let pendingMessage):
             pendingMessage.succeed(
                 with: message,
                 removingIDFrom: &self.messageIDGenerator
             )
-            self.closeConnection(context: context, error: error)
-        case .closeWithError(let error):
-            self.closeConnection(context: context, error: error)
+            self.closeConnection(context: context, error: nil)
+        case .doNothing:
+            break
         }
     }
 
@@ -224,26 +227,21 @@ extension DNSChannelHandler {
         self.eventLoop.assertInEventLoop()
 
         switch self.stateMachine.cancel(requestID: requestID) {
-        case .failPendingQueriesAndClose(
-            let context,
-            let cancelled,
-            let closeConnectionDueToCancel
-        ):
-            cancelled.fail(
+        case .cancel(let query, let deadlineCallbackAction):
+            query.fail(
                 with: DNSClientError.cancelled,
                 removingIDFrom: &self.messageIDGenerator
             )
-            for query in closeConnectionDueToCancel {
-                query.fail(
-                    with: DNSClientError.connectionClosedDueToCancellation,
-                    removingIDFrom: &self.messageIDGenerator
-                )
-            }
+            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+        case .cancelAndClose(let context, let query):
+            query.fail(
+                with: DNSClientError.cancelled,
+                removingIDFrom: &self.messageIDGenerator
+            )
             self.closeConnection(
                 context: context,
                 error: DNSClientError.cancelled
             )
-
         case .doNothing:
             break
         }

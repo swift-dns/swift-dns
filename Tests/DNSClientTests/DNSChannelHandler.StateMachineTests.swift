@@ -13,6 +13,45 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(value, sourceLocation: sourceLocation)
     }
 
+    @Test func orderOfPendingQueriesIsPreserved() throws {
+        typealias StateMachine = DNSChannelHandler.StateMachine<Int>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var messageIDGenerator = MessageIDGenerator()
+
+        stateMachine.setActive(context: 1)
+        expect(stateMachine.state == State.active(.init(context: 1)))
+
+        let pendingQueries = try (0..<1000).map { _ in
+            PendingQuery(
+                promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
+                requestID: try messageIDGenerator.next(),
+                deadline: .now() + .seconds(10)
+            )
+        }
+        for pendingQuery in pendingQueries {
+            let action = stateMachine.sendQuery(pendingQuery)
+            #expect(action == .sendQuery(1))
+        }
+
+        switch stateMachine.state {
+        case .active(let context):
+            #expect(context.context == 1)
+            #expect(context.__testing_values() == pendingQueries)
+            #expect(context.firstPendingQuery == pendingQueries.first)
+        default:
+            Issue.record("Expected active state")
+        }
+
+        /// Don't leak the promise
+        for pendingQuery in pendingQueries {
+            pendingQuery.fail(
+                with: DNSClientError.connectionClosed,
+                removingIDFrom: &messageIDGenerator
+            )
+        }
+    }
+
     @Test func fullChainResponseWorks() {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -57,18 +96,39 @@ struct DNSChannelHandlerStateMachineTests {
         )
 
         let action2 = stateMachine.cancel(requestID: pendingQuery.requestID)
-        #expect(
-            action2
-                == .failPendingQueriesAndClose(
-                    "context!",
-                    cancel: pendingQuery,
-                    closeConnectionDueToCancel: []
-                )
-        )
-        expect(stateMachine.state == State.closed(CancellationError()))
+        #expect(action2 == .cancel(pendingQuery, .cancel))
+        expect(stateMachine.state == State.active(.init(context: "context!")))
 
         pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.closed(CancellationError()))
+    }
+
+    @Test func cancelledBeforeResponseAndResponseArrivesLater() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var noOpMessageIDGenerator = MessageIDGenerator()
+        let (message, pendingQuery) = makeMessageAndPendingQuery()
+
+        stateMachine.setActive(context: "context!")
+        expect(stateMachine.state == State.active(.init(context: "context!")))
+
+        let action1 = stateMachine.sendQuery(pendingQuery)
+        #expect(action1 == .sendQuery("context!"))
+        expect(
+            stateMachine.state
+                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+        )
+
+        let action2 = stateMachine.cancel(requestID: pendingQuery.requestID)
+        #expect(action2 == .cancel(pendingQuery, .cancel))
+        expect(stateMachine.state == State.active(.init(context: "context!")))
+        /// Response is failed due to cancellation
+        pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        expect(stateMachine.state == State.active(.init(context: "context!")))
+
+        /// No matching pending query is there anymore
+        let action3 = stateMachine.receivedResponse(message: message)
+        #expect(action3 == .doNothing)
     }
 
     @Test func cancelledBeforeQuery() async {
@@ -123,6 +183,7 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
+        var noOpMessageIDGenerator = MessageIDGenerator()
 
         stateMachine.setActive(context: "context!")
         expect(stateMachine.state == State.active(.init(context: "context!")))
@@ -131,14 +192,15 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose("context!", []))
         expect(stateMachine.state == .closed(nil))
 
-        /// This code-path should be unreachable
-        await #expect(processExitsWith: .failure) {
-            var stateMachine = StateMachine.__for_testing(
-                state: .active(.init(context: "context!"))
-            )
-            let (_, pendingQuery) = makeMessageAndPendingQuery()
-            _ = stateMachine.sendQuery(pendingQuery)
-        }
+        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        let action2 = stateMachine.sendQuery(pendingQuery)
+        #expect(action2 == .throwError(DNSClientError.connectionClosed))
+        expect(stateMachine.state == .closed(nil))
+
+        pendingQuery.fail(
+            with: DNSClientError.connectionClosed,
+            removingIDFrom: &noOpMessageIDGenerator
+        )
     }
 
     @Test func closeAfterQuery() async {
@@ -228,7 +290,10 @@ struct DNSChannelHandlerStateMachineTests {
         expect(
             stateMachine.state
                 == State.active(
-                    .init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery2])
+                    .init(
+                        __testing_context: "context!",
+                        pendingQueries: [pendingQuery1, pendingQuery2]
+                    )
                 )
         )
 
@@ -237,7 +302,9 @@ struct DNSChannelHandlerStateMachineTests {
         pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
         expect(
             stateMachine.state
-                == State.active(.init(context: "context!", pendingQueries: [pendingQuery1]))
+                == State.active(
+                    .init(__testing_context: "context!", pendingQueries: [pendingQuery1])
+                )
         )
 
         let action4 = stateMachine.sendQuery(pendingQuery3)
@@ -245,7 +312,10 @@ struct DNSChannelHandlerStateMachineTests {
         expect(
             stateMachine.state
                 == State.active(
-                    .init(context: "context!", pendingQueries: [pendingQuery1, pendingQuery3])
+                    .init(
+                        __testing_context: "context!",
+                        pendingQueries: [pendingQuery1, pendingQuery3]
+                    )
                 )
         )
 
@@ -291,6 +361,11 @@ struct DNSChannelHandlerStateMachineTests {
                 self.latencyRange = latencyRange
             }
 
+            // Function required as the #expect macro does not work with non-copyable types
+            func expect(_ value: Bool, sourceLocation: SourceLocation = #_sourceLocation) {
+                #expect(value, sourceLocation: sourceLocation)
+            }
+
             func sendQuery() async throws {
                 let requestID = try messageIDGenerator.next()
                 let pendingQuery = PendingQuery(
@@ -309,9 +384,7 @@ struct DNSChannelHandlerStateMachineTests {
                     switch stateMachine.state {
                     case .active(let state):
                         #expect(state.context == 1)
-                        #expect(
-                            state.pendingQueries.map(\.requestID).contains(pendingQuery.requestID)
-                        )
+                        expect(state.__testing_contains(pendingQuery.requestID))
                     default:
                         Issue.record("Expected active state")
                     }
@@ -334,9 +407,7 @@ struct DNSChannelHandlerStateMachineTests {
                     switch stateMachine.state {
                     case .active(let state):
                         #expect(state.context == 1)
-                        #expect(
-                            !state.pendingQueries.map(\.requestID).contains(pendingQuery.requestID)
-                        )
+                        expect(!state.__testing_contains(pendingQuery.requestID))
                     default:
                         Issue.record("Expected active state")
                     }
@@ -392,9 +463,7 @@ struct DNSChannelHandlerStateMachineTests {
                 switch stateMachine.state {
                 case .active(let state):
                     #expect(state.context == 1)
-                    #expect(
-                        state.pendingQueries.map(\.requestID).contains(pendingQuery.requestID)
-                    )
+                    expect(state.__testing_contains(pendingQuery.requestID))
                 default:
                     Issue.record("Expected active state")
                 }
@@ -417,9 +486,7 @@ struct DNSChannelHandlerStateMachineTests {
                 switch stateMachine.state {
                 case .active(let state):
                     #expect(state.context == 1)
-                    #expect(
-                        !state.pendingQueries.map(\.requestID).contains(pendingQuery.requestID)
-                    )
+                    expect(!state.__testing_contains(pendingQuery.requestID))
                 default:
                     Issue.record("Expected active state")
                 }
@@ -459,7 +526,7 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
             switch rhs {
             case .active(let rhs):
                 return lhs.context == rhs.context
-                    && lhs.pendingQueries == rhs.pendingQueries
+                    && lhs.__testing_values() == rhs.__testing_values()
             default:
                 return false
             }
@@ -467,7 +534,7 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
             switch rhs {
             case .closing(let rhs):
                 return lhs.context == rhs.context
-                    && lhs.pendingQueries == rhs.pendingQueries
+                    && lhs.__testing_values() == rhs.__testing_values()
             default:
                 return false
             }
@@ -493,10 +560,10 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
     }
 }
 
-extension DNSChannelHandler.StateMachine.ActiveState: Equatable where Context: Equatable {
-    static func == (lhs: Self, rhs: Self) -> Bool {
+extension DNSChannelHandler.StateMachine.ActiveState where Context: Equatable {
+    static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         lhs.context == rhs.context
-            && lhs.pendingQueries == rhs.pendingQueries
+            && lhs.__testing_values() == rhs.__testing_values()
     }
 }
 
@@ -543,11 +610,10 @@ where Context: Equatable {
         case (.respond(let lhs1, let lhs2), .respond(let rhs1, let rhs2)):
             return lhs1 == rhs1
                 && lhs2 == rhs2
-        case (.respondAndClose(let lhs1, let lhs2), .respondAndClose(let rhs1, let rhs2)):
-            return lhs1 == rhs1
-                && "\(String(describing: lhs2))" == "\(String(describing: rhs2))"
-        case (.closeWithError(let lhs), .closeWithError(let rhs)):
-            return "\(String(describing: lhs))" == "\(String(describing: rhs))"
+        case (.respondAndClose(let lhs), .respondAndClose(let rhs)):
+            return lhs == rhs
+        case (.doNothing, .doNothing):
+            return true
         default:
             return false
         }
@@ -571,12 +637,14 @@ extension DNSChannelHandler.StateMachine.CancelAction: Equatable where Context: 
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (
-            .failPendingQueriesAndClose(let lhs, let lhs2, let lhs3),
-            .failPendingQueriesAndClose(let rhs, let rhs2, let rhs3)
+            .cancel(let lhs, let lhs2),
+            .cancel(let rhs, let rhs2)
         ):
             return lhs == rhs
                 && lhs2 == rhs2
-                && lhs3 == rhs3
+        case (.cancelAndClose(let lhs, let lhs2), .cancelAndClose(let rhs, let rhs2)):
+            return lhs == rhs
+                && lhs2 == rhs2
         case (.doNothing, .doNothing):
             return true
         default:

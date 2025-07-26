@@ -886,8 +886,8 @@ struct IntegrationTests {
         .serialized,
         .withDNSClient(
             configuration: DNSClientConfiguration(
-                connectionConfiguration: .init(queryTimeout: .seconds(3)),
-                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                connectionConfiguration: .init(queryTimeout: .seconds(10)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
                 tcpConnectionPoolConfiguration: .init(
                     minimumConnectionCount: 0,
                     maximumConnectionSoftLimit: 40,
@@ -934,8 +934,8 @@ struct IntegrationTests {
         .serialized,
         .withDNSClient(
             configuration: DNSClientConfiguration(
-                connectionConfiguration: .init(queryTimeout: .seconds(30)),
-                tcpConnectionConfiguration: .init(queryTimeout: .seconds(30)),
+                connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
                 tcpConnectionPoolConfiguration: .init(
                     minimumConnectionCount: 0,
                     maximumConnectionSoftLimit: 1,
