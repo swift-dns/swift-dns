@@ -102,7 +102,7 @@ extension DNSChannelHandler {
 
         switch self.stateMachine.sendQuery(pendingMessage) {
         case .sendQuery(let context):
-            var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 256))
+            var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 512))
             do {
                 try message.encode(into: &buffer)
             } catch {
@@ -138,6 +138,7 @@ extension DNSChannelHandler {
         }
     }
 
+    /// FIXME: don't close
     func handleError(context: ChannelHandlerContext, error: any Error) {
         self.logger.debug(
             "DNSChannelHandler error",

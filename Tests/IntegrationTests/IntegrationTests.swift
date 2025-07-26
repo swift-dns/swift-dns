@@ -906,7 +906,7 @@ struct IntegrationTests {
                 group.addTask { @Sendable () -> Void in
                     await #expect(throws: Never.self, "\(domain)") {
                         let name = try Name(domainName: domain + ".")
-                        let response = try await client.queryA(
+                        let response = try await client.queryNS(
                             message: .forQuery(name: name),
                             options: .edns,
                             channelKind: channelKind
@@ -925,7 +925,7 @@ struct IntegrationTests {
 
             await group.waitForAll()
 
-            #expect(withAnswers.load(ordering: .relaxed) > 70)
+            #expect(withAnswers.load(ordering: .relaxed) >= 90)
         }
     }
 
@@ -952,7 +952,7 @@ struct IntegrationTests {
         for domain in self.loadTop100Domains() {
             await #expect(throws: Never.self, "\(domain)") {
                 let name = try Name(domainName: domain)
-                let response = try await client.queryA(
+                let response = try await client.queryNS(
                     message: .forQuery(name: name),
                     options: .edns,
                     channelKind: channelKind
@@ -971,7 +971,7 @@ struct IntegrationTests {
             }
         }
 
-        #expect(withAnswers > 70)
+        #expect(withAnswers >= 90)
     }
 
     /// Not all these have A records although I think all have NS records.
