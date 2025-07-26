@@ -18,6 +18,12 @@ struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
     }
 
     func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) throws -> Message? {
-        try self.decode(buffer: &buffer)
+        /// Make sure we have at least one byte to read
+        /// We might receive and empty buffer when the channel goes inactive
+        guard buffer.readableBytes > 0 else {
+            return nil
+        }
+
+        return try self.decode(buffer: &buffer)
     }
 }
