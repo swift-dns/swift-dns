@@ -123,8 +123,8 @@ jobs:
         run: |
           echo "Processing threshold files..."
           for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
-            echo "Processing: $file"
-            jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+            echo "Processing: ${file}"
+            jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
 
       - name: Check for modifications

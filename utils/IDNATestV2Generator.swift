@@ -17,6 +17,24 @@ struct IDNATestV2CCase {
     let toAsciiNStatus: [String]
 }
 
+func fetchWithRetries(url: URL) throws -> Data {
+    let maxAttempts = 5
+    for attempts in 1...maxAttempts {
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            if attempts == maxAttempts {
+                throw error
+            } else {
+                print("✗ Failed to fetch latest release: \(String(reflecting: error))")
+                print("Retrying in 3 seconds...")
+                sleep(3)
+            }
+        }
+    }
+    fatalError("Unreachable")
+}
+
 func parseStatusString(_ statusStr: String) -> [String] {
     let trimmed = statusStr.trimmingWhitespaces()
     if trimmed.isEmpty || trimmed == "[]" {
@@ -35,7 +53,7 @@ func generate() -> String {
     }
 
     print("Downloading \(testV2URL) ...")
-    let file = try! Data(contentsOf: URL(string: testV2URL)!)
+    let file = try! fetchWithRetries(url: URL(string: testV2URL)!)
     print("Downloaded \(file.count) bytes.")
 
     let utf8String = String(decoding: file, as: UTF8.self)

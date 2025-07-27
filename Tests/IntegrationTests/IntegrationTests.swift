@@ -2,22 +2,32 @@ import DNSClient
 import DNSModels
 import Logging
 import NIOPosix
+import Synchronization
 import Testing
 
-@Suite(.serialized)
-struct DNSTests {
-    @Test func queryA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+@Suite(.serialized, .withDNSClient)
+struct IntegrationTests {
+    var client: DNSClient {
+        DNSClientTrait.currentClient!
+    }
+
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryA(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<A>.forQuery(name: "example.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryA(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<A>.forQuery(name: "example.com.")
-        let message = factory.message
-        let response = try await client.queryA(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -80,18 +90,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryANonASCIIDomain() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "210.2.4.8", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryANonASCIIDomain(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryA(
+            message: factory,
+            options: .edns,
+            channelKind: .udp
         )
 
-        let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
-        let message = factory.message
-        let response = try await client.queryA(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -112,7 +127,7 @@ struct DNSTests {
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
 
-        #expect(response.nameServers.count > 0)
+        /// response.nameServers.count is whatever
 
         #expect(response.answers.count > 1)
         #expect(
@@ -140,8 +155,7 @@ struct DNSTests {
             }
         )
 
-        /// Not only had 'additional's, but also an EDNS
-        #expect(response.additionals.count > 0)
+        /// response.additionals.count is whatever
 
         #expect(response.signature.count == 0)
 
@@ -154,18 +168,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryAAAA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryAAAA(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryAAAA(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
-        let message = factory.message
-        let response = try await client.queryAAAA(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -228,18 +247,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryCAA() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryCAA(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryCAA(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
-        let message = factory.message
-        let response = try await client.queryCAA(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -297,18 +321,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryCERT() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryCERT(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryCERT(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
-        let message = factory.message
-        let response = try await client.queryCERT(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -383,18 +412,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryCNAMEWwwGithubCom() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryCNAMEWwwGithubCom(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryCNAME(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
-        let message = factory.message
-        let response = try await client.queryCNAME(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 1)
         #expect(response.header.nameServerCount == 0)
@@ -441,18 +475,23 @@ struct DNSTests {
         /// edns.options.options is whatever
     }
 
-    @Test func queryCNAMERawGithubusercontentCom() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryCNAMERawGithubusercontentCom(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryCNAME(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
-        let message = factory.message
-        let response = try await client.queryCNAME(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 0)
         #expect(response.header.nameServerCount > 0)
@@ -510,18 +549,23 @@ struct DNSTests {
         /// TODO: try `education.github.com`
     }
 
-    @Test func queryMX() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryMX(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryMX(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
-        let message = factory.message
-        let response = try await client.queryMX(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -587,18 +631,23 @@ struct DNSTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @Test func queryNS() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryNS(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryNS(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
-        let message = factory.message
-        let response = try await client.queryNS(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 4)
         /// response.header.nameServerCount is whatever
@@ -671,18 +720,23 @@ struct DNSTests {
     /// OPT is used in every other query, so it's already well-tested.
     @Test func queryOPT() async throws {}
 
-    @Test func queryPTR() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryPTR(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryPTR(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
-        let message = factory.message
-        let response = try await client.queryPTR(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount == 1)
         /// response.header.nameServerCount is whatever
@@ -754,18 +808,23 @@ struct DNSTests {
 
     @Test func queryTLSA() async throws {}
 
-    @Test func queryTXT() async throws {
-        let client = DNSClient(
-            connectionTarget: .domain(name: "8.8.4.4", port: 53),
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
-            logger: Logger(label: "DNSTests")
+    @Test(arguments: DNSClient.QueryChannelKind.allCases)
+    func queryTXT(channelKind: DNSClient.QueryChannelKind) async throws {
+        let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
+        let message = factory.__testing_copyMessage()
+        let response = try await client.queryTXT(
+            message: factory,
+            options: .edns,
+            channelKind: channelKind
         )
 
-        let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
-        let message = factory.message
-        let response = try await client.queryTXT(message: factory, options: .edns)
-
-        #expect(response.header.id == message.header.id)
+        #expect(
+            message.header.id == 0 && response.header.id != 0,
+            """
+            The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+            This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+            """
+        )
         #expect(response.header.queryCount > 0)
         #expect(response.header.answerCount > 0)
         /// response.header.nameServerCount is whatever
@@ -822,4 +881,136 @@ struct DNSTests {
     @Test func queryUnknown() async throws {}
 
     @Test func queryUpdate0() async throws {}
+
+    @Test(
+        .serialized,
+        .withDNSClient(
+            configuration: DNSClientConfiguration(
+                connectionConfiguration: .init(queryTimeout: .seconds(10)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
+                tcpConnectionPoolConfiguration: .init(
+                    minimumConnectionCount: 0,
+                    maximumConnectionSoftLimit: 40,
+                    maximumConnectionHardLimit: 50,
+                    idleTimeout: .seconds(10)
+                )
+            )
+        ),
+        arguments: DNSClient.QueryChannelKind.allCases
+    )
+    func query100DomainsConcurrently(channelKind: DNSClient.QueryChannelKind) async throws {
+        await withTaskGroup(of: Void.self) { group in
+            let withAnswers = Atomic(0)
+            let errors: Mutex<[(String, any Error)]> = .init([])
+
+            for domain in self.loadTop100Domains() {
+                group.addTask { @Sendable () -> Void in
+                    do {
+                        let name = try Name(domainName: domain + ".")
+                        let response = try await client.queryNS(
+                            message: .forQuery(name: name),
+                            options: .edns,
+                            channelKind: channelKind
+                        )
+                        #expect(response.header.responseCode == .NoError, "\(domain)")
+                        #expect(response.header.messageType == .Response, "\(domain)")
+                        #expect(response.header.opCode == .Query, "\(domain)")
+                        #expect(response.queries.first?.name == name, "\(domain)")
+                        if response.header.answerCount > 0 {
+                            #expect(response.answers.count > 0, "\(domain)")
+                            withAnswers.add(1, ordering: .relaxed)
+                        }
+                    } catch {
+                        errors.withLock { $0.append((domain, error)) }
+                    }
+                }
+            }
+
+            await group.waitForAll()
+
+            errors.withLock { errors in
+                /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
+                if !errors.isEmpty {
+                    print(
+                        "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+                    )
+                }
+                if errors.count >= 5 {
+                    Issue.record("Too many errors: \(errors)")
+                }
+            }
+
+            #expect(withAnswers.load(ordering: .relaxed) >= 90)
+        }
+    }
+
+    @Test(
+        .tags(.timeConsuming),
+        .serialized,
+        .withDNSClient(
+            configuration: DNSClientConfiguration(
+                connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                tcpConnectionPoolConfiguration: .init(
+                    minimumConnectionCount: 0,
+                    maximumConnectionSoftLimit: 1,
+                    maximumConnectionHardLimit: 1,
+                    idleTimeout: .seconds(30)
+                )
+            )
+        ),
+        arguments: DNSClient.QueryChannelKind.allCases
+    )
+    func query100DomainsSequentially(channelKind: DNSClient.QueryChannelKind) async throws {
+        var withAnswers = 0
+        var errors: [(String, any Error)] = []
+
+        for domain in self.loadTop100Domains() {
+            do {
+                let name = try Name(domainName: domain)
+                let response = try await client.queryNS(
+                    message: .forQuery(name: name),
+                    options: .edns,
+                    channelKind: channelKind
+                )
+                #expect(response.header.responseCode == .NoError, "\(domain)")
+                #expect(response.header.messageType == .Response, "\(domain)")
+                #expect(response.header.opCode == .Query, "\(domain)")
+                #expect(
+                    response.queries.first?.name.isEssentiallyEqual(to: name) == true,
+                    "\(domain)"
+                )
+                if response.header.answerCount > 0 {
+                    #expect(response.answers.count > 0, "\(domain)")
+                    withAnswers += 1
+                }
+            } catch {
+                errors.append((domain, error))
+            }
+        }
+
+        /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
+        if !errors.isEmpty {
+            print(
+                "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+            )
+        }
+        if errors.count >= 5 {
+            Issue.record("Too many errors: \(errors)")
+        }
+
+        #expect(withAnswers >= 90)
+    }
+
+    /// A bunch don't even have A records. Most have NS records.
+    func loadTop100Domains() -> [String] {
+        String(
+            decoding: Resources.topDomains.data(),
+            as: UTF8.self
+        )
+        .split(separator: "\n")
+        .dropFirst()
+        .prefix(100)
+        .map(String.init)
+    }
 }

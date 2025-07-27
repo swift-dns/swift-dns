@@ -3,7 +3,7 @@ import NIOCore
 import Testing
 
 @Suite
-struct DNSTestsQueryResponse {
+struct QueryResponseTests {
     @Test func encodeAExampleComQuery() throws {
         let query = Query(
             name: try Name(domainName: "example.com."),

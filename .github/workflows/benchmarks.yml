@@ -165,8 +165,8 @@ jobs:
         run: |
           echo "Processing threshold files..."
           for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
-            echo "Processing: $file"
-            jq '.' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+            echo "Processing: ${file}"
+            jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
 
       - name: Check for modifications
@@ -182,18 +182,18 @@ jobs:
             echo "changes-count=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit threshold changes
+      - name: Commit threshold changes to a new branch
         if: steps.check-modifications.outputs.has-modifications == 'true'
         id: commit-update
         run: |
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
-          NEW_BRANCH="gha-bench-update/${{ github.run_id }}/${CURRENT_BRANCH}"
+          NEW_BRANCH="thresholds-update/${{ github.run_id }}/${CURRENT_BRANCH}"
 
           echo "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
 
           git checkout -b "${NEW_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
-          git commit -m "Auto-update of benchmark thresholds after failure
+          git commit -m "Update of benchmark thresholds with the deviated baselines
 
           Triggered by: ${RUN_LINK}"
           git push origin "${NEW_BRANCH}"
@@ -225,9 +225,12 @@ jobs:
           esac
 
           if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
+            SHORT_SHA="$(echo '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
+            COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}"
+            RUN_ID="${{ github.run_id }}"
+            BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}"
             echo '' >> comment.md
-            echo 'Benchmark thresholds have been automatically updated and committed to branch [${{ steps.commit-update.outputs.new-branch }}](https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}).' >> comment.md
-            echo 'Updated ${{ steps.check-modifications.outputs.changes-count }} threshold files through commit [${{ steps.commit-update.outputs.commit-sha }}](https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}).' >> comment.md
+            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to branch [${RUN_ID}](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
           fi
 
           echo '<details>' >> comment.md

@@ -153,10 +153,49 @@ public enum EDNSOption: Sendable, Hashable {
         }
     }
 
+    /// [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3)
+    ///
+    /// ```text
+    /// The edns-tcp-keepalive option is encoded as follows:
+    ///
+    ///                        1                   2                   3
+    ///    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    /// +-------------------------------+-------------------------------+
+    /// !         OPTION-CODE           !         OPTION-LENGTH         !
+    /// +-------------------------------+-------------------------------+
+    /// |           TIMEOUT             !
+    /// +-------------------------------+
+    ///
+    /// where:
+    ///
+    /// OPTION-CODE:   the EDNS0 option code assigned to edns-tcp-keepalive,
+    ///     11
+    ///
+    /// OPTION-LENGTH:   the value 0 if the TIMEOUT is omitted, the value 2
+    ///     if it is present;
+    ///
+    /// TIMEOUT:   an idle timeout value for the TCP connection, specified in
+    ///     units of 100 milliseconds, encoded in network byte order.
+    /// ```
+    public struct Keepalive: Sendable, Hashable {
+        /// An idle timeout value for the TCP connection, specified in **units of 100 milliseconds**.
+        public var timeout: UInt16
+
+        public init(timeout: UInt16) {
+            self.timeout = timeout
+        }
+
+        public init(timeoutSeconds: UInt16) {
+            self.timeout = timeoutSeconds * 10
+        }
+    }
+
     /// [RFC 6975, DNSSEC Algorithm Understood](https://tools.ietf.org/html/rfc6975)
     case dau(SupportedAlgorithms)
     /// [RFC 7871, Client Subnet, Optional](https://tools.ietf.org/html/rfc7871)
     case subnet(ClientSubnet)
+    /// [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3)
+    case keepalive(Keepalive)
     /// Unknown, used to deal with unknown or unsupported codes
     case unknown(UInt16, [UInt8])
 }
@@ -168,6 +207,8 @@ extension EDNSOption {
             self = .dau(SupportedAlgorithms(from: &buffer))
         case .subnet:
             self = .subnet(try ClientSubnet(from: &buffer))
+        case .keepalive:
+            self = .keepalive(try Keepalive(from: &buffer))
         default:
             self = .unknown(code.rawValue, buffer.readToEnd())
         }
@@ -185,6 +226,8 @@ extension EDNSOption {
         case .subnet(let subnet):
             buffer.writeInteger(subnet.lengthForWireProtocol)
             try subnet.encode(into: &buffer)
+        case .keepalive(let keepalive):
+            keepalive.encode(into: &buffer)
         case .unknown(_, let data):
             /// FIXME: we don't know this fits, should throw if it doesnt?
             buffer.writeInteger(UInt16(data.count))
@@ -367,6 +410,20 @@ extension EDNSOption.ClientSubnet {
                 addressLength: numericCast(addressLength)
             )
         }
+    }
+}
+
+extension EDNSOption.Keepalive {
+    package init(from buffer: inout DNSBuffer) throws {
+        self.timeout = try buffer.readInteger(as: UInt16.self).unwrap(
+            or: .failedToRead("EDNSOption.Keepalive.timeout", buffer)
+        )
+    }
+}
+
+extension EDNSOption.Keepalive {
+    package func encode(into buffer: inout DNSBuffer) {
+        buffer.writeInteger(self.timeout)
     }
 }
 

@@ -57,7 +57,14 @@ enum Resources: String {
     }
 
     private func qualifiedPath() -> String {
-        let dropCount = "DNSTests/Resources.swift".count
-        return #filePath.dropLast(dropCount) + "Resources/\(self.rawValue)"
+        var components = URL(fileURLWithPath: #filePath).pathComponents
+
+        while components.last != "swift-dns" {
+            components.removeLast()
+        }
+
+        components.append(contentsOf: ["Tests", "Resources", self.rawValue])
+
+        return components.joined(separator: "/")
     }
 }

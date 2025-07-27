@@ -17,6 +17,24 @@ func codePointsRangeText(_ codePoint1: UInt32, _ codePoint2: UInt32?) -> String 
     }
 }
 
+func fetchWithRetries(url: URL) throws -> Data {
+    let maxAttempts = 5
+    for attempts in 1...maxAttempts {
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            if attempts == maxAttempts {
+                throw error
+            } else {
+                print("✗ Failed to fetch latest release: \(String(reflecting: error))")
+                print("Retrying in 3 seconds...")
+                sleep(3)
+            }
+        }
+    }
+    fatalError("Unreachable")
+}
+
 func generate() -> String {
     let currentDirectory = FileManager.default.currentDirectoryPath
     guard currentDirectory.hasSuffix("swift-dns") else {
@@ -26,7 +44,7 @@ func generate() -> String {
     }
 
     print("Downloading \(mappingTableURL) ...")
-    let file = try! Data(contentsOf: URL(string: mappingTableURL)!)
+    let file = try! fetchWithRetries(url: URL(string: mappingTableURL)!)
     print("Downloaded \(file.count) bytes")
 
     let utf8String = String(decoding: file, as: UTF8.self)

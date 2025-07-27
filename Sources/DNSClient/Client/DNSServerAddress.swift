@@ -1,7 +1,7 @@
 public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
-public enum ConnectionTarget: Equatable, Hashable {
+public enum DNSServerAddress: Hashable, Sendable {
     // We keep the IP address serialization precisely as it is in the URL.
     // Some platforms have quirks in their implementations of 'ntop', for example
     // writing IPv6 addresses as having embedded IPv4 sections (e.g. [::192.168.0.1] vs [::c0a8:1]).
@@ -24,14 +24,14 @@ public enum ConnectionTarget: Equatable, Hashable {
         } else {
             precondition(
                 !remoteHost.isEmpty,
-                "HTTPClient.Request should already reject empty remote hostnames"
+                "Empty remote hostname \(remoteHost)"
             )
             self = .domain(name: remoteHost, port: port)
         }
     }
 }
 
-extension ConnectionTarget {
+extension DNSServerAddress {
     /// The host name which will be send as an HTTP `Host` header.
     /// Only returns nil if the `self` is a `unixSocket`.
     var host: String? {

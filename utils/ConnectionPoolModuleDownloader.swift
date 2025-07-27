@@ -27,24 +27,43 @@ struct GitHubFile: Codable {
 
 let fileManager = FileManager.default
 
+func fetchWithRetries(url: URL) throws -> Data {
+    let maxAttempts = 5
+    for attempts in 1...maxAttempts {
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            if attempts == maxAttempts {
+                throw error
+            } else {
+                print("✗ Failed to fetch latest release: \(String(reflecting: error))")
+                print("Retrying in 3 seconds...")
+                sleep(3)
+            }
+        }
+    }
+    fatalError("Unreachable")
+}
+
 func fetchLatestRelease() throws -> GitHubRelease {
     let url = URL(string: "https://api.github.com/repos/\(repoOwner)/\(repoName)/releases/latest")!
-    let data = try Data(contentsOf: url)
+    let data = try fetchWithRetries(url: url)
     return try JSONDecoder().decode(GitHubRelease.self, from: data)
 }
 
 func fetchDirectoryContents(apiUrl: String) throws -> [GitHubFile] {
     let url = URL(string: apiUrl)!
-    let data = try Data(contentsOf: url)
+    let data = try fetchWithRetries(url: url)
     return try JSONDecoder().decode([GitHubFile].self, from: data)
 }
 
-func downloadFile(from url: String, to outputPath: String) throws -> Int {
-    var data = try Data(contentsOf: URL(string: url)!)
+func downloadAndWriteFile(name: String, from url: String, to outputPath: String) throws -> Int {
+    var data = try fetchWithRetries(url: URL(string: url)!)
+    print("✓ Downloaded \(name) (\(data.count) bytes)")
 
-    // Replace _ConnectionPoolModule with DNSConnectionPool
+    // Replace _ConnectionPoolModule with _DNSConnectionPool
     let oldBytes = Data("_ConnectionPoolModule".utf8)
-    let newBytes = Data("DNSConnectionPool".utf8)
+    let newBytes = Data("_DNSConnectionPool".utf8)
 
     var searchIndex = data.startIndex
     while let range = data.range(of: oldBytes, in: searchIndex..<data.endIndex) {
@@ -58,8 +77,16 @@ func downloadFile(from url: String, to outputPath: String) throws -> Int {
         try fileManager.createDirectory(atPath: directory, withIntermediateDirectories: true)
     }
 
-    try data.write(to: URL(fileURLWithPath: outputPath))
-    return data.count
+    if let currentContents = fileManager.contents(atPath: outputPath),
+        currentContents == data
+    {
+        print("✓ File \(outputPath) already exists and is up to date")
+        return data.count
+    } else {
+        print("✓ Writing to \(outputPath) ...")
+        try data.write(to: URL(fileURLWithPath: outputPath))
+        return data.count
+    }
 }
 
 func downloadDirectoryRecursively(
@@ -83,10 +110,13 @@ func downloadDirectoryRecursively(
         if item.type == "file" {
             print("Downloading \(item.name) ...")
             do {
-                let bytes = try downloadFile(from: item.download_url, to: outputPath)
+                let bytes = try downloadAndWriteFile(
+                    name: item.name,
+                    from: item.download_url,
+                    to: outputPath
+                )
                 totalFiles += 1
                 totalBytes += bytes
-                print("✓ Downloaded \(item.name) (\(bytes) bytes)")
             } catch {
                 print("✗ Failed to download \(item.name): \(String(reflecting: error))")
             }
