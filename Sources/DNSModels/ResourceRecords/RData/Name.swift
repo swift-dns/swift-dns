@@ -1,3 +1,5 @@
+public import SwiftIDNA
+
 /// A domain name.
 ///
 /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)

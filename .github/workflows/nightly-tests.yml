@@ -13,7 +13,7 @@ defaults:
     shell: bash --noprofile --norc -e -u -o pipefail {0}
 
 jobs:
-  tests:
+  nightly-tests:
     strategy:
       fail-fast: false
       matrix:

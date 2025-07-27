@@ -17,10 +17,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.4"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.82.1"),
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.32.0"),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
+        .package(url: "https://github.com/mahdibm/swift-idna.git", branch: "main"),
 
         /// For the connection pool implementation copied from `PostgresNIO`.
         /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
@@ -31,14 +31,13 @@ let package = Package(
             name: "DNSCore",
             swiftSettings: settings
         ),
-        .target(name: "CSwiftDNSIDNA"),
         .target(
             name: "DNSModels",
             dependencies: [
                 "DNSCore",
-                "CSwiftDNSIDNA",
                 .product(name: "Collections", package: "swift-collections"),
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "SwiftIDNA", package: "swift-idna"),
             ],
             swiftSettings: settings
         ),
@@ -50,7 +49,6 @@ let package = Package(
                 "_DNSConnectionPool",
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
@@ -71,16 +69,11 @@ let package = Package(
             path: "Sources/DNSConnectionPool",
             swiftSettings: []/// Intentional. This module is copied from PostgresNIO.
         ),
-        .target(
-            name: "CSwiftDNSIDNATesting",
-            cSettings: cSettingsIgnoringInvalidSourceCharacters
-        ),
         .testTarget(
             name: "DNSTests",
             dependencies: [
                 "DNSCore",
                 "DNSModels",
-                "CSwiftDNSIDNATesting",
             ],
             swiftSettings: settings
         ),
@@ -118,18 +111,6 @@ var settings: [SwiftSetting] {
         ),
     ]
 }
-
-var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
-    [
-        .unsafeFlags(
-            [
-                "-Wno-unknown-escape-sequence",
-                "-Wno-invalid-source-encoding",
-            ]
-        )
-    ]
-}
-
 // MARK: - END exact copy of the main package's Package.swift
 
 // MARK: - Add benchmark stuff now

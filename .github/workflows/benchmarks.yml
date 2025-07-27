@@ -36,6 +36,8 @@ jobs:
 
       - name: Find commit info
         id: commit-info
+        env:
+          GITHUB_OBJECT: ${{ toJson(github) }}
         run: |
           # 'github.event.pull_request.head.sha' is needed for certain 'pull_request' events, such
           # as 'opened' and 'reopened' events.
@@ -58,7 +60,7 @@ jobs:
             SHORT_NAME="$(echo $COMMIT_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
           else
-            echo 'Unsupported event: ${{ toJson(github) }}'
+            printf '%s\n' "$GITHUB_OBJECT"
             exit 1
           fi
 

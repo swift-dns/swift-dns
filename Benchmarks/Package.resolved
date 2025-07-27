@@ -1,5 +1,5 @@
 {
-  "originHash" : "a5a1acd5dc2d27c1ed25da7054e2cb604650fff91df414db43e74d907653678c",
+  "originHash" : "e36057d1d9db3561403cb4b0b284e8a86d8a6f2a4b09a110fa2776bc053aec1e",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -65,6 +65,15 @@
       }
     },
     {
+      "identity" : "swift-idna",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mahdibm/swift-idna.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "7fba80e076280cb5707193bf28e3187784ca5eff"
+      }
+    },
+    {
       "identity" : "swift-log",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
@@ -80,15 +89,6 @@
       "state" : {
         "revision" : "a5fea865badcb1c993c85b0f0e8d05a4bd2270fb",
         "version" : "2.85.0"
-      }
-    },
-    {
-      "identity" : "swift-nio-ssl",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-nio-ssl.git",
-      "state" : {
-        "revision" : "385f5bd783ffbfff46b246a7db7be8e4f04c53bd",
-        "version" : "2.33.0"
       }
     },
     {
