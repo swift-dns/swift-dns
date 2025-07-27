@@ -17,17 +17,13 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var messageIDGenerator = MessageIDGenerator()
+        var queryProducer = QueryProducer()
 
         stateMachine.setProcessing(context: 1)
         expect(stateMachine._state == State.processing(.init(context: 1)))
 
-        let pendingQueries = try (0..<1000).map { _ in
-            PendingQuery(
-                promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
-                requestID: try messageIDGenerator.next(),
-                deadline: .now() + .seconds(10)
-            )
+        let pendingQueries = (0..<1000).map { _ in
+            queryProducer.produceFakeMessageAndPendingQuery().1
         }
         for pendingQuery in pendingQueries {
             let action = stateMachine.sendQuery(pendingQuery)
@@ -50,9 +46,9 @@ struct DNSChannelHandlerStateMachineTests {
 
         /// Don't leak the promise
         for pendingQuery in pendingQueries {
-            pendingQuery.fail(
-                with: DNSClientError.connectionClosed,
-                removingIDFrom: &messageIDGenerator
+            queryProducer.fullfilQuery(
+                pendingQuery: pendingQuery,
+                with: DNSClientError.connectionClosed
             )
         }
     }
@@ -61,8 +57,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: 1)
         expect(stateMachine._state == State.processing(.init(context: 1)))
@@ -81,7 +77,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.processing(.init(context: 1)))
 
         let action3 = stateMachine.forceClose()
@@ -93,9 +92,9 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message1, pendingQuery1) = makeMessageAndPendingQuery()
-        let (_, pendingQuery2) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message1, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (_, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: 1)
         expect(stateMachine._state == State.processing(.init(context: 1)))
@@ -137,9 +136,9 @@ struct DNSChannelHandlerStateMachineTests {
                     )
                 )
         )
-        pendingQuery2.fail(
-            with: DNSClientError.connectionClosing,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: DNSClientError.connectionClosing
         )
         expect(
             stateMachine._state
@@ -154,7 +153,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
         #expect(action4 == .respondAndClose(pendingQuery1, .cancel))
-        pendingQuery1.succeed(with: message1, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: message1
+        )
         expect(stateMachine._state == State.closed(nil))
     }
 
@@ -162,9 +164,9 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message1, pendingQuery1) = makeMessageAndPendingQuery()
-        let (message2, pendingQuery2) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message1, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (message2, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: 1)
         expect(stateMachine._state == State.processing(.init(context: 1)))
@@ -208,7 +210,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery2.requestID)
         #expect(action4 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
-        pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: message2
+        )
         expect(
             stateMachine._state
                 == State.processing(
@@ -222,7 +227,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action5 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
         #expect(action5 == .respondAndClose(pendingQuery1, .cancel))
-        pendingQuery1.succeed(with: message1, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: message1
+        )
         expect(stateMachine._state == State.closed(nil))
     }
 
@@ -230,8 +238,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -252,15 +260,18 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .cancel(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.cancelled
+        )
     }
 
     @Test func cancelBeforeQuery() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -283,7 +294,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action4 = stateMachine.forceClose()
@@ -312,8 +326,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -334,7 +348,10 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .cancel(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.cancelled
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         /// No matching pending query is there anymore
@@ -346,8 +363,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -364,7 +381,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
 
-        let unrelatedID = try! noOpMessageIDGenerator.next()
+        let unrelatedID = queryProducer.getNewRequestID()
         let action2 = stateMachine.cancel(requestID: unrelatedID)
         #expect(action2 == .doNothing)
         expect(
@@ -379,7 +396,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action5 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action5 == .respond(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
@@ -387,9 +407,9 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery1) = makeMessageAndPendingQuery()
-        let (_, pendingQuery2) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (_, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -431,7 +451,10 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        pendingQuery1.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: DNSClientError.cancelled
+        )
         expect(
             stateMachine._state
                 == State.processing(
@@ -447,7 +470,10 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action4 == .cancel(pendingQuery2, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        pendingQuery2.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: DNSClientError.cancelled
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
@@ -455,9 +481,9 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery1) = makeMessageAndPendingQuery()
-        let (_, pendingQuery2) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (_, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -513,7 +539,10 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        pendingQuery1.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: DNSClientError.cancelled
+        )
         expect(
             stateMachine._state
                 == State.processing(
@@ -530,7 +559,10 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action5 == .cancelAndClose("context!", pendingQuery2, .cancel))
         expect(stateMachine._state == State.closed(nil))
         /// Response is failed due to cancellation
-        pendingQuery2.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: DNSClientError.cancelled
+        )
         expect(stateMachine._state == State.closed(nil))
     }
 
@@ -538,13 +570,13 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var messageIDGenerator = MessageIDGenerator()
+        var queryProducer = QueryProducer()
 
         let action1 = stateMachine.forceClose()
         #expect(action1 == StateMachine.CloseAction.doNothing)
         expect(stateMachine._state == State.closed(nil))
 
-        let requestID = try! messageIDGenerator.next()
+        let requestID = queryProducer.getNewRequestID()
         let action2 = stateMachine.cancel(requestID: requestID)
         #expect(action2 == .doNothing)
         expect(stateMachine._state == State.closed(nil))
@@ -554,7 +586,7 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
+        var queryProducer = QueryProducer()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -563,14 +595,14 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose([], .cancel))
         expect(stateMachine._state == .closed(nil))
 
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
         let action2 = stateMachine.sendQuery(pendingQuery)
         #expect(action2 == .throwError(DNSClientError.connectionClosed))
         expect(stateMachine._state == .closed(nil))
 
-        pendingQuery.fail(
-            with: DNSClientError.connectionClosed,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.connectionClosed
         )
     }
 
@@ -605,8 +637,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -630,9 +662,9 @@ struct DNSChannelHandlerStateMachineTests {
         )
         expect(stateMachine._state == .closed(nil))
 
-        pendingQuery.fail(
-            with: DNSClientError.connectionClosed,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.connectionClosed
         )
     }
 
@@ -640,8 +672,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -660,7 +692,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action3 = stateMachine.forceClose()
@@ -675,10 +710,10 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery1) = makeMessageAndPendingQuery()
-        let (message2, pendingQuery2) = makeMessageAndPendingQuery()
-        let (_, pendingQuery3) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (message2, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (_, pendingQuery3) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -709,7 +744,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery2.requestID)
         #expect(action3 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
-        pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: message2
+        )
         expect(
             stateMachine._state
                 == State.processing(
@@ -742,13 +780,13 @@ struct DNSChannelHandlerStateMachineTests {
         )
         expect(stateMachine._state == .closed(nil))
 
-        pendingQuery1.fail(
-            with: DNSClientError.connectionClosed,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: DNSClientError.connectionClosed
         )
-        pendingQuery3.fail(
-            with: DNSClientError.connectionClosed,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery3,
+            with: DNSClientError.connectionClosed
         )
     }
 
@@ -756,8 +794,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -782,9 +820,9 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .failPendingQueriesAndClose([pendingQuery], .cancel))
         expect(stateMachine._state == State.closed(nil))
 
-        pendingQuery.fail(
-            with: DNSClientError.connectionClosed,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.connectionClosed
         )
         expect(stateMachine._state == State.closed(nil))
     }
@@ -793,8 +831,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -807,9 +845,9 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .failAndReschedule(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        pendingQuery.fail(
-            with: DNSClientError.queryTimeout,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.queryTimeout
         )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
@@ -831,8 +869,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -863,7 +901,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
@@ -871,9 +912,9 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery1) = makeMessageAndPendingQuery()
-        let (_, pendingQuery2) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery1) = queryProducer.produceFakeMessageAndPendingQuery()
+        let (_, pendingQuery2) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -915,9 +956,9 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        pendingQuery1.fail(
-            with: DNSClientError.queryTimeout,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery1,
+            with: DNSClientError.queryTimeout
         )
         expect(
             stateMachine._state
@@ -934,9 +975,9 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action4 == .failAndReschedule(pendingQuery2, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        pendingQuery2.fail(
-            with: DNSClientError.queryTimeout,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery2,
+            with: DNSClientError.queryTimeout
         )
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
@@ -945,8 +986,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (_, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -971,9 +1012,9 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .failAndClose("context!", pendingQuery, .cancel))
         expect(stateMachine._state == State.closed(nil))
 
-        pendingQuery.fail(
-            with: DNSClientError.queryTimeout,
-            removingIDFrom: &noOpMessageIDGenerator
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.queryTimeout
         )
         expect(stateMachine._state == State.closed(nil))
     }
@@ -1005,8 +1046,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var noOpMessageIDGenerator = MessageIDGenerator()
-        let (message, pendingQuery) = makeMessageAndPendingQuery()
+        var queryProducer = QueryProducer()
+        let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -1042,7 +1083,10 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action4 == .respondAndClose(pendingQuery, .cancel))
-        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: message
+        )
         expect(stateMachine._state == State.closed(nil))
     }
 
@@ -1075,7 +1119,7 @@ struct DNSChannelHandlerStateMachineTests {
         actor QuerySender {
             var stateMachine: StateMachine
             let latencyRange: ClosedRange<Int>
-            var messageIDGenerator = MessageIDGenerator()
+            var queryProducer = QueryProducer()
 
             init(stateMachine: consuming StateMachine, latencyRange: ClosedRange<Int>) {
                 self.stateMachine = stateMachine
@@ -1088,14 +1132,7 @@ struct DNSChannelHandlerStateMachineTests {
             }
 
             func sendQuery() async throws {
-                let requestID = try messageIDGenerator.next()
-                let pendingQuery = PendingQuery(
-                    promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
-                    requestID: requestID,
-                    deadline: .now() + .seconds(10)
-                )
-                var message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
-                message.header.id = requestID
+                let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
                 let action1 = stateMachine.sendQuery(pendingQuery)
                 switch action1 {
@@ -1122,7 +1159,10 @@ struct DNSChannelHandlerStateMachineTests {
                 switch action2 {
                 case .respond(let pendingQuery, _):
                     #expect(pendingQuery == pendingQuery)
-                    pendingQuery.succeed(with: message, removingIDFrom: &messageIDGenerator)
+                    queryProducer.fullfilQuery(
+                        pendingQuery: pendingQuery,
+                        with: message
+                    )
                     switch stateMachine._state {
                     case .processing(let state):
                         #expect(state.context == 1)
@@ -1159,20 +1199,13 @@ struct DNSChannelHandlerStateMachineTests {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
-        var messageIDGenerator = MessageIDGenerator()
+        var queryProducer = QueryProducer()
 
         stateMachine.setProcessing(context: 1)
         expect(stateMachine._state == State.processing(.init(context: 1)))
 
         for _ in 0..<queryCount {
-            let requestID = try! messageIDGenerator.next()
-            let pendingQuery = PendingQuery(
-                promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
-                requestID: requestID,
-                deadline: .now() + .seconds(10)
-            )
-            var message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
-            message.header.id = requestID
+            let (message, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
 
             let action1 = stateMachine.sendQuery(pendingQuery)
             switch action1 {
@@ -1200,7 +1233,10 @@ struct DNSChannelHandlerStateMachineTests {
             switch action2 {
             case .respond(let pendingQuery, _):
                 #expect(pendingQuery == pendingQuery)
-                pendingQuery.succeed(with: message, removingIDFrom: &messageIDGenerator)
+                queryProducer.fullfilQuery(
+                    pendingQuery: pendingQuery,
+                    with: message
+                )
                 switch stateMachine._state {
                 case .processing(let state):
                     #expect(state.context == 1)
@@ -1217,17 +1253,6 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .failPendingQueriesAndClose([], .cancel))
         expect(stateMachine._state == State.closed(nil))
     }
-}
-
-private func makeMessageAndPendingQuery() -> (Message, PendingQuery) {
-    let pendingQuery = PendingQuery(
-        promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
-        requestID: .random(in: .min ... .max),
-        deadline: .now() + .seconds(10)
-    )
-    var message = try! MessageFactory<A>.forQuery(name: "mahdibm.com").takeMessage()
-    message.header.id = pendingQuery.requestID
-    return (message, pendingQuery)
 }
 
 extension DNSChannelHandler.StateMachine.State where Context: Equatable {
@@ -1406,5 +1431,27 @@ where Context: Equatable {
         default:
             return false
         }
+    }
+}
+
+extension QueryProducer {
+    mutating func produceFakeMessageAndPendingQuery() -> (Message, PendingQuery) {
+        let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
+        let message = try! self.produceMessage(message: factory, options: [])
+        let pendingQuery = self.producePendingQuery(
+            alreadyProducedMessage: message,
+            promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
+            deadline: .now() + .seconds(10)
+        )
+        return (message, pendingQuery)
+    }
+
+    mutating func getNewRequestID() -> UInt16 {
+        let (_, pendingQuery) = self.produceFakeMessageAndPendingQuery()
+        self.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.cancelled
+        )
+        return pendingQuery.requestID
     }
 }

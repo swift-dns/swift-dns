@@ -9,8 +9,9 @@ package struct PendingQuery {
         case nio(EventLoopPromise<T>)
         case swift(CheckedContinuation<T, any Error>)
 
+        /// Only supposed to be used in `QueryProducer`
         @usableFromInline
-        func _succeed(with value: T) {
+        func queryProducer_succeed(with value: T) {
             switch self {
             case .nio(let eventLoopPromise):
                 eventLoopPromise.succeed(value)
@@ -19,8 +20,9 @@ package struct PendingQuery {
             }
         }
 
+        /// Only supposed to be used in `QueryProducer`
         @usableFromInline
-        func _fail(with error: any Error) {
+        func queryProducer_fail(with error: any Error) {
             switch self {
             case .nio(let eventLoopPromise):
                 eventLoopPromise.fail(error)
@@ -41,19 +43,6 @@ package struct PendingQuery {
         self.promise = promise
         self.requestID = requestID
         self.deadline = deadline
-    }
-
-    @inlinable
-    package func succeed(with value: Message, removingIDFrom: inout MessageIDGenerator) {
-        self.promise._succeed(with: value)
-        removingIDFrom.remove(self.requestID)
-    }
-
-    /// FIXME: This "removing ID" should happen in the channel handler?
-    @inlinable
-    package func fail(with error: any Error, removingIDFrom: inout MessageIDGenerator) {
-        self.promise._fail(with: error)
-        removingIDFrom.remove(self.requestID)
     }
 }
 

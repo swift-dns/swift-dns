@@ -16,15 +16,15 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: .now()) {
             case .failAndReschedule(let query, let deadlineCallbackAction):
-                query.fail(
-                    with: DNSClientError.queryTimeout,
-                    removingIDFrom: &channelHandler.messageIDGenerator
+                channelHandler.queryProducer.fullfilQuery(
+                    pendingQuery: query,
+                    with: DNSClientError.queryTimeout
                 )
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             case .failAndClose(let context, let query, let deadlineCallbackAction):
-                query.fail(
-                    with: DNSClientError.queryTimeout,
-                    removingIDFrom: &channelHandler.messageIDGenerator
+                channelHandler.queryProducer.fullfilQuery(
+                    pendingQuery: query,
+                    with: DNSClientError.queryTimeout
                 )
                 channelHandler.closeConnectionAndTakeDeadlineAction(
                     context: context,
@@ -55,7 +55,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     @usableFromInline
     private(set) var deadlineCallback: NIOScheduledCallback?
     @usableFromInline
-    var messageIDGenerator: MessageIDGenerator
+    var queryProducer: QueryProducer
     var stateMachine: StateMachine<ChannelHandlerContext>
     let isOverUDP: Bool
     let id: Int
@@ -70,7 +70,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.eventLoop = eventLoop
         self.configuration = configuration
         self.decoder = NIOSingleStepByteToMessageProcessor(DNSMessageDecoder())
-        self.messageIDGenerator = MessageIDGenerator()
+        self.queryProducer = QueryProducer()
         self.stateMachine = StateMachine()
         self.isOverUDP = isOverUDP
         self.id = channelHandlerIDGenerator.next()
@@ -82,30 +82,16 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
 
 extension DNSChannelHandler {
     @usableFromInline
-    func produceMessage(
-        message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions
-    ) throws(MessageIDGenerator.Errors) -> Message {
-        let requestID = try self.messageIDGenerator.next()
-        factory.apply(options: options)
-        factory.apply(requestID: requestID)
-        return factory.takeMessage()
-    }
-
-    @usableFromInline
-    func write(
-        message: Message,
-        continuation: CheckedContinuation<Message, any Error>
-    ) {
+    func write(message: Message, promise: PendingQuery.DynamicPromise<Message>) {
         self.eventLoop.assertInEventLoop()
 
-        let pendingMessage = PendingQuery(
-            promise: .swift(continuation),
+        let pendingQuery = PendingQuery(
+            promise: promise,
             requestID: message.header.id,
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
         )
 
-        switch self.stateMachine.sendQuery(pendingMessage) {
+        switch self.stateMachine.sendQuery(pendingQuery) {
         case .sendQuery(let context, let deadlineCallbackAction):
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
 
@@ -115,16 +101,16 @@ extension DNSChannelHandler {
             } catch {
                 /// Act as if we received an early response for the query
                 switch self.stateMachine.receivedResponse(requestID: message.header.id) {
-                case .respond(let pendingMessage, let deadlineAction):
+                case .respond(let pendingQuery, let deadlineAction):
                     self.processDeadlineCallbackAction(action: deadlineAction)
-                    pendingMessage.fail(
-                        with: error,
-                        removingIDFrom: &self.messageIDGenerator
+                    self.queryProducer.fullfilQuery(
+                        pendingQuery: pendingQuery,
+                        with: error
                     )
-                case .respondAndClose(let pendingMessage, let deadlineCallbackAction):
-                    pendingMessage.fail(
-                        with: error,
-                        removingIDFrom: &self.messageIDGenerator
+                case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
+                    self.queryProducer.fullfilQuery(
+                        pendingQuery: pendingQuery,
+                        with: error
                     )
                     /// The error we got is unrelated to connection closure, so we don't pass it
                     self.closeConnectionAndTakeDeadlineAction(
@@ -140,25 +126,25 @@ extension DNSChannelHandler {
             }
             context.writeAndFlush(self.wrapOutboundOut(ByteBuffer(dnsBuffer: buffer)), promise: nil)
         case .throwError(let error):
-            pendingMessage.fail(
-                with: error,
-                removingIDFrom: &self.messageIDGenerator
+            self.queryProducer.fullfilQuery(
+                pendingQuery: pendingQuery,
+                with: error
             )
         }
     }
 
     func handleResponse(context: ChannelHandlerContext, message: Message) {
         switch self.stateMachine.receivedResponse(requestID: message.header.id) {
-        case .respond(let pendingMessage, let deadlineAction):
+        case .respond(let pendingQuery, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
-            pendingMessage.succeed(
-                with: message,
-                removingIDFrom: &self.messageIDGenerator
+            self.queryProducer.fullfilQuery(
+                pendingQuery: pendingQuery,
+                with: message
             )
-        case .respondAndClose(let pendingMessage, let deadlineCallbackAction):
-            pendingMessage.succeed(
-                with: message,
-                removingIDFrom: &self.messageIDGenerator
+        case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
+            self.queryProducer.fullfilQuery(
+                pendingQuery: pendingQuery,
+                with: message
             )
             self.closeConnectionAndTakeDeadlineAction(
                 context: context,
@@ -262,15 +248,15 @@ extension DNSChannelHandler {
 
         switch self.stateMachine.cancel(requestID: requestID) {
         case .cancel(let query, let deadlineCallbackAction):
-            query.fail(
-                with: DNSClientError.cancelled,
-                removingIDFrom: &self.messageIDGenerator
+            self.queryProducer.fullfilQuery(
+                pendingQuery: query,
+                with: DNSClientError.cancelled
             )
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
         case .cancelAndClose(let context, let query, let deadlineCallbackAction):
-            query.fail(
-                with: DNSClientError.cancelled,
-                removingIDFrom: &self.messageIDGenerator
+            self.queryProducer.fullfilQuery(
+                pendingQuery: query,
+                with: DNSClientError.cancelled
             )
             self.closeConnectionAndTakeDeadlineAction(
                 context: context,
@@ -291,7 +277,10 @@ extension DNSChannelHandler {
         switch self.stateMachine.forceClose() {
         case .failPendingQueriesAndClose(let queries, let deadlineCallbackAction):
             for query in queries {
-                query.fail(with: error, removingIDFrom: &self.messageIDGenerator)
+                self.queryProducer.fullfilQuery(
+                    pendingQuery: query,
+                    with: error
+                )
             }
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
             /// Otherwise it's already closed
