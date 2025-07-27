@@ -26,11 +26,11 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
                     with: DNSClientError.queryTimeout,
                     removingIDFrom: &channelHandler.messageIDGenerator
                 )
-                channelHandler.closeConnection(
+                channelHandler.closeConnectionAndTakeDeadlineAction(
                     context: context,
+                    deadlineCallbackAction: deadlineCallbackAction,
                     error: DNSClientError.queryTimeout
                 )
-                channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             case .deadlineCallbackAction(let deadlineCallbackAction):
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             }
@@ -127,8 +127,11 @@ extension DNSChannelHandler {
                         removingIDFrom: &self.messageIDGenerator
                     )
                     /// The error we got is unrelated to connection closure, so we don't pass it
-                    self.closeConnection(context: context, error: nil)
-                    self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+                    self.closeConnectionAndTakeDeadlineAction(
+                        context: context,
+                        deadlineCallbackAction: deadlineCallbackAction,
+                        error: nil
+                    )
                 case .doNothing:
                     break
                 }
@@ -157,8 +160,11 @@ extension DNSChannelHandler {
                 with: message,
                 removingIDFrom: &self.messageIDGenerator
             )
-            self.closeConnection(context: context, error: nil)
-            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+            self.closeConnectionAndTakeDeadlineAction(
+                context: context,
+                deadlineCallbackAction: deadlineCallbackAction,
+                error: nil
+            )
         case .doNothing:
             break
         }
@@ -266,11 +272,11 @@ extension DNSChannelHandler {
                 with: DNSClientError.cancelled,
                 removingIDFrom: &self.messageIDGenerator
             )
-            self.closeConnection(
+            self.closeConnectionAndTakeDeadlineAction(
                 context: context,
+                deadlineCallbackAction: deadlineCallbackAction,
                 error: DNSClientError.cancelled
             )
-            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
         case .doNothing:
             break
         }
@@ -290,7 +296,7 @@ extension DNSChannelHandler {
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
             /// Otherwise it's already closed
             if error != .channelInactive {
-                self.closeConnection(context: context, error: error)
+                self._closeConnection(context: context, error: error)
             }
         case .doNothing:
             /// only call fireErrorCaught here as it might be called from `closeConnection`
@@ -298,7 +304,21 @@ extension DNSChannelHandler {
         }
     }
 
-    private func closeConnection(
+    /// State machine itself is in charge of returning the correct deadline callback action of `.cancel`.
+    /// The deadline callback action always should be `.cancel` here.
+    private func closeConnectionAndTakeDeadlineAction(
+        context: ChannelHandlerContext,
+        deadlineCallbackAction: StateMachine<ChannelHandlerContext>.DeadlineCallbackAction,
+        error: (any Error)? = nil,
+    ) {
+        self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+        self._closeConnection(context: context, error: error)
+    }
+
+    /// Prefer to use `closeConnectionAndTakeDeadlineAction`.
+    /// The state machines expects the deadline to be cancelled when connection is closed.
+    /// State machine itself is in charge of returning the correct deadline callback action of `.cancel`.
+    private func _closeConnection(
         context: ChannelHandlerContext,
         error: (any Error)? = nil
     ) {

@@ -94,12 +94,8 @@ extension DNSChannelHandler {
             switch consume self._state {
             case .initialized:
                 self = .processing(ProcessingState(context: context))
-            case .processing(let state):
-                precondition(
-                    !state.isClosing,
-                    "Cannot activate the state machine when it's closing"
-                )
-                self = .processing(state)
+            case .processing:
+                preconditionFailure("Cannot set processing when already processing")
             case .closed:
                 preconditionFailure("Cannot set connected state when state is closed")
             }
@@ -220,9 +216,8 @@ extension DNSChannelHandler {
                     self = .processing(state)
                     return .deadlineCallbackAction(.reschedule(firstQuery.deadline))
                 }
-            case .closed(let error):
-                self = .closed(error)
-                return .deadlineCallbackAction(.cancel)
+            case .closed:
+                preconditionFailure("Cannot hit deadline when closed")
             }
         }
 
