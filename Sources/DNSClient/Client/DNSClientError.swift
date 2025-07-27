@@ -6,4 +6,6 @@ public enum DNSClientError: Error {
     case unsolicitedResponse
     case queryTimeout
     case connectionClosedDueToCancellation
+    case handlerRemoved
+    case channelInactive
 }

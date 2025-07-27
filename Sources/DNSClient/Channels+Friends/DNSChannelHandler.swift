@@ -4,6 +4,8 @@ import DequeModule
 import Logging
 public import NIOCore
 
+private let channelHandlerIDGenerator = IncrementalIDGenerator()
+
 @usableFromInline
 package final class DNSChannelHandler: ChannelDuplexHandler {
 
@@ -19,7 +21,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
                     removingIDFrom: &channelHandler.messageIDGenerator
                 )
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
-            case .failAndClose(let context, let query):
+            case .failAndClose(let context, let query, let deadlineCallbackAction):
                 query.fail(
                     with: DNSClientError.queryTimeout,
                     removingIDFrom: &channelHandler.messageIDGenerator
@@ -28,6 +30,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
                     context: context,
                     error: DNSClientError.queryTimeout
                 )
+                channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             case .deadlineCallbackAction(let deadlineCallbackAction):
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             }
@@ -55,6 +58,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     var messageIDGenerator: MessageIDGenerator
     var stateMachine: StateMachine<ChannelHandlerContext>
     let isOverUDP: Bool
+    let id: Int
     let logger: Logger
 
     init(
@@ -66,10 +70,13 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.eventLoop = eventLoop
         self.configuration = configuration
         self.decoder = NIOSingleStepByteToMessageProcessor(DNSMessageDecoder())
-        self.isOverUDP = isOverUDP
-        self.logger = logger
         self.messageIDGenerator = MessageIDGenerator()
         self.stateMachine = StateMachine()
+        self.isOverUDP = isOverUDP
+        self.id = channelHandlerIDGenerator.next()
+        var logger = logger
+        logger[metadataKey: "dns_channel_handler_id"] = "\(self.id)"
+        self.logger = logger
     }
 }
 
@@ -114,13 +121,14 @@ extension DNSChannelHandler {
                         with: error,
                         removingIDFrom: &self.messageIDGenerator
                     )
-                case .respondAndClose(let pendingMessage):
+                case .respondAndClose(let pendingMessage, let deadlineCallbackAction):
                     pendingMessage.fail(
                         with: error,
                         removingIDFrom: &self.messageIDGenerator
                     )
                     /// The error we got is unrelated to connection closure, so we don't pass it
                     self.closeConnection(context: context, error: nil)
+                    self.processDeadlineCallbackAction(action: deadlineCallbackAction)
                 case .doNothing:
                     break
                 }
@@ -144,35 +152,15 @@ extension DNSChannelHandler {
                 with: message,
                 removingIDFrom: &self.messageIDGenerator
             )
-        case .respondAndClose(let pendingMessage):
+        case .respondAndClose(let pendingMessage, let deadlineCallbackAction):
             pendingMessage.succeed(
                 with: message,
                 removingIDFrom: &self.messageIDGenerator
             )
             self.closeConnection(context: context, error: nil)
+            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
         case .doNothing:
             break
-        }
-    }
-
-    /// FIXME: don't close
-    func handleError(context: ChannelHandlerContext, error: any Error) {
-        self.logger.debug(
-            "DNSChannelHandler error",
-            metadata: ["error": "\(String(reflecting: error))"]
-        )
-        switch self.stateMachine.forceClose() {
-        case .failPendingQueriesAndClose(let queries):
-            for query in queries {
-                query.fail(
-                    with: error,
-                    removingIDFrom: &self.messageIDGenerator
-                )
-            }
-            self.closeConnection(context: context, error: error)
-        case .doNothing:
-            // only call fireErrorCaught here as it is called from `closeConnection`
-            context.fireErrorCaught(error)
         }
     }
 
@@ -202,29 +190,32 @@ extension DNSChannelHandler {
 extension DNSChannelHandler {
     @usableFromInline
     package func handlerRemoved(context: ChannelHandlerContext) {
-        self.setClosed()
+        self.forceClose(context: context, error: .handlerRemoved)
     }
 
     /// This triggered before when the connection-factory is done so virtually a
     /// new channel is always active in the beginning of its lifecycle.
     @usableFromInline
     package func channelActive(context: ChannelHandlerContext) {
-        self.stateMachine.setActive(context: context)
-        self.logger.trace("Channel active.")
+        self.stateMachine.setProcessing(context: context)
+        self.logger.trace("Channel is active")
     }
 
     @usableFromInline
     package func channelInactive(context: ChannelHandlerContext) {
+        self.logger.trace(
+            "Channel has gone inactive. Will finish processing the remaining bytes and close the connection"
+        )
         do {
             try self.decoder.finishProcessing(seenEOF: true) { message in
                 self.handleResponse(context: context, message: message)
             }
         } catch let error {
-            self.handleError(context: context, error: error)
+            /// Just log the error.
+            /// The actual corresponding message will be just time out.
+            self.logDecodingError(error, isLastMessage: true)
         }
-        self.setClosed()
-
-        self.logger.trace("Channel inactive.")
+        self.forceClose(context: context, error: .channelInactive)
     }
 
     @usableFromInline
@@ -236,8 +227,27 @@ extension DNSChannelHandler {
                 self.handleResponse(context: context, message: message)
             }
         } catch let error {
-            self.handleError(context: context, error: error)
+            /// Just log the error.
+            /// The actual corresponding message will be just time out.
+            self.logDecodingError(error, isLastMessage: false)
         }
+    }
+
+    private func logDecodingError(
+        _ error: any Error,
+        isLastMessage: Bool,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.logger.warning(
+            "Encountered an error while decoding a DNS Message",
+            metadata: [
+                "error": "\(String(reflecting: error))",
+                "isLastMessage": "\(isLastMessage)",
+            ],
+            function: function,
+            line: line
+        )
     }
 
     @usableFromInline
@@ -251,7 +261,7 @@ extension DNSChannelHandler {
                 removingIDFrom: &self.messageIDGenerator
             )
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
-        case .cancelAndClose(let context, let query):
+        case .cancelAndClose(let context, let query, let deadlineCallbackAction):
             query.fail(
                 with: DNSClientError.cancelled,
                 removingIDFrom: &self.messageIDGenerator
@@ -260,23 +270,31 @@ extension DNSChannelHandler {
                 context: context,
                 error: DNSClientError.cancelled
             )
+            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
         case .doNothing:
             break
         }
     }
 
-    private func setClosed() {
-        switch self.stateMachine.setClosed() {
-        case .failPendingQueries(let queries):
+    func forceClose(context: ChannelHandlerContext, error: DNSClientError) {
+        self.logger.debug(
+            "Force closing the connection",
+            metadata: ["error": "\(String(reflecting: error))"]
+        )
+
+        switch self.stateMachine.forceClose() {
+        case .failPendingQueriesAndClose(let queries, let deadlineCallbackAction):
             for query in queries {
-                query.fail(
-                    with: DNSClientError.connectionClosed,
-                    removingIDFrom: &self.messageIDGenerator
-                )
+                query.fail(with: error, removingIDFrom: &self.messageIDGenerator)
             }
-            self.deadlineCallback?.cancel()
+            self.processDeadlineCallbackAction(action: deadlineCallbackAction)
+            /// Otherwise it's already closed
+            if error != .channelInactive {
+                self.closeConnection(context: context, error: error)
+            }
         case .doNothing:
-            break
+            /// only call fireErrorCaught here as it might be called from `closeConnection`
+            context.fireErrorCaught(error)
         }
     }
 

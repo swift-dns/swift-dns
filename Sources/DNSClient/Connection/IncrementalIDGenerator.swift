@@ -3,7 +3,7 @@ import _DNSConnectionPool
 
 /// Connection id generator for DNS connection pool
 @available(swiftDNS 1.0, *)
-package final class IDGenerator: ConnectionIDGeneratorProtocol {
+package final class IncrementalIDGenerator: ConnectionIDGeneratorProtocol {
     private let atomic: Atomic<Int>
 
     init() {

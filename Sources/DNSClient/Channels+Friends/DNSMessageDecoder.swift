@@ -6,6 +6,8 @@ struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
 
     let emptyBuffer = ByteBuffer()
 
+    /// FIXME: after a decoding error, see if we can just return the first 2 bytes of the buffer
+    /// as the message ID, so then the channel handler can properly throw an error for the query.
     func decode(buffer: inout ByteBuffer) throws -> Message? {
         var dnsBuffer = DNSBuffer(buffer: buffer)
         /// Avoid CoW when used in dnsBuffer

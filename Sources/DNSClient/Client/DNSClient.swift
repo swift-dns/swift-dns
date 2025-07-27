@@ -14,7 +14,7 @@ public actor DNSClient {
     typealias TCPConnectionPool = ConnectionPool<
         DNSConnection,
         DNSConnection.ID,
-        IDGenerator,
+        IncrementalIDGenerator,
         ConnectionRequest<DNSConnection>,
         ConnectionRequest.ID,
         /// DNS uses negotiation mechanisms through EDNS for keeping connections alive.
@@ -59,7 +59,7 @@ public actor DNSClient {
         self.configuration = configuration
         self.tcpConnectionPool = TCPConnectionPool(
             configuration: configuration.tcpConnectionPoolConfiguration.toConnectionPoolConfig(),
-            idGenerator: IDGenerator(),
+            idGenerator: IncrementalIDGenerator(),
             requestType: ConnectionRequest<DNSConnection>.self,
             keepAliveBehavior: NoOpKeepAliveBehavior(connectionType: DNSConnection.self),
             observabilityDelegate: DNSClientMetrics(logger: logger),

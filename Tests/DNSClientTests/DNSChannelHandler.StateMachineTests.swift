@@ -19,8 +19,8 @@ struct DNSChannelHandlerStateMachineTests {
         var stateMachine = StateMachine()
         var messageIDGenerator = MessageIDGenerator()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         let pendingQueries = try (0..<1000).map { _ in
             PendingQuery(
@@ -39,8 +39,8 @@ struct DNSChannelHandlerStateMachineTests {
             }
         }
 
-        switch stateMachine.state {
-        case .active(let context):
+        switch stateMachine._state {
+        case .processing(let context):
             #expect(context.context == 1)
             #expect(context.__testing_values() == pendingQueries)
             #expect(context.firstPendingQuery == pendingQueries.first)
@@ -64,23 +64,29 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (message, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery(1, .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state == State.active(.init(context: 1, firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
-        let action3 = stateMachine.setClosed()
-        #expect(action3 == .failPendingQueries([]))
-        expect(stateMachine.state == State.closed(nil))
+        let action3 = stateMachine.forceClose()
+        #expect(action3 == .failPendingQueriesAndClose([], .cancel))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func sendQueryThrowsErrorWhenClosing() {
@@ -91,32 +97,65 @@ struct DNSChannelHandlerStateMachineTests {
         let (message1, pendingQuery1) = makeMessageAndPendingQuery()
         let (_, pendingQuery2) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         let action1 = stateMachine.sendQuery(pendingQuery1)
         #expect(action1 == .sendQuery(1, .reschedule(pendingQuery1.deadline)))
         expect(
-            stateMachine.state == State.active(.init(context: 1, firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action2 = stateMachine.gracefulShutdown()
         #expect(action2 == .waitForPendingQueries(1))
-        expect(stateMachine.state == State.closing(.init(context: 1, firstQuery: pendingQuery1)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        isClosing: true,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
+        )
 
         let action3 = stateMachine.sendQuery(pendingQuery2)
         #expect(action3 == .throwError(DNSClientError.connectionClosing))
-        expect(stateMachine.state == State.closing(.init(context: 1, firstQuery: pendingQuery1)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        isClosing: true,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
+        )
         pendingQuery2.fail(
             with: DNSClientError.connectionClosing,
             removingIDFrom: &noOpMessageIDGenerator
         )
-        expect(stateMachine.state == State.closing(.init(context: 1, firstQuery: pendingQuery1)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        isClosing: true,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
+        )
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
-        #expect(action4 == .respondAndClose(pendingQuery1))
+        #expect(action4 == .respondAndClose(pendingQuery1, .cancel))
         pendingQuery1.succeed(with: message1, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func receivedResponseWorksWhenClosingAndReschedulesDeadline() {
@@ -127,31 +166,41 @@ struct DNSChannelHandlerStateMachineTests {
         let (message1, pendingQuery1) = makeMessageAndPendingQuery()
         let (message2, pendingQuery2) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         let action1 = stateMachine.sendQuery(pendingQuery1)
         #expect(action1 == .sendQuery(1, .reschedule(pendingQuery1.deadline)))
         expect(
-            stateMachine.state == State.active(.init(context: 1, firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action2 = stateMachine.sendQuery(pendingQuery2)
         #expect(action2 == .sendQuery(1, .doNothing))
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(__testing_context: 1, pendingQueries: [pendingQuery1, pendingQuery2])
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        pendingQueries: [pendingQuery1, pendingQuery2]
+                    )
                 )
         )
 
         let action3 = stateMachine.gracefulShutdown()
         #expect(action3 == .waitForPendingQueries(1))
         expect(
-            stateMachine.state
-                == State.closing(
-                    .init(
-                        __testing_context: 1,
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        isClosing: true,
                         pendingQueries: [pendingQuery1, pendingQuery2]
                     )
                 )
@@ -161,70 +210,127 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action4 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
         pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
         expect(
-            stateMachine.state
-                == State.closing(.init(context: 1, firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: 1,
+                        isClosing: true,
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action5 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
-        #expect(action5 == .respondAndClose(pendingQuery1))
+        #expect(action5 == .respondAndClose(pendingQuery1, .cancel))
         pendingQuery1.succeed(with: message1, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
-    @Test func cancelledBeforeResponse() {
+    @Test func cancelBeforeResponse() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action2 = stateMachine.cancel(requestID: pendingQuery.requestID)
         #expect(action2 == .cancel(pendingQuery, .cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
     }
 
-    @Test func cancelledBeforeResponseAndResponseArrivesLater() {
+    @Test func cancelBeforeResponseAndResponseArrivesLater() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action2 = stateMachine.cancel(requestID: pendingQuery.requestID)
         #expect(action2 == .cancel(pendingQuery, .cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
         pendingQuery.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         /// No matching pending query is there anymore
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .doNothing)
     }
 
-    @Test func cancelledWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
+    @Test func cancelUnavailableQueryDoesNothingThenResponseArrivesLater() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var noOpMessageIDGenerator = MessageIDGenerator()
+        let (message, pendingQuery) = makeMessageAndPendingQuery()
+
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+
+        let action1 = stateMachine.sendQuery(pendingQuery)
+        #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
+        )
+
+        let unrelatedID = try! noOpMessageIDGenerator.next()
+        let action2 = stateMachine.cancel(requestID: unrelatedID)
+        #expect(action2 == .doNothing)
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
+        )
+
+        let action5 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
+        #expect(action5 == .respond(pendingQuery, .cancel))
+        pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+    }
+
+    @Test func cancelWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
@@ -232,23 +338,28 @@ struct DNSChannelHandlerStateMachineTests {
         let (_, pendingQuery1) = makeMessageAndPendingQuery()
         let (_, pendingQuery2) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery1)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery1.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action2 = stateMachine.sendQuery(pendingQuery2)
         #expect(action2 == .sendQuery("context!", .doNothing))
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(
-                        __testing_context: "context!",
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
                         pendingQueries: [pendingQuery1, pendingQuery2]
                     )
                 )
@@ -258,65 +369,163 @@ struct DNSChannelHandlerStateMachineTests {
         /// Action asks to reschedule deadline for the next pending query
         #expect(action3 == .cancel(pendingQuery1, .reschedule(pendingQuery2.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery2))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
         )
         /// Response is failed due to cancellation
         pendingQuery1.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery2))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
         )
 
         let action4 = stateMachine.cancel(requestID: pendingQuery2.requestID)
         /// Action asks to cancel deadline because no more queries are available
         #expect(action4 == .cancel(pendingQuery2, .cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
         pendingQuery2.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @Test func cancelledBeforeQuery() {
+    @Test func cancelWhenClosingWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var noOpMessageIDGenerator = MessageIDGenerator()
+        let (_, pendingQuery1) = makeMessageAndPendingQuery()
+        let (_, pendingQuery2) = makeMessageAndPendingQuery()
+
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+
+        let action1 = stateMachine.sendQuery(pendingQuery1)
+        #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery1.deadline)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
+        )
+
+        let action2 = stateMachine.sendQuery(pendingQuery2)
+        #expect(action2 == .sendQuery("context!", .doNothing))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1, pendingQuery2]
+                    )
+                )
+        )
+
+        let action3 = stateMachine.gracefulShutdown()
+        #expect(action3 == .waitForPendingQueries("context!"))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery1, pendingQuery2]
+                    )
+                )
+        )
+
+        let action4 = stateMachine.cancel(requestID: pendingQuery1.requestID)
+        /// Action asks to reschedule deadline for the next pending query
+        #expect(action4 == .cancel(pendingQuery1, .reschedule(pendingQuery2.deadline)))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
+        )
+        /// Response is failed due to cancellation
+        pendingQuery1.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
+        )
+
+        let action5 = stateMachine.cancel(requestID: pendingQuery2.requestID)
+        /// Action asks to cancel deadline because no more queries are available
+        #expect(action5 == .cancelAndClose("context!", pendingQuery2, .cancel))
+        expect(stateMachine._state == State.closed(nil))
+        /// Response is failed due to cancellation
+        pendingQuery2.fail(with: DNSClientError.cancelled, removingIDFrom: &noOpMessageIDGenerator)
+        expect(stateMachine._state == State.closed(nil))
+    }
+
+    @Test func cancelBeforeQuery() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (message, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.cancel(requestID: pendingQuery.requestID)
         #expect(action1 == .doNothing)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action2 = stateMachine.sendQuery(pendingQuery)
         #expect(action2 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        let action4 = stateMachine.setClosed()
-        #expect(action4 == .failPendingQueries([]))
-        expect(stateMachine.state == State.closed(nil))
+        let action4 = stateMachine.forceClose()
+        #expect(action4 == .failPendingQueriesAndClose([], .cancel))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     /// Assumption is the channel handler is always `active` when it reaches a user,
     /// and never `initialized`.
-    @Test func cancelledBeforeActivation() async {
+    @Test func cancelBeforeActivation() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         let stateMachine = StateMachine()
 
         /// Assert the state, so we can statically recreate it for the exit test
-        expect(stateMachine.state == State.initialized)
+        expect(stateMachine._state == State.initialized)
 
         /// This code-path should be unreachable
         await #expect(processExitsWith: .failure) {
@@ -331,17 +540,17 @@ struct DNSChannelHandlerStateMachineTests {
         var stateMachine = StateMachine()
         var noOpMessageIDGenerator = MessageIDGenerator()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.forceClose()
-        #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose([]))
-        expect(stateMachine.state == .closed(nil))
+        #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose([], .cancel))
+        expect(stateMachine._state == .closed(nil))
 
         let (_, pendingQuery) = makeMessageAndPendingQuery()
         let action2 = stateMachine.sendQuery(pendingQuery)
         #expect(action2 == .throwError(DNSClientError.connectionClosed))
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
 
         pendingQuery.fail(
             with: DNSClientError.connectionClosed,
@@ -356,7 +565,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action1 = stateMachine.forceClose()
         #expect(action1 == StateMachine.CloseAction.doNothing)
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
     }
 
     @Test func forceCloseAfterCloseDoesNothing() {
@@ -364,16 +573,16 @@ struct DNSChannelHandlerStateMachineTests {
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.forceClose()
-        #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose([]))
-        expect(stateMachine.state == .closed(nil))
+        #expect(action1 == StateMachine.CloseAction.failPendingQueriesAndClose([], .cancel))
+        expect(stateMachine._state == .closed(nil))
 
         let action2 = stateMachine.forceClose()
         #expect(action2 == StateMachine.CloseAction.doNothing)
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
     }
 
     @Test func forceCloseAfterQuery() {
@@ -383,22 +592,27 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action2 = stateMachine.sendQuery(pendingQuery)
         #expect(action2 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action1 = stateMachine.forceClose()
         #expect(
             action1
-                == StateMachine.CloseAction.failPendingQueriesAndClose([pendingQuery])
+                == StateMachine.CloseAction.failPendingQueriesAndClose([pendingQuery], .cancel)
         )
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
 
         pendingQuery.fail(
             with: DNSClientError.connectionClosed,
@@ -413,27 +627,32 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (message, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action3 = stateMachine.forceClose()
         #expect(
             action3
-                == StateMachine.CloseAction.failPendingQueriesAndClose([])
+                == StateMachine.CloseAction.failPendingQueriesAndClose([], .cancel)
         )
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
     }
 
     @Test func forceCloseAfterMultipleQueries() {
@@ -445,23 +664,28 @@ struct DNSChannelHandlerStateMachineTests {
         let (message2, pendingQuery2) = makeMessageAndPendingQuery()
         let (_, pendingQuery3) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery1)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery1.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action2 = stateMachine.sendQuery(pendingQuery2)
         #expect(action2 == .sendQuery("context!", .doNothing))
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(
-                        __testing_context: "context!",
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
                         pendingQueries: [pendingQuery1, pendingQuery2]
                     )
                 )
@@ -471,19 +695,22 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
         pendingQuery2.succeed(with: message2, removingIDFrom: &noOpMessageIDGenerator)
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(__testing_context: "context!", pendingQueries: [pendingQuery1])
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1]
+                    )
                 )
         )
 
         let action4 = stateMachine.sendQuery(pendingQuery3)
         #expect(action4 == .sendQuery("context!", .doNothing))
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(
-                        __testing_context: "context!",
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
                         pendingQueries: [pendingQuery1, pendingQuery3]
                     )
                 )
@@ -492,11 +719,12 @@ struct DNSChannelHandlerStateMachineTests {
         let action5 = stateMachine.forceClose()
         #expect(
             action5
-                == StateMachine.CloseAction.failPendingQueriesAndClose([
-                    pendingQuery1, pendingQuery3,
-                ])
+                == StateMachine.CloseAction.failPendingQueriesAndClose(
+                    [pendingQuery1, pendingQuery3],
+                    .cancel
+                )
         )
-        expect(stateMachine.state == .closed(nil))
+        expect(stateMachine._state == .closed(nil))
 
         pendingQuery1.fail(
             with: DNSClientError.connectionClosed,
@@ -515,8 +743,8 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
@@ -524,19 +752,25 @@ struct DNSChannelHandlerStateMachineTests {
         let action2 = stateMachine.gracefulShutdown()
         #expect(action2 == .waitForPendingQueries("context!"))
         expect(
-            stateMachine.state
-                == State.closing(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action3 = stateMachine.forceClose()
-        #expect(action3 == .failPendingQueriesAndClose([pendingQuery]))
-        expect(stateMachine.state == State.closed(nil))
+        #expect(action3 == .failPendingQueriesAndClose([pendingQuery], .cancel))
+        expect(stateMachine._state == State.closed(nil))
 
         pendingQuery.fail(
             with: DNSClientError.connectionClosed,
             removingIDFrom: &noOpMessageIDGenerator
         )
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func hitDeadlineWorksForInflightQuery() async {
@@ -546,8 +780,8 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
@@ -555,13 +789,13 @@ struct DNSChannelHandlerStateMachineTests {
         /// Intentionally pass `pendingQuery.deadline` as `now`. Still should fail and reschedule.
         let action2 = stateMachine.hitDeadline(now: pendingQuery.deadline)
         #expect(action2 == .failAndReschedule(pendingQuery, .cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         pendingQuery.fail(
             with: DNSClientError.queryTimeout,
             removingIDFrom: &noOpMessageIDGenerator
         )
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
     @Test func hitDeadlineDoesNothingWhenNoPendingQueries() async {
@@ -569,12 +803,12 @@ struct DNSChannelHandlerStateMachineTests {
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.hitDeadline(now: .now() + .seconds(1))
         #expect(action1 == .deadlineCallbackAction(.cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
     @Test func hitDeadlineDoesNotCancelQueryWithUnexpiredDeadline() async {
@@ -584,25 +818,37 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (message, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action2 = stateMachine.hitDeadline(now: pendingQuery.deadline + .seconds(-1))
         #expect(action2 == .deadlineCallbackAction(.reschedule(pendingQuery.deadline)))
         expect(
-            stateMachine.state == State.active(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
     @Test func hitDeadlineWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
@@ -613,23 +859,28 @@ struct DNSChannelHandlerStateMachineTests {
         let (_, pendingQuery1) = makeMessageAndPendingQuery()
         let (_, pendingQuery2) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery1)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery1.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery1))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery1]
+                    )
+                )
         )
 
         let action2 = stateMachine.sendQuery(pendingQuery2)
         #expect(action2 == .sendQuery("context!", .doNothing))
         expect(
-            stateMachine.state
-                == State.active(
-                    .init(
-                        __testing_context: "context!",
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
                         pendingQueries: [pendingQuery1, pendingQuery2]
                     )
                 )
@@ -639,8 +890,13 @@ struct DNSChannelHandlerStateMachineTests {
         /// Action asks to reschedule deadline for the next pending query
         #expect(action3 == .failAndReschedule(pendingQuery1, .reschedule(pendingQuery2.deadline)))
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery2))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
         )
         /// Response is failed due to cancellation
         pendingQuery1.fail(
@@ -648,20 +904,25 @@ struct DNSChannelHandlerStateMachineTests {
             removingIDFrom: &noOpMessageIDGenerator
         )
         expect(
-            stateMachine.state
-                == State.active(.init(context: "context!", firstQuery: pendingQuery2))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        pendingQueries: [pendingQuery2]
+                    )
+                )
         )
 
         let action4 = stateMachine.hitDeadline(now: pendingQuery2.deadline + .seconds(1))
         /// Action asks to cancel deadline because no more queries are available
         #expect(action4 == .failAndReschedule(pendingQuery2, .cancel))
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
         pendingQuery2.fail(
             with: DNSClientError.queryTimeout,
             removingIDFrom: &noOpMessageIDGenerator
         )
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
     @Test func hitDeadlineClosesConnectionWhenClosingAndNoMorePendingQueries() async {
@@ -671,8 +932,8 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (_, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
@@ -680,19 +941,25 @@ struct DNSChannelHandlerStateMachineTests {
         let action2 = stateMachine.gracefulShutdown()
         #expect(action2 == .waitForPendingQueries("context!"))
         expect(
-            stateMachine.state
-                == State.closing(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action3 = stateMachine.hitDeadline(now: pendingQuery.deadline + .seconds(1))
-        #expect(action3 == .failAndClose("context!", pendingQuery))
-        expect(stateMachine.state == State.closed(nil))
+        #expect(action3 == .failAndClose("context!", pendingQuery, .cancel))
+        expect(stateMachine._state == State.closed(nil))
 
         pendingQuery.fail(
             with: DNSClientError.queryTimeout,
             removingIDFrom: &noOpMessageIDGenerator
         )
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func gracefulShutdownClosesConnectionImmediatelyWhenNoPendingQueries() async {
@@ -700,12 +967,12 @@ struct DNSChannelHandlerStateMachineTests {
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.gracefulShutdown()
         #expect(action1 == .closeConnection("context!"))
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func gracefulShutdownBeforeActivationClosesImmediately() async {
@@ -715,7 +982,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action1 = stateMachine.gracefulShutdown()
         #expect(action1 == .doNothing)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func gracefulShutdownWhenClosingDoesNothing() async {
@@ -725,8 +992,8 @@ struct DNSChannelHandlerStateMachineTests {
         var noOpMessageIDGenerator = MessageIDGenerator()
         let (message, pendingQuery) = makeMessageAndPendingQuery()
 
-        stateMachine.setActive(context: "context!")
-        expect(stateMachine.state == State.active(.init(context: "context!")))
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
 
         let action1 = stateMachine.sendQuery(pendingQuery)
         #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
@@ -734,21 +1001,33 @@ struct DNSChannelHandlerStateMachineTests {
         let action2 = stateMachine.gracefulShutdown()
         #expect(action2 == .waitForPendingQueries("context!"))
         expect(
-            stateMachine.state
-                == State.closing(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action3 = stateMachine.gracefulShutdown()
         #expect(action3 == .doNothing)
         expect(
-            stateMachine.state
-                == State.closing(.init(context: "context!", firstQuery: pendingQuery))
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
         )
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
-        #expect(action4 == .respondAndClose(pendingQuery))
+        #expect(action4 == .respondAndClose(pendingQuery, .cancel))
         pendingQuery.succeed(with: message, removingIDFrom: &noOpMessageIDGenerator)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test func gracefulShutdownWhenClosedDoesNothing() async {
@@ -758,11 +1037,11 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action1 = stateMachine.gracefulShutdown()
         #expect(action1 == .doNothing)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
 
         let action2 = stateMachine.gracefulShutdown()
         #expect(action2 == .doNothing)
-        expect(stateMachine.state == State.closed(nil))
+        expect(stateMachine._state == State.closed(nil))
     }
 
     @Test(arguments: [(queryCount: 1_000, latencyRange: 20...250)])
@@ -774,8 +1053,8 @@ struct DNSChannelHandlerStateMachineTests {
         typealias State = StateMachine.State
         var stateMachine = StateMachine()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         actor QuerySender {
             var stateMachine: StateMachine
@@ -806,8 +1085,8 @@ struct DNSChannelHandlerStateMachineTests {
                 switch action1 {
                 case .sendQuery(let context, _):
                     #expect(context == 1)
-                    switch stateMachine.state {
-                    case .active(let state):
+                    switch stateMachine._state {
+                    case .processing(let state):
                         #expect(state.context == 1)
                         expect(state.__testing_contains(pendingQuery.requestID))
                     default:
@@ -828,8 +1107,8 @@ struct DNSChannelHandlerStateMachineTests {
                 case .respond(let pendingQuery, _):
                     #expect(pendingQuery == pendingQuery)
                     pendingQuery.succeed(with: message, removingIDFrom: &messageIDGenerator)
-                    switch stateMachine.state {
-                    case .active(let state):
+                    switch stateMachine._state {
+                    case .processing(let state):
                         #expect(state.context == 1)
                         expect(!state.__testing_contains(pendingQuery.requestID))
                     default:
@@ -866,8 +1145,8 @@ struct DNSChannelHandlerStateMachineTests {
         var stateMachine = StateMachine()
         var messageIDGenerator = MessageIDGenerator()
 
-        stateMachine.setActive(context: 1)
-        expect(stateMachine.state == State.active(.init(context: 1)))
+        stateMachine.setProcessing(context: 1)
+        expect(stateMachine._state == State.processing(.init(context: 1)))
 
         for _ in 0..<queryCount {
             let requestID = try! messageIDGenerator.next()
@@ -883,8 +1162,8 @@ struct DNSChannelHandlerStateMachineTests {
             switch action1 {
             case .sendQuery(let context, _):
                 #expect(context == 1)
-                switch stateMachine.state {
-                case .active(let state):
+                switch stateMachine._state {
+                case .processing(let state):
                     #expect(state.context == 1)
                     expect(state.__testing_contains(pendingQuery.requestID))
                 default:
@@ -906,8 +1185,8 @@ struct DNSChannelHandlerStateMachineTests {
             case .respond(let pendingQuery, _):
                 #expect(pendingQuery == pendingQuery)
                 pendingQuery.succeed(with: message, removingIDFrom: &messageIDGenerator)
-                switch stateMachine.state {
-                case .active(let state):
+                switch stateMachine._state {
+                case .processing(let state):
                     #expect(state.context == 1)
                     expect(!state.__testing_contains(pendingQuery.requestID))
                 default:
@@ -918,9 +1197,9 @@ struct DNSChannelHandlerStateMachineTests {
             }
         }
 
-        let action3 = stateMachine.setClosed()
-        #expect(action3 == .failPendingQueries([]))
-        expect(stateMachine.state == State.closed(nil))
+        let action3 = stateMachine.forceClose()
+        #expect(action3 == .failPendingQueriesAndClose([], .cancel))
+        expect(stateMachine._state == State.closed(nil))
     }
 }
 
@@ -945,19 +1224,10 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
             default:
                 return false
             }
-        case .active(let lhs):
+        case .processing(let lhs):
             switch rhs {
-            case .active(let rhs):
-                return lhs.context == rhs.context
-                    && lhs.__testing_values() == rhs.__testing_values()
-            default:
-                return false
-            }
-        case .closing(let lhs):
-            switch rhs {
-            case .closing(let rhs):
-                return lhs.context == rhs.context
-                    && lhs.__testing_values() == rhs.__testing_values()
+            case .processing(let rhs):
+                return lhs == rhs
             default:
                 return false
             }
@@ -983,9 +1253,10 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
     }
 }
 
-extension DNSChannelHandler.StateMachine.ActiveState where Context: Equatable {
+extension DNSChannelHandler.StateMachine.ProcessingState where Context: Equatable {
     static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         lhs.context == rhs.context
+            && lhs.isClosing == rhs.isClosing
             && lhs.__testing_values() == rhs.__testing_values()
     }
 }
@@ -1034,21 +1305,9 @@ where Context: Equatable {
         case (.respond(let lhs1, let lhs2), .respond(let rhs1, let rhs2)):
             return lhs1 == rhs1
                 && lhs2 == rhs2
-        case (.respondAndClose(let lhs), .respondAndClose(let rhs)):
-            return lhs == rhs
-        case (.doNothing, .doNothing):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-extension DNSChannelHandler.StateMachine.SetClosedAction: Equatable where Context: Equatable {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        switch (lhs, rhs) {
-        case (.failPendingQueries(let lhs), .failPendingQueries(let rhs)):
-            return lhs == rhs
+        case (.respondAndClose(let lhs1, let lhs2), .respondAndClose(let rhs1, let rhs2)):
+            return lhs1 == rhs1
+                && lhs2 == rhs2
         case (.doNothing, .doNothing):
             return true
         default:
@@ -1066,9 +1325,13 @@ extension DNSChannelHandler.StateMachine.CancelAction: Equatable where Context: 
         ):
             return lhs == rhs
                 && lhs2 == rhs2
-        case (.cancelAndClose(let lhs, let lhs2), .cancelAndClose(let rhs, let rhs2)):
+        case (
+            .cancelAndClose(let lhs, let lhs2, let lhs3),
+            .cancelAndClose(let rhs, let rhs2, let rhs3)
+        ):
             return lhs == rhs
                 && lhs2 == rhs2
+                && lhs3 == rhs3
         case (.doNothing, .doNothing):
             return true
         default:
@@ -1081,10 +1344,11 @@ extension DNSChannelHandler.StateMachine.CloseAction: Equatable where Context: E
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (
-            .failPendingQueriesAndClose(let lhs),
-            .failPendingQueriesAndClose(let rhs)
+            .failPendingQueriesAndClose(let lhs1, let lhs2),
+            .failPendingQueriesAndClose(let rhs1, let rhs2)
         ):
-            return lhs == rhs
+            return lhs1 == rhs1
+                && lhs2 == rhs2
         case (.doNothing, .doNothing):
             return true
         default:
@@ -1099,9 +1363,12 @@ extension DNSChannelHandler.StateMachine.HitDeadlineAction: Equatable where Cont
         case (.failAndReschedule(let lhs1, let lhs2), .failAndReschedule(let rhs1, let rhs2)):
             return lhs1 == rhs1
                 && lhs2 == rhs2
-        case (.failAndClose(let lhs1, let lhs2), .failAndClose(let rhs1, let rhs2)):
+        case (
+            .failAndClose(let lhs1, let lhs2, let lhs3), .failAndClose(let rhs1, let rhs2, let rhs3)
+        ):
             return lhs1 == rhs1
                 && lhs2 == rhs2
+                && lhs3 == rhs3
         case (.deadlineCallbackAction(let lhs), .deadlineCallbackAction(let rhs)):
             return lhs == rhs
         default:
