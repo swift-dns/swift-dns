@@ -39,7 +39,7 @@ extension DNSChannelHandler {
         }
 
         /// `_pendingQueriesLookupTable` is sorted by the order of the pending queries.
-        /// The order is used to determine the next message which will reach its deadline first.
+        /// The order is used to determine the next query which will reach its deadline first.
         /// To not break this assumption, all `deadline`s of `PendingQuery`s must be the same.
         /// Today this is the case. The `deadline` originates from the `DNSClientConfiguration`.
         /// That means it's always the same number.
@@ -48,7 +48,7 @@ extension DNSChannelHandler {
         @usableFromInline
         package struct ActiveState: ~Copyable {
             package let context: Context
-            /// [MessageID: PendingQuery] where MessageID == PendingQuery.id & MessageID == message.header.id
+            /// [PendingQuery.requestID: PendingQuery] where PendingQuery.requestID == message.header.id
             var _pendingQueriesLookupTable: OrderedDictionary<UInt16, PendingQuery>
 
             package init(context: Context, firstQuery pendingQuery: PendingQuery) {
@@ -133,12 +133,12 @@ extension DNSChannelHandler {
             case throwError(any Error)
         }
 
-        /// handler wants to send a message
+        /// handler wants to send a query
         @usableFromInline
         package mutating func sendQuery(_ pendingQuery: PendingQuery) -> SendQueryAction {
             switch consume self.state {
             case .initialized:
-                preconditionFailure("Cannot send message when initialized")
+                preconditionFailure("Cannot send query when initialized")
             case .active(var state):
                 let wasEmpty = state.isEmpty
                 state.append(pendingQuery)
@@ -175,46 +175,46 @@ extension DNSChannelHandler {
             case doNothing
         }
 
-        /// handler wants to send a message
+        /// handler wants to send a query
         @usableFromInline
         package mutating func receivedResponse(requestID: UInt16) -> ReceivedResponseAction {
             switch consume self.state {
             case .initialized:
-                preconditionFailure("Cannot send message when initialized")
+                preconditionFailure("Cannot send query when initialized")
             case .active(var state):
-                guard let pendingMessage = state.removeValue(requestID: requestID) else {
+                guard let pendingQuery = state.removeValue(requestID: requestID) else {
                     /// PendingQuery is no longer there. Maybe it was cancelled.
                     self = .active(state)
                     return .doNothing
                 }
                 let deadlineCallback = Self.calculateDeadlineCallbackAction(
-                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingQuery,
                     nextDeadline: state.firstPendingQuery?.deadline
                 )
-                let action: ReceivedResponseAction = .respond(pendingMessage, deadlineCallback)
+                let action: ReceivedResponseAction = .respond(pendingQuery, deadlineCallback)
                 self = .active(state)
                 return action
             case .closing(var state):
-                guard let pendingMessage = state.removeValue(requestID: requestID) else {
+                guard let pendingQuery = state.removeValue(requestID: requestID) else {
                     /// PendingQuery is no longer there. Maybe it was cancelled.
-                    /// Still there must be another messages pending, so we can't close the connection.
+                    /// Still there must be another queries pending, so we can't close the connection.
                     assert(!state.isEmpty)
                     self = .closing(state)
                     return .doNothing
                 }
-                guard let nextMessage = state.firstPendingQuery else {
-                    /// `pendingMessage` was the last message. We can close the connection now.
+                guard let nextQuery = state.firstPendingQuery else {
+                    /// `pendingQuery` was the last query. We can close the connection now.
                     self = .closed(nil)
-                    return .respondAndClose(pendingMessage)
+                    return .respondAndClose(pendingQuery)
                 }
                 let deadlineCallback = Self.calculateDeadlineCallbackAction(
-                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
-                    nextDeadline: nextMessage.deadline
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingQuery,
+                    nextDeadline: nextQuery.deadline
                 )
                 self = .closing(state)
-                return .respond(pendingMessage, deadlineCallback)
+                return .respond(pendingQuery, deadlineCallback)
             case .closed:
-                preconditionFailure("Cannot receive message on closed connection")
+                preconditionFailure("Cannot receive query on closed connection")
             }
         }
 
@@ -231,38 +231,38 @@ extension DNSChannelHandler {
             case .initialized:
                 preconditionFailure("Cannot cancel when initialized")
             case .active(var state):
-                guard let firstMessage = state.firstPendingQuery else {
+                guard let firstQuery = state.firstPendingQuery else {
                     self = .active(state)
                     return .deadlineCallbackAction(.cancel)
                 }
-                if firstMessage.deadline <= now {
-                    state.removeValue(requestID: firstMessage.requestID)
+                if firstQuery.deadline <= now {
+                    state.removeValue(requestID: firstQuery.requestID)
                     let deadlineCallback = Self.calculateDeadlineCallbackAction(
-                        pendingQueryThatWillBeImmediatelyFulfilled: firstMessage,
+                        pendingQueryThatWillBeImmediatelyFulfilled: firstQuery,
                         nextDeadline: state.firstPendingQuery?.deadline
                     )
                     self = .active(state)
-                    return .failAndReschedule(firstMessage, deadlineCallback)
+                    return .failAndReschedule(firstQuery, deadlineCallback)
                 } else {
                     self = .active(state)
-                    return .deadlineCallbackAction(.reschedule(firstMessage.deadline))
+                    return .deadlineCallbackAction(.reschedule(firstQuery.deadline))
                 }
             case .closing(var state):
-                guard let firstMessage = state.firstPendingQuery else {
-                    preconditionFailure("Cannot be in closing state with no pending messages")
+                guard let firstQuery = state.firstPendingQuery else {
+                    preconditionFailure("Cannot be in closing state with no pending queries")
                 }
-                if firstMessage.deadline <= now {
-                    state.removeValue(requestID: firstMessage.requestID)
-                    if let nextMessage = state.firstPendingQuery {
+                if firstQuery.deadline <= now {
+                    state.removeValue(requestID: firstQuery.requestID)
+                    if let nextQuery = state.firstPendingQuery {
                         self = .closing(state)
-                        return .failAndReschedule(firstMessage, .reschedule(nextMessage.deadline))
+                        return .failAndReschedule(firstQuery, .reschedule(nextQuery.deadline))
                     } else {
                         self = .closed(nil)
-                        return .failAndClose(state.context, firstMessage)
+                        return .failAndClose(state.context, firstQuery)
                     }
                 } else {
                     self = .closing(state)
-                    return .deadlineCallbackAction(.reschedule(firstMessage.deadline))
+                    return .deadlineCallbackAction(.reschedule(firstQuery.deadline))
                 }
             case .closed(let error):
                 self = .closed(error)
@@ -277,7 +277,7 @@ extension DNSChannelHandler {
             case doNothing
         }
 
-        /// handler wants to cancel a message
+        /// handler wants to cancel a query
         @usableFromInline
         package mutating func cancel(requestID: UInt16) -> CancelAction {
             switch consume self.state {
@@ -297,24 +297,24 @@ extension DNSChannelHandler {
                     return .doNothing
                 }
             case .closing(var state):
-                guard let pendingMessage = state.removeValue(requestID: requestID) else {
+                guard let pendingQuery = state.removeValue(requestID: requestID) else {
                     /// PendingQuery is no longer there. Maybe it was cancelled.
-                    /// Still there must be another messages pending, so we can't close the connection.
+                    /// Still there must be another queries pending, so we can't close the connection.
                     assert(!state.isEmpty)
                     self = .closing(state)
                     return .doNothing
                 }
-                guard let nextMessage = state.firstPendingQuery else {
-                    /// `pendingMessage` was the last message. We can close the connection now.
+                guard let nextQuery = state.firstPendingQuery else {
+                    /// `pendingQuery` was the last query. We can close the connection now.
                     self = .closed(nil)
-                    return .cancelAndClose(state.context, pendingMessage)
+                    return .cancelAndClose(state.context, pendingQuery)
                 }
                 let deadlineCallback = Self.calculateDeadlineCallbackAction(
-                    pendingQueryThatWillBeImmediatelyFulfilled: pendingMessage,
-                    nextDeadline: nextMessage.deadline
+                    pendingQueryThatWillBeImmediatelyFulfilled: pendingQuery,
+                    nextDeadline: nextQuery.deadline
                 )
                 self = .closing(state)
-                return .cancel(pendingMessage, deadlineCallback)
+                return .cancel(pendingQuery, deadlineCallback)
             case .closed(let error):
                 self = .closed(error)
                 return .doNothing
