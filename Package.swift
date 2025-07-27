@@ -18,6 +18,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
+        .package(url: "https://github.com/mahdibm/swift-idna.git", branch: "main"),
 
         /// For the connection pool implementation copied from `PostgresNIO`.
         /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
@@ -28,14 +29,13 @@ let package = Package(
             name: "DNSCore",
             swiftSettings: settings
         ),
-        .target(name: "CSwiftDNSIDNA"),
         .target(
             name: "DNSModels",
             dependencies: [
                 "DNSCore",
-                "CSwiftDNSIDNA",
                 .product(name: "Collections", package: "swift-collections"),
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "SwiftIDNA", package: "swift-idna"),
             ],
             swiftSettings: settings
         ),
@@ -67,16 +67,11 @@ let package = Package(
             path: "Sources/DNSConnectionPool",
             swiftSettings: []/// Intentional. This module is copied from PostgresNIO.
         ),
-        .target(
-            name: "CSwiftDNSIDNATesting",
-            cSettings: cSettingsIgnoringInvalidSourceCharacters
-        ),
         .testTarget(
             name: "DNSTests",
             dependencies: [
                 "DNSCore",
                 "DNSModels",
-                "CSwiftDNSIDNATesting",
             ],
             swiftSettings: settings
         ),
@@ -112,16 +107,5 @@ var settings: [SwiftSetting] {
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNS 1.0:macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0"
         ),
-    ]
-}
-
-var cSettingsIgnoringInvalidSourceCharacters: [CSetting] {
-    [
-        .unsafeFlags(
-            [
-                "-Wno-unknown-escape-sequence",
-                "-Wno-invalid-source-encoding",
-            ]
-        )
     ]
 }

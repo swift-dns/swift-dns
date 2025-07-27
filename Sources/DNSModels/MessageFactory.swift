@@ -1,3 +1,5 @@
+public import SwiftIDNA
+
 public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// private
     @usableFromInline
