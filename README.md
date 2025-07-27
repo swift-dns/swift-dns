@@ -1,13 +1,3 @@
-# 🚧 Under Heavy Construction 🚧
-
-Definetely not yet ready for production use.
-
-I'll tag/release an alpha/beta as soon as things are more reliable and there are adequete tests.
-
-If you're curious, use the GitHub "Watch" feature (near the star button) and choose "Custom" -> "Releases" to be notified of releases when they happen.
-
-#### Requires Swift 6.2. Also requires macOS 26 if used on macos.
-
 <p>
     <a href="https://github.com/MahdiBM/swift-dns/actions/workflows/unit-tests.yml">
         <img
@@ -34,6 +24,8 @@ If you're curious, use the GitHub "Watch" feature (near the star button) and cho
         >
     </a>
 </p>
+
+Requires macOS 26 if used on macos.
 
 # swift-dns
 
@@ -105,4 +97,4 @@ Default `channelKind` is `.udp`. Currently `.tcp` is also supported.
 - https://github.com/hickory-dns/hickory-dns
   - Some data type / parsing implementations were heavily inspired by hickory-dns.
 - https://github.com/valkey-io/valkey-swift
-  - Helped a lot in putting an initial version of the connection handling together.
+  - Helped a lot in putting together an initial version of the connection handling.
