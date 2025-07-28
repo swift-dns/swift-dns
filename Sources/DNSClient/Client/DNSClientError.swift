@@ -8,4 +8,15 @@ public enum DNSClientError: Error {
     case connectionClosedDueToCancellation
     case handlerRemoved
     case channelInactive
+    case decodingError(any Error)
+    case encodingError(any Error)
+
+    var isChannelInactive: Bool {
+        switch self {
+        case .channelInactive:
+            return true
+        default:
+            return false
+        }
+    }
 }

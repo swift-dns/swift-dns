@@ -105,12 +105,12 @@ extension DNSChannelHandler {
                     self.processDeadlineCallbackAction(action: deadlineAction)
                     self.queryProducer.fullfilQuery(
                         pendingQuery: pendingQuery,
-                        with: error
+                        with: DNSClientError.encodingError(error)
                     )
                 case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
                     self.queryProducer.fullfilQuery(
                         pendingQuery: pendingQuery,
-                        with: error
+                        with: DNSClientError.encodingError(error)
                     )
                     /// The error we got is unrelated to connection closure, so we don't pass it
                     self.closeConnectionAndTakeDeadlineAction(
@@ -133,19 +133,31 @@ extension DNSChannelHandler {
         }
     }
 
-    func handleResponse(context: ChannelHandlerContext, message: Message) {
-        switch self.stateMachine.receivedResponse(requestID: message.header.id) {
+    func handleResponse(
+        context: ChannelHandlerContext,
+        decodingResult: DNSMessageDecoder.DecodingResult
+    ) {
+        func fullfilQueryWithDecodingResult(pendingQuery: PendingQuery) {
+            switch decodingResult {
+            case .message(let message):
+                self.queryProducer.fullfilQuery(
+                    pendingQuery: pendingQuery,
+                    with: message
+                )
+            case .identifiableError(_, let error):
+                self.queryProducer.fullfilQuery(
+                    pendingQuery: pendingQuery,
+                    with: DNSClientError.decodingError(error)
+                )
+            }
+        }
+
+        switch self.stateMachine.receivedResponse(requestID: decodingResult.messageID) {
         case .respond(let pendingQuery, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
-            self.queryProducer.fullfilQuery(
-                pendingQuery: pendingQuery,
-                with: message
-            )
+            fullfilQueryWithDecodingResult(pendingQuery: pendingQuery)
         case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
-            self.queryProducer.fullfilQuery(
-                pendingQuery: pendingQuery,
-                with: message
-            )
+            fullfilQueryWithDecodingResult(pendingQuery: pendingQuery)
             self.closeConnectionAndTakeDeadlineAction(
                 context: context,
                 deadlineCallbackAction: deadlineCallbackAction,
@@ -199,8 +211,11 @@ extension DNSChannelHandler {
             "Channel has gone inactive. Will finish processing the remaining bytes and close the connection"
         )
         do {
-            try self.decoder.finishProcessing(seenEOF: true) { message in
-                self.handleResponse(context: context, message: message)
+            try self.decoder.finishProcessing(seenEOF: true) { decodingResult in
+                self.handleResponse(
+                    context: context,
+                    decodingResult: decodingResult
+                )
             }
         } catch let error {
             /// Just log the error.
@@ -215,8 +230,11 @@ extension DNSChannelHandler {
         let buffer = self.unwrapInboundIn(data)
 
         do {
-            try self.decoder.process(buffer: buffer) { message in
-                self.handleResponse(context: context, message: message)
+            try self.decoder.process(buffer: buffer) { decodingResult in
+                self.handleResponse(
+                    context: context,
+                    decodingResult: decodingResult
+                )
             }
         } catch let error {
             /// Just log the error.
@@ -284,7 +302,7 @@ extension DNSChannelHandler {
             }
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
             /// Otherwise it's already closed
-            if error != .channelInactive {
+            if !error.isChannelInactive {
                 self._closeConnection(context: context, error: error)
             }
         case .doNothing:

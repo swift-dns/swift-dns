@@ -203,10 +203,19 @@ package struct DNSBuffer: Sendable {
         guard let previousWriterIndex = self.truncate(length: length) else {
             throw error
         }
-        defer {
+        do {
+            let result = try body(&self)
             self._buffer.moveWriterIndex(to: previousWriterIndex)
+            return result
+        } catch {
+            /// Do not move back the writer index if the body throws an error.
+            /// The decoding logics will never try to restore from an error.
+            /// The error will reach the DNSMessageDecoder and if we have moved back the writer index
+            /// here, it will try to decode this again, although it would eventually break out since
+            /// it'll try to re-read the whole Message and will try to read these bytes as a DNS
+            /// header, which these are not, and so it'd fail again until the buffer is consumed.
+            throw error
         }
-        return try body(&self)
     }
 
     /// Returns the remaining bytes in the buffer and moves the reader index.
