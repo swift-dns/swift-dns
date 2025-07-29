@@ -40,7 +40,6 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
         let client = try DNSClient(
             serverAddress: self.serverAddress,
             configuration: self.configuration,
-            eventLoopGroup: MultiThreadedEventLoopGroup.singleton,
             logger: Logger(label: "DNSTests")
         )
         try await DNSClientTrait.$currentClient.withValue(client) {

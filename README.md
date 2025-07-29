@@ -46,25 +46,33 @@ import DNSClient
 import DNSModels
 
 /// Create a `DNSClient`
-let client = DNSClient(
-    serverAddress: .domain(name: "8.8.4.4", port: 53),
-    logger: Logger(label: "DNSTests")
-)
+let client = try DNSClient(serverAddress: .domain(name: "1.1.1.1", port: 53))
 
-/// Send the query
-/// `response` will be of type `Message`
-let response = try await client.queryA(
-    message: .forQuery(name: "mahdibm.com"),
-    options: .edns
-)
+try await withThrowingTaskGroup(of: Void.self) { taskGroup in
+    taskGroup.addTask {
+        await client.run()  /// !important
+    }
 
-/// Read the answers
-for answer in response.answers {
-    /// `a` will be of type `A`
-    let a = try answer.rdata
-    /// `ipv4` will be of type `IPv4Address`
-    let ipv4 = a.value
-    print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
+    /// You can use the client while the `client.run()` method is not cancelled.
+
+    /// Send the query
+    /// `response` will be of type `Message`
+    let response = try await client.queryA(
+        message: .forQuery(name: "mahdibm.com"),
+        options: .edns
+    )
+
+    /// Read the answers
+    for answer in response.answers {
+        /// `a` will be of type `A`
+        let a = try answer.rdata
+        /// `ipv4` will be of type `IPv4Address`
+        let ipv4 = a.value
+        print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
+    }
+
+    /// To shutdown the client, cancel its run method, by cancelling the taskGroup.
+    taskGroup.cancelAll()
 }
 ```
 

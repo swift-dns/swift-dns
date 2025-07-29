@@ -2,8 +2,8 @@ public import DNSModels
 import Synchronization
 import _DNSConnectionPool
 
-package import struct Logging.Logger
-package import protocol NIOCore.EventLoopGroup
+public import struct Logging.Logger
+public import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 public import ServiceLifecycle
@@ -42,14 +42,16 @@ public actor DNSClient {
         }
     }
     let tcpConnectionPool: TCPConnectionPool
-    let eventLoopGroup: any EventLoopGroup
+    let udpEventLoopGroup: any EventLoopGroup
+    let tcpEventLoopGroup: any EventLoopGroup
     let logger: Logger
     let isRunning: Atomic<Bool>
 
-    package init(
+    public init(
         serverAddress: DNSServerAddress,
         configuration: DNSClientConfiguration = .init(),
-        eventLoopGroup: any EventLoopGroup,
+        udpEventLoopGroup: any EventLoopGroup = DNSClient.defaultUDPEventLoopGroup,
+        tcpEventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
         logger: Logger = .noopLogger
     ) throws {
         let tcpConnectionFactory = try ConnectionFactory(
@@ -72,13 +74,14 @@ public actor DNSClient {
             let connection = try await tcpConnectionFactory.makeTCPConnection(
                 address: serverAddress,
                 connectionID: connectionID,
-                eventLoop: eventLoopGroup.next(),
+                eventLoop: tcpEventLoopGroup.next(),
                 logger: logger
             )
 
             return ConnectionAndMetadata(connection: connection, maximalStreamsOnConnection: 1)
         }
-        self.eventLoopGroup = eventLoopGroup
+        self.udpEventLoopGroup = udpEventLoopGroup
+        self.tcpEventLoopGroup = tcpEventLoopGroup
         self.logger = logger
         self.isRunning = Atomic(false)
     }
@@ -216,7 +219,7 @@ extension DNSClient {
         let udpConnection = try await udpConnectionFactory.makeUDPConnection(
             address: serverAddress,
             connectionID: 0,
-            eventLoop: eventLoopGroup.any(),
+            eventLoop: self.udpEventLoopGroup.any(),
             logger: logger
         )
         return udpConnection
