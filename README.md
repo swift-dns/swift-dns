@@ -58,8 +58,7 @@ try await withThrowingTaskGroup(of: Void.self) { taskGroup in
     /// Send the query
     /// `response` will be of type `Message`
     let response = try await client.queryA(
-        message: .forQuery(name: "mahdibm.com"),
-        options: .edns
+        message: .forQuery(name: "mahdibm.com")
     )
 
     /// Read the answers
@@ -82,7 +81,6 @@ You can also explicitly specify a `channelKind` if you so desire:
 /// Send the query
 let response = try await client.queryA(
     message: .forQuery(name: "mahdibm.com"),
-    options: .edns,
     channelKind: .tcp
 )
 ```
