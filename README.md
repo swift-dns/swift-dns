@@ -29,7 +29,7 @@
 
 A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
-## Platforms Requirements
+## Platform Requirements
 
 * Requires Swift 6.2.
 * On Apple platforms, requires macOS/iOS 26 etc... as well, _to use_.
