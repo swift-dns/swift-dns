@@ -105,7 +105,7 @@ jobs:
 
       - name: Install zstd for faster caching, and curl for codecov action
         run: |
-          brew install -y zstd curl
+          brew install zstd curl
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
