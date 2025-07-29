@@ -51,7 +51,6 @@ jobs:
         run: |
           swift build \
             --build-tests \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -67,6 +66,5 @@ jobs:
           swift test \
             --filter "IntegrationTests." \
             --skip-build \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}

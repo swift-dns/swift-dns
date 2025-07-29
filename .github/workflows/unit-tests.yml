@@ -13,7 +13,7 @@ defaults:
     shell: bash --noprofile --norc -e -u -o pipefail {0}
 
 jobs:
-  linux:
+  linux-unit:
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +52,6 @@ jobs:
           swift build \
             --build-tests \
             --enable-code-coverage \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -69,7 +68,6 @@ jobs:
             --skip "IntegrationTests." \
             --skip-build \
             --enable-code-coverage \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -79,20 +77,21 @@ jobs:
           build_parameters: "-c ${{ matrix.config.mode }}"
           codecov_token: "${{ secrets.CODECOV_TOKEN }}"
 
-  macos:
+  macos-unit:
     strategy:
       fail-fast: false
-
       matrix:
         macos:
           - version: macos-15
+        swift:
+          - version: 6.2-snapshot
         config:
           - mode: "debug"
           - mode: "release"
 
     runs-on: ${{ matrix.macos.version }}
 
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Setup appropriate Xcode version
@@ -100,12 +99,30 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version }}
 
-      - name: Check out code
+      - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v4
 
       - name: Install zstd for faster caching, and curl for codecov action
+        run: brew install zstd curl
+
+      - name: Update swift via Swiftly
         run: |
-          brew install zstd curl
+          # Installation commands from https://www.swift.org/install/macos
+          curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
+          installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
+          ~/.swiftly/bin/swiftly init --assume-yes --skip-install --quiet-shell-followup
+          . "${SWIFTLY_HOME_DIR:-$HOME/.swiftly}/env.sh"
+          hash -r
+
+          # Update environment variables
+          echo "SWIFTLY_HOME_DIR=${SWIFTLY_HOME_DIR}" >>"${GITHUB_ENV}"
+          echo "SWIFTLY_BIN_DIR=${SWIFTLY_BIN_DIR}" >>"${GITHUB_ENV}"
+          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+
+          # Update swift
+          swiftly install --assume-yes ${{ matrix.swift.version }}
+          swiftly use --assume-yes ${{ matrix.swift.version }}
+          hash -r
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -113,15 +130,14 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .build
-          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
-          restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-"
 
       - name: Build ${{ github.event.repository.name }}
         run: |
           swift build \
             --build-tests \
             --enable-code-coverage \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -130,7 +146,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .build
-          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
       # This step currently doesn't do anything because this package requires macos 26 and
       # GitHub has yet to support that.
@@ -140,7 +156,6 @@ jobs:
             --skip "IntegrationTests." \
             --skip-build \
             --enable-code-coverage \
-            --enable-experimental-prebuilts \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
