@@ -7,6 +7,7 @@ import Network
 import NIOTransportServices
 #endif
 
+@available(swiftDNSApplePlatforms 26.0, *)
 struct ConnectionFactory {
     let socketAddress: SocketAddress
     let configuration: DNSConnectionConfiguration
@@ -69,6 +70,7 @@ struct ConnectionFactory {
 }
 
 // MARK: - UDP
+@available(swiftDNSApplePlatforms 26.0, *)
 extension ConnectionFactory {
     private func makeUDPBootstrap(
         eventLoop: any EventLoop,
@@ -162,6 +164,7 @@ extension ConnectionFactory {
 }
 
 // MARK: - TCP
+@available(swiftDNSApplePlatforms 26.0, *)
 extension ConnectionFactory {
     @inlinable
     func makeTCPBootstrap(
@@ -308,6 +311,7 @@ extension ConnectionFactory {
 }
 
 // MARK: - +NIOClientTCPBootstrapProtocol
+@available(swiftDNSApplePlatforms 26.0, *)
 extension NIOClientTCPBootstrapProtocol {
     func connect(target: DNSServerAddress) -> EventLoopFuture<any Channel> {
         switch target {

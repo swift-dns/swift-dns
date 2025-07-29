@@ -136,6 +136,7 @@
 ///       Set to zero by senders and ignored by receivers, unless modified
 ///       in a subsequent specification.
 /// ```
+@available(swiftDNSApplePlatforms 26.0, *)
 public struct OPT: Sendable {
     public var options: [(EDNSCode, EDNSOption)]
 
@@ -144,6 +145,7 @@ public struct OPT: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension OPT {
     enum OptReadingState: ~Copyable {
         case readCode
@@ -195,6 +197,7 @@ extension OPT {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension OPT {
     package func encode(into buffer: inout DNSBuffer) throws {
         for (code, option) in self.options {
@@ -204,6 +207,7 @@ extension OPT {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension OPT {
     package init(fromOPTRData rdata: consuming RData) {
         /// Checks update0 and NULL's `recordType`s too, unlike the assertionFailure below
@@ -220,6 +224,7 @@ extension OPT {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension OPT: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -236,6 +241,7 @@ extension OPT: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension OPT: Queryable {
     @inlinable
     public static var recordType: RecordType { .OPT }

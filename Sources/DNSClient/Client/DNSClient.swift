@@ -10,6 +10,7 @@ public import ServiceLifecycle
 #endif
 
 /// FIXME: The module and the type are both named `DNSClient`.
+@available(swiftDNSApplePlatforms 26.0, *)
 public actor DNSClient {
     typealias TCPConnectionPool = ConnectionPool<
         DNSConnection,
@@ -130,6 +131,7 @@ public actor DNSClient {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSClient {
     @inlinable
     func query(
@@ -223,10 +225,11 @@ extension DNSClient {
 }
 
 #if ServiceLifecycleSupport
-@available(swiftDNS 1.0, *)
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSClient: Service {}
 #endif  // ServiceLifecycle
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSClientConfiguration.ConnectionPoolConfiguration {
     func toConnectionPoolConfig() -> _DNSConnectionPool.ConnectionPoolConfiguration {
         var config = _DNSConnectionPool.ConnectionPoolConfiguration()

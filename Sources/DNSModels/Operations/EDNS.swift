@@ -1,5 +1,6 @@
 /// Edns implements the higher level concepts for working with extended dns as it is used to create or be
 /// created from OPT record data.
+@available(swiftDNSApplePlatforms 26.0, *)
 public struct EDNS: Sendable {
     /// EDNS flags
     ///
@@ -55,6 +56,7 @@ public struct EDNS: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension EDNS {
     package init(fromOPTRecord record: consuming Record) {
         assert(record.rdata.recordType == .OPT)
@@ -66,6 +68,7 @@ extension EDNS {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension EDNS {
     package func toRecord() -> Record {
         Record(
@@ -77,6 +80,7 @@ extension EDNS {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension EDNS.Flags {
     package init(from ttl: UInt32) {
         let first16bits = UInt16(truncatingIfNeeded: ttl & 0x0000_FFFF)

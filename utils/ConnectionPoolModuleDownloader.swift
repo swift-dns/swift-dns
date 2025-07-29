@@ -57,19 +57,47 @@ func fetchDirectoryContents(apiUrl: String) throws -> [GitHubFile] {
     return try JSONDecoder().decode([GitHubFile].self, from: data)
 }
 
+func replace(bytes: Data, with newBytes: Data, in data: inout Data) {
+    var searchIndex = data.startIndex
+    while let range = data.range(of: bytes, in: searchIndex..<data.endIndex) {
+        data.replaceSubrange(range, with: newBytes)
+        searchIndex = range.lowerBound + newBytes.count
+    }
+}
+
 func downloadAndWriteFile(name: String, from url: String, to outputPath: String) throws -> Int {
     var data = try fetchWithRetries(url: URL(string: url)!)
     print("✓ Downloaded \(name) (\(data.count) bytes)")
 
-    // Replace _ConnectionPoolModule with _DNSConnectionPool
-    let oldBytes = Data("_ConnectionPoolModule".utf8)
-    let newBytes = Data("_DNSConnectionPool".utf8)
+    replace(
+        bytes: Data("_ConnectionPoolModule".utf8),
+        with: Data("_DNSConnectionPool".utf8),
+        in: &data
+    )
 
-    var searchIndex = data.startIndex
-    while let range = data.range(of: oldBytes, in: searchIndex..<data.endIndex) {
-        data.replaceSubrange(range, with: newBytes)
-        searchIndex = range.lowerBound + newBytes.count
-    }
+    let availabilityMacro = Data(
+        "@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)".utf8
+    )
+    let taskGroupExtension = Data(
+        "extension TaskGroup<Void>: TaskGroupProtocol {".utf8
+    )
+
+    replace(
+        bytes: taskGroupExtension,
+        with: availabilityMacro + "\n".utf8 + taskGroupExtension,
+        in: &data
+    )
+
+    let connectionRequest = Data(
+        "public struct ConnectionRequest<Connection: PooledConnection>: ConnectionRequestProtocol {"
+            .utf8
+    )
+
+    replace(
+        bytes: connectionRequest,
+        with: availabilityMacro + "\n".utf8 + connectionRequest,
+        in: &data
+    )
 
     // Create directory if it doesn't exist
     let directory = URL(fileURLWithPath: outputPath).deletingLastPathComponent().path

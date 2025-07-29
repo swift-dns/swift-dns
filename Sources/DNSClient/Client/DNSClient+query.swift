@@ -1,5 +1,6 @@
 public import DNSModels
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSClient {
     @usableFromInline
     func querySpecialized<RDataType: RDataConvertible>(

@@ -228,6 +228,7 @@ extension SIG {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension SIG: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -244,6 +245,7 @@ extension SIG: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension SIG: Queryable {
     @inlinable
     public static var recordType: RecordType { .SIG }

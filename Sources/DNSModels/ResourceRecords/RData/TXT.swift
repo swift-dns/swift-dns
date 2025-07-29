@@ -57,6 +57,7 @@ extension TXT: Equatable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension TXT: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -73,6 +74,7 @@ extension TXT: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension TXT: Queryable {
     @inlinable
     public static var recordType: RecordType { .TXT }

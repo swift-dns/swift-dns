@@ -104,6 +104,7 @@ extension SOA {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension SOA: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -120,6 +121,7 @@ extension SOA: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension SOA: Queryable {
     @inlinable
     public static var recordType: RecordType { .SOA }

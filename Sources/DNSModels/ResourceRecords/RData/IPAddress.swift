@@ -2,6 +2,7 @@
 ///
 /// This enum can contain either an [`Ipv4Addr`] or an [`Ipv6Addr`], see their
 /// respective documentation for more details.
+@available(swiftDNSApplePlatforms 26.0, *)
 public enum IPAddress: Sendable, Hashable {
     /// An IPv4 address.
     case v4(IPv4Address)
@@ -26,6 +27,7 @@ public enum IPAddress: Sendable, Hashable {
 /// are indicated with a leading `0x`) are not allowed per [IETF RFC 6943].
 ///
 /// [IETF RFC 6943]: https://tools.ietf.org/html/rfc6943#section-3.1.1
+@available(swiftDNSApplePlatforms 26.0, *)
 public struct IPv4Address: Sendable {
     @inlinable
     static var size: Int {
@@ -39,6 +41,7 @@ public struct IPv4Address: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv4Address: Equatable {
     public static func == (lhs: IPv4Address, rhs: IPv4Address) -> Bool {
         /// TODO: use memcmp or span, whenever InlineArray supports those
@@ -52,6 +55,7 @@ extension IPv4Address: Equatable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv4Address: Hashable {
     public func hash(into hasher: inout Hasher) {
         /// FIXME: optimize writing bytes
@@ -61,6 +65,7 @@ extension IPv4Address: Hashable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv4Address: CustomStringConvertible {
     public var description: String {
         var result: String = ""
@@ -75,6 +80,7 @@ extension IPv4Address: CustomStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv4Address {
     package init(from buffer: inout DNSBuffer) throws {
         self.bytes = try buffer.readInlineArray().unwrap(
@@ -106,6 +112,7 @@ extension IPv4Address {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv4Address {
     package func encode(into buffer: inout DNSBuffer) {
         /// TODO: optimize writing bytes
@@ -180,6 +187,7 @@ extension IPv4Address {
 /// [IETF RFC 5952].
 ///
 /// [IETF RFC 5952]: https://tools.ietf.org/html/rfc5952
+@available(swiftDNSApplePlatforms 26.0, *)
 public struct IPv6Address: Sendable {
     @inlinable
     static var size: Int {
@@ -193,6 +201,7 @@ public struct IPv6Address: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv6Address: Equatable {
     public static func == (lhs: IPv6Address, rhs: IPv6Address) -> Bool {
         /// TODO: use memcmp or span, whenever InlineArray supports those
@@ -206,6 +215,7 @@ extension IPv6Address: Equatable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv6Address: Hashable {
     public func hash(into hasher: inout Hasher) {
         /// FIXME: optimize writing bytes
@@ -215,6 +225,7 @@ extension IPv6Address: Hashable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv6Address: CustomStringConvertible {
     public var description: String {
         /// FIXME: use proper formatting, e.g. using `::`.
@@ -230,6 +241,7 @@ extension IPv6Address: CustomStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv6Address {
     package init(from buffer: inout DNSBuffer) throws {
         self.bytes = try buffer.readInlineArray().unwrap(
@@ -261,6 +273,7 @@ extension IPv6Address {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension IPv6Address {
     package func encode(into buffer: inout DNSBuffer) {
         /// TODO: optimize writing bytes

@@ -163,10 +163,12 @@ public struct NSEC3: Sendable {
     }
 
     /// Labels are always stored as ASCII, unicode characters must be encoded with punycode
+    @available(swiftDNSApplePlatforms 26.0, *)
     public struct Label: Sendable {
-        public var value: InlineArray<24, UInt8>
+        /// FXIME: Use TinyArray or something
+        public var value: [UInt8]
 
-        public init(value: InlineArray<24, UInt8>) {
+        public init(value: [UInt8]) {
             self.value = value
         }
     }
@@ -280,6 +282,7 @@ extension NSEC3.HashAlgorithm {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension NSEC3: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -296,6 +299,7 @@ extension NSEC3: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension NSEC3: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC3 }

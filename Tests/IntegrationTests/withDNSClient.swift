@@ -3,12 +3,23 @@ import Logging
 import NIOPosix
 import Testing
 
+@available(swiftDNSApplePlatforms 26.0, *)
 struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
     @TaskLocal static var currentClient: DNSClient?
 
     let serverAddress: DNSServerAddress
     let configuration: DNSClientConfiguration
 
+    init() {
+        self.serverAddress = .domain(name: "8.8.4.4", port: 53)
+        self.configuration = .init(
+            connectionConfiguration: .init(queryTimeout: .seconds(10)),
+            tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
+            keepAliveBehavior: .init()
+        )
+    }
+
+    @available(swiftDNSApplePlatforms 26.0, *)
     init(
         serverAddress: DNSServerAddress = .domain(name: "8.8.4.4", port: 53),
         configuration: DNSClientConfiguration = .init(
@@ -44,6 +55,7 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension Trait where Self == DNSClientTrait {
     static var withDNSClient: Self {
         DNSClientTrait()
@@ -63,3 +75,4 @@ extension Trait where Self == DNSClientTrait {
         )
     }
 }
+

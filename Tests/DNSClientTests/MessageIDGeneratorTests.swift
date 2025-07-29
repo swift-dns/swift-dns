@@ -3,6 +3,7 @@ import Testing
 
 @Suite
 struct MessageIDGeneratorTests {
+    @available(swiftDNSApplePlatforms 26.0, *)
     @Test func generate32768IDs() throws {
         var generator = MessageIDGenerator()
         var generated = Set<UInt16>()
@@ -31,6 +32,7 @@ struct MessageIDGeneratorTests {
         }
     }
 
+    @available(swiftDNSApplePlatforms 26.0, *)
     @Test func generate32668IDsThenRemove100ThenAdd200() throws {
         var generator = MessageIDGenerator()
         var generated = Set<UInt16>()
@@ -83,6 +85,7 @@ struct MessageIDGeneratorTests {
         }
     }
 
+    @available(swiftDNSApplePlatforms 26.0, *)
     @Test func generate32768IDsThenRemoveThenRedoThenRemoveThenRedo() throws {
         var generator = MessageIDGenerator()
         var generated = Set<UInt16>()

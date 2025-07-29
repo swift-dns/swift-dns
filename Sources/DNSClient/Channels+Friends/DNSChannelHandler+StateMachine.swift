@@ -2,7 +2,7 @@ public import NIOCore
 
 import struct OrderedCollections.OrderedDictionary
 
-@available(swiftDNS 1.0, *)
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSChannelHandler {
     @usableFromInline
     package struct StateMachine<Context>: ~Copyable {
@@ -355,6 +355,7 @@ extension DNSChannelHandler {
     }
 }
 
+@available(swiftDNSApplePlatforms 26.0, *)
 extension DNSChannelHandler.StateMachine.ProcessingState {
     package static func __for_testing(
         context: Context,
