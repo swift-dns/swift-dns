@@ -113,6 +113,7 @@ extension NSEC3PARAM {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NSEC3PARAM: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -129,6 +130,7 @@ extension NSEC3PARAM: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NSEC3PARAM: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC3PARAM }

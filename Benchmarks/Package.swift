@@ -6,10 +6,6 @@ import PackageDescription
 
 let package = Package(
     name: "swift-dns",
-    platforms: [
-        // FIXME: remove this platform requirement, use @available instead
-        .macOS("26.0")
-    ],
     traits: [
         .trait(name: "ServiceLifecycleSupport"),
         .default(enabledTraits: ["ServiceLifecycleSupport"]),
@@ -20,7 +16,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/mahdibm/swift-idna.git", branch: "main"),
+        .package(url: "https://github.com/mahdibm/swift-idna.git", from: "1.0.0-beta.1"),
 
         /// For the connection pool implementation copied from `PostgresNIO`.
         /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
@@ -107,10 +103,11 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("StrictMemorySafety"),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNS 1.0:macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0"
+            "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
         ),
     ]
 }
+
 // MARK: - END exact copy of the main package's Package.swift
 
 // MARK: - Add benchmark stuff now

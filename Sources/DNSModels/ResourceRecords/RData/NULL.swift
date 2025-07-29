@@ -43,6 +43,7 @@ extension NULL {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NULL: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -59,6 +60,7 @@ extension NULL: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NULL: Queryable {
     @inlinable
     public static var recordType: RecordType { .NULL }

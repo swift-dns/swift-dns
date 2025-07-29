@@ -2,6 +2,7 @@
 ///
 /// This type implements ``@dynamicMemberLookup`` over the ``message``, then shadows ``message.answers`` which
 /// is of type ``[Record]``, by providing a ``answers`` property which is of the specialized type ``[SpecializedRecord<RDataType>]``.
+@available(swiftDNSApplePlatforms 26, *)
 @dynamicMemberLookup
 public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
     public var message: Message
@@ -48,6 +49,7 @@ public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
 ///
 /// This type implements ``@dynamicMemberLookup`` over the ``record``, then shadows ``record.rdata`` which
 /// is of type ``RData``, by providing a ``rdata`` property which is of the specialized type ``RDataType``.
+@available(swiftDNSApplePlatforms 26, *)
 @dynamicMemberLookup
 public struct SpecializedRecord<RDataType: RDataConvertible>: Sendable {
     public var record: Record

@@ -1,3 +1,4 @@
+@available(swiftDNSApplePlatforms 26, *)
 public enum RData: Sendable {
     /// ```text
     /// -- RFC 1035 -- Domain Implementation and Specification    November 1987
@@ -633,6 +634,7 @@ public enum RData: Sendable {
     case Update0(RecordType)
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension RData {
     var recordType: RecordType {
         switch self {
@@ -664,6 +666,7 @@ extension RData {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension RData {
     package init(from buffer: inout DNSBuffer, recordType: RecordType) throws {
         let length = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -764,6 +767,7 @@ extension RData {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension RData {
     package func encode(into buffer: inout DNSBuffer) throws {
         var valueBuffer = DNSBuffer()

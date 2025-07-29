@@ -1,4 +1,5 @@
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 public struct ConnectionRequest<Connection: PooledConnection>: ConnectionRequestProtocol {
     public typealias ID = Int
 

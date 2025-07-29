@@ -4,10 +4,6 @@ import PackageDescription
 
 let package = Package(
     name: "swift-dns",
-    platforms: [
-        // FIXME: remove this platform requirement, use @available instead
-        .macOS("26.0")
-    ],
     traits: [
         .trait(name: "ServiceLifecycleSupport"),
         .default(enabledTraits: ["ServiceLifecycleSupport"]),
@@ -105,7 +101,7 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("StrictMemorySafety"),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNS 1.0:macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0"
+            "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
         ),
     ]
 }

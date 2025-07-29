@@ -5,6 +5,7 @@ public import typealias DNSModels.RDataConvertible
 public import struct NIOCore.NIODeadline
 
 @usableFromInline
+@available(swiftDNSApplePlatforms 26, *)
 package struct QueryProducer: ~Copyable {
     private var messageIDGenerator: MessageIDGenerator
 

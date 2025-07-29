@@ -1,4 +1,5 @@
 /// The DNS AAAA record type, an IPv6 address
+@available(swiftDNSApplePlatforms 26, *)
 public struct AAAA: Sendable {
     public var value: IPv6Address
 
@@ -7,18 +8,21 @@ public struct AAAA: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension AAAA {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try IPv6Address(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension AAAA {
     package func encode(into buffer: inout DNSBuffer) {
         value.encode(into: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension AAAA: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -35,6 +39,7 @@ extension AAAA: RDataConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension AAAA: Queryable {
     @inlinable
     public static var recordType: RecordType { .AAAA }
