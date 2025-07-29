@@ -1,5 +1,5 @@
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 public struct DNSClientConfiguration: Sendable {
     public struct ConnectionPoolConfiguration: Sendable {
         /// The minimum number of connections to preserve in the pool.

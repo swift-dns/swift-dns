@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 public protocol Queryable: RDataConvertible {
     static var recordType: RecordType { get }
     static var dnsClass: DNSClass { get }

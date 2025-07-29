@@ -100,7 +100,7 @@ extension DNSKEY.PublicKey {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension DNSKEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -117,7 +117,7 @@ extension DNSKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension DNSKEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .DNSKEY }

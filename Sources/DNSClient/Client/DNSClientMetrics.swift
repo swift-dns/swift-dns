@@ -2,7 +2,7 @@ import Logging
 import _DNSConnectionPool
 
 /// DNS client connection pool metrics
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
     typealias ConnectionID = DNSConnection.ID
 

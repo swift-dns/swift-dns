@@ -19,7 +19,7 @@ extension NS {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension NS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -36,7 +36,7 @@ extension NS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension NS: Queryable {
     @inlinable
     public static var recordType: RecordType { .NS }

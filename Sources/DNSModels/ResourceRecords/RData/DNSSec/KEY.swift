@@ -655,7 +655,7 @@ extension KEY.Proto {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension KEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -672,7 +672,7 @@ extension KEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension KEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .KEY }

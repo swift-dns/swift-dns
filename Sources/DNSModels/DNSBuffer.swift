@@ -112,7 +112,7 @@ package struct DNSBuffer: Sendable {
         self._buffer.readString(length: length)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     package mutating func readInlineArray<
         let count: Int,
         IntegerType: FixedWidthInteger
@@ -240,7 +240,7 @@ package struct DNSBuffer: Sendable {
         [UInt8](buffer: self._buffer)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     package mutating func writeBytes<let elementCount: Int>(
         _ bytes: InlineArray<elementCount, UInt8>
     ) {

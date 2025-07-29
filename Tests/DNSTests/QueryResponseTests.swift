@@ -4,7 +4,7 @@ import Testing
 
 @Suite
 struct QueryResponseTests {
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeAExampleComQuery() throws {
         let query = Query(
             name: try Name(domainName: "example.com."),
@@ -49,7 +49,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeAExampleComResponse() throws {
         var buffer = Resources.dnsResponseAExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -128,7 +128,7 @@ struct QueryResponseTests {
         #expect(option.1 == .unknown(12, [UInt8](repeating: 0, count: 328)))
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
             name: try Name(domainName: "cloudflare.com."),
@@ -173,7 +173,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeAAAACloudflareComResponse() throws {
         var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -255,7 +255,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeCAACloudflareComQuery() throws {
         let query = Query(
             name: try Name(domainName: "cloudflare.com."),
@@ -300,7 +300,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeCAACloudflareComResponse() throws {
         var buffer = Resources.dnsResponseCAACloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -581,7 +581,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeCERTForDnsCertTestingMahdibmComQuery() throws {
         let query = Query(
             name: try Name(domainName: "for-dns-cert-testing.mahdibm.com."),
@@ -626,7 +626,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeCERTForDnsCertTestingMahdibmComResponse() throws {
         var buffer = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -715,7 +715,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeCNAMEWwwGithubComQuery() throws {
         let query = Query(
             name: try Name(domainName: "www.github.com."),
@@ -760,7 +760,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeCNAMEWwwGithubComResponse() throws {
         var buffer = Resources.dnsResponseCNAMEWwwGithubComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -822,7 +822,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeCNAMERawGithubusercontentComQuery() throws {
         let query = Query(
             name: try Name(domainName: "raw.githubusercontent.com."),
@@ -867,7 +867,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeCNAMERawGithubusercontentComResponse() throws {
         var buffer = Resources.dnsResponseCNAMERawGithubusercontentComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -929,7 +929,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeMXMahdibmComQuery() throws {
         let query = Query(
             name: try Name(domainName: "mahdibm.com."),
@@ -974,7 +974,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeMXMahdibmComResponse() throws {
         var buffer = Resources.dnsResponseMXMahdibmComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -1050,7 +1050,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeNSAppleComQuery() throws {
         let query = Query(
             name: try Name(domainName: "apple.com."),
@@ -1095,7 +1095,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeNSAppleComResponse() throws {
         var buffer = Resources.dnsResponseNSAppleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -1172,7 +1172,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeOPTCloudflareComQuery() throws {
         let query = Query(
             name: try Name(domainName: "cloudflare.com."),
@@ -1219,7 +1219,7 @@ struct QueryResponseTests {
 
     /// You can't query OPT directly, so this response is a `ServFail`.
     /// OPT is used in every other query, so it's already well-tested.
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeOPTCloudflareComResponse() throws {
         var buffer = Resources.dnsResponseOPTCloudflareComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -1532,7 +1532,7 @@ struct QueryResponseTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodePTR9dot9dot9dot9Query() throws {
         let query = Query(
             name: try Name(domainName: "9.9.9.9.in-addr.arpa."),
@@ -1577,7 +1577,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodePTR9dot9dot9dot9Response() throws {
         var buffer = Resources.dnsResponsePTR9dot9dot9dot9Packet.buffer()
         buffer.moveReaderIndex(forwardBy: 42)
@@ -1651,7 +1651,7 @@ struct QueryResponseTests {
         #expect(edns.options.options.count == 0)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func encodeTXTExampleComQuery() throws {
         let query = Query(
             name: try Name(domainName: "example.com."),
@@ -1696,7 +1696,7 @@ struct QueryResponseTests {
         #expect(buffer == expected)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeTXTExampleComResponse() throws {
         var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
         buffer.moveReaderIndex(forwardBy: 42)

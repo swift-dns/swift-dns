@@ -37,7 +37,7 @@ extension CDNSKEY {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension CDNSKEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -54,7 +54,7 @@ extension CDNSKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension CDNSKEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .CDNSKEY }

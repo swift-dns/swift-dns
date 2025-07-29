@@ -7,12 +7,12 @@ import Testing
 
 @Suite(.serialized)
 struct IntegrationTests {
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     var client: DNSClient {
         DNSClientTrait.currentClient!
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryA(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<A>.forQuery(name: "example.com.")
@@ -92,7 +92,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryANonASCIIDomain(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
@@ -171,7 +171,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryAAAA(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
@@ -251,7 +251,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryCAA(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
@@ -326,7 +326,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryCERT(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
@@ -418,7 +418,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryCNAMEWwwGithubCom(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
@@ -482,7 +482,7 @@ struct IntegrationTests {
         /// edns.options.options is whatever
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryCNAMERawGithubusercontentCom(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
@@ -557,7 +557,7 @@ struct IntegrationTests {
         /// TODO: try `education.github.com`
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryMX(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
@@ -640,7 +640,7 @@ struct IntegrationTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryNS(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
@@ -730,7 +730,7 @@ struct IntegrationTests {
     /// OPT is used in every other query, so it's already well-tested.
     @Test func queryOPT() async throws {}
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryPTR(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
@@ -819,7 +819,7 @@ struct IntegrationTests {
 
     @Test func queryTLSA() async throws {}
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
     func queryTXT(channelKind: DNSClient.QueryChannelKind) async throws {
         let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
@@ -894,7 +894,7 @@ struct IntegrationTests {
 
     @Test func queryUpdate0() async throws {}
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         .serialized,
         .withDNSClient(
@@ -957,7 +957,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         .tags(.timeConsuming),
         .serialized,

@@ -21,7 +21,7 @@
 ///     decimal numbers separated by dots without any imbedded spaces (e.g.,
 ///     "10.2.0.52" or "192.0.5.6").
 /// ```
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 public struct A: Sendable {
     public var value: IPv4Address
 
@@ -30,21 +30,21 @@ public struct A: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension A {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try IPv4Address(from: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension A {
     package func encode(into buffer: inout DNSBuffer) {
         self.value.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension A: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -61,7 +61,7 @@ extension A: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26.0, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension A: Queryable {
     @inlinable
     public static var recordType: RecordType { .A }

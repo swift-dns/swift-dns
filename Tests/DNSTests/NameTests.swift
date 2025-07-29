@@ -4,8 +4,8 @@ import Testing
 
 @Suite
 struct NameTests {
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", isFQDN: false, data: [42], borders: [1]),
@@ -40,8 +40,8 @@ struct NameTests {
         #expect(domainName.borders == borders)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [".mahdibm.com", ""]
     )
@@ -51,8 +51,8 @@ struct NameTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (
@@ -111,7 +111,7 @@ struct NameTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func equalityWhichMustBeCaseInsensitive() throws {
         let name = try Name(domainName: "example.com.")
         let duplicate = try Name(domainName: "example.com.")
@@ -143,8 +143,8 @@ struct NameTests {
         #expect(weirdPartiallyUppercaseDomain == weirdUppercaseDomain)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: ".", isFQDN: true),
@@ -159,8 +159,8 @@ struct NameTests {
         try #expect(Name(domainName: name).isFQDN == isFQDN)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: ".", expected: "."),
@@ -180,8 +180,8 @@ struct NameTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", expectedLabelsCount: 0),
@@ -196,7 +196,7 @@ struct NameTests {
         try #expect(Name(domainName: name).labelsCount == expectedLabelsCount)
     }
 
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeFromBufferAndTurnBackIntoString() throws {
         var buffer = DNSBuffer(bytes: [
             0x07, 0x65, 0x78, 0x61,
@@ -214,7 +214,7 @@ struct NameTests {
     /// Testing `新华网.中国.` which turns into `xn--xkrr14bows.xn--fiqs8s.` based on punycode.
     /// There are non-ascii bytes in this buffer which is technically not correct.
     /// The initializer is expected to repair the bytes into ASCII.
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeInvalidNonASCIIDomainAndRepairItIntoASCII() throws {
         var buffer = DNSBuffer(bytes: [
             0x9, 0xe6, 0x96, 0xb0,
@@ -246,7 +246,7 @@ struct NameTests {
     ///
     /// Not using swift-testing arguments because that slows things down significantly if we're
     /// testing against 1 million domains.
-    @available(swiftDNSApplePlatforms 26.0, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test func testAgainstTopCloudflareRadarDomains() throws {
         for (index, domainName) in enumeratedTopDomains() {
             let comment: Comment = "index: \(index), domainName: \(domainName)"
