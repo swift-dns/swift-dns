@@ -13,14 +13,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryA(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryA() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "example.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryA(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -93,14 +92,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryANonASCIIDomain(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryANonASCIIDomain() async throws {
         let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryA(
             message: factory,
-            options: .edns,
-            channelKind: .udp
+            options: .edns
         )
 
         #expect(
@@ -172,14 +170,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryAAAA(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryAAAA() async throws {
         let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryAAAA(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -252,14 +249,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryCAA(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryCAA() async throws {
         let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryCAA(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -327,14 +323,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryCERT(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryCERT() async throws {
         let factory = try MessageFactory<CERT>.forQuery(name: "for-dns-cert-testing.mahdibm.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryCERT(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -419,14 +414,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryCNAMEWwwGithubCom(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryCNAMEWwwGithubCom() async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryCNAME(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -483,14 +477,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryCNAMERawGithubusercontentCom(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryCNAMERawGithubusercontentCom() async throws {
         let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryCNAME(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -558,14 +551,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryMX(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryMX() async throws {
         let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryMX(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -641,14 +633,13 @@ struct IntegrationTests {
     @Test func queryNAPTR() async throws {}
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryNS(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryNS() async throws {
         let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryNS(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -731,14 +722,13 @@ struct IntegrationTests {
     @Test func queryOPT() async throws {}
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryPTR(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryPTR() async throws {
         let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryPTR(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -820,14 +810,13 @@ struct IntegrationTests {
     @Test func queryTLSA() async throws {}
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test(.withDNSClient, arguments: DNSClient.QueryChannelKind.allCases)
-    func queryTXT(channelKind: DNSClient.QueryChannelKind) async throws {
+    @Test(.withDNSClient)
+    func queryTXT() async throws {
         let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
         let message = factory.__testing_copyMessage()
         let response = try await client.queryTXT(
             message: factory,
-            options: .edns,
-            channelKind: channelKind
+            options: .edns
         )
 
         #expect(
@@ -896,22 +885,26 @@ struct IntegrationTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
-        .serialized,
         .withDNSClient(
-            configuration: DNSClientConfiguration(
-                connectionConfiguration: .init(queryTimeout: .seconds(10)),
-                tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
-                tcpConnectionPoolConfiguration: .init(
-                    minimumConnectionCount: 0,
-                    maximumConnectionSoftLimit: 40,
-                    maximumConnectionHardLimit: 50,
-                    idleTimeout: .seconds(10)
+            transport: .preferUDPOrUseTCP(
+                try! PreferUDPOrUseTCPDNSClientTransport(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    configuration: .init(
+                        udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                        tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        tcpConnectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 40,
+                            maximumConnectionHardLimit: 50,
+                            idleTimeout: .seconds(10)
+                        ),
+                        tcpKeepAliveBehavior: .init()
+                    )
                 )
             )
-        ),
-        arguments: DNSClient.QueryChannelKind.allCases
+        )
     )
-    func query100DomainsConcurrently(channelKind: DNSClient.QueryChannelKind) async throws {
+    func query100DomainsConcurrently() async throws {
         await withTaskGroup(of: Void.self) { group in
             let withAnswers = Atomic(0)
             let errors: Mutex<[(String, any Error)]> = .init([])
@@ -922,8 +915,7 @@ struct IntegrationTests {
                         let name = try Name(domainName: domain + ".")
                         let response = try await client.queryNS(
                             message: .forQuery(name: name),
-                            options: .edns,
-                            channelKind: channelKind
+                            options: .edns
                         )
                         #expect(response.header.responseCode == .NoError, "\(domain)")
                         #expect(response.header.messageType == .Response, "\(domain)")
@@ -945,7 +937,7 @@ struct IntegrationTests {
                 /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
                 if !errors.isEmpty {
                     print(
-                        "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+                        "\(#function) encountered these errors:\n\(errors)"
                     )
                 }
                 if errors.count >= 5 {
@@ -960,22 +952,25 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         .tags(.timeConsuming),
-        .serialized,
         .withDNSClient(
-            configuration: DNSClientConfiguration(
-                connectionConfiguration: .init(queryTimeout: .seconds(5)),
-                tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                tcpConnectionPoolConfiguration: .init(
-                    minimumConnectionCount: 0,
-                    maximumConnectionSoftLimit: 1,
-                    maximumConnectionHardLimit: 1,
-                    idleTimeout: .seconds(30)
+            transport: .preferUDPOrUseTCP(
+                try! PreferUDPOrUseTCPDNSClientTransport(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    configuration: .init(
+                        udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
+                        tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                        tcpConnectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 1,
+                            maximumConnectionHardLimit: 1,
+                            idleTimeout: .seconds(30)
+                        )
+                    )
                 )
             )
-        ),
-        arguments: DNSClient.QueryChannelKind.allCases
+        )
     )
-    func query100DomainsSequentially(channelKind: DNSClient.QueryChannelKind) async throws {
+    func query100DomainsSequentially() async throws {
         var withAnswers = 0
         var errors: [(String, any Error)] = []
 
@@ -984,8 +979,7 @@ struct IntegrationTests {
                 let name = try Name(domainName: domain)
                 let response = try await client.queryNS(
                     message: .forQuery(name: name),
-                    options: .edns,
-                    channelKind: channelKind
+                    options: .edns
                 )
                 #expect(response.header.responseCode == .NoError, "\(domain)")
                 #expect(response.header.messageType == .Response, "\(domain)")
@@ -1006,7 +1000,7 @@ struct IntegrationTests {
         /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
         if !errors.isEmpty {
             print(
-                "\(#function) with channelKind '\(channelKind)' encountered these errors:\n\(errors)"
+                "\(#function) encountered these errors:\n\(errors)"
             )
         }
         if errors.count >= 5 {

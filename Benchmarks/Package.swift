@@ -105,9 +105,11 @@ var settings: [SwiftSetting] {
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
         ),
+        .enableExperimentalFeature(
+            "AvailabilityMacro=swiftDNSApplePlatforms 13:macOS 13, iOS 16, tvOS 16, watchOS 9"
+        ),
     ]
 }
-
 // MARK: - END exact copy of the main package's Package.swift
 
 // MARK: - Add benchmark stuff now

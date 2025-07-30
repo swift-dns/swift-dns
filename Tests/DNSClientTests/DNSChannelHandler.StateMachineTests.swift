@@ -1483,18 +1483,15 @@ extension QueryProducer {
         let message = try! self.produceMessage(message: factory, options: [])
         let pendingQuery = self.producePendingQuery(
             alreadyProducedMessage: message,
-            promise: .nio(MultiThreadedEventLoopGroup.singleton.next().makePromise()),
+            promise: .nio(DNSClient.defaultUDPEventLoopGroup.next().makePromise()),
             deadline: .now() + .seconds(10)
         )
         return (message, pendingQuery)
     }
 
     mutating func getNewRequestID() -> UInt16 {
-        let (_, pendingQuery) = self.produceFakeMessageAndPendingQuery()
-        self.fullfilQuery(
-            pendingQuery: pendingQuery,
-            with: DNSClientError.cancelled
-        )
-        return pendingQuery.requestID
+        let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
+        let message = try! self.produceMessage(message: factory, options: [])
+        return message.header.id
     }
 }

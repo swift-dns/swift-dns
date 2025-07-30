@@ -8,7 +8,7 @@
 /// // Basic configuration
 /// let config = DNSConnectionConfiguration()
 /// ```
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 13, *)
 public struct DNSConnectionConfiguration: Sendable {
     /// The maximum time to wait for a response to a query before considering the connection dead.
     ///

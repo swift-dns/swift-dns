@@ -7,29 +7,22 @@ import Testing
 struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
     @TaskLocal static var currentClient: DNSClient?
 
-    let serverAddress: DNSServerAddress
-    let configuration: DNSClientConfiguration
-
-    init() {
-        self.serverAddress = .domain(name: "8.8.4.4", port: 53)
-        self.configuration = .init(
-            connectionConfiguration: .init(queryTimeout: .seconds(10)),
-            tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
-            keepAliveBehavior: .init()
-        )
-    }
+    let transport: DNSClient.Transport
 
     @available(swiftDNSApplePlatforms 26, *)
     init(
-        serverAddress: DNSServerAddress = .domain(name: "8.8.4.4", port: 53),
-        configuration: DNSClientConfiguration = .init(
-            connectionConfiguration: .init(queryTimeout: .seconds(10)),
-            tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
-            keepAliveBehavior: .init()
+        transport: DNSClient.Transport = .preferUDPOrUseTCP(
+            try! PreferUDPOrUseTCPDNSClientTransport(
+                serverAddress: .domain(name: "8.8.4.4", port: 53),
+                configuration: .init(
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
+                    tcpKeepAliveBehavior: .init()
+                )
+            )
         )
     ) {
-        self.serverAddress = serverAddress
-        self.configuration = configuration
+        self.transport = transport
     }
 
     func provideScope(
@@ -37,11 +30,7 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
         testCase: Test.Case?,
         performing function: @Sendable () async throws -> Void
     ) async throws {
-        let client = try DNSClient(
-            serverAddress: self.serverAddress,
-            configuration: self.configuration,
-            logger: Logger(label: "DNSTests")
-        )
+        let client = try DNSClient(transport: self.transport)
         try await DNSClientTrait.$currentClient.withValue(client) {
             try await withThrowingDiscardingTaskGroup { taskGroup in
                 taskGroup.addImmediateTask {
@@ -61,16 +50,17 @@ extension Trait where Self == DNSClientTrait {
     }
 
     static func withDNSClient(
-        serverAddress: DNSServerAddress = .domain(name: "8.8.4.4", port: 53),
-        configuration: DNSClientConfiguration = .init(
-            connectionConfiguration: .init(queryTimeout: .seconds(10)),
-            tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
-            keepAliveBehavior: .init()
+        transport: DNSClient.Transport = .preferUDPOrUseTCP(
+            try! PreferUDPOrUseTCPDNSClientTransport(
+                serverAddress: .domain(name: "8.8.4.4", port: 53),
+                configuration: .init(
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
+                    tcpKeepAliveBehavior: .init()
+                )
+            )
         )
     ) -> Self {
-        DNSClientTrait(
-            serverAddress: serverAddress,
-            configuration: configuration
-        )
+        DNSClientTrait(transport: transport)
     }
 }
