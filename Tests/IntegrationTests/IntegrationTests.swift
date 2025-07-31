@@ -886,21 +886,20 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         .withDNSClient(
-            transport: .preferUDPOrUseTCP(
-                try! PreferUDPOrUseTCPDNSClientTransport(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
-                    configuration: .init(
-                        udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                        tcpConnectionConfiguration: .init(queryTimeout: .seconds(20)),
-                        tcpConnectionPoolConfiguration: .init(
-                            minimumConnectionCount: 0,
-                            maximumConnectionSoftLimit: 40,
-                            maximumConnectionHardLimit: 50,
-                            idleTimeout: .seconds(10)
-                        ),
-                        tcpKeepAliveBehavior: .init()
-                    )
-                )
+            client: try! .preferUDPOrUseTCPTransport(
+                serverAddress: .domain(name: "8.8.4.4", port: 53),
+                udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                tcpConfiguration: .init(
+                    connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                    connectionPoolConfiguration: .init(
+                        minimumConnectionCount: 0,
+                        maximumConnectionSoftLimit: 40,
+                        maximumConnectionHardLimit: 50,
+                        idleTimeout: .seconds(10)
+                    ),
+                    keepAliveBehavior: .init()
+                ),
+                logger: .init(label: "DNSClientTests")
             )
         )
     )
@@ -953,20 +952,19 @@ struct IntegrationTests {
     @Test(
         .tags(.timeConsuming),
         .withDNSClient(
-            transport: .preferUDPOrUseTCP(
-                try! PreferUDPOrUseTCPDNSClientTransport(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
-                    configuration: .init(
-                        udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
-                        tcpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                        tcpConnectionPoolConfiguration: .init(
-                            minimumConnectionCount: 0,
-                            maximumConnectionSoftLimit: 1,
-                            maximumConnectionHardLimit: 1,
-                            idleTimeout: .seconds(30)
-                        )
+            client: try! .preferUDPOrUseTCPTransport(
+                serverAddress: .domain(name: "8.8.4.4", port: 53),
+                udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
+                tcpConfiguration: .init(
+                    connectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    connectionPoolConfiguration: .init(
+                        minimumConnectionCount: 0,
+                        maximumConnectionSoftLimit: 1,
+                        maximumConnectionHardLimit: 1,
+                        idleTimeout: .seconds(30)
                     )
-                )
+                ),
+                logger: .init(label: "DNSClientTests")
             )
         )
     )
