@@ -1,12 +1,12 @@
 public import DNSModels
-import Synchronization
-import _DNSConnectionPool
+public import Synchronization
+public import _DNSConnectionPool
 
 package import struct Logging.Logger
 package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
-import ServiceLifecycle
+public import ServiceLifecycle
 #endif
 
 @available(swiftDNSApplePlatforms 13, *)
@@ -40,9 +40,12 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 package actor TCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
     package let configuration: TCPDNSClientTransportConfiguration
+    @usableFromInline
     let connectionPool: TCPConnectionPool
     let eventLoopGroup: any EventLoopGroup
     let logger: Logger
+
+    @usableFromInline
     let isRunning: Atomic<Bool>
 
     package init(
@@ -83,7 +86,8 @@ package actor TCPDNSClientTransport {
     }
 
     /// Run TCPDNSClientTransport's connection pool
-    package func run() async {
+    @inlinable
+    package func run(preRunHook: @Sendable @escaping () async -> Void = {}) async {
         let (_, old) = self.isRunning.compareExchange(
             expected: false,
             desired: true,
@@ -95,9 +99,11 @@ package actor TCPDNSClientTransport {
         )
         #if ServiceLifecycleSupport
         await cancelWhenGracefulShutdown {
+            await preRunHook()
             await self.connectionPool.run()
         }
         #else
+        await preRunHook()
         await self.connectionPool.run()
         #endif
     }

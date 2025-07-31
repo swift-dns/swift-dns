@@ -33,7 +33,9 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     let udpEventLoopGroup: any EventLoopGroup
     let tcpTransport: TCPDNSClientTransport
     let logger: Logger
-    let isRunning: Atomic<Bool>
+    var isRunning: Bool {
+        self.tcpTransport.isRunning.load(ordering: .relaxed)
+    }
 
     package init(
         serverAddress: DNSServerAddress,
@@ -53,29 +55,14 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
         )
         self.udpEventLoopGroup = udpEventLoopGroup
         self.logger = logger
-        self.isRunning = Atomic(false)
     }
 
     /// Run PreferUDPOrUseTCPDNSClientTransport's TCP connection pool
+    @usableFromInline
     package func run() async {
-        let (_, old) = self.isRunning.compareExchange(
-            expected: false,
-            desired: true,
-            ordering: .relaxed
-        )
-        /// FIXME: add logic to initialize the UDP connection here
-        precondition(
-            !old,
-            "PreferUDPOrUseTCPDNSClientTransport.run() should just be called once from `DNSClient.run()`!"
-        )
-        #if ServiceLifecycleSupport
-        // FIXME: TCP transport already has a `cancelWhenGracefulShutdown` wrapper, so we don't need to add one here?
-        await cancelWhenGracefulShutdown {
-            await self.tcpTransport.run()
-        }
-        #else
-        await self.tcpTransport.run()
-        #endif
+        await self.tcpTransport.run(preRunHook: {
+            /// Initiate the UDP connection
+        })
     }
 
     /// Send a query to the DNS server.

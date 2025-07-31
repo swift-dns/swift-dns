@@ -1,9 +1,11 @@
 import Logging
-import _DNSConnectionPool
+public import _DNSConnectionPool
 
 /// DNS client connection pool metrics
 @available(swiftDNSApplePlatforms 26, *)
+@usableFromInline
 final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
+    @usableFromInline
     typealias ConnectionID = DNSConnection.ID
 
     let logger: Logger
@@ -12,6 +14,7 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
         self.logger = logger
     }
 
+    @usableFromInline
     func startedConnecting(id: ConnectionID) {
         self.logger.debug(
             "Creating new connection",
@@ -23,6 +26,7 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
 
     /// A connection attempt failed with the given error. After some period of
     /// time ``startedConnecting(id:)`` may be called again.
+    @usableFromInline
     func connectFailed(id: ConnectionID, error: any Error) {
         self.logger.debug(
             "Connection creation failed",
@@ -62,21 +66,18 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
         )
     }
 
-    func keepAliveTriggered(id: ConnectionID) {
-        self.logger.debug(
-            "run ping pong",
-            metadata: [
-                "dns_connection_id": "\(id)"
-            ]
-        )
-    }
+    @usableFromInline
+    func keepAliveTriggered(id: ConnectionID) {}
 
+    @usableFromInline
     func keepAliveSucceeded(id: ConnectionID) {}
 
+    @usableFromInline
     func keepAliveFailed(id: DNSConnection.ID, error: any Error) {}
 
     /// The remote peer is quiescing the connection: no new streams will be created on it. The
     /// connection will eventually be closed and removed from the pool.
+    @usableFromInline
     func connectionClosing(id: ConnectionID) {
         self.logger.debug(
             "Close connection",
@@ -88,6 +89,7 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
 
     /// The connection was closed. The connection may be established again in the future (notified
     /// via ``startedConnecting(id:)``).
+    @usableFromInline
     func connectionClosed(id: ConnectionID, error: (any Error)?) {
         self.logger.debug(
             "Connection closed",
@@ -97,19 +99,16 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
         )
     }
 
-    func requestQueueDepthChanged(_ newDepth: Int) {
+    @usableFromInline
+    func requestQueueDepthChanged(_ newDepth: Int) {}
 
-    }
+    @usableFromInline
+    func connectSucceeded(id: DNSConnection.ID, streamCapacity: UInt16) {}
 
-    func connectSucceeded(id: DNSConnection.ID, streamCapacity: UInt16) {
-
-    }
-
+    @usableFromInline
     func connectionUtilizationChanged(
         id: DNSConnection.ID,
         streamsUsed: UInt16,
         streamCapacity: UInt16
-    ) {
-
-    }
+    ) {}
 }
