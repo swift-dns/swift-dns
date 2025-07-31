@@ -7,7 +7,8 @@ public import ServiceLifecycle
 /// FIXME: The module and the type are both named `DNSClient`.
 @available(swiftDNSApplePlatforms 26, *)
 public struct DNSClient {
-    public enum Transport: Sendable {
+    @usableFromInline
+    enum Transport: Sendable {
         case preferUDPOrUseTCP(PreferUDPOrUseTCPDNSClientTransport)
         case tcp(TCPDNSClientTransport)
     }
@@ -15,7 +16,9 @@ public struct DNSClient {
     @usableFromInline
     let transport: Transport
 
-    public init(transport: consuming Transport) throws {
+    /// Public initializers are declared as static functions in the `DNSClient+Transports.swift` files.
+
+    init(transport: consuming Transport) throws {
         self.transport = transport
     }
 

@@ -2,50 +2,52 @@ public import DNSModels
 import Synchronization
 import _DNSConnectionPool
 
-public import struct Logging.Logger
-public import protocol NIOCore.EventLoopGroup
+package import struct Logging.Logger
+package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
-public import ServiceLifecycle
+import ServiceLifecycle
 #endif
+
+@available(swiftDNSApplePlatforms 13, *)
+public struct TCPDNSClientTransportConfiguration: Sendable {
+    /// Connection configuration
+    public var connectionConfiguration: DNSConnectionConfiguration
+    /// Connection pool configuration
+    public var connectionPoolConfiguration: DNSConnectionPoolConfiguration
+    /// Keep-alive behavior
+    public var keepAliveBehavior: KeepAliveBehavior
+
+    ///  Initialize DNSClientConfiguration
+    /// - Parameters
+    ///   - connectionConfiguration: Connection configuration
+    ///   - connectionPool: Connection pool configuration
+    ///   - keepAliveBehavior: Connection keep alive behavior
+    public init(
+        connectionConfiguration: DNSConnectionConfiguration = .init(),
+        connectionPoolConfiguration: DNSConnectionPoolConfiguration = .init(),
+        keepAliveBehavior: KeepAliveBehavior = .init()
+    ) {
+        self.connectionConfiguration = connectionConfiguration
+        self.connectionPoolConfiguration = connectionPoolConfiguration
+        self.keepAliveBehavior = keepAliveBehavior
+    }
+}
 
 /// Configuration for the DNS client
 @available(swiftDNSApplePlatforms 26, *)
-public actor TCPDNSClientTransport {
-    public struct Configuration: Sendable {
-        /// Connection configuration
-        public var connectionConfiguration: DNSConnectionConfiguration
-        /// Connection pool configuration
-        public var connectionPoolConfiguration: DNSConnectionPoolConfiguration
-        /// Keep-alive behavior
-        public var keepAliveBehavior: KeepAliveBehavior
-
-        ///  Initialize DNSClientConfiguration
-        /// - Parameters
-        ///   - connectionConfiguration: Connection configuration
-        ///   - connectionPool: Connection pool configuration
-        ///   - keepAliveBehavior: Connection keep alive behavior
-        public init(
-            connectionConfiguration: DNSConnectionConfiguration = .init(),
-            connectionPoolConfiguration: DNSConnectionPoolConfiguration = .init(),
-            keepAliveBehavior: KeepAliveBehavior = .init()
-        ) {
-            self.connectionConfiguration = connectionConfiguration
-            self.connectionPoolConfiguration = connectionPoolConfiguration
-            self.keepAliveBehavior = keepAliveBehavior
-        }
-    }
-
-    public let serverAddress: DNSServerAddress
-    public let configuration: Configuration
+@usableFromInline
+package actor TCPDNSClientTransport {
+    package let serverAddress: DNSServerAddress
+    package let configuration: TCPDNSClientTransportConfiguration
     let connectionPool: TCPConnectionPool
     let eventLoopGroup: any EventLoopGroup
     let logger: Logger
     let isRunning: Atomic<Bool>
 
-    public init(
+    package init(
         serverAddress: DNSServerAddress,
-        configuration: Configuration = .init(),
+        configuration: TCPDNSClientTransportConfiguration = .init(),
         eventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
         logger: Logger = .noopLogger
     ) throws {
@@ -80,14 +82,17 @@ public actor TCPDNSClientTransport {
         self.isRunning = Atomic(false)
     }
 
-    /// Run DNSClient connection pool
-    public func run() async {
+    /// Run TCPDNSClientTransport's connection pool
+    package func run() async {
         let (_, old) = self.isRunning.compareExchange(
             expected: false,
             desired: true,
             ordering: .relaxed
         )
-        precondition(!old, "DNSClient.run() should just be called once!")
+        precondition(
+            !old,
+            "TCPDNSClientTransport.run() should just be called once from `DNSClient.run()`!"
+        )
         #if ServiceLifecycleSupport
         await cancelWhenGracefulShutdown {
             await self.connectionPool.run()
@@ -168,14 +173,9 @@ extension TCPDNSClientTransport {
     func leaseConnection() async throws -> DNSConnection {
         if !self.isRunning.load(ordering: .relaxed) {
             self.logger.warning(
-                "Trying to lease connection from `DNSClient`, but `DNSClient.run()` hasn't been called yet."
+                "Trying to lease connection from `TCPDNSClientTransport`, but `TCPDNSClientTransport.run()` hasn't been called yet from `DNSClient.run()`."
             )
         }
         return try await self.connectionPool.leaseConnection()
     }
 }
-
-#if ServiceLifecycleSupport
-@available(swiftDNSApplePlatforms 26, *)
-extension TCPDNSClientTransport: Service {}
-#endif  // ServiceLifecycle
