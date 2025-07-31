@@ -18,7 +18,8 @@ struct DNSClientTrait: TestTrait, SuiteTrait, TestScoping {
                 connectionConfiguration: .init(queryTimeout: .seconds(20)),
                 connectionPoolConfiguration: .init(),
                 keepAliveBehavior: .init()
-            )
+            ),
+            logger: .init(label: "DNSClientTests")
         )
     ) {
         self.client = client
@@ -55,7 +56,8 @@ extension Trait where Self == DNSClientTrait {
                 connectionConfiguration: .init(queryTimeout: .seconds(20)),
                 connectionPoolConfiguration: .init(),
                 keepAliveBehavior: .init()
-            )
+            ),
+            logger: .init(label: "DNSClientTests")
         )
     ) -> Self {
         DNSClientTrait(client: client)

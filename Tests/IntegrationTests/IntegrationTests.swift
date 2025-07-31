@@ -898,7 +898,8 @@ struct IntegrationTests {
                         idleTimeout: .seconds(10)
                     ),
                     keepAliveBehavior: .init()
-                )
+                ),
+                logger: .init(label: "DNSClientTests")
             )
         )
     )
@@ -962,7 +963,8 @@ struct IntegrationTests {
                         maximumConnectionHardLimit: 1,
                         idleTimeout: .seconds(30)
                     )
-                )
+                ),
+                logger: .init(label: "DNSClientTests")
             )
         )
     )

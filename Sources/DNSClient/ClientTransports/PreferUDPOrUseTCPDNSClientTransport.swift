@@ -17,19 +17,8 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     package let connectionConfiguration: DNSConnectionConfiguration
     /// FIXME: using DNSConnection for now to have something sendable.
     @usableFromInline
-    var _udpConnection: DNSConnection?
-    @usableFromInline
-    var udpConnection: DNSConnection {
-        get async throws {
-            if let connection = self._udpConnection {
-                return connection
-            } else {
-                let connection = try await self.makeUDPConnection()
-                self._udpConnection = connection
-                return connection
-            }
-        }
-    }
+    var udpConnection: DNSConnection?
+    nonisolated let udpConnectionWaiters = Mutex<[CheckedContinuation<DNSConnection, Never>]>([])
     let udpEventLoopGroup: any EventLoopGroup
     let tcpTransport: TCPDNSClientTransport
     let logger: Logger
@@ -61,7 +50,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     package func run() async {
         await self.tcpTransport.run(preRunHook: {
-            /// Initiate the UDP connection
+            await self.initializeNewUDPConnection()
         })
     }
 
@@ -123,10 +112,11 @@ extension PreferUDPOrUseTCPDNSClientTransport {
         /// FIXME: Add logic to choose TCP when it should
         switch true {
         case true:
-            try await operation(
-                factory,
-                options,
-                self.udpConnection
+            try await self.withUDPConnection(
+                message: factory,
+                options: options,
+                isolation: isolation,
+                operation: operation
             )
         case false:
             try await self.tcpTransport.withConnection(
@@ -135,6 +125,25 @@ extension PreferUDPOrUseTCPDNSClientTransport {
                 isolation: isolation,
                 operation: operation
             )
+        }
+    }
+
+    func withUDPConnection<RData: RDataConvertible>(
+        message factory: consuming MessageFactory<RData>,
+        options: DNSRequestOptions,
+        isolation: isolated (any Actor)? = #isolation,
+        operation: (consuming MessageFactory<RData>, DNSRequestOptions, DNSConnection) async throws
+            -> Message
+    ) async throws -> Message {
+        if let connection = await self.udpConnection {
+            return try await operation(factory, options, connection)
+        } else {
+            let connection = await withCheckedContinuation { continuation in
+                self.udpConnectionWaiters.withLock {
+                    $0.append(continuation)
+                }
+            }
+            return try await operation(factory, options, connection)
         }
     }
 
@@ -150,5 +159,38 @@ extension PreferUDPOrUseTCPDNSClientTransport {
             logger: logger
         )
         return udpConnection
+    }
+
+    func initializeNewUDPConnection() async {
+        /// FIXME: need proper backoff and all
+        /// possibly should extract this logic to its own mini-component
+        do {
+            self.udpConnection = try await self.makeUDPConnection()
+            self.udpConnectionWaiters.withLock { continuations in
+                for continuation in continuations {
+                    continuation.resume(returning: self.udpConnection!)
+                }
+                continuations.removeAll()
+            }
+        } catch {
+            self.logger.warning(
+                "Failed to initialize UDP connection, will retry in 5 seconds",
+                metadata: [
+                    "error": "\(String(reflecting: error))"
+                ]
+            )
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch {
+                self.logger.warning(
+                    "Failed to initialize UDP connection, and then noticed cancellation when retrying. Will not make new connection.",
+                    metadata: [
+                        "error": "\(String(reflecting: error))"
+                    ]
+                )
+                return
+            }
+            await self.initializeNewUDPConnection()
+        }
     }
 }
