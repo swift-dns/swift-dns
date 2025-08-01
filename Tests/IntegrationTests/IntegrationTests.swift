@@ -908,7 +908,7 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     private static func makeTestingDNSClientsForConcurrentTest() -> [DNSClient] {
         [
-            try! .preferUDPOrUseTCPTransport(
+            try! DNSClient.preferUDPOrUseTCPTransport(
                 serverAddress: .domain(name: "8.8.4.4", port: 53),
                 udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
                 tcpConfiguration: .init(
@@ -923,7 +923,7 @@ struct IntegrationTests {
                 ),
                 logger: .init(label: "DNSClientTests")
             ),
-            try! .tcpTransport(
+            try! DNSClient.tcpTransport(
                 serverAddress: .domain(name: "8.8.4.4", port: 53),
                 configuration: .init(
                     connectionConfiguration: .init(queryTimeout: .seconds(20)),
@@ -992,7 +992,7 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     private static func makeTestingDNSClientsForSequentialTest() -> [DNSClient] {
         [
-            try! .preferUDPOrUseTCPTransport(
+            try! DNSClient.preferUDPOrUseTCPTransport(
                 serverAddress: .domain(name: "8.8.4.4", port: 53),
                 udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
                 tcpConfiguration: .init(
@@ -1006,7 +1006,7 @@ struct IntegrationTests {
                 ),
                 logger: .init(label: "DNSClientTests")
             ),
-            try! .tcpTransport(
+            try! DNSClient.tcpTransport(
                 serverAddress: .domain(name: "8.8.4.4", port: 53),
                 configuration: .init(
                     connectionConfiguration: .init(queryTimeout: .seconds(10)),

@@ -1480,18 +1480,17 @@ where Context: Equatable {
 extension QueryProducer {
     mutating func produceFakeMessageAndPendingQuery() -> (Message, PendingQuery) {
         let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
-        let message = try! self.produceMessage(message: factory, options: [])
-        let pendingQuery = self.producePendingQuery(
-            alreadyProducedMessage: message,
+        let producedMessage = try! self.produceMessage(message: factory, options: [])
+        let pendingQuery = producedMessage.producePendingQuery(
             promise: .nio(DNSClient.defaultUDPEventLoopGroup.next().makePromise()),
             deadline: .now() + .seconds(10)
         )
-        return (message, pendingQuery)
+        return (producedMessage.message, pendingQuery)
     }
 
     mutating func getNewRequestID() -> UInt16 {
         let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
-        let message = try! self.produceMessage(message: factory, options: [])
-        return message.header.id
+        let producedMessage = try! self.produceMessage(message: factory, options: [])
+        return producedMessage.message.header.id
     }
 }

@@ -17,34 +17,12 @@ package struct QueryProducer: ~Copyable {
     package mutating func produceMessage(
         message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions
-    ) throws(MessageIDGenerator.Errors) -> Message {
+    ) throws(MessageIDGenerator.Errors) -> ProducedMessage {
         let requestID = try self.messageIDGenerator.next()
         factory.apply(options: options)
         factory.apply(requestID: requestID)
         let message = factory.takeMessage()
-        return message
-    }
-
-    /// A description
-    /// - Parameters:
-    ///   - alreadyProducedMessage: The message that was produced by `produceMessage`.
-    ///     This is a REQUIREMENT. Only pass a message here that was produced by `produceMessage`.
-    ///   - promise: The promise that will be fulfilled when query is over.
-    ///   - deadline: The deadline for the query.
-    ///
-    /// - Throws: MessageIDGenerator.Errors
-    /// - Returns: PendingQuery
-    @usableFromInline
-    package mutating func producePendingQuery(
-        alreadyProducedMessage message: Message,
-        promise: PendingQuery.DynamicPromise<Message>,
-        deadline: NIODeadline
-    ) -> PendingQuery {
-        PendingQuery(
-            promise: promise,
-            requestID: message.header.id,
-            deadline: deadline
-        )
+        return ProducedMessage(message: message)
     }
 
     @usableFromInline
@@ -63,5 +41,30 @@ package struct QueryProducer: ~Copyable {
     ) {
         pendingQuery.promise.queryProducer_fail(with: error)
         messageIDGenerator.remove(pendingQuery.requestID)
+    }
+}
+
+/// A message with a handle to create a PendingQuery from it.
+@available(swiftDNSApplePlatforms 26, *)
+@usableFromInline
+package struct ProducedMessage {
+    @usableFromInline
+    package let message: Message
+
+    @usableFromInline
+    package init(message: Message) {
+        self.message = message
+    }
+
+    @usableFromInline
+    package func producePendingQuery(
+        promise: PendingQuery.DynamicPromise<Message>,
+        deadline: NIODeadline
+    ) -> PendingQuery {
+        PendingQuery(
+            __promise: promise,
+            requestID: self.message.header.id,
+            deadline: deadline
+        )
     }
 }

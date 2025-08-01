@@ -39,9 +39,10 @@ package struct PendingQuery {
     package let requestID: UInt16
     package let deadline: NIODeadline
 
+    /// Use ProducedMessage.producePendingQuery instead.
     @usableFromInline
-    package init(promise: DynamicPromise<Message>, requestID: UInt16, deadline: NIODeadline) {
-        self.promise = promise
+    package init(__promise: DynamicPromise<Message>, requestID: UInt16, deadline: NIODeadline) {
+        self.promise = __promise
         self.requestID = requestID
         self.deadline = deadline
     }

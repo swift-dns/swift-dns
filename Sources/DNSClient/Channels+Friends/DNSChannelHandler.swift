@@ -85,12 +85,14 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
 @available(swiftDNSApplePlatforms 26, *)
 extension DNSChannelHandler {
     @usableFromInline
-    func write(message: Message, promise: PendingQuery.DynamicPromise<Message>) {
+    func write(
+        producedMessage: consuming ProducedMessage,
+        promise: PendingQuery.DynamicPromise<Message>
+    ) {
         self.eventLoop.assertInEventLoop()
 
-        let pendingQuery = PendingQuery(
+        let pendingQuery = producedMessage.producePendingQuery(
             promise: promise,
-            requestID: message.header.id,
             deadline: .now() + TimeAmount(self.configuration.queryTimeout)
         )
 
@@ -100,10 +102,10 @@ extension DNSChannelHandler {
 
             var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 512))
             do {
-                try message.encode(into: &buffer)
+                try producedMessage.message.encode(into: &buffer)
             } catch {
                 /// Act as if we received an early response for the query
-                switch self.stateMachine.receivedResponse(requestID: message.header.id) {
+                switch self.stateMachine.receivedResponse(requestID: pendingQuery.requestID) {
                 case .respond(let pendingQuery, let deadlineAction):
                     self.processDeadlineCallbackAction(action: deadlineAction)
                     self.queryProducer.fullfilQuery(

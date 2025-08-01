@@ -68,18 +68,18 @@ public final actor DNSConnection: Sendable {
         message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions
     ) async throws -> Message {
-        let message = try self.channelHandler.queryProducer.produceMessage(
+        let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
             options: options
         )
-        let requestID = message.header.id
+        let requestID = producedMessage.message.header.id
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
                 throw DNSClientError.cancelled
             }
             return try await withCheckedThrowingContinuation { continuation in
                 self.channelHandler.write(
-                    message: message,
+                    producedMessage: producedMessage,
                     promise: .swift(continuation)
                 )
             }
