@@ -24,7 +24,9 @@ extension DNSClient {
 
     /// Returns the default `EventLoopGroup` singleton for UDP connections, automatically selecting the best for the platform.
     ///
-    /// This will select the concrete `EventLoopGroup` depending which platform this is running on.
+    /// This is supposed to select the concrete `EventLoopGroup` depending which platform this is running on.
+    /// Currently, it just returns the `MultiThreadedEventLoopGroup` singleton considering we don't
+    /// have a darwin-specific event loop group for UDP.
     public static var defaultUDPEventLoopGroup: any EventLoopGroup {
         MultiThreadedEventLoopGroup.singleton
     }
