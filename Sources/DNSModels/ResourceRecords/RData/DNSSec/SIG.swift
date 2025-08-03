@@ -222,7 +222,7 @@ extension SIG {
         buffer.writeInteger(sigExpiration)
         buffer.writeInteger(sigInception)
         buffer.writeInteger(keyTag)
-        // FIXME: should encode as lowercase?
+        // a `Name` is always ASCII lowercased anyway so no need to worry about that.
         try signerName.encode(into: &buffer)
         buffer.writeBytes(sig)
     }

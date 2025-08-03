@@ -233,9 +233,12 @@ extension EDNSOption {
         case .keepalive(let keepalive):
             keepalive.encode(into: &buffer)
         case .unknown(_, let data):
-            /// FIXME: we don't know this fits, should throw if it doesnt?
-            buffer.writeInteger(UInt16(data.count))
-            buffer.writeBytes(data)
+            try buffer.writeLengthPrefixedString(
+                name: "EDNSOption.unknown",
+                bytes: data,
+                maxLength: UInt16.max,
+                fitLengthInto: UInt16.self
+            )
         }
     }
 }
@@ -258,7 +261,8 @@ extension EDNSOption.ClientSubnet {
 @available(swiftDNSApplePlatforms 26, *)
 extension EDNSOption.SupportedAlgorithms {
     mutating func insert(_ algorithm: DNSSECAlgorithmEDNSSubset) {
-        /// No unchecked math (&<<) here because we might need to grow the size of algorithm.
+        /// No unchecked math (&<<) here because we might need to grow the size of algorithm in the
+        /// future and don't want this to go wrong incase we forget to apply the necessary changes here.
         self.rawValue |= 1 << algorithm.rawValue
     }
 

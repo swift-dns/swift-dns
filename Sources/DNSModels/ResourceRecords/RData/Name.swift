@@ -50,7 +50,7 @@ public struct Name: Sendable {
     /// An ordered list of zero or more octets that makes up a portion of a domain name.
     /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
     /// ```
-    /// FIXME: investigate performance improvements, with something like `ArraySlice<UInt8>` or `TinyVec`
+    /// FIXME: investigate performance improvements, with something like `TinyVec`
     @usableFromInline
     package var data: [UInt8]
     /// The end of each label in the `data` array.
@@ -388,9 +388,10 @@ extension Name {
                 let currentIndex = buffer.readerIndex
                 let offset = pointer & 0b0011_1111_1111_1111
 
-                /// FIXME: check offset is not out of bounds
                 /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
-                buffer.moveReaderIndex(toOffsetInDNSPortion: Int(offset))
+                guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
+                    throw ProtocolError.failedToValidate("Name.label.offset", buffer)
+                }
                 try self.read(from: &buffer)
                 /// Reset the reader index to where we were
                 /// There is no null byte at the end, for pointers

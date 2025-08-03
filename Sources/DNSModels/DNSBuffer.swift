@@ -4,7 +4,6 @@ public import enum NIOCore.Endianness
 
 /// FIXME: investigating making this non-copyable
 /// FXIME: CustomStringConvertible + Debug
-/// use ~Copyable?
 @usableFromInline
 package struct DNSBuffer: Sendable {
     @usableFromInline
@@ -97,8 +96,14 @@ package struct DNSBuffer: Sendable {
         self._buffer.moveReaderIndex(to: offset)
     }
 
-    package mutating func moveReaderIndex(toOffsetInDNSPortion offset: Int) {
-        self._buffer.moveReaderIndex(to: self._dnsStartIndex + offset)
+    /// Returns whether the move was possible and successful.
+    package mutating func moveReaderIndex(toOffsetInDNSPortion offset: UInt16) -> Bool {
+        /// We already know UInt16 < UInt32 so no need to check for that.
+        guard offset >= 0, offset <= self.writerIndex else {
+            return false
+        }
+        self._buffer.moveReaderIndex(to: self._dnsStartIndex + Int(offset))
+        return true
     }
 
     package mutating func moveDNSPortionStartIndex(forwardBy offset: Int) {
@@ -121,8 +126,7 @@ package struct DNSBuffer: Sendable {
         as: InlineArray<count, IntegerType>.Type = InlineArray<count, IntegerType>.self
     ) -> InlineArray<count, IntegerType>? {
         let length = MemoryLayout<IntegerType>.size
-        /// FIXME: is unchecked acceptable? perhpas needs to do something in the function name to
-        /// point out that it's unchecked?
+        assert(!length.multipliedReportingOverflow(by: count).overflow)
         let bytesRequired = length &* count
 
         guard self.readableBytes >= bytesRequired else {
@@ -195,6 +199,7 @@ package struct DNSBuffer: Sendable {
     // FIXME: Use @inline(__always) ?
     /// Gives access to a version of the buffer that has a writerIndex limited to the requested length.
     /// Resets the writer index to the previous value after the body is executed.
+    /// Does reset the writer index if the body throws an error.
     @inlinable
     package mutating func withTruncatedReadableBytes<T>(
         length: Int,
@@ -244,13 +249,7 @@ package struct DNSBuffer: Sendable {
     package mutating func writeBytes<let elementCount: Int>(
         _ bytes: InlineArray<elementCount, UInt8>
     ) {
-        /// TODO: optimize. Currently `InlineArray -> UnsafePointer` conversion is broken in the compiler.
-        var accumulatedBytes: [UInt8] = []
-        accumulatedBytes.reserveCapacity(bytes.count)
-        for idx in bytes.indices {
-            accumulatedBytes.append(bytes[idx])
-        }
-        self.writeBytes(accumulatedBytes)
+        self._buffer.writeBytes(bytes.span.bytes)
     }
 
     package mutating func writeBytes(_ bytes: some Sequence<UInt8>) {

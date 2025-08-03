@@ -140,8 +140,6 @@ extension ConnectionFactory {
         logger: Logger,
         isolation: isolated (any Actor)?
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
-        // FIXME: some things are commented out for now
-        // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
         let (bootstrap, channelHandler) = self.makeInitializedUDPBootstrap(
             deadline: deadline,
             eventLoop: eventLoop,
@@ -286,8 +284,6 @@ extension ConnectionFactory {
         logger: Logger,
         isolation: isolated (any Actor)?
     ) -> (EventLoopFuture<any Channel>, DNSChannelHandler) {
-        // FIXME: some things are commented out for now
-        // precondition(!self.key.scheme.usesTLS, "Unexpected scheme")
         let (bootstrap, channelHandler) = self.makeInitializedTCPBootstrap(
             address: address,
             connectionID: connectionID,

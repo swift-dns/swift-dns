@@ -680,6 +680,7 @@ extension SVCB.SVCParamKey {
 extension SVCB.SVCParamValue {
     package func encode(into buffer: inout DNSBuffer) throws {
         var valueBuffer = DNSBuffer()
+
         switch self {
         case .mandatory(let mandatory):
             try mandatory.encode(into: &valueBuffer)
@@ -699,7 +700,9 @@ extension SVCB.SVCParamValue {
         case .unknown(let unknown):
             try unknown.encode(into: &valueBuffer)
         }
+
         /// FIXME: check no overflow?
+        /// FIXME: use "writeLengthPrefixed"
         buffer.writeInteger(UInt16(valueBuffer.readableBytes))
         buffer.writeBuffer(&valueBuffer)
     }
@@ -732,8 +735,10 @@ extension SVCB.SVCParamValue.ALPN {
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.IPHint where IPType == A {
     package func encode(into buffer: inout DNSBuffer) throws {
-        /// FIXME: How do we know `addresses.count * IPv4Address.size` fits into Int?
-        buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv4Address.size))
+        guard let length = Int(exactly: self.addresses.count * IPv4Address.size) else {
+            throw ProtocolError.failedToValidate("SVCB.SVCParamValue.IPHint<A>", buffer)
+        }
+        buffer.reserveCapacity(minimumWritableBytes: length)
         for address in self.addresses {
             address.encode(into: &buffer)
         }
@@ -743,8 +748,10 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     package func encode(into buffer: inout DNSBuffer) throws {
-        /// FIXME: How do we know `addresses.count * IPv6Address.size` fits into Int?
-        buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv6Address.size))
+        guard let length = Int(exactly: self.addresses.count * IPv6Address.size) else {
+            throw ProtocolError.failedToValidate("SVCB.SVCParamValue.IPHint<AAAA>", buffer)
+        }
+        buffer.reserveCapacity(minimumWritableBytes: length)
         for address in self.addresses {
             address.encode(into: &buffer)
         }

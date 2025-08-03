@@ -58,9 +58,8 @@ extension IPv4Address: Equatable {
 @available(swiftDNSApplePlatforms 26, *)
 extension IPv4Address: Hashable {
     public func hash(into hasher: inout Hasher) {
-        /// FIXME: optimize writing bytes
-        for idx in self.bytes.indices {
-            hasher.combine(self.bytes[idx])
+        self.bytes.span.withUnsafeBytes {
+            hasher.combine(bytes: $0)
         }
     }
 }
@@ -218,9 +217,8 @@ extension IPv6Address: Equatable {
 @available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address: Hashable {
     public func hash(into hasher: inout Hasher) {
-        /// FIXME: optimize writing bytes
-        for idx in self.bytes.indices {
-            hasher.combine(self.bytes[idx])
+        self.bytes.span.withUnsafeBytes {
+            hasher.combine(bytes: $0)
         }
     }
 }
@@ -235,6 +233,7 @@ extension IPv6Address: CustomStringConvertible {
             if idx > 0 {
                 result.append(":")
             }
+            /// FIXME: Wait a second this is wrong
             result.append(String(self.bytes[unchecked: idx], radix: 16))
         }
         return result
