@@ -46,8 +46,10 @@ import DNSClient
 import DNSModels
 
 /// Create a `DNSClient`
-let client = try DNSClient.defaultTransport(
-    serverAddress: .domain(name: "1.1.1.1", port: 53)
+let client = try DNSClient(
+    transport: .default(
+        serverAddress: .domain(name: "1.1.1.1", port: 53)
+    )
 )
 
 try await withThrowingTaskGroup(of: Void.self) { taskGroup in
@@ -77,14 +79,16 @@ try await withThrowingTaskGroup(of: Void.self) { taskGroup in
 }
 ```
 
-You can use different transport if you so desire.
-The default transport is `PreferUDPOrUseTCP` similar to other DNS client and resolvers.
+You can use different transports if you so desire.
+The `default` transport is `preferUDPOrUseTCP` similar to other DNS clients and resolvers.
 Currently a TCP-only transport is also supported:
 
 ```swift
-/// Create a `DNSClient` with TCP transport
-let client = try DNSClient.tcpTransport(
-    serverAddress: .domain(name: "1.1.1.1", port: 53)
+/// Create a `DNSClient` with the TCP transport
+let client = try DNSClient(
+    transport: .tcp(
+        serverAddress: .domain(name: "1.1.1.1", port: 53)
+    )
 )
 ```
 

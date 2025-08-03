@@ -16,10 +16,8 @@ public struct DNSClient {
     @usableFromInline
     let transport: Transport
 
-    /// Public initializers are declared as static functions in the `DNSClient+Transports.swift` files.
-
-    init(transport: consuming Transport) throws {
-        self.transport = transport
+    public init(transport transportFactory: DNSClientTransportFactory) {
+        self.transport = transportFactory.transport
     }
 
     /// Run DNSClient connection pool
@@ -33,6 +31,10 @@ public struct DNSClient {
     }
 
     /// Send a query to the DNS server.
+    ///
+    /// The convenience query functions are in `DNSClient+Transports.swift`.
+    /// Use `queryA`, `queryAAAA`, `queryCNAME` etc... if you want those convenience functions.
+    ///
     /// - Parameters:
     ///   - factory: The factory to produce a query message with.
     ///   - options: The options for producing the query message.

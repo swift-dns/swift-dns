@@ -908,34 +908,38 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     private static func makeTestingDNSClientsForConcurrentTest() -> [DNSClient] {
         [
-            try! DNSClient.preferUDPOrUseTCPTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                    connectionPoolConfiguration: .init(
-                        minimumConnectionCount: 0,
-                        maximumConnectionSoftLimit: 40,
-                        maximumConnectionHardLimit: 50,
-                        idleTimeout: .seconds(10)
+            try! DNSClient(
+                transport: .preferUDPOrUseTCP(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    tcpConfiguration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 40,
+                            maximumConnectionHardLimit: 50,
+                            idleTimeout: .seconds(10)
+                        ),
+                        keepAliveBehavior: .init()
                     ),
-                    keepAliveBehavior: .init()
-                ),
-                logger: .init(label: "DNSClientTests")
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
-            try! DNSClient.tcpTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                configuration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                    connectionPoolConfiguration: .init(
-                        minimumConnectionCount: 0,
-                        maximumConnectionSoftLimit: 40,
-                        maximumConnectionHardLimit: 50,
-                        idleTimeout: .seconds(10)
+            try! DNSClient(
+                transport: .tcp(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    configuration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 40,
+                            maximumConnectionHardLimit: 50,
+                            idleTimeout: .seconds(10)
+                        ),
+                        keepAliveBehavior: .init()
                     ),
-                    keepAliveBehavior: .init()
-                ),
-                logger: .init(label: "DNSClientTests")
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
         ]
     }
@@ -992,32 +996,36 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     private static func makeTestingDNSClientsForSequentialTest() -> [DNSClient] {
         [
-            try! DNSClient.preferUDPOrUseTCPTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
-                tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(10)),
-                    connectionPoolConfiguration: .init(
-                        minimumConnectionCount: 0,
-                        maximumConnectionSoftLimit: 1,
-                        maximumConnectionHardLimit: 1,
-                        idleTimeout: .seconds(30)
-                    )
-                ),
-                logger: .init(label: "DNSClientTests")
+            try! DNSClient(
+                transport: .preferUDPOrUseTCP(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
+                    tcpConfiguration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(10)),
+                        connectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 1,
+                            maximumConnectionHardLimit: 1,
+                            idleTimeout: .seconds(30)
+                        )
+                    ),
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
-            try! DNSClient.tcpTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                configuration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(10)),
-                    connectionPoolConfiguration: .init(
-                        minimumConnectionCount: 0,
-                        maximumConnectionSoftLimit: 1,
-                        maximumConnectionHardLimit: 1,
-                        idleTimeout: .seconds(30)
-                    )
-                ),
-                logger: .init(label: "DNSClientTests")
+            try! DNSClient(
+                transport: .tcp(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    configuration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(10)),
+                        connectionPoolConfiguration: .init(
+                            minimumConnectionCount: 0,
+                            maximumConnectionSoftLimit: 1,
+                            maximumConnectionHardLimit: 1,
+                            idleTimeout: .seconds(30)
+                        )
+                    ),
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
         ]
     }
@@ -1084,24 +1092,28 @@ struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
     private static func makeTestingDNSClients() -> [DNSClient] {
         [
-            try! DNSClient.preferUDPOrUseTCPTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                    connectionPoolConfiguration: .init(),
-                    keepAliveBehavior: .init()
-                ),
-                logger: .init(label: "DNSClientTests")
+            try! DNSClient(
+                transport: .preferUDPOrUseTCP(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    tcpConfiguration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionPoolConfiguration: .init(),
+                        keepAliveBehavior: .init()
+                    ),
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
-            try! DNSClient.tcpTransport(
-                serverAddress: .domain(name: "8.8.4.4", port: 53),
-                configuration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                    connectionPoolConfiguration: .init(),
-                    keepAliveBehavior: .init()
-                ),
-                logger: .init(label: "DNSClientTests")
+            try! DNSClient(
+                transport: .tcp(
+                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    configuration: .init(
+                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionPoolConfiguration: .init(),
+                        keepAliveBehavior: .init()
+                    ),
+                    logger: .init(label: "DNSClientTests")
+                )
             ),
         ]
     }
