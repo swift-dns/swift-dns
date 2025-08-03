@@ -173,14 +173,6 @@ extension DNSChannelHandler {
         }
     }
 
-    @usableFromInline
-    func scheduleDeadlineCallback(deadline: NIODeadline) {
-        self.deadlineCallback = try? self.eventLoop.scheduleCallback(
-            at: deadline,
-            handler: DeadlineSchedule(channelHandler: .init(self, eventLoop: self.eventLoop))
-        )
-    }
-
     func processDeadlineCallbackAction(
         action: StateMachine<ChannelHandlerContext>.DeadlineCallbackAction
     ) {
@@ -189,7 +181,10 @@ extension DNSChannelHandler {
             self.deadlineCallback?.cancel()
             self.deadlineCallback = nil
         case .reschedule(let deadline):
-            self.scheduleDeadlineCallback(deadline: deadline)
+            self.deadlineCallback = try? self.eventLoop.scheduleCallback(
+                at: deadline,
+                handler: DeadlineSchedule(channelHandler: .init(self, eventLoop: self.eventLoop))
+            )
         case .doNothing:
             break
         }

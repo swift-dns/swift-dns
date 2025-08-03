@@ -12,7 +12,7 @@ package struct DNSBuffer: Sendable {
     /// Start index of the DNS portion of the packet the buffer
     /// This can be a negative number if e.g. this `DNSBuffer` is a slice of a parent `DNSBuffer`.
     ///
-    /// TODO: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
+    /// FIXME: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
     /// starts from the DNS portion of the packet?
     @usableFromInline
     let _dnsStartIndex: Int
@@ -283,12 +283,10 @@ package struct DNSBuffer: Sendable {
             /// ByteBuffer can't fit more than UInt32 bytes anyway.
             "This function assumes the length will fit into an Int."
         )
-        guard let length = self.readInteger(as: IntegerType.self),
-            let bytes = self.readBytes(length: Int(length))
-        else {
+        guard let slice = self._buffer.readLengthPrefixedSlice(as: IntegerType.self) else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return bytes
+        return [UInt8](buffer: slice)
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
@@ -300,14 +298,10 @@ package struct DNSBuffer: Sendable {
     /// length (including the length octet).
     /// ```
     package mutating func readLengthPrefixedStringAsString(name: StaticString) throws -> String {
-        guard let length = self.readInteger(as: UInt8.self),
-            let string = self.readString(
-                length: Int(length)/// `UInt8` -> `Int` is safe
-            )
-        else {
+        guard let slice = self._buffer.readLengthPrefixedSlice(as: UInt8.self) else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return string
+        return String(buffer: slice)
     }
 
     /// The length of the string MUST fit into the provided integer type.
