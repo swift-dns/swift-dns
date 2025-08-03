@@ -5,7 +5,6 @@ import Testing
 @Suite
 struct NameTests {
     @available(swiftDNSApplePlatforms 26, *)
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", isFQDN: false, data: [42], borders: [1]),
@@ -34,13 +33,11 @@ struct NameTests {
     )
     func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) throws {
         let domainName = try Name(domainName: name)
-        print(domainName.debugDescription)
         #expect(domainName.isFQDN == isFQDN)
         #expect(domainName.data == data)
         #expect(domainName.borders == borders)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [".mahdibm.com", ""]
@@ -51,7 +48,6 @@ struct NameTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
@@ -144,7 +140,6 @@ struct NameTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: ".", isFQDN: true),
@@ -159,7 +154,6 @@ struct NameTests {
         try #expect(Name(domainName: name).isFQDN == isFQDN)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
@@ -180,7 +174,6 @@ struct NameTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
