@@ -36,7 +36,7 @@ struct DNSMessageDecoderTests {
         let resource = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket
         var buffer = ByteBuffer(dnsBuffer: resource.buffer())
         buffer.moveReaderIndex(forwardBy: 42)
-        /// Set the buffer to only the first 50 bytes
+        /// Set the buffer to only the first 42 bytes
         buffer = buffer.getSlice(at: buffer.readerIndex, length: 42)!
 
         let result = try #require(decoder.decode(buffer: &buffer))
@@ -51,7 +51,7 @@ struct DNSMessageDecoderTests {
                 ///
                 /// The behavior that is happening here might not be the same, but see
                 /// `DNSBuffer.withTruncatedReadableBytes` comments for more details.
-                #expect(buffer.getToEnd() == [])
+                #expect(buffer.getToEnd() == [3])
             default:
                 Issue.record("Expected ProtocolError.failedToRead but got \(error)")
             }

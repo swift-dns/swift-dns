@@ -136,18 +136,18 @@ package struct DNSBuffer: Sendable {
         return self._buffer.readWithUnsafeReadableBytes {
             ptr -> (Int, InlineArray<count, IntegerType>) in
             assert(ptr.count >= bytesRequired)
-            var array = InlineArray<count, IntegerType>(repeating: 0)
-            for index in array.indices {
+
+            let values = InlineArray<count, IntegerType> { index in
                 switch endianness {
                 case .big:
-                    array[index] = IntegerType(
+                    return IntegerType(
                         bigEndian: ptr.load(
                             fromByteOffset: index &* length,
                             as: IntegerType.self
                         )
                     )
                 case .little:
-                    array[index] = IntegerType(
+                    return IntegerType(
                         littleEndian: ptr.load(
                             fromByteOffset: index &* length,
                             as: IntegerType.self
@@ -156,28 +156,7 @@ package struct DNSBuffer: Sendable {
                 }
             }
 
-            /// Issue: https://github.com/swiftlang/swift/issues/82093
-            /// Resolved on main, haven't made it to snapshots yet.
-            // let values = InlineArray<count, IntegerType> { index in
-            //     switch endianness {
-            //     case .big:
-            //         return IntegerType(
-            //             bigEndian: ptr.load(
-            //                 fromByteOffset: index &* length,
-            //                 as: IntegerType.self
-            //             )
-            //         )
-            //     case .little:
-            //         return IntegerType(
-            //             littleEndian: ptr.load(
-            //                 fromByteOffset: index &* length,
-            //                 as: IntegerType.self
-            //             )
-            //         )
-            //     }
-            // }
-
-            return (bytesRequired, array)
+            return (bytesRequired, values)
         }
     }
 
