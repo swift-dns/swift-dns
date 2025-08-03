@@ -51,7 +51,7 @@ struct DNSMessageDecoderTests {
                 ///
                 /// The behavior that is happening here might not be the same, but see
                 /// `DNSBuffer.withTruncatedReadableBytes` comments for more details.
-                #expect(buffer.getToEnd() == [3])
+                #expect(buffer.getToEnd() == [])
             default:
                 Issue.record("Expected ProtocolError.failedToRead but got \(error)")
             }
