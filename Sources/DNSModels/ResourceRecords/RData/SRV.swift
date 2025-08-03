@@ -73,6 +73,8 @@ public struct SRV: Sendable {
 }
 
 extension SRV {
+    /// Expects the whole buffer to be the `SRV` record.
+    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
         self.priority = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SRV.priority", buffer)
@@ -83,7 +85,7 @@ extension SRV {
         self.port = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SRV.port", buffer)
         )
-        self.target = try Name(from: &buffer)
+        self.target = try Name(from: &buffer, knownLength: buffer.readableBytes)
     }
 }
 

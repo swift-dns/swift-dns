@@ -276,9 +276,10 @@ extension Name {
         case root  // root is the end of the labels list for an FQDN
     }
 
-    package init(from buffer: inout DNSBuffer) throws {
+    /// `knownLength` is the length of the name in bytes including the null byte, if known.
+    package init(from buffer: inout DNSBuffer, knownLength: Int? = nil) throws {
         self.init()
-        try self.read(from: &buffer)
+        try self.read(from: &buffer, knownLength: knownLength)
 
         switch self.performASCIICheck() {
         case .containsOnlyASCII:
@@ -297,7 +298,11 @@ extension Name {
     }
 
     /// Reads the domain name from the buffer, adding it to the current name.
-    package mutating func read(from buffer: inout DNSBuffer) throws {
+    /// `knownLength` is the length of the name in bytes including the null byte, if known.
+    package mutating func read(
+        from buffer: inout DNSBuffer,
+        knownLength: Int?
+    ) throws {
         var state: LabelParsingState = .labelLengthOrPointer
         // assume all chars are utf-8. We're doing byte-by-byte operations, no endianness issues...
         // reserved: (1000 0000 aka 0800) && (0100 0000 aka 0400)
@@ -331,6 +336,38 @@ extension Name {
                         state = .pointer
                     case 0b0000_0000:
                         state = .label
+
+                        if let knownLength = knownLength,
+                            knownLength <= UInt8.max
+                        {
+                            /// Excluding the null byte, we have `knownLength - 1` bytes that are either
+                            /// <character-string>s which is to say they are either a length-byte or the
+                            /// actual label bytes. Worst case we have `(knownLength - 1) / 2` label bytes.
+                            /// label bytes are added to `data`, so we can reserve some capacity there.
+                            /// We also reserve capacity for borders. There is a border for each label-length byte.
+                            ///
+                            /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
+                            /// the weighted-average ratio of label-bytes to domain-length is 0.915,
+                            /// and the weighted-average ratio of labels to domain-length is 0.165.
+                            /// so we reserve the bytes below based on those ratios.
+                            let labelBytesGuess = Int(knownLength) * 92 / 100
+                            let maxPossibleLabelBytes = Int(UInt8.max - 1)
+                            self.data.reserveCapacity(
+                                Swift.max(Swift.min(labelBytesGuess, maxPossibleLabelBytes), 2)
+                            )
+                            let borderCountGuess = Int(knownLength) * 17 / 100
+                            let maxPossibleBorderCount = Int(UInt8.max / 2)
+                            self.borders.reserveCapacity(
+                                Swift.max(Swift.min(borderCountGuess, maxPossibleBorderCount), 2)
+                            )
+                        } else {
+                            /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
+                            /// the weighted-average number of label-bytes per domain is 12.75.
+                            /// We reserve 8 bytes not to explode in memory usage.
+                            /// Also the weighted-average number of labels per domain is 2.07, so we reserve 4 bytes.
+                            self.data.reserveCapacity(8)
+                            self.borders.reserveCapacity(4)
+                        }
                     default:
                         throw ProtocolError.badCharacter(
                             in: "Name.label",
@@ -392,7 +429,7 @@ extension Name {
                 guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
                     throw ProtocolError.failedToValidate("Name.label.offset", buffer)
                 }
-                try self.read(from: &buffer)
+                try self.read(from: &buffer, knownLength: nil)
                 /// Reset the reader index to where we were
                 /// There is no null byte at the end, for pointers
                 buffer.moveReaderIndex(to: currentIndex)

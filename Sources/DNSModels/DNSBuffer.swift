@@ -261,10 +261,12 @@ package struct DNSBuffer: Sendable {
             /// ByteBuffer can't fit more than UInt32 bytes anyway.
             "This function assumes the length will fit into an Int."
         )
-        guard let slice = self._buffer.readLengthPrefixedSlice(as: IntegerType.self) else {
+        guard let length = self.readInteger(as: IntegerType.self),
+            let bytes = self.readBytes(length: Int(length))
+        else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return [UInt8](buffer: slice)
+        return bytes
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
@@ -276,10 +278,14 @@ package struct DNSBuffer: Sendable {
     /// length (including the length octet).
     /// ```
     package mutating func readLengthPrefixedStringAsString(name: StaticString) throws -> String {
-        guard let slice = self._buffer.readLengthPrefixedSlice(as: UInt8.self) else {
+        guard let length = self.readInteger(as: UInt8.self),
+            let string = self.readString(
+                length: Int(length)/// `UInt8` -> `Int` is safe
+            )
+        else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return String(buffer: slice)
+        return string
     }
 
     /// The length of the string MUST fit into the provided integer type.
