@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// The code of the EDNS data option
 public enum EDNSCode: Sendable, Hashable {
     /// [RFC 6891, Reserved](https://tools.ietf.org/html/rfc6891)
@@ -199,7 +201,7 @@ public enum EDNSOption: Sendable, Hashable {
     /// [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3)
     case keepalive(Keepalive)
     /// Unknown, used to deal with unknown or unsupported codes
-    case unknown(UInt16, [UInt8])
+    case unknown(UInt16, ByteBuffer)
 }
 
 @available(swiftDNSApplePlatforms 26, *)
@@ -281,7 +283,7 @@ extension EDNSOption.SupportedAlgorithms {
                 self.insert(algorithm)
             case .none:
                 /// FIXME: do something about warnings logs
-                print("unknown DNSSECAlgorithm algorithm: \(byte)")
+                print("Unknown DNSSECAlgorithm algorithm: \(byte)")
             }
         }
     }

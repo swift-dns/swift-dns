@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3), Domain Name System Security Extensions, March 1999
 ///
 /// text
@@ -355,7 +357,7 @@ public struct KEY: Sendable {
     public var signatory: UpdateScope
     public var Proto: Proto
     public var algorithm: DNSSECAlgorithm
-    public var publicKey: [UInt8]
+    public var publicKey: ByteBuffer
 
     var flags: UInt16 {
         var flags: UInt16 = 0
@@ -373,7 +375,7 @@ public struct KEY: Sendable {
         signatory: UpdateScope,
         Proto: Proto,
         algorithm: DNSSECAlgorithm,
-        publicKey: [UInt8]
+        publicKey: ByteBuffer
     ) {
         self.keyTrust = keyTrust
         self.keyUsage = keyUsage
@@ -449,7 +451,7 @@ extension KEY {
 
         self.Proto = try KEY.Proto(from: &buffer)
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
-        self.publicKey = try buffer.readLengthPrefixedString(
+        self.publicKey = try buffer.readLengthPrefixedStringByteBuffer(
             name: "KEY.publicKey",
             decodeLengthAs: UInt16.self
         )

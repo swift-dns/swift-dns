@@ -1,8 +1,9 @@
 public import struct Collections.OrderedSet
+public import struct NIOCore.ByteBuffer
 
 public struct RecordTypeSet: Sendable {
     public var types: OrderedSet<RecordType>
-    public var originalEncoding: [UInt8]?
+    public var originalEncoding: ByteBuffer?
 }
 
 extension RecordTypeSet {
@@ -61,10 +62,12 @@ extension RecordTypeSet {
         self.originalEncoding = buffer.readToEnd()
 
         self.types = []
+
         var state: BitMapReadingState = .window
 
         /// Loop through all the bytes in the bitmap
-        for currentByte in self.originalEncoding ?? [] {
+        /// Just assigned a value to `originalEncoding` above, so it can't be nil
+        for currentByte in self.originalEncoding!.readableBytesView {
             switch consume state {
             case .window:
                 state = .len(window: currentByte)
@@ -132,7 +135,7 @@ extension RecordTypeSet {
 extension RecordTypeSet {
     package func encode(into buffer: inout DNSBuffer) {
         if case let .some(encodedBytes) = self.originalEncoding {
-            buffer.writeBytes(encodedBytes)
+            buffer.writeBuffer(encodedBytes)
             return
         }
 

@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 8945, Secret Key Transaction Authentication for DNS](https://tools.ietf.org/html/rfc8945#section-4.2)
 ///
 /// ```text
@@ -167,19 +169,19 @@ public struct TSIG: Sendable {
     public var algorithm: Algorithm
     public var time: UInt64
     public var fudge: UInt16
-    public var mac: [UInt8]
+    public var mac: ByteBuffer
     public var oid: UInt16
     public var error: UInt16
-    public var other: [UInt8]
+    public var other: ByteBuffer
 
     public init(
         algorithm: Algorithm,
         time: UInt64,
         fudge: UInt16,
-        mac: [UInt8],
+        mac: ByteBuffer,
         oid: UInt16,
         error: UInt16,
-        other: [UInt8]
+        other: ByteBuffer
     ) {
         self.algorithm = algorithm
         self.time = time
@@ -206,7 +208,7 @@ extension TSIG {
         self.fudge = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("TSIG.fudge", buffer)
         )
-        self.mac = try buffer.readLengthPrefixedString(
+        self.mac = try buffer.readLengthPrefixedStringByteBuffer(
             name: "TSIG.mac",
             decodeLengthAs: UInt16.self
         )
@@ -216,7 +218,7 @@ extension TSIG {
         self.error = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("TSIG.error", buffer)
         )
-        self.other = try buffer.readLengthPrefixedString(
+        self.other = try buffer.readLengthPrefixedStringByteBuffer(
             name: "TSIG.other",
             decodeLengthAs: UInt16.self
         )
@@ -242,7 +244,6 @@ extension TSIG {
         )
         buffer.writeInteger(self.oid)
         buffer.writeInteger(self.error)
-        buffer.writeInteger(self.other.count)
         try buffer.writeLengthPrefixedString(
             name: "TSIG.other",
             bytes: self.other,

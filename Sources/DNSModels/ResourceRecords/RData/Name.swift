@@ -1,5 +1,7 @@
 public import SwiftIDNA
 
+import struct NIOCore.ByteBuffer
+
 /// A domain name.
 ///
 /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
@@ -269,10 +271,9 @@ extension Name {
     @usableFromInline
     mutating func extendNameReadingFromBuffer(_ buffer: inout DNSBuffer) throws {
         let currentLength = self.encodedLength
-        try buffer.readLengthPrefixedString(
+        let slice = try buffer.readLengthPrefixedStringByteBuffer(
             name: "Name.label",
             decodeLengthAs: UInt8.self,
-            into: &self.data,
             performLengthCheck: { labelLength, buffer in
 
                 guard labelLength <= Self.maxLabelLength else {
@@ -296,6 +297,16 @@ extension Name {
                 }
             }
         )
+
+        slice.withUnsafeReadableBytes { ptr in
+            self.data.append(
+                contentsOf:
+                    UnsafeRawBufferPointer(
+                        /// A character-string slice is guaranteed to be non-empty
+                        rebasing: ptr[0..<slice.readableBytes]
+                    ).bindMemory(to: UInt8.self)
+            )
+        }
 
         self.borders.append(
             /// Safe to force unwrap because already checked newLength is
