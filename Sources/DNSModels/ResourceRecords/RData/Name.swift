@@ -393,28 +393,23 @@ extension Name {
                                 /// the weighted-average ratio of label-bytes to domain-length is 0.915,
                                 /// and the weighted-average ratio of labels to domain-length is 0.165.
                                 /// so we reserve the bytes below based on those ratios.
+                                /// Based on the same analysis, the weighted-average number of label-bytes per
+                                /// domain is 12.75. Also the weighted-average number of labels per domain is 2.07.
+                                ///
+                                /// We only reserve `data` bytes because label-counts which correspond
+                                /// to `borders` are usually very few.
                                 let knownLengthNoNullByte = knownLength - 1
-                                let labelBytesGuess = Int(knownLengthNoNullByte) * 92 / 100
-                                let maxPossibleLabelBytes = Int(UInt8.max - 1)
-                                self.data.reserveCapacity(
-                                    Swift.max(Swift.min(labelBytesGuess, maxPossibleLabelBytes), 2)
-                                )
-                                let borderCountGuess = Int(knownLengthNoNullByte) * 17 / 100
-                                let maxPossibleBorderCount = Int(UInt8.max / 2)
-                                self.borders.reserveCapacity(
-                                    Swift.max(
-                                        Swift.min(borderCountGuess, maxPossibleBorderCount),
-                                        2
+                                let labelBytesProjection = Int(knownLengthNoNullByte) * 92 / 100
+                                /// Only reserve if the projection is greater than 16 bytes.
+                                /// Otherwise the first allocation will reserve 16 bytes anyway.
+                                if labelBytesProjection > 16 {
+                                    let maxPossibleLabelBytes = Int(UInt8.max - 1)
+                                    let dataProjectedRequiredCapacity = Swift.min(
+                                        labelBytesProjection,
+                                        maxPossibleLabelBytes
                                     )
-                                )
-                            } else {
-                                /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
-                                /// the weighted-average number of label-bytes per domain is 12.75.
-                                /// We reserve 8 bytes not to explode in memory usage.
-                                /// Also the weighted-average number of labels per domain is 2.07, so we reserve 4 bytes.
-                                /// Apparently `Array` will reserve 16 bytes anyway (at least on a 64-bit macOS) for anything less.
-                                self.data.reserveCapacity(8)
-                                self.borders.reserveCapacity(4)
+                                    self.data.reserveCapacity(dataProjectedRequiredCapacity)
+                                }
                             }
                         }
                     default:
