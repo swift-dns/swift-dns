@@ -276,11 +276,12 @@ package struct DNSBuffer: Sendable {
         return buffer
     }
 
-    package mutating func readLengthPrefixedStringByteBuffer<IntegerType: FixedWidthInteger>(
+    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
         name: StaticString,
         decodeLengthAs _: IntegerType.Type = UInt8.self,
+        into bytes: inout [UInt8],
         performLengthCheck: (IntegerType, DNSBuffer) throws -> Void
-    ) throws -> ByteBuffer {
+    ) throws {
         assert(
             IntegerType.max <= Int.max,
             /// ByteBuffer can't fit more than UInt32 bytes anyway.
@@ -292,10 +293,27 @@ package struct DNSBuffer: Sendable {
 
         try performLengthCheck(length, self)
 
-        guard let slice = self._buffer.readSlice(length: Int(length)) else {
+        let intLength = Int(length)
+        guard
+            let range = self.rangeWithinReadableBytes(
+                index: self.readerIndex,
+                length: intLength
+            )
+        else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return slice
+
+        self._buffer.withUnsafeReadableBytes { ptr in
+            // this is not technically correct because we shouldn't just bind
+            // the memory to `UInt8` but it's not a real issue either and we
+            // need to work around https://bugs.swift.org/browse/SR-9604
+            bytes.append(
+                contentsOf: UnsafeRawBufferPointer(rebasing: ptr[range])
+                    .bindMemory(to: UInt8.self)
+            )
+        }
+
+        self.moveReaderIndex(forwardBy: intLength)
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
@@ -358,6 +376,28 @@ package struct DNSBuffer: Sendable {
             maxLength: maxLength,
             fitLengthInto: fitLengthInto
         )
+    }
+}
+
+extension DNSBuffer {
+    @inlinable
+    func rangeWithinReadableBytes(index: Int, length: Int) -> Range<Int>? {
+        guard index >= self.readerIndex && length >= 0 else {
+            return nil
+        }
+
+        // both these &-s are safe, they can't underflow because both left & right side are >= 0 (and index >= readerIndex)
+        let indexFromReaderIndex = index &- self.readerIndex
+        assert(indexFromReaderIndex >= 0)
+        guard indexFromReaderIndex <= self.readableBytes &- length else {
+            return nil
+        }
+
+        // safe, can't overflow, we checked it above.
+        let upperBound = indexFromReaderIndex &+ length
+
+        // uncheckedBounds is safe because `length` is >= 0, so the lower bound will always be lower/equal to upper
+        return Range<Int>(uncheckedBounds: (lower: indexFromReaderIndex, upper: upperBound))
     }
 }
 
