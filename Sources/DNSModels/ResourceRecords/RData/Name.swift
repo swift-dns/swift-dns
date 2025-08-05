@@ -347,7 +347,6 @@ extension Name {
         // pointer: (slice == 1100 0000 aka C0) & C0 == true, then 03FF & slice = offset
         // label: 03FF & slice = length slice.next(length) = label
         // root: 0000
-        var firstLabel = true
         loop: while true {
             switch consume state {
             case .labelLengthOrPointer:
@@ -375,48 +374,6 @@ extension Name {
                         state = .pointer
                     case 0b0000_0000:
                         state = .label
-
-                        if firstLabel {
-                            firstLabel = false
-
-                            if let knownLength = knownLength,
-                                knownLength <= UInt8.max,
-                                knownLength > 0/// At least a null byte needs to be present
-                            {
-                                /// Excluding the null byte, we have `knownLength - 1` bytes that are either
-                                /// <character-string>s which is to say they are either a length-byte or the
-                                /// actual label bytes. Worst case we have `(knownLength - 1) / 2` label bytes.
-                                /// label bytes are added to `data`, so we can reserve some capacity there.
-                                /// We also reserve capacity for borders. There is a border for each label-length byte.
-                                ///
-                                /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
-                                /// the weighted-average ratio of label-bytes to domain-length is 0.915,
-                                /// and the weighted-average ratio of labels to domain-length is 0.165.
-                                /// so we reserve the bytes below based on those ratios.
-                                let knownLengthNoNullByte = knownLength - 1
-                                let labelBytesGuess = Int(knownLengthNoNullByte) * 92 / 100
-                                let maxPossibleLabelBytes = Int(UInt8.max - 1)
-                                self.data.reserveCapacity(
-                                    Swift.max(Swift.min(labelBytesGuess, maxPossibleLabelBytes), 2)
-                                )
-                                let borderCountGuess = Int(knownLengthNoNullByte) * 17 / 100
-                                let maxPossibleBorderCount = Int(UInt8.max / 2)
-                                self.borders.reserveCapacity(
-                                    Swift.max(
-                                        Swift.min(borderCountGuess, maxPossibleBorderCount),
-                                        2
-                                    )
-                                )
-                            } else {
-                                /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
-                                /// the weighted-average number of label-bytes per domain is 12.75.
-                                /// We reserve 8 bytes not to explode in memory usage.
-                                /// Also the weighted-average number of labels per domain is 2.07, so we reserve 4 bytes.
-                                /// Apparently `Array` will reserve 16 bytes anyway (at least on a 64-bit macOS) for anything less.
-                                self.data.reserveCapacity(8)
-                                self.borders.reserveCapacity(4)
-                            }
-                        }
                     default:
                         throw ProtocolError.badCharacter(
                             in: "Name.label",
