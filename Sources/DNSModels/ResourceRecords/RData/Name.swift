@@ -265,6 +265,44 @@ extension Name {
             UInt8(exactly: self.data.count)!
         )
     }
+
+    @usableFromInline
+    mutating func extendNameReadingFromBuffer(_ buffer: inout DNSBuffer) throws {
+        let currentLength = self.encodedLength
+        try buffer.readLengthPrefixedString(
+            name: "Name.label",
+            decodeLengthAs: UInt8.self,
+            into: &self.data,
+            performLengthCheck: { labelLength, buffer in
+
+                guard labelLength <= Self.maxLabelLength else {
+                    throw ProtocolError.lengthLimitExceeded(
+                        "Name.label",
+                        actual: Int(labelLength),
+                        max: Int(Self.maxLabelLength),
+                        buffer
+                    )
+                }
+
+                let newLength = currentLength + Int(labelLength) + 1
+
+                if newLength > Self.maxLength {
+                    throw ProtocolError.lengthLimitExceeded(
+                        "Name.label",
+                        actual: newLength,
+                        max: Int(Self.maxLength),
+                        buffer
+                    )
+                }
+            }
+        )
+
+        self.borders.append(
+            /// Safe to force unwrap because already checked newLength is
+            /// less than Self.maxLength which is 255
+            UInt8(exactly: self.data.count)!
+        )
+    }
 }
 
 extension Name {
@@ -374,7 +412,7 @@ extension Name {
                                 /// the weighted-average number of label-bytes per domain is 12.75.
                                 /// We reserve 8 bytes not to explode in memory usage.
                                 /// Also the weighted-average number of labels per domain is 2.07, so we reserve 4 bytes.
-                                /// Apparently array will reserve 16 bytes anyway (at least on a 64-bit macOS) for anything less.
+                                /// Apparently `Array` will reserve 16 bytes anyway (at least on a 64-bit macOS) for anything less.
                                 self.data.reserveCapacity(8)
                                 self.borders.reserveCapacity(4)
                             }
@@ -388,23 +426,7 @@ extension Name {
                     }
                 }
             case .label:
-                let label = try buffer.readLengthPrefixedString(
-                    name: "Name.label",
-                    decodeLengthAs: UInt8.self
-                )
-                guard label.count <= Self.maxLabelLength else {
-                    throw ProtocolError.lengthLimitExceeded(
-                        "Name.label",
-                        actual: label.count,
-                        max: Int(Self.maxLabelLength),
-                        buffer
-                    )
-                }
-
-                /// Label length cannot be zero so we're good to call `extendName`. If the label
-                /// length was specified as zero on the wire, that zero would have been taken as the
-                /// null byte aka the end of the name, and this code path would not have been taken.
-                try self.extendName(label)
+                try self.extendNameReadingFromBuffer(&buffer)
 
                 // reset to collect more data
                 state = .labelLengthOrPointer

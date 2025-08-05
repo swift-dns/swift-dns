@@ -114,6 +114,8 @@ var settings: [SwiftSetting] {
 
 // MARK: - Add benchmark stuff now
 
+package.platforms = [.macOS(.v26)]
+
 package.dependencies.append(
     .package(
         url: "https://github.com/MahdiBM/package-benchmark.git",
@@ -129,6 +131,7 @@ package.targets += [
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
         path: "DNSParsing",
+        swiftSettings: settings,
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
@@ -140,6 +143,7 @@ package.targets += [
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
         path: "Name",
+        swiftSettings: settings,
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
