@@ -1,4 +1,5 @@
 /// RRSIG is really a derivation of the original SIG record data. See SIG for more documentation
+@available(swiftDNSApplePlatforms 26, *)
 public struct RRSIG: Sendable {
     public var value: SIG
 
@@ -7,12 +8,14 @@ public struct RRSIG: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension RRSIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try SIG(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension RRSIG {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.value.encode(into: &buffer)

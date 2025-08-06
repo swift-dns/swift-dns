@@ -34,8 +34,8 @@ struct NameTests {
     func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) throws {
         let domainName = try Name(domainName: name)
         #expect(domainName.isFQDN == isFQDN)
-        #expect(domainName.data == data)
-        #expect(domainName.borders == borders)
+        #expect(domainName.data == TinyArray(data, terminator: 0))
+        #expect(domainName.borders == TinyArray(borders, terminator: 0))
     }
 
     @available(swiftDNSApplePlatforms 26, *)

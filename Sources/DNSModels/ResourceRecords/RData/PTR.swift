@@ -1,4 +1,5 @@
 /// The DNS PTR record type
+@available(swiftDNSApplePlatforms 26, *)
 public struct PTR: Sendable {
     public var name: Name
 
@@ -7,6 +8,7 @@ public struct PTR: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension PTR {
     /// Expects the whole buffer to be the `PTR` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -15,6 +17,7 @@ extension PTR {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension PTR {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)

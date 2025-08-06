@@ -3,6 +3,7 @@ public import struct NIOCore.ByteBuffer
 /// The CAA RR Type
 ///
 /// [RFC 8659, DNS Certification Authority Authorization, November 2019](https://www.rfc-editor.org/rfc/rfc8659)
+@available(swiftDNSApplePlatforms 26, *)
 public struct CAA: Sendable, Equatable {
     /// Specifies in what contexts this key may be trusted for use
     public enum Property: Sendable, Equatable {
@@ -91,6 +92,7 @@ public struct CAA: Sendable, Equatable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes16To31 handles flags
@@ -106,6 +108,7 @@ extension CAA {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
@@ -115,6 +118,7 @@ extension CAA {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA.Property: RawRepresentable {
     public init(_ rawValue: String) {
         switch rawValue {
@@ -147,6 +151,7 @@ extension CAA.Property: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA.Property {
     package init(from buffer: inout DNSBuffer) throws {
         let length = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -167,6 +172,7 @@ extension CAA.Property {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA.Property {
     package func encode(into buffer: inout DNSBuffer) {
         var temp = DNSBuffer()
@@ -177,6 +183,7 @@ extension CAA.Property {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CAA.Value {
     package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {

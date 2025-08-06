@@ -29,6 +29,7 @@ public import struct NIOCore.ByteBuffer
 ///   <character-string> and <domain-name> as used here are defined in RFC
 ///   1035 [7].
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct NAPTR: Sendable {
     public var order: UInt16
     public var preference: UInt16
@@ -54,6 +55,7 @@ public struct NAPTR: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NAPTR {
     /// Expects the whole buffer to be the `NAPTR` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -71,6 +73,7 @@ extension NAPTR {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NAPTR {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.order)

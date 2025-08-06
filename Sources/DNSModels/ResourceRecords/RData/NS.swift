@@ -1,4 +1,5 @@
 /// The DNS NS record type
+@available(swiftDNSApplePlatforms 26, *)
 public struct NS: Sendable {
     public var name: Name
 
@@ -7,6 +8,7 @@ public struct NS: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NS {
     /// Expects the whole buffer to be the `NS` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -15,6 +17,7 @@ extension NS {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NS {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)

@@ -22,6 +22,7 @@
 ///    expansion.  [RFC4035] describes the impact of wildcards on
 ///    authenticated denial of existence.
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct NSEC: Sendable {
     public var nextDomainName: Name
     public var typeBitMaps: RecordTypeSet
@@ -32,6 +33,7 @@ public struct NSEC: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NSEC {
     /// FIXME: can we know the length of the domain name so we can pre-reserve capacity?
     package init(from buffer: inout DNSBuffer) throws {
@@ -40,6 +42,7 @@ extension NSEC {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension NSEC {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.nextDomainName.encode(into: &buffer)

@@ -12,6 +12,7 @@ import struct NIOCore.ByteBuffer
 /// Any path of a directed acyclic graph can be represented by a domain name consisting of the labels of its nodes,
 /// ordered by decreasing distance from the root(s) (whiscalaris the normal convention within the DNS).
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct Name: Sendable {
     /// Maximum allowed domain name length.
     @usableFromInline
@@ -54,10 +55,10 @@ public struct Name: Sendable {
     /// ```
     /// FIXME: investigate performance improvements, with something like `TinyVec`
     @usableFromInline
-    package var data: [UInt8]
+    package var data: TinyArray<24, UInt8>
     /// The end of each label in the `data` array.
     @usableFromInline
-    package var borders: [UInt8]
+    package var borders: TinyArray<24, UInt8>
 
     /// Returns the encoded length of this name, ignoring compression.
     ///
@@ -83,8 +84,8 @@ public struct Name: Sendable {
     @usableFromInline
     package init(
         isFQDN: Bool = false,
-        data: [UInt8] = [],
-        borders: [UInt8] = []
+        data: TinyArray<24, UInt8> = TinyArray<24, UInt8>(fillingEmptySpacesWith: 0),
+        borders: TinyArray<24, UInt8> = TinyArray<24, UInt8>(fillingEmptySpacesWith: 0)
     ) {
         self.isFQDN = isFQDN
         self.data = data
@@ -98,13 +99,15 @@ public struct Name: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name {
     @inlinable
     public static var root: Self {
-        Self(isFQDN: true, data: [], borders: [])
+        Self(isFQDN: true)
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name: Hashable {
     /// Equality check without considering the FQDN flag.
     /// Users usually instantiate `Name` using a domain name which doesn't end in a dot.
@@ -117,6 +120,7 @@ extension Name: Hashable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name: Sequence {
     public struct Iterator: IteratorProtocol {
         public typealias Label = [UInt8]
@@ -162,6 +166,7 @@ extension Name: Sequence {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name {
     @usableFromInline
     enum ParsingState: ~Copyable {
@@ -231,9 +236,9 @@ extension Name {
     ) throws {
         assert(bytes.allSatisfy(\.isASCII))
 
-        name.data.reserveCapacity(Int(bytes.count))
+        name.data.reserveCapacityUpfront(Int(bytes.count))
         /// FIXME: is 4 a good number of bytes to reserve capacity for?
-        name.borders.reserveCapacity(4)
+        name.borders.reserveCapacityUpfront(4)
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
@@ -307,6 +312,7 @@ extension Name {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name {
     /// This is the list of states for the label parsing state machine
     enum LabelParsingState: ~Copyable {
@@ -326,7 +332,7 @@ extension Name {
             break
         case .isASCIIButContainsUppercasedLetters:
             /// Normalize to lowercase ASCII
-            self.data = self.data.map {
+            self.data.mutatingMap {
                 $0.uncheckedASCIIToLowercase()
             }
         case .containsNonASCII:
@@ -410,7 +416,7 @@ extension Name {
                                         labelBytesProjection,
                                         maxPossibleLabelBytes
                                     )
-                                    self.data.reserveCapacity(dataProjectedRequiredCapacity)
+                                    self.data.reserveCapacityUpfront(dataProjectedRequiredCapacity)
                                 }
                             }
                         }
@@ -519,6 +525,7 @@ extension Name {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name: CustomStringConvertible {
     /// Unicode-friendly description of the domain name, excluding the possible root label separator.
     public var description: String {
@@ -526,6 +533,7 @@ extension Name: CustomStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name: CustomDebugStringConvertible {
     /// Byte-accurate description of the domain name.
     public var debugDescription: String {
@@ -533,6 +541,7 @@ extension Name: CustomDebugStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name {
     /// FIXME: public nonfrozen enum
     public enum DescriptionFormat {
@@ -598,6 +607,7 @@ extension Name {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Name {
     package func encode(into buffer: inout DNSBuffer, asCanonical: Bool = false) throws {
         let startingReadableBytes = buffer.readableBytes

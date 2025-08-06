@@ -15,6 +15,7 @@
 /// [RFC-974].
 ///
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct MX: Sendable {
     public var preference: UInt16
     public var exchange: Name
@@ -25,6 +26,7 @@ public struct MX: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension MX {
     /// Expects the whole buffer to be the `MX` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -36,6 +38,7 @@ extension MX {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension MX {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.preference)

@@ -1,4 +1,5 @@
 /// Record data enum variants for DNSSEC-specific records.
+@available(swiftDNSApplePlatforms 26, *)
 public enum DNSSECRData: Sendable {
     /// ```text
     /// RFC 7344              Delegation Trust Maintenance        September 2014
@@ -515,6 +516,7 @@ public enum DNSSECRData: Sendable {
     )
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension DNSSECRData {
     var recordType: RecordType {
         switch self {
@@ -536,6 +538,7 @@ extension DNSSECRData {
 
 /// No init(from:). Read using `RData`
 
+@available(swiftDNSApplePlatforms 26, *)
 extension DNSSECRData {
     package func encode(into buffer: inout DNSBuffer) throws {
         switch self {
