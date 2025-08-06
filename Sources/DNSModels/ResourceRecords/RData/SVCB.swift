@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-2.2)
 ///
 /// ```text
@@ -361,9 +363,9 @@ public struct SVCB: Sendable {
         ///   sequences.
         /// ```
         public struct ECHConfigList: Sendable {
-            public var config: [UInt8]
+            public var config: ByteBuffer
 
-            public init(config: [UInt8]) {
+            public init(config: ByteBuffer) {
                 self.config = config
             }
         }
@@ -384,9 +386,9 @@ public struct SVCB: Sendable {
         ///   MUST NOT be repeated.
         /// ```
         public struct Unknown: Sendable {
-            public var data: [UInt8]
+            public var data: ByteBuffer
 
-            public init(data: [UInt8]) {
+            public init(data: ByteBuffer) {
                 self.data = data
             }
         }
@@ -680,6 +682,7 @@ extension SVCB.SVCParamKey {
 extension SVCB.SVCParamValue {
     package func encode(into buffer: inout DNSBuffer) throws {
         var valueBuffer = DNSBuffer()
+
         switch self {
         case .mandatory(let mandatory):
             try mandatory.encode(into: &valueBuffer)
@@ -699,7 +702,9 @@ extension SVCB.SVCParamValue {
         case .unknown(let unknown):
             try unknown.encode(into: &valueBuffer)
         }
+
         /// FIXME: check no overflow?
+        /// FIXME: use "writeLengthPrefixed"
         buffer.writeInteger(UInt16(valueBuffer.readableBytes))
         buffer.writeBuffer(&valueBuffer)
     }
@@ -732,8 +737,10 @@ extension SVCB.SVCParamValue.ALPN {
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.IPHint where IPType == A {
     package func encode(into buffer: inout DNSBuffer) throws {
-        /// FIXME: How do we know `addresses.count * IPv4Address.size` fits into Int?
-        buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv4Address.size))
+        guard let length = Int(exactly: self.addresses.count * IPv4Address.size) else {
+            throw ProtocolError.failedToValidate("SVCB.SVCParamValue.IPHint<A>", buffer)
+        }
+        buffer.reserveCapacity(minimumWritableBytes: length)
         for address in self.addresses {
             address.encode(into: &buffer)
         }
@@ -743,8 +750,10 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     package func encode(into buffer: inout DNSBuffer) throws {
-        /// FIXME: How do we know `addresses.count * IPv6Address.size` fits into Int?
-        buffer.reserveCapacity(minimumWritableBytes: Int(self.addresses.count * IPv6Address.size))
+        guard let length = Int(exactly: self.addresses.count * IPv6Address.size) else {
+            throw ProtocolError.failedToValidate("SVCB.SVCParamValue.IPHint<AAAA>", buffer)
+        }
+        buffer.reserveCapacity(minimumWritableBytes: length)
         for address in self.addresses {
             address.encode(into: &buffer)
         }
@@ -754,14 +763,14 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.ECHConfigList {
     package func encode(into buffer: inout DNSBuffer) throws {
-        buffer.writeBytes(self.config)
+        buffer.writeBuffer(self.config)
     }
 }
 
 @available(swiftDNSApplePlatforms 26, *)
 extension SVCB.SVCParamValue.Unknown {
     package func encode(into buffer: inout DNSBuffer) throws {
-        buffer.writeBytes(self.data)
+        buffer.writeBuffer(self.data)
     }
 }
 

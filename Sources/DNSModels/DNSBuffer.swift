@@ -4,7 +4,6 @@ public import enum NIOCore.Endianness
 
 /// FIXME: investigating making this non-copyable
 /// FXIME: CustomStringConvertible + Debug
-/// use ~Copyable?
 @usableFromInline
 package struct DNSBuffer: Sendable {
     @usableFromInline
@@ -12,19 +11,22 @@ package struct DNSBuffer: Sendable {
     /// Start index of the DNS portion of the packet the buffer
     /// This can be a negative number if e.g. this `DNSBuffer` is a slice of a parent `DNSBuffer`.
     ///
-    /// TODO: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
+    /// FIXME: Maybe we shouldn't use this? we should be able to instead make sure the buffer always
     /// starts from the DNS portion of the packet?
     @usableFromInline
     let _dnsStartIndex: Int
 
+    @usableFromInline
     package var readerIndex: Int {
         self._buffer.readerIndex
     }
 
+    @usableFromInline
     var writerIndex: Int {
         self._buffer.writerIndex
     }
 
+    @usableFromInline
     var readableBytes: Int {
         self._buffer.readableBytes
     }
@@ -97,8 +99,14 @@ package struct DNSBuffer: Sendable {
         self._buffer.moveReaderIndex(to: offset)
     }
 
-    package mutating func moveReaderIndex(toOffsetInDNSPortion offset: Int) {
-        self._buffer.moveReaderIndex(to: self._dnsStartIndex + offset)
+    /// Returns whether the move was possible and successful.
+    package mutating func moveReaderIndex(toOffsetInDNSPortion offset: UInt16) -> Bool {
+        /// We already know UInt16 < UInt32 so no need to check for that.
+        guard offset >= 0, offset <= self.writerIndex else {
+            return false
+        }
+        self._buffer.moveReaderIndex(to: self._dnsStartIndex + Int(offset))
+        return true
     }
 
     package mutating func moveDNSPortionStartIndex(forwardBy offset: Int) {
@@ -121,8 +129,7 @@ package struct DNSBuffer: Sendable {
         as: InlineArray<count, IntegerType>.Type = InlineArray<count, IntegerType>.self
     ) -> InlineArray<count, IntegerType>? {
         let length = MemoryLayout<IntegerType>.size
-        /// FIXME: is unchecked acceptable? perhpas needs to do something in the function name to
-        /// point out that it's unchecked?
+        assert(!length.multipliedReportingOverflow(by: count).overflow)
         let bytesRequired = length &* count
 
         guard self.readableBytes >= bytesRequired else {
@@ -132,18 +139,18 @@ package struct DNSBuffer: Sendable {
         return self._buffer.readWithUnsafeReadableBytes {
             ptr -> (Int, InlineArray<count, IntegerType>) in
             assert(ptr.count >= bytesRequired)
-            var array = InlineArray<count, IntegerType>(repeating: 0)
-            for index in array.indices {
+
+            let values = InlineArray<count, IntegerType> { index in
                 switch endianness {
                 case .big:
-                    array[index] = IntegerType(
+                    return IntegerType(
                         bigEndian: ptr.load(
                             fromByteOffset: index &* length,
                             as: IntegerType.self
                         )
                     )
                 case .little:
-                    array[index] = IntegerType(
+                    return IntegerType(
                         littleEndian: ptr.load(
                             fromByteOffset: index &* length,
                             as: IntegerType.self
@@ -152,28 +159,7 @@ package struct DNSBuffer: Sendable {
                 }
             }
 
-            /// Issue: https://github.com/swiftlang/swift/issues/82093
-            /// Resolved on main, haven't made it to snapshots yet.
-            // let values = InlineArray<count, IntegerType> { index in
-            //     switch endianness {
-            //     case .big:
-            //         return IntegerType(
-            //             bigEndian: ptr.load(
-            //                 fromByteOffset: index &* length,
-            //                 as: IntegerType.self
-            //             )
-            //         )
-            //     case .little:
-            //         return IntegerType(
-            //             littleEndian: ptr.load(
-            //                 fromByteOffset: index &* length,
-            //                 as: IntegerType.self
-            //             )
-            //         )
-            //     }
-            // }
-
-            return (bytesRequired, array)
+            return (bytesRequired, values)
         }
     }
 
@@ -195,6 +181,7 @@ package struct DNSBuffer: Sendable {
     // FIXME: Use @inline(__always) ?
     /// Gives access to a version of the buffer that has a writerIndex limited to the requested length.
     /// Resets the writer index to the previous value after the body is executed.
+    /// Does reset the writer index if the body throws an error.
     @inlinable
     package mutating func withTruncatedReadableBytes<T>(
         length: Int,
@@ -220,11 +207,11 @@ package struct DNSBuffer: Sendable {
     }
 
     /// Returns the remaining bytes in the buffer and moves the reader index.
-    package mutating func readToEnd() -> [UInt8] {
+    package mutating func readToEnd() -> ByteBuffer {
         defer {
             self._buffer.moveReaderIndex(forwardBy: self._buffer.readableBytes)
         }
-        return [UInt8](buffer: self._buffer)
+        return self._buffer
     }
 
     /// Returns the remaining bytes in the buffer as a String and moves the reader index.
@@ -236,24 +223,22 @@ package struct DNSBuffer: Sendable {
     }
 
     /// Returns a copy of the remaining bytes in the buffer.
-    package mutating func getToEnd() -> [UInt8] {
-        [UInt8](buffer: self._buffer)
+    package mutating func getToEnd() -> ByteBuffer {
+        self._buffer
     }
 
     @available(swiftDNSApplePlatforms 26, *)
     package mutating func writeBytes<let elementCount: Int>(
         _ bytes: InlineArray<elementCount, UInt8>
     ) {
-        /// TODO: optimize. Currently `InlineArray -> UnsafePointer` conversion is broken in the compiler.
-        var accumulatedBytes: [UInt8] = []
-        accumulatedBytes.reserveCapacity(bytes.count)
-        for idx in bytes.indices {
-            accumulatedBytes.append(bytes[idx])
-        }
-        self.writeBytes(accumulatedBytes)
+        self._buffer.writeBytes(bytes.span.bytes)
     }
 
-    package mutating func writeBytes(_ bytes: some Sequence<UInt8>) {
+    package mutating func writeBuffer(_ buffer: ByteBuffer) {
+        self._buffer.writeImmutableBuffer(buffer)
+    }
+
+    package mutating func writeBytes(_ bytes: some Collection<UInt8>) {
         self._buffer.writeBytes(bytes)
     }
 
@@ -261,8 +246,8 @@ package struct DNSBuffer: Sendable {
         self._buffer.writeBuffer(&buffer._buffer)
     }
 
-    package mutating func readBytes(length: Int) -> [UInt8]? {
-        self._buffer.readBytes(length: length)
+    package mutating func readByteBuffer(length: Int) -> ByteBuffer? {
+        self._buffer.readSlice(length: length)
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
@@ -274,21 +259,61 @@ package struct DNSBuffer: Sendable {
     /// length (including the length octet).
     /// ```
     /// The spec's <character-string> is a specialized version of this function where `LengthType == UInt8`.
-    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
+    package mutating func readLengthPrefixedStringByteBuffer<IntegerType: FixedWidthInteger>(
         name: StaticString,
         decodeLengthAs _: IntegerType.Type = UInt8.self
-    ) throws -> [UInt8] {
+    ) throws -> ByteBuffer {
         assert(
             IntegerType.max <= Int.max,
             /// ByteBuffer can't fit more than UInt32 bytes anyway.
             "This function assumes the length will fit into an Int."
         )
         guard let length = self.readInteger(as: IntegerType.self),
-            let bytes = self.readBytes(length: Int(length))
+            let buffer = self._buffer.readSlice(length: Int(length))
         else {
             throw ProtocolError.failedToRead(name, self)
         }
-        return bytes
+        return buffer
+    }
+
+    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
+        name: StaticString,
+        decodeLengthAs _: IntegerType.Type = UInt8.self,
+        into bytes: inout [UInt8],
+        performLengthCheck: (IntegerType, DNSBuffer) throws -> Void
+    ) throws {
+        assert(
+            IntegerType.max <= Int.max,
+            /// ByteBuffer can't fit more than UInt32 bytes anyway.
+            "This function assumes the length will fit into an Int."
+        )
+        guard let length = self.readInteger(as: IntegerType.self) else {
+            throw ProtocolError.failedToRead(name, self)
+        }
+
+        try performLengthCheck(length, self)
+
+        let intLength = Int(length)
+        guard
+            let range = self.rangeWithinReadableBytes(
+                index: self.readerIndex,
+                length: intLength
+            )
+        else {
+            throw ProtocolError.failedToRead(name, self)
+        }
+
+        self._buffer.withUnsafeReadableBytes { ptr in
+            // this is not technically correct because we shouldn't just bind
+            // the memory to `UInt8` but it's not a real issue either and we
+            // need to work around https://bugs.swift.org/browse/SR-9604
+            bytes.append(
+                contentsOf: UnsafeRawBufferPointer(rebasing: ptr[range])
+                    .bindMemory(to: UInt8.self)
+            )
+        }
+
+        self.moveReaderIndex(forwardBy: intLength)
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
@@ -336,6 +361,43 @@ package struct DNSBuffer: Sendable {
         let length = IntegerType(truncatingIfNeeded: bytes.count)
         self.writeInteger(length)
         self.writeBytes(bytes)
+    }
+
+    /// The length of the string MUST fit into the provided integer type.
+    package mutating func writeLengthPrefixedString<IntegerType: FixedWidthInteger & Comparable>(
+        name: StaticString,
+        bytes: ByteBuffer,
+        maxLength: IntegerType,
+        fitLengthInto: IntegerType.Type
+    ) throws {
+        try self.writeLengthPrefixedString(
+            name: name,
+            bytes: bytes.readableBytesView,
+            maxLength: maxLength,
+            fitLengthInto: fitLengthInto
+        )
+    }
+}
+
+extension DNSBuffer {
+    @inlinable
+    func rangeWithinReadableBytes(index: Int, length: Int) -> Range<Int>? {
+        guard index >= self.readerIndex && length >= 0 else {
+            return nil
+        }
+
+        // both these &-s are safe, they can't underflow because both left & right side are >= 0 (and index >= readerIndex)
+        let indexFromReaderIndex = index &- self.readerIndex
+        assert(indexFromReaderIndex >= 0)
+        guard indexFromReaderIndex <= self.readableBytes &- length else {
+            return nil
+        }
+
+        // safe, can't overflow, we checked it above.
+        let upperBound = indexFromReaderIndex &+ length
+
+        // uncheckedBounds is safe because `length` is >= 0, so the lower bound will always be lower/equal to upper
+        return Range<Int>(uncheckedBounds: (lower: indexFromReaderIndex, upper: upperBound))
     }
 }
 

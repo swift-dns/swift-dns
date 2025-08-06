@@ -1,15 +1,17 @@
+public import struct NIOCore.ByteBuffer
+
 /// Child DS. See RFC 8078.
 public struct CDS: Sendable {
     public var keyTag: UInt16
     public var algorithm: DNSSECAlgorithm?
     public var digestType: DNSSECDigestType
-    public var digest: [UInt8]
+    public var digest: ByteBuffer
 
     public init(
         keyTag: UInt16,
         algorithm: DNSSECAlgorithm?,
         digestType: DNSSECDigestType,
-        digest: [UInt8]
+        digest: ByteBuffer
     ) {
         self.keyTag = keyTag
         self.algorithm = algorithm
@@ -42,7 +44,7 @@ extension CDS {
         buffer.writeInteger(3 as UInt8)
         buffer.writeInteger(self.algorithm?.rawValue ?? 0)
         self.digestType.encode(into: &buffer)
-        buffer.writeBytes(self.digest)
+        buffer.writeBuffer(self.digest)
     }
 }
 

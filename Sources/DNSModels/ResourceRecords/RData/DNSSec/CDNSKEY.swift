@@ -1,10 +1,12 @@
+public import struct NIOCore.ByteBuffer
+
 /// Child DNSKEY. See RFC 8078.
 public struct CDNSKEY: Sendable {
     public var flags: UInt16
     public var algorithm: DNSSECAlgorithm?
-    public var publicKey: [UInt8]
+    public var publicKey: ByteBuffer
 
-    public init(flags: UInt16, algorithm: DNSSECAlgorithm?, publicKey: [UInt8]) {
+    public init(flags: UInt16, algorithm: DNSSECAlgorithm?, publicKey: ByteBuffer) {
         self.flags = flags
         self.algorithm = algorithm
         self.publicKey = publicKey
@@ -33,7 +35,7 @@ extension CDNSKEY {
         buffer.writeInteger(flags)
         buffer.writeInteger(3 as UInt8)
         buffer.writeInteger(algorithm?.rawValue ?? 0)
-        buffer.writeBytes(publicKey)
+        buffer.writeBuffer(publicKey)
     }
 }
 

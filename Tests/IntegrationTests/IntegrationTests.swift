@@ -5,6 +5,8 @@ import NIOPosix
 import Synchronization
 import Testing
 
+import struct NIOCore.ByteBuffer
+
 @Suite(.serialized)
 struct IntegrationTests {
     @available(swiftDNSApplePlatforms 26, *)
@@ -306,7 +308,7 @@ struct IntegrationTests {
             }
             #expect(
                 caa.allSatisfy {
-                    $0.rawValue.count > 5
+                    $0.rawValue.readableBytes > 5
                 }
             )
 
@@ -387,7 +389,7 @@ struct IntegrationTests {
                     certType: .PKIX,
                     keyTag: 12345,
                     algorithm: .RSASHA256,
-                    certData: [
+                    certData: ByteBuffer([
                         0x4c, 0x4a, 0x41, 0x34, 0x56, 0x32, 0x4c, 0x6b, 0x56, 0x51, 0x5a, 0x6c,
                         0x4c,
                         0x7a, 0x5a, 0x6b, 0x48, 0x6d, 0x41, 0x75, 0x4f, 0x77, 0x4c, 0x31, 0x44,
@@ -395,7 +397,7 @@ struct IntegrationTests {
                         0x42, 0x33, 0x70, 0x51, 0x4d, 0x33, 0x56, 0x6d, 0x4c, 0x32, 0x56, 0x54,
                         0x4d,
                         0x34, 0x44, 0x4a, 0x5a,
-                    ]
+                    ])
                 )
             ]
 

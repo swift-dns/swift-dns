@@ -10,7 +10,7 @@ on:
         description: "Number of times to run each benchmark and update the thresholds."
         required: true
         type: number
-        default: 1000
+        default: 500
       pr_number:
         description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
         required: false
@@ -139,20 +139,42 @@ jobs:
             echo "changes-count=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and push changes
+      - name: Commit threshold changes to a new branch
         if: steps.check-modifications.outputs.has-modifications == 'true'
+        id: commit-update
         run: |
+          CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
+          NEW_BRANCH="thresholds-update/${{ github.run_id }}/${CURRENT_BRANCH}"
+
+          echo "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
+
+          git checkout -b "${NEW_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
-          git commit -m "Update benchmark thresholds
+          git commit -m "Update of benchmark thresholds with the deviated baselines
 
-          Committed by $RUN_LINK"
+          Run count: '${{ inputs.run_count }}'
+          Target: '${{ inputs.target }}'
+          Filter: '${{ inputs.filter }}'
+          Skip: '${{ inputs.skip }}'
 
-          git push origin "HEAD:${{ github.ref }}"
+          Triggered by: ${RUN_LINK}"
+          git push origin "${NEW_BRANCH}"
+
+          echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
       - name: Construct result comment
         run: |
           echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> comment.md
           echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files changed.' >> comment.md
+
+          if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
+            SHORT_SHA="$(echo '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
+            COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}"
+            RUN_ID="${{ github.run_id }}"
+            BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}"
+            echo '' >> comment.md
+            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to branch [${RUN_ID}](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
+          fi
 
       - name: Update comment in PR
         if: ${{ inputs.pr_number != '' }}

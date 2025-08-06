@@ -12,7 +12,7 @@ package struct PendingQuery {
 
         /// Only supposed to be used in `QueryProducer`
         @usableFromInline
-        func queryProducer_succeed(with value: T) {
+        func _queryProducer_succeed(with value: T) {
             switch self {
             case .nio(let eventLoopPromise):
                 eventLoopPromise.succeed(value)
@@ -23,7 +23,7 @@ package struct PendingQuery {
 
         /// Only supposed to be used in `QueryProducer`
         @usableFromInline
-        func queryProducer_fail(with error: any Error) {
+        func _queryProducer_fail(with error: any Error) {
             switch self {
             case .nio(let eventLoopPromise):
                 eventLoopPromise.fail(error)

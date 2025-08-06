@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 7929](https://tools.ietf.org/html/rfc7929#section-2.1)
 ///
 /// ```text
@@ -6,9 +8,9 @@
 /// in [RFC4880].
 /// ```
 public struct OPENPGPKEY: Sendable {
-    public var publicKey: [UInt8]
+    public var publicKey: ByteBuffer
 
-    public init(publicKey: [UInt8]) {
+    public init(publicKey: ByteBuffer) {
         self.publicKey = publicKey
     }
 }
@@ -21,7 +23,7 @@ extension OPENPGPKEY {
 
 extension OPENPGPKEY {
     package func encode(into buffer: inout DNSBuffer) throws {
-        buffer.writeBytes(self.publicKey)
+        buffer.writeBuffer(self.publicKey)
     }
 }
 

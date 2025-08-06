@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 4034, DNSSEC Resource Records, March 2005](https://tools.ietf.org/html/rfc4034#section-5)
 ///
 /// ```text
@@ -45,13 +47,13 @@ public struct DS: Sendable {
     public var keyTag: UInt16
     public var algorithm: DNSSECAlgorithm
     public var digestType: DNSSECDigestType
-    public var digest: [UInt8]
+    public var digest: ByteBuffer
 
     public init(
         keyTag: UInt16,
         algorithm: DNSSECAlgorithm,
         digestType: DNSSECDigestType,
-        digest: [UInt8]
+        digest: ByteBuffer
     ) {
         self.keyTag = keyTag
         self.algorithm = algorithm
@@ -76,7 +78,7 @@ extension DS {
         buffer.writeInteger(self.keyTag)
         self.algorithm.encode(into: &buffer)
         self.digestType.encode(into: &buffer)
-        buffer.writeBytes(self.digest)
+        buffer.writeBuffer(self.digest)
     }
 }
 

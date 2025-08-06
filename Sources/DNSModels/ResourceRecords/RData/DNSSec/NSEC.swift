@@ -33,6 +33,7 @@ public struct NSEC: Sendable {
 }
 
 extension NSEC {
+    /// FIXME: can we know the length of the domain name so we can pre-reserve capacity?
     package init(from buffer: inout DNSBuffer) throws {
         self.nextDomainName = try Name(from: &buffer)
         self.typeBitMaps = try RecordTypeSet(from: &buffer)

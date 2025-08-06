@@ -30,7 +30,7 @@ package struct QueryProducer: ~Copyable {
         pendingQuery: PendingQuery,
         with message: Message
     ) {
-        pendingQuery.promise.queryProducer_succeed(with: message)
+        pendingQuery.promise._queryProducer_succeed(with: message)
         messageIDGenerator.remove(pendingQuery.requestID)
     }
 
@@ -39,7 +39,7 @@ package struct QueryProducer: ~Copyable {
         pendingQuery: PendingQuery,
         with error: any Error
     ) {
-        pendingQuery.promise.queryProducer_fail(with: error)
+        pendingQuery.promise._queryProducer_fail(with: error)
         messageIDGenerator.remove(pendingQuery.requestID)
     }
 }

@@ -825,6 +825,7 @@ extension RData {
         }
 
         /// FIXME: check no overflow?
+        /// FIXME: use "writeLengthPrefixed"
         buffer.writeInteger(UInt16(valueBuffer.readableBytes))
         buffer.writeBuffer(&valueBuffer)
     }

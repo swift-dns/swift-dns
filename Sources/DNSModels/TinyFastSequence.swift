@@ -14,7 +14,15 @@ public struct TinyFastSequence<Element>: Sequence {
         self.base = .none(reserveCapacity: 0)
     }
 
-    // FIXME: introduce subscripting?
+    @inlinable
+    public subscript(index: Int) -> Element {
+        switch self.base {
+        case .none:
+            preconditionFailure("Index out of bounds: \(index)")
+        case .n(let array):
+            return array[index]
+        }
+    }
 
     @inlinable
     public init(_ collection: some Collection<Element>) {

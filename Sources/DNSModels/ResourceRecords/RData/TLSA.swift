@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 6698, DNS-Based Authentication for TLS](https://tools.ietf.org/html/rfc6698#section-2.1)
 ///
 /// ```text
@@ -190,9 +192,10 @@ public struct TLSA: Sendable {
     public var certUsage: CertUsage
     public var selector: Selector
     public var matching: Matching
-    public var certData: [UInt8]
+    public var certData: ByteBuffer
 
-    public init(certUsage: CertUsage, selector: Selector, matching: Matching, certData: [UInt8]) {
+    public init(certUsage: CertUsage, selector: Selector, matching: Matching, certData: ByteBuffer)
+    {
         self.certUsage = certUsage
         self.selector = selector
         self.matching = matching
@@ -214,7 +217,7 @@ extension TLSA {
         self.certUsage.encode(into: &buffer)
         self.selector.encode(into: &buffer)
         self.matching.encode(into: &buffer)
-        buffer.writeBytes(self.certData)
+        buffer.writeBuffer(self.certData)
     }
 }
 

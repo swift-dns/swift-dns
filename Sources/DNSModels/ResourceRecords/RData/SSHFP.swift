@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 4255](https://tools.ietf.org/html/rfc4255#section-3.1)
 ///
 /// ```text
@@ -59,9 +61,9 @@ public struct SSHFP: Sendable {
 
     public var algorithm: Algorithm
     public var fingerprintType: FingerprintType
-    public var fingerprint: [UInt8]
+    public var fingerprint: ByteBuffer
 
-    public init(algorithm: Algorithm, fingerprintType: FingerprintType, fingerprint: [UInt8]) {
+    public init(algorithm: Algorithm, fingerprintType: FingerprintType, fingerprint: ByteBuffer) {
         self.algorithm = algorithm
         self.fingerprintType = fingerprintType
         self.fingerprint = fingerprint
@@ -80,7 +82,7 @@ extension SSHFP {
     package func encode(into buffer: inout DNSBuffer) throws {
         self.algorithm.encode(into: &buffer)
         self.fingerprintType.encode(into: &buffer)
-        buffer.writeBytes(self.fingerprint)
+        buffer.writeBuffer(self.fingerprint)
     }
 }
 

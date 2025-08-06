@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 5155](https://tools.ietf.org/html/rfc5155#section-4), NSEC3, March 2008
 ///
 /// ```text
@@ -58,7 +60,7 @@ public struct NSEC3PARAM: Sendable {
     public var hashAlgorithm: NSEC3.HashAlgorithm
     public var optOut: Bool
     public var iterations: UInt16
-    public var salt: [UInt8]
+    public var salt: ByteBuffer
 
     var flags: UInt8 {
         var flags: UInt8 = 0
@@ -72,7 +74,7 @@ public struct NSEC3PARAM: Sendable {
         hashAlgorithm: NSEC3.HashAlgorithm,
         optOut: Bool,
         iterations: UInt16,
-        salt: [UInt8]
+        salt: ByteBuffer
     ) {
         self.hashAlgorithm = hashAlgorithm
         self.optOut = optOut
@@ -95,7 +97,7 @@ extension NSEC3PARAM {
         self.iterations = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("NSEC3PARAM.iterations", buffer)
         )
-        self.salt = try buffer.readLengthPrefixedString(name: "NSEC3PARAM.salt")
+        self.salt = try buffer.readLengthPrefixedStringByteBuffer(name: "NSEC3PARAM.salt")
     }
 }
 

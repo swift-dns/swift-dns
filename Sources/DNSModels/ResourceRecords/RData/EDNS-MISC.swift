@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// The code of the EDNS data option
 public enum EDNSCode: Sendable, Hashable {
     /// [RFC 6891, Reserved](https://tools.ietf.org/html/rfc6891)
@@ -199,7 +201,7 @@ public enum EDNSOption: Sendable, Hashable {
     /// [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3)
     case keepalive(Keepalive)
     /// Unknown, used to deal with unknown or unsupported codes
-    case unknown(UInt16, [UInt8])
+    case unknown(UInt16, ByteBuffer)
 }
 
 @available(swiftDNSApplePlatforms 26, *)
@@ -233,9 +235,12 @@ extension EDNSOption {
         case .keepalive(let keepalive):
             keepalive.encode(into: &buffer)
         case .unknown(_, let data):
-            /// FIXME: we don't know this fits, should throw if it doesnt?
-            buffer.writeInteger(UInt16(data.count))
-            buffer.writeBytes(data)
+            try buffer.writeLengthPrefixedString(
+                name: "EDNSOption.unknown",
+                bytes: data,
+                maxLength: UInt16.max,
+                fitLengthInto: UInt16.self
+            )
         }
     }
 }
@@ -258,7 +263,8 @@ extension EDNSOption.ClientSubnet {
 @available(swiftDNSApplePlatforms 26, *)
 extension EDNSOption.SupportedAlgorithms {
     mutating func insert(_ algorithm: DNSSECAlgorithmEDNSSubset) {
-        /// No unchecked math (&<<) here because we might need to grow the size of algorithm.
+        /// No unchecked math (&<<) here because we might need to grow the size of algorithm in the
+        /// future and don't want this to go wrong incase we forget to apply the necessary changes here.
         self.rawValue |= 1 << algorithm.rawValue
     }
 
@@ -277,7 +283,7 @@ extension EDNSOption.SupportedAlgorithms {
                 self.insert(algorithm)
             case .none:
                 /// FIXME: do something about warnings logs
-                print("unknown DNSSECAlgorithm algorithm: \(byte)")
+                print("Unknown DNSSECAlgorithm algorithm: \(byte)")
             }
         }
     }

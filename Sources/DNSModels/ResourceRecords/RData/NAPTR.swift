@@ -1,3 +1,5 @@
+public import struct NIOCore.ByteBuffer
+
 /// [RFC 3403 DDDS DNS Database, October 2002](https://tools.ietf.org/html/rfc3403#section-4)
 ///
 /// ```text
@@ -30,17 +32,17 @@
 public struct NAPTR: Sendable {
     public var order: UInt16
     public var preference: UInt16
-    public var flags: [UInt8]
-    public var services: [UInt8]
-    public var regexp: [UInt8]
+    public var flags: ByteBuffer
+    public var services: ByteBuffer
+    public var regexp: ByteBuffer
     public var replacement: Name
 
     public init(
         order: UInt16,
         preference: UInt16,
-        flags: [UInt8],
-        services: [UInt8],
-        regexp: [UInt8],
+        flags: ByteBuffer,
+        services: ByteBuffer,
+        regexp: ByteBuffer,
         replacement: Name
     ) {
         self.order = order
@@ -53,6 +55,8 @@ public struct NAPTR: Sendable {
 }
 
 extension NAPTR {
+    /// Expects the whole buffer to be the `NAPTR` record.
+    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
         self.order = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("NAPTR.order", buffer)
@@ -60,10 +64,10 @@ extension NAPTR {
         self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("NAPTR.preference", buffer)
         )
-        self.flags = try buffer.readLengthPrefixedString(name: "NAPTR.flags")
-        self.services = try buffer.readLengthPrefixedString(name: "NAPTR.services")
-        self.regexp = try buffer.readLengthPrefixedString(name: "NAPTR.regexp")
-        self.replacement = try Name(from: &buffer)
+        self.flags = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.flags")
+        self.services = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.services")
+        self.regexp = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.regexp")
+        self.replacement = try Name(from: &buffer, knownLength: buffer.readableBytes)
     }
 }
 

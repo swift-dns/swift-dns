@@ -21,8 +21,6 @@ package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
 
     package init() {}
 
-    /// FIXME: after a decoding error, see if we can just return the first 2 bytes of the buffer
-    /// as the message ID, so then the channel handler can properly throw an error for the query.
     package func decode(buffer: inout ByteBuffer) -> DecodingResult? {
         /// Make sure we have at least 12 bytes to read as the DNS header
         /// We might receive and empty buffer when the channel goes inactive and not having a check

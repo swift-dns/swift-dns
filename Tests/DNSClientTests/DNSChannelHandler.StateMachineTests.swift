@@ -1133,7 +1133,6 @@ struct DNSChannelHandlerStateMachineTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(arguments: [(queryCount: 1_000, latencyRange: 20...250)])
     func concurrentlySendingQueriesWorks(
         queryCount: Int,
@@ -1221,7 +1220,6 @@ struct DNSChannelHandlerStateMachineTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @available(swiftDNSApplePlatforms 26, *)
     @Test(arguments: [(queryCount: 30, latencyRange: 20...100)])
     func sequentiallySendingQueriesWorks(

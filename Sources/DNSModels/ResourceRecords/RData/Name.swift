@@ -1,5 +1,7 @@
 public import SwiftIDNA
 
+import struct NIOCore.ByteBuffer
+
 /// A domain name.
 ///
 /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
@@ -50,7 +52,7 @@ public struct Name: Sendable {
     /// An ordered list of zero or more octets that makes up a portion of a domain name.
     /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
     /// ```
-    /// FIXME: investigate performance improvements, with something like `ArraySlice<UInt8>` or `TinyVec`
+    /// FIXME: investigate performance improvements, with something like `TinyVec`
     @usableFromInline
     package var data: [UInt8]
     /// The end of each label in the `data` array.
@@ -265,6 +267,44 @@ extension Name {
             UInt8(exactly: self.data.count)!
         )
     }
+
+    @usableFromInline
+    mutating func extendNameReadingFromBuffer(_ buffer: inout DNSBuffer) throws {
+        let currentLength = self.encodedLength
+        try buffer.readLengthPrefixedString(
+            name: "Name.label",
+            decodeLengthAs: UInt8.self,
+            into: &self.data,
+            performLengthCheck: { labelLength, buffer in
+
+                guard labelLength <= Self.maxLabelLength else {
+                    throw ProtocolError.lengthLimitExceeded(
+                        "Name.label",
+                        actual: Int(labelLength),
+                        max: Int(Self.maxLabelLength),
+                        buffer
+                    )
+                }
+
+                let newLength = currentLength + Int(labelLength) + 1
+
+                if newLength > Self.maxLength {
+                    throw ProtocolError.lengthLimitExceeded(
+                        "Name.label",
+                        actual: newLength,
+                        max: Int(Self.maxLength),
+                        buffer
+                    )
+                }
+            }
+        )
+
+        self.borders.append(
+            /// Safe to force unwrap because already checked newLength is
+            /// less than Self.maxLength which is 255
+            UInt8(exactly: self.data.count)!
+        )
+    }
 }
 
 extension Name {
@@ -276,9 +316,10 @@ extension Name {
         case root  // root is the end of the labels list for an FQDN
     }
 
-    package init(from buffer: inout DNSBuffer) throws {
+    /// `knownLength` is the length of the name in bytes including the null byte, if known.
+    package init(from buffer: inout DNSBuffer, knownLength: Int? = nil) throws {
         self.init()
-        try self.read(from: &buffer)
+        try self.read(from: &buffer, knownLength: knownLength)
 
         switch self.performASCIICheck() {
         case .containsOnlyASCII:
@@ -297,13 +338,18 @@ extension Name {
     }
 
     /// Reads the domain name from the buffer, adding it to the current name.
-    package mutating func read(from buffer: inout DNSBuffer) throws {
+    /// `knownLength` is the length of the name in bytes including the null byte, if known.
+    package mutating func read(
+        from buffer: inout DNSBuffer,
+        knownLength: Int?
+    ) throws {
         var state: LabelParsingState = .labelLengthOrPointer
         // assume all chars are utf-8. We're doing byte-by-byte operations, no endianness issues...
         // reserved: (1000 0000 aka 0800) && (0100 0000 aka 0400)
         // pointer: (slice == 1100 0000 aka C0) & C0 == true, then 03FF & slice = offset
         // label: 03FF & slice = length slice.next(length) = label
         // root: 0000
+        var firstLabel = true
         loop: while true {
             switch consume state {
             case .labelLengthOrPointer:
@@ -331,6 +377,43 @@ extension Name {
                         state = .pointer
                     case 0b0000_0000:
                         state = .label
+
+                        if firstLabel {
+                            firstLabel = false
+
+                            if let knownLength = knownLength,
+                                knownLength <= UInt8.max,
+                                knownLength > 0/// At least a null byte needs to be present
+                            {
+                                /// Excluding the null byte, we have `knownLength - 1` bytes that are either
+                                /// <character-string>s which is to say they are either a length-byte or the
+                                /// actual label bytes. Worst case we have `(knownLength - 1) / 2` label bytes.
+                                /// label bytes are added to `data`, so we can reserve some capacity there.
+                                /// We also reserve capacity for borders. There is a border for each label-length byte.
+                                ///
+                                /// Based on my simple weighted average calculations using Cloudflare's top 1M domains,
+                                /// the weighted-average ratio of label-bytes to domain-length is 0.915,
+                                /// and the weighted-average ratio of labels to domain-length is 0.165.
+                                /// so we reserve the bytes below based on those ratios.
+                                /// Based on the same analysis, the weighted-average number of label-bytes per
+                                /// domain is 12.75. Also the weighted-average number of labels per domain is 2.07.
+                                ///
+                                /// We only reserve `data` bytes because label-counts which correspond
+                                /// to `borders` are usually very few.
+                                let knownLengthNoNullByte = knownLength - 1
+                                let labelBytesProjection = Int(knownLengthNoNullByte) * 92 / 100
+                                /// Only reserve if the projection is greater than 16 bytes.
+                                /// Otherwise the first allocation will reserve 16 bytes anyway.
+                                if labelBytesProjection > 16 {
+                                    let maxPossibleLabelBytes = Int(UInt8.max - 1)
+                                    let dataProjectedRequiredCapacity = Swift.min(
+                                        labelBytesProjection,
+                                        maxPossibleLabelBytes
+                                    )
+                                    self.data.reserveCapacity(dataProjectedRequiredCapacity)
+                                }
+                            }
+                        }
                     default:
                         throw ProtocolError.badCharacter(
                             in: "Name.label",
@@ -340,23 +423,7 @@ extension Name {
                     }
                 }
             case .label:
-                let label = try buffer.readLengthPrefixedString(
-                    name: "Name.label",
-                    decodeLengthAs: UInt8.self
-                )
-                guard label.count <= Self.maxLabelLength else {
-                    throw ProtocolError.lengthLimitExceeded(
-                        "Name.label",
-                        actual: label.count,
-                        max: Int(Self.maxLabelLength),
-                        buffer
-                    )
-                }
-
-                /// Label length cannot be zero so we're good to call `extendName`. If the label
-                /// length was specified as zero on the wire, that zero would have been taken as the
-                /// null byte aka the end of the name, and this code path would not have been taken.
-                try self.extendName(label)
+                try self.extendNameReadingFromBuffer(&buffer)
 
                 // reset to collect more data
                 state = .labelLengthOrPointer
@@ -388,10 +455,11 @@ extension Name {
                 let currentIndex = buffer.readerIndex
                 let offset = pointer & 0b0011_1111_1111_1111
 
-                /// FIXME: check offset is not out of bounds
                 /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
-                buffer.moveReaderIndex(toOffsetInDNSPortion: Int(offset))
-                try self.read(from: &buffer)
+                guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
+                    throw ProtocolError.failedToValidate("Name.label.offset", buffer)
+                }
+                try self.read(from: &buffer, knownLength: nil)
                 /// Reset the reader index to where we were
                 /// There is no null byte at the end, for pointers
                 buffer.moveReaderIndex(to: currentIndex)
