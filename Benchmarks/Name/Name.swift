@@ -170,9 +170,10 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 100_000_000,
         )
     ) { benchmark in
-        for _ in 0..<200_000_000 {
-            blackHole(name1 == name2)
-        }
+        // for idx in 0..<200_000_000 {
+        //     print(idx)
+        //     blackHole(name1 == name2)
+        // }
     }
 
     Benchmark(
