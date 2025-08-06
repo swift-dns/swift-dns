@@ -22,6 +22,7 @@
 ///     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 ///
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct Query: Sendable {
     /// QNAME
     public var name: Name
@@ -37,6 +38,7 @@ public struct Query: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Query {
     package init(from buffer: inout DNSBuffer) throws {
         self.name = try Name(from: &buffer)
@@ -45,6 +47,7 @@ extension Query {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension Query {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)

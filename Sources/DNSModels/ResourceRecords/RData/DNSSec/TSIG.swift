@@ -112,6 +112,7 @@ public import struct NIOCore.ByteBuffer
 ///      seconds (see Section 5.2.3).  This document assigns no meaning to
 ///      its contents in requests.
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct TSIG: Sendable {
     /// Algorithm used to authenticate communication
     ///
@@ -193,6 +194,7 @@ public struct TSIG: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try TSIG.Algorithm(from: &buffer)
@@ -225,6 +227,7 @@ extension TSIG {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
@@ -253,6 +256,7 @@ extension TSIG {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG.Algorithm: RawRepresentable {
     public init?(rawValue: String) {
         switch rawValue {
@@ -325,6 +329,7 @@ extension TSIG.Algorithm: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG.Algorithm: Hashable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue == rhs.rawValue
@@ -335,6 +340,7 @@ extension TSIG.Algorithm: Hashable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG.Algorithm: CaseIterable {
     public static var allCases: [TSIG.Algorithm] {
         [
@@ -352,12 +358,14 @@ extension TSIG.Algorithm: CaseIterable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG.Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(name: try Name(from: &buffer))
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension TSIG.Algorithm {
     func encode(into buffer: inout DNSBuffer) throws {
         try self.toName().encode(into: &buffer)

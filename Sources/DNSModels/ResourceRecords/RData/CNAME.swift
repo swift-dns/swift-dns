@@ -15,6 +15,7 @@
 /// CNAME           A <domain-name> which specifies the canonical or primary
 ///                 name for the owner.  The owner name is an alias.
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct CNAME: Sendable {
     public var name: Name
 
@@ -23,6 +24,7 @@ public struct CNAME: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CNAME {
     /// Expects the whole buffer to be the `CNAME` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -31,6 +33,7 @@ extension CNAME {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension CNAME {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.name.encode(into: &buffer)

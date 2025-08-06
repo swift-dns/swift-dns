@@ -3,8 +3,8 @@ import Testing
 
 @Suite
 struct DNSTests {
-    @Test
-    func testTSIGAlgorithmConversions() throws {
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test func testTSIGAlgorithmConversions() throws {
         for algorithm in TSIG.Algorithm.allCases {
             let name = try algorithm.toName()
             let recalculatedAlgorithm = TSIG.Algorithm(name: name)
@@ -12,8 +12,8 @@ struct DNSTests {
         }
     }
 
-    @Test
-    func testTSIGAlgorithmEqualityLooksAtInnerValueToo() throws {
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test func testTSIGAlgorithmEqualityLooksAtInnerValueToo() throws {
         for algorithm in TSIG.Algorithm.allCases {
             #expect(algorithm == algorithm)
         }

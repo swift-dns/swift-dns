@@ -42,6 +42,7 @@
 /// reason for this provision is to allow future dynamic update facilities to
 /// change the SOA RR with known semantics.
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct SOA: Sendable {
     public var mName: Name
     public var rName: Name
@@ -70,6 +71,7 @@ public struct SOA: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension SOA {
     /// Expects the whole buffer to be the `SOA` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -96,6 +98,7 @@ extension SOA {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension SOA {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.mName.encode(into: &buffer)

@@ -158,6 +158,7 @@ public import struct NIOCore.ByteBuffer
 ///    networks, this time bracket should not normally extend further than 5
 ///    minutes into the past and 5 minutes into the future.
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct SIG: Sendable {
     public var typeCovered: RecordType
     public var algorithm: DNSSECAlgorithm
@@ -192,6 +193,7 @@ public struct SIG: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension SIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.typeCovered = try RecordType(from: &buffer)
@@ -215,6 +217,8 @@ extension SIG {
         self.sig = buffer.readToEnd()
     }
 }
+
+@available(swiftDNSApplePlatforms 26, *)
 extension SIG {
     func encode(into buffer: inout DNSBuffer) throws {
         typeCovered.encode(into: &buffer)

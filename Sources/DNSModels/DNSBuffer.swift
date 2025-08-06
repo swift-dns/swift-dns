@@ -276,10 +276,11 @@ package struct DNSBuffer: Sendable {
         return buffer
     }
 
-    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
+    @available(swiftDNSApplePlatforms 26, *)
+    package mutating func readLengthPrefixedString<let count: Int, IntegerType: FixedWidthInteger>(
         name: StaticString,
         decodeLengthAs _: IntegerType.Type = UInt8.self,
-        into bytes: inout [UInt8],
+        into bytes: inout TinyArray<count, UInt8>,
         performLengthCheck: (IntegerType, DNSBuffer) throws -> Void
     ) throws {
         assert(

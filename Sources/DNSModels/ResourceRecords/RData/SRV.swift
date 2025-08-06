@@ -58,6 +58,7 @@
 /// Class.
 ///
 /// ```
+@available(swiftDNSApplePlatforms 26, *)
 public struct SRV: Sendable {
     public var priority: UInt16
     public var weight: UInt16
@@ -72,6 +73,7 @@ public struct SRV: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension SRV {
     /// Expects the whole buffer to be the `SRV` record.
     /// This is always true when called from `RData.init(from:recordType:)`.
@@ -89,6 +91,7 @@ extension SRV {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension SRV {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.priority)
