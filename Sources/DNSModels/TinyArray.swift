@@ -327,14 +327,10 @@ extension TinyArray: Hashable where Element: Hashable {
     @usableFromInline
     package func hash(into hasher: inout Hasher) {
         switch self._base {
-        case .inline(var inline, _):
+        case .inline(let inline, _):
             inline.span.withUnsafeBytes {
                 hasher.combine(bytes: $0)
             }
-            /// To suppress the warning about the unused variable.
-            /// The reason this is a var in the first place is to avoid wrong errors about
-            /// inline escaping its scope and all.
-            doNothing(&inline)
         case .heap(let array):
             hasher.combine(array)
         case .modifying:
