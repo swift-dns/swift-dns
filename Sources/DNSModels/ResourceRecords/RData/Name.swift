@@ -55,10 +55,10 @@ public struct Name: Sendable {
     /// ```
     /// FIXME: investigate performance improvements, with something like `TinyVec`
     @usableFromInline
-    package var data: TinyArray<24, UInt8>
+    package var data: TinyArray<16, UInt8>
     /// The end of each label in the `data` array.
     @usableFromInline
-    package var borders: TinyArray<24, UInt8>
+    package var borders: TinyArray<16, UInt8>
 
     /// Returns the encoded length of this name, ignoring compression.
     ///
@@ -84,8 +84,8 @@ public struct Name: Sendable {
     @usableFromInline
     package init(
         isFQDN: Bool = false,
-        data: TinyArray<24, UInt8> = TinyArray<24, UInt8>(fillingEmptySpacesWith: 0),
-        borders: TinyArray<24, UInt8> = TinyArray<24, UInt8>(fillingEmptySpacesWith: 0)
+        data: TinyArray<16, UInt8> = TinyArray<16, UInt8>(fillingEmptySpacesWith: 0),
+        borders: TinyArray<16, UInt8> = TinyArray<16, UInt8>(fillingEmptySpacesWith: 0)
     ) {
         self.isFQDN = isFQDN
         self.data = data
