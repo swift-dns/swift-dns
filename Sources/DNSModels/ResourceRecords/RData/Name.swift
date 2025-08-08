@@ -12,6 +12,7 @@ import struct NIOCore.ByteBuffer
 /// Any path of a directed acyclic graph can be represented by a domain name consisting of the labels of its nodes,
 /// ordered by decreasing distance from the root(s) (whiscalaris the normal convention within the DNS).
 /// ```
+@dynamicMemberLookup
 public struct Name: Sendable {
     /// Maximum allowed domain name length.
     @usableFromInline
@@ -25,59 +26,112 @@ public struct Name: Sendable {
         63
     }
 
-    /// is Fully Qualified Domain Name.
-    ///
-    /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
-    ///
-    /// ```text
-    /// 2.1.6 Domain name
-    ///
-    /// A domain name whose last label identifies a root of the graph is fully qualified other domain names whose
-    /// labels form a strict prefix of a fully qualified domain name are relative to its first omitted node.
-    /// ```
     @usableFromInline
-    package var isFQDN: Bool
-    /// The data of each label in the name. Lowercased ASCII bytes only.
-    /// non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
-    /// will never make it to the stored properties of `Name` such as `data`.
-    /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
-    /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
-    /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
-    ///
-    /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
-    ///
-    /// ```text
-    /// 2.1.12 Label
-    ///
-    /// An ordered list of zero or more octets that makes up a portion of a domain name.
-    /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
-    /// ```
-    /// FIXME: investigate performance improvements, with something like `TinyVec`
-    @usableFromInline
-    package var data: [UInt8]
-    /// The end of each label in the `data` array.
-    @usableFromInline
-    package var borders: [UInt8]
+    package final class Storage: _Cloneable {
+        /// is Fully Qualified Domain Name.
+        ///
+        /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
+        ///
+        /// ```text
+        /// 2.1.6 Domain name
+        ///
+        /// A domain name whose last label identifies a root of the graph is fully qualified other domain names whose
+        /// labels form a strict prefix of a fully qualified domain name are relative to its first omitted node.
+        /// ```
+        @usableFromInline
+        package var isFQDN: Bool
+        /// The data of each label in the name. Lowercased ASCII bytes only.
+        /// non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
+        /// will never make it to the stored properties of `Name` such as `data`.
+        /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
+        /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
+        /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
+        ///
+        /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
+        ///
+        /// ```text
+        /// 2.1.12 Label
+        ///
+        /// An ordered list of zero or more octets that makes up a portion of a domain name.
+        /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
+        /// ```
+        /// FIXME: investigate performance improvements, with something like `TinyVec`
+        @usableFromInline
+        package var data: [UInt8]
+        /// The end of each label in the `data` array.
+        @usableFromInline
+        package var borders: [UInt8]
 
-    /// Returns the encoded length of this name, ignoring compression.
-    ///
-    /// The `isFQDN` flag is ignored, and the root label at the end is assumed to always be
-    /// present, since it terminates the name in the DNS message format.
-    var encodedLength: Int {
-        self.borders.count + self.data.count + 1
+        /// Returns the encoded length of this name, ignoring compression.
+        ///
+        /// The `isFQDN` flag is ignored, and the root label at the end is assumed to always be
+        /// present, since it terminates the name in the DNS message format.
+        var encodedLength: Int {
+            self.borders.count + self.data.count + 1
+        }
+
+        /// The number of labels in the name, excluding `*`.
+        @inlinable
+        public var labelsCount: Int {
+            let count = self.borders.count
+            return (self.data.first == UInt8.asciiStar) ? (count - 1) : count
+        }
+
+        /// Whether the name is the DNS root name, aka `.`.
+        @inlinable
+        public var isRoot: Bool {
+            self.isFQDN && self.borders.isEmpty
+        }
+
+        @usableFromInline
+        package func clone() -> Self {
+            var newData = [UInt8]()
+            newData.reserveCapacity(self.data.count)
+            newData.append(contentsOf: self.data)
+
+            var newBorders = [UInt8]()
+            newBorders.reserveCapacity(self.borders.count)
+            newBorders.append(contentsOf: self.borders)
+
+            return Self(
+                isFQDN: self.isFQDN,
+                data: newData,
+                borders: newBorders
+            )
+        }
+
+        @inlinable
+        init(isFQDN: Bool = false, data: [UInt8] = [], borders: [UInt8] = []) {
+            self.isFQDN = isFQDN
+            self.data = data
+            self.borders = borders
+        }
     }
 
-    /// The number of labels in the name, excluding `*`.
+    @usableFromInline
+    var storage: CoW<Storage>
+
     @inlinable
-    public var labelsCount: Int {
-        let count = self.borders.count
-        return (self.data.first == UInt8.asciiStar) ? (count - 1) : count
+    package subscript<T>(dynamicMember member: KeyPath<CoW<Storage>, T>) -> T {
+        _read {
+            yield self.storage[keyPath: member]
+        }
     }
 
-    /// Whether the name is the DNS root name, aka `.`.
     @inlinable
-    public var isRoot: Bool {
-        self.isFQDN && self.borders.isEmpty
+    init(__storage storage: Storage) {
+        self.storage = CoW(storage)
+    }
+
+    @inlinable
+    init(storage: Storage) {
+        self.storage = CoW(storage)
+
+        /// Make sure the name is valid
+        /// No empty labels
+        assert(self.allSatisfy({ !$0.isEmpty }))
+        assert(self.data.allSatisfy(\.isASCII))
+        assert(self.data.allSatisfy { $0.uncheckedASCIIToLowercase() == $0 })
     }
 
     @usableFromInline
@@ -86,9 +140,13 @@ public struct Name: Sendable {
         data: [UInt8] = [],
         borders: [UInt8] = []
     ) {
-        self.isFQDN = isFQDN
-        self.data = data
-        self.borders = borders
+        self.storage = CoW(
+            Storage(
+                isFQDN: isFQDN,
+                data: data,
+                borders: borders
+            )
+        )
 
         /// Make sure the name is valid
         /// No empty labels
@@ -102,6 +160,20 @@ extension Name {
     @inlinable
     public static var root: Self {
         Self(isFQDN: true, data: [], borders: [])
+    }
+}
+
+extension Name.Storage: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.isFQDN)
+        hasher.combine(self.data)
+        hasher.combine(self.borders)
+    }
+
+    public static func == (lhs: Name.Storage, rhs: Name.Storage) -> Bool {
+        lhs.isFQDN == rhs.isFQDN
+            && lhs.data == rhs.data
+            && lhs.borders == rhs.borders
     }
 }
 
@@ -176,13 +248,14 @@ extension Name {
     /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
     @inlinable
     public init(domainName: String, idnaConfiguration: IDNA.Configuration = .default) throws {
-        self.init()
+        let storage = Name.Storage()
 
         // short circuit root parse
         if domainName.unicodeScalars.count == 1,
             domainName.unicodeScalars.first == Unicode.Scalar.asciiDot
         {
-            self.isFQDN = true
+            storage.isFQDN = true
+            self.init(storage: storage)
             return
         }
 
@@ -191,7 +264,7 @@ extension Name {
         /// Remove the trailing dot if it exists, and set the FQDN flag
         /// The IDNA spec doesn't like the root label separator.
         if domainName.unicodeScalars.last?.isIDNALabelSeparator == true {
-            self.isFQDN = true
+            storage.isFQDN = true
             domainName = String(domainName.unicodeScalars.dropLast())
         }
 
@@ -205,7 +278,8 @@ extension Name {
             domainName: &domainName
         )
 
-        try Self.from(guaranteedASCIIBytes: domainName.utf8, into: &self)
+        try Self.from(guaranteedASCIIBytes: domainName.utf8, intoUncheckedUniqueStorage: storage)
+        self.init(storage: storage)
     }
 
     @usableFromInline
@@ -214,48 +288,58 @@ extension Name {
             /// FIXME: throw a better error
             throw ProtocolError.failedToValidate(name, DNSBuffer(bytes: bytes))
         }
-        self.init()
-        try Self.from(guaranteedASCIIBytes: bytes, into: &self)
+        let storage = Name.Storage()
+        try Self.from(
+            guaranteedASCIIBytes: bytes,
+            intoUncheckedUniqueStorage: storage
+        )
+        self.init(storage: storage)
     }
 
     @usableFromInline
     init(guaranteedASCIIBytes bytes: some Collection<UInt8>) throws {
-        self.init()
-        try Self.from(guaranteedASCIIBytes: bytes, into: &self)
+        let storage = Name.Storage()
+        try Self.from(
+            guaranteedASCIIBytes: bytes,
+            intoUncheckedUniqueStorage: storage
+        )
+        self.init(storage: storage)
     }
 
     @usableFromInline
     static func from(
         guaranteedASCIIBytes bytes: some Collection<UInt8>,
-        into name: inout Name
+        intoUncheckedUniqueStorage storage: Name.Storage
     ) throws {
         assert(bytes.allSatisfy(\.isASCII))
 
-        name.data.reserveCapacity(Int(bytes.count))
-        /// FIXME: is 4 a good number of bytes to reserve capacity for?
-        name.borders.reserveCapacity(4)
+        storage.data.reserveCapacity(Int(bytes.count))
+        /// Borders will be allocated on-demand since it's unlikely we have more than 16 borders anyway.
+        /// Array allocates 16 elements on the first allocation.
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
                 throw ProtocolError.failedToValidate("Name", DNSBuffer(bytes: bytes))
             }
-            try name.extendName(Array(label))
+            try storage.extendName(Array(label))
         }
     }
+}
 
+extension Name.Storage {
     /// Extend the name with the offered label, and ensure maximum name length is not exceeded.
     /// Does not check if the label is not empty. That needs to be checked by the caller.
     /// In the wire format labels cannot be empty, but in the string format they can, so the caller
     /// will need to check that.
     @usableFromInline
-    mutating func extendName(_ label: [UInt8]) throws {
+    func extendName(_ label: [UInt8]) throws {
         let newLength = self.encodedLength + label.count + 1
 
-        if newLength > Self.maxLength {
+        if newLength > Name.maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 "Name.label",
                 actual: newLength,
-                max: Int(Self.maxLength),
+                max: Int(Name.maxLength),
                 DNSBuffer(bytes: label)
             )
         }
@@ -269,7 +353,7 @@ extension Name {
     }
 
     @usableFromInline
-    mutating func extendNameReadingFromBuffer(_ buffer: inout DNSBuffer) throws {
+    func extendNameReadingFromBuffer(_ buffer: inout DNSBuffer) throws {
         let currentLength = self.encodedLength
         try buffer.readLengthPrefixedString(
             name: "Name.label",
@@ -277,22 +361,22 @@ extension Name {
             into: &self.data,
             performLengthCheck: { labelLength, buffer in
 
-                guard labelLength <= Self.maxLabelLength else {
+                guard labelLength <= Name.maxLabelLength else {
                     throw ProtocolError.lengthLimitExceeded(
                         "Name.label",
                         actual: Int(labelLength),
-                        max: Int(Self.maxLabelLength),
+                        max: Int(Name.maxLabelLength),
                         buffer
                     )
                 }
 
                 let newLength = currentLength + Int(labelLength) + 1
 
-                if newLength > Self.maxLength {
+                if newLength > Name.maxLength {
                     throw ProtocolError.lengthLimitExceeded(
                         "Name.label",
                         actual: newLength,
-                        max: Int(Self.maxLength),
+                        max: Int(Name.maxLength),
                         buffer
                     )
                 }
@@ -308,6 +392,40 @@ extension Name {
 }
 
 extension Name {
+    /// `knownLength` is the length of the name in bytes including the null byte, if known.
+    package init(from buffer: inout DNSBuffer, knownLength: Int? = nil) throws {
+        let storage = Name.Storage()
+        try storage.read(from: &buffer, knownLength: knownLength)
+
+        switch storage.performASCIICheck() {
+        case .containsOnlyASCII:
+            self.init(storage: storage)
+        case .isASCIIButContainsUppercasedLetters:
+            /// Normalize to lowercase ASCII
+            storage.data = storage.data.map {
+                $0.uncheckedASCIIToLowercase()
+            }
+            self.init(storage: storage)
+        case .containsNonASCII:
+            /// Attempt to repair the domain name if it was not ASCII.
+            /// non-ASCII bytes are technically not allowed in DNS.
+            let description = Name(__storage: storage).utf8Representation()
+            self = try Self.init(domainName: description)
+        }
+    }
+
+    private func utf8Representation() -> String {
+        var name = self.map {
+            String(decoding: $0, as: UTF8.self)
+        }.joined(separator: ".")
+        if self.isFQDN {
+            name.append(".")
+        }
+        return name
+    }
+}
+
+extension Name.Storage {
     /// This is the list of states for the label parsing state machine
     enum LabelParsingState: ~Copyable {
         case labelLengthOrPointer  // basically the start of the FSM
@@ -316,30 +434,9 @@ extension Name {
         case root  // root is the end of the labels list for an FQDN
     }
 
-    /// `knownLength` is the length of the name in bytes including the null byte, if known.
-    package init(from buffer: inout DNSBuffer, knownLength: Int? = nil) throws {
-        self.init()
-        try self.read(from: &buffer, knownLength: knownLength)
-
-        switch self.performASCIICheck() {
-        case .containsOnlyASCII:
-            break
-        case .isASCIIButContainsUppercasedLetters:
-            /// Normalize to lowercase ASCII
-            self.data = self.data.map {
-                $0.uncheckedASCIIToLowercase()
-            }
-        case .containsNonASCII:
-            /// Attempt to repair the domain name if it was not ASCII.
-            /// non-ASCII bytes are technically not allowed in DNS.
-            let description = self.utf8Representation()
-            self = try Self.init(domainName: description)
-        }
-    }
-
     /// Reads the domain name from the buffer, adding it to the current name.
     /// `knownLength` is the length of the name in bytes including the null byte, if known.
-    package mutating func read(
+    package func read(
         from buffer: inout DNSBuffer,
         knownLength: Int?
     ) throws {
@@ -476,24 +573,14 @@ extension Name {
         /// TODO: should we consider checking this while the name is parsed?
         /// TODO: `> Self.maxLength {` is correct or `>= Self.maxLength {`?
         let len = self.encodedLength
-        if len > Self.maxLength {
+        if len > Name.maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 "Name",
                 actual: len,
-                max: Int(Self.maxLength),
+                max: Int(Name.maxLength),
                 buffer
             )
         }
-    }
-
-    private func utf8Representation() -> String {
-        var name = self.map {
-            String(decoding: $0, as: UTF8.self)
-        }.joined(separator: ".")
-        if self.isFQDN {
-            name.append(".")
-        }
-        return name
     }
 
     enum ASCIICheckResult {

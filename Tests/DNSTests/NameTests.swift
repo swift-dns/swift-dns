@@ -5,6 +5,11 @@ import Testing
 @Suite
 struct NameTests {
     @available(swiftDNSApplePlatforms 26, *)
+    @Test func cowWorks() throws {
+        /// FIXME: implement
+    }
+
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", isFQDN: false, data: [42], borders: [1]),
@@ -147,6 +152,7 @@ struct NameTests {
             (name: "www.example", isFQDN: false),
             (name: "www", isFQDN: false),
             (name: "test.", isFQDN: true),
+            /// TODO: is `\` valid in a label according to IDNA or the spec?
             (name: #"test\."#, isFQDN: true),
         ]
     )
