@@ -415,16 +415,22 @@ extension Name {
                                 /// to `borders` are usually very few.
                                 let knownLengthNoNullByte = knownLength - 1
                                 let labelBytesProjection = Int(knownLengthNoNullByte) * 92 / 100
-                                /// Only reserve if the projection is greater than 16 bytes.
-                                /// Otherwise the first allocation will reserve 16 bytes anyway.
-                                if labelBytesProjection > 16 {
+                                /// Only reserve if the projection is greater than 16 bytes (8 elements).
+                                /// Otherwise the first allocation will reserve 8 elements anyway.
+                                if labelBytesProjection > 8 {
                                     let maxPossibleLabelBytes = Int(UInt8.max - 1)
-                                    let dataProjectedRequiredCapacity = Swift.min(
-                                        labelBytesProjection,
-                                        maxPossibleLabelBytes
+                                    let dataProjectedRequiredCapacity = Swift.max(
+                                        Swift.min(
+                                            labelBytesProjection,
+                                            maxPossibleLabelBytes
+                                        ),
+                                        16
                                     )
                                     self.data.reserveCapacity(dataProjectedRequiredCapacity)
                                 }
+                            } else {
+                                /// Read the comments above. 16 will fit most domains.
+                                self.data.reserveCapacity(16)
                             }
                         }
                     default:
