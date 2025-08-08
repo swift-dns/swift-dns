@@ -25,6 +25,14 @@ public struct Name: Sendable {
         63
     }
 
+    @usableFromInline
+    package struct Byte: Sendable {
+        @usableFromInline
+        package let byte: UInt8
+        @usableFromInline
+        package var isBorder: Bool
+    }
+
     /// is Fully Qualified Domain Name.
     ///
     /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
@@ -38,6 +46,7 @@ public struct Name: Sendable {
     @usableFromInline
     package var isFQDN: Bool
     /// The data of each label in the name. Lowercased ASCII bytes only.
+    /// `isBorder` indicates the end of each label in the `data` array.
     /// non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
     /// will never make it to the stored properties of `Name` such as `data`.
     /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
@@ -52,34 +61,37 @@ public struct Name: Sendable {
     /// An ordered list of zero or more octets that makes up a portion of a domain name.
     /// Using graph theory, a label identifies one node in a portion of the graph of all possible domain names.
     /// ```
+    ///
     /// FIXME: investigate performance improvements, with something like `TinyVec`
     @usableFromInline
-    package var data: [UInt8]
-    /// The end of each label in the `data` array.
+    package var data: [Byte]
+
+    /// The number of borders in the `data` array.
     @usableFromInline
-    package var borders: [UInt8]
+    package var bordersCount: Int
 
     /// Returns the encoded length of this name, ignoring compression.
     ///
     /// The `isFQDN` flag is ignored, and the root label at the end is assumed to always be
     /// present, since it terminates the name in the DNS message format.
     var encodedLength: Int {
-        self.borders.count + self.data.count + 1
+        self.bordersCount + self.data.count + 1
     }
 
     /// The number of labels in the name, excluding `*`.
     @inlinable
     public var labelsCount: Int {
-        let count = self.borders.count
-        return (self.data.first == UInt8.asciiStar) ? (count - 1) : count
+        let count = self.bordersCount
+        return (self.data.first?.byte == UInt8.asciiStar) ? (count - 1) : count
     }
 
     /// Whether the name is the DNS root name, aka `.`.
     @inlinable
     public var isRoot: Bool {
-        self.isFQDN && self.borders.isEmpty
+        self.isFQDN && self.bordersCount == 0
     }
 
+    @available(*, deprecated, message: "Use other initializers")
     @usableFromInline
     package init(
         isFQDN: Bool = false,
@@ -87,23 +99,35 @@ public struct Name: Sendable {
         borders: [UInt8] = []
     ) {
         self.isFQDN = isFQDN
-        self.data = data
-        self.borders = borders
+        self.data = data.enumerated().map { idx, byte in
+            Byte(byte: byte, isBorder: borders.contains(UInt8(truncatingIfNeeded: idx + 1)))
+        }
+        self.bordersCount = borders.count
 
         /// Make sure the name is valid
         /// No empty labels
+        assert(self.encodedLength <= Self.maxLength)
         assert(self.allSatisfy({ !$0.isEmpty }))
-        assert(self.data.allSatisfy(\.isASCII))
-        assert(self.data.allSatisfy { $0.uncheckedASCIIToLowercase() == $0 })
+        assert(self.data.allSatisfy(\.byte.isASCII))
+        assert(self.data.allSatisfy { $0.byte.uncheckedASCIIToLowercase() == $0.byte })
+    }
+
+    @usableFromInline
+    package init(isFQDN: Bool = false) {
+        self.isFQDN = isFQDN
+        self.data = []
+        self.bordersCount = 0
     }
 }
 
 extension Name {
     @inlinable
     public static var root: Self {
-        Self(isFQDN: true, data: [], borders: [])
+        Self(isFQDN: true)
     }
 }
+
+extension Name.Byte: Hashable {}
 
 extension Name: Hashable {
     /// Equality check without considering the FQDN flag.
@@ -113,7 +137,8 @@ extension Name: Hashable {
     /// So this method is useful to make sure a comparison of two `Name`s doesn't fail just because
     /// of the root-label indicator / FQN flag.
     public func isEssentiallyEqual(to other: Self) -> Bool {
-        self.data == other.data && self.borders == other.borders
+        self.bordersCount == other.bordersCount
+            && self.data == other.data
     }
 }
 
@@ -122,38 +147,33 @@ extension Name: Sequence {
         public typealias Label = [UInt8]
 
         let name: Name
-        var start: Int
-        let end: Int
+        var previousBorder: Int
+        var ended: Bool
 
         init(base: Name) {
             self.name = base
-            self.start = 0
-            self.end = base.borders.count
+            self.previousBorder = -1
+            self.ended = name.data.isEmpty
         }
 
         public mutating func next() -> Label? {
-            if self.start >= self.end {
+            if self.ended {
                 return nil
             }
 
-            /// self.name.borders.count is self.end based on the initializer,
-            /// so no need to check again for that.
-            let end = self.name.borders[self.start]
-            let start: UInt8 =
-                switch self.start {
-                case 0: 0
-                default: self.name.borders[self.start - 1]
-                }
-            self.start += 1
+            let lastIndex = name.data.count - 1
 
-            var bytes: [UInt8] = []
-            /// TODO: make sure this is safe
-            bytes.reserveCapacity(Int(end - start))
-            for idx in start..<end {
-                bytes.append(self.name.data[Int(idx)])
+            /// It's safe to index `name.data` with this number because it's guaranteed to have some bytes left.
+            let nextStartIndex = previousBorder + 1
+
+            if let nextBorder = name.data[nextStartIndex...].firstIndex(where: \.isBorder) {
+                self.previousBorder = nextBorder
+                self.ended = nextBorder == lastIndex
+                return name.data[nextStartIndex...nextBorder].map(\.byte)
+            } else {
+                self.ended = true
+                return name.data[nextStartIndex...lastIndex].map(\.byte)
             }
-
-            return bytes
         }
     }
 
@@ -232,8 +252,6 @@ extension Name {
         assert(bytes.allSatisfy(\.isASCII))
 
         name.data.reserveCapacity(Int(bytes.count))
-        /// FIXME: is 4 a good number of bytes to reserve capacity for?
-        name.borders.reserveCapacity(4)
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
@@ -260,12 +278,9 @@ extension Name {
             )
         }
 
-        self.data.append(contentsOf: label)
-        self.borders.append(
-            /// Safe to force unwrap because already checked newLength is
-            /// less than Self.maxLength which is 255
-            UInt8(exactly: self.data.count)!
-        )
+        self.data.append(contentsOf: label.map { Byte(byte: $0, isBorder: false) })
+        self.data[self.data.count - 1].isBorder = true
+        self.bordersCount += 1
     }
 
     @usableFromInline
@@ -298,12 +313,7 @@ extension Name {
                 }
             }
         )
-
-        self.borders.append(
-            /// Safe to force unwrap because already checked newLength is
-            /// less than Self.maxLength which is 255
-            UInt8(exactly: self.data.count)!
-        )
+        self.bordersCount += 1
     }
 }
 
@@ -327,7 +337,10 @@ extension Name {
         case .isASCIIButContainsUppercasedLetters:
             /// Normalize to lowercase ASCII
             self.data = self.data.map {
-                $0.uncheckedASCIIToLowercase()
+                Byte(
+                    byte: $0.byte.uncheckedASCIIToLowercase(),
+                    isBorder: $0.isBorder
+                )
             }
         case .containsNonASCII:
             /// Attempt to repair the domain name if it was not ASCII.
@@ -506,9 +519,9 @@ extension Name {
         var containsUppercased = false
 
         for byte in self.data {
-            if byte.isUppercasedASCII {
+            if byte.byte.isUppercasedASCII {
                 containsUppercased = true
-            } else if byte.isASCII {
+            } else if byte.byte.isASCII {
                 continue
             } else {
                 return .containsNonASCII
