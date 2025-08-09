@@ -14,23 +14,9 @@ extension UInt8 {
             || self >= latin_atoz_start && self <= latin_atoz_end
     }
 
-    /// Assumes the integer is an ASCII byte, and makes sure it is in lowercase.
-    @usableFromInline
-    func uncheckedUppercaseASCIIToLowercase() -> Self {
-        /// https://ss64.com/ascii.html
-        /// The difference between an upper and lower cased ASCII byte is their sixth bit.
-        /// Turn the sixth bit on to ensure lowercased ASCII byte.
-        self | 0b0010_0000
-    }
-
     @inlinable
     var isASCII: Bool {
         self & 0b1000_0000 == 0
-    }
-
-    @inlinable
-    var isUppercasedASCII: Bool {
-        self >= 0x41 && self <= 0x5A
     }
 
     @inlinable

@@ -18,20 +18,6 @@ extension Unicode.Scalar {
     static var asciiDot: Unicode.Scalar {
         Unicode.Scalar(0x2E).unsafelyUnwrapped
     }
-
-    /// IDNA label separators.
-    /// U+002E ( . ) FULL STOP
-    /// U+FF0E ( ． ) FULLWIDTH FULL STOP
-    /// U+3002 ( 。 ) IDEOGRAPHIC FULL STOP
-    /// U+FF61 ( ｡ ) HALFWIDTH IDEOGRAPHIC FULL STOP
-    /// https://www.unicode.org/reports/tr46/#Notation
-    @inlinable
-    var isIDNALabelSeparator: Bool {
-        self.value == 0x2E
-            || self.value == 0xFF0E
-            || self.value == 0x3002
-            || self.value == 0xFF61
-    }
 }
 
 extension Unicode.GeneralCategory {

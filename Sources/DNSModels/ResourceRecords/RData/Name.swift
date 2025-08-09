@@ -102,7 +102,7 @@ public struct Name: Sendable {
         assert(self.data.readableBytes <= Self.maxLength)
         assert(self.allSatisfy({ !($0.readableBytes == 0) }))
         assert(self.data.readableBytesView.allSatisfy(\.isASCII))
-        assert(self.allSatisfy { $0.readableBytesView.allSatisfy { !$0.isUppercasedASCII } })
+        assert(self.allSatisfy { $0.readableBytesView.allSatisfy { !$0.isUppercasedASCIILetter } })
     }
 }
 
@@ -209,7 +209,7 @@ extension Name {
         /// TODO: make sure all initializations of Name go through a single initializer that
         /// asserts lowercased ASCII?
 
-        /// short-circuit most domain names which won't change with IDNA anyway.
+        /// short-circuits most domain names which won't change with IDNA anyway.
         try IDNA(
             configuration: idnaConfiguration
         ).toASCII(
@@ -284,22 +284,25 @@ extension Name {
             knownLength: knownLength
         )
 
-        switch self.performASCIICheck() {
-        case .containsOnlyASCII:
+        let checkResult = self.data.withUnsafeReadableBytes {
+            IDNA.performCharacterCheck(dnsWireFormatBytes: $0)
+        }
+        switch checkResult {
+        case .containsOnlyIDNANoOpCharacters:
             break
-        case .isASCIIButContainsUppercasedLetters:
+        case .onlyNeedsLowercasingOfUppercasedASCIILetters:
             /// Normalize to lowercase ASCII
             self.data.withUnsafeMutableReadableBytes { ptr in
                 for idx in ptr.indices {
                     let byte = ptr[idx]
-                    if byte.isUppercasedASCII {
-                        ptr[idx] = byte.uncheckedUppercaseASCIIToLowercase()
+                    if byte.isUppercasedASCIILetter {
+                        ptr[idx] = byte.uncheckedToLowercasedASCIILetter()
                     }
                 }
             }
-        case .containsNonASCII:
-            /// Attempt to repair the domain name if it was not ASCII.
-            /// non-ASCII bytes are technically not allowed in DNS.
+        case .mightChangeAfterIDNAConversion:
+            /// Attempt to repair the domain name if it was not IDNA-compatible.
+            /// This is technically not allowed in the DNS wire format, but we tolerate it.
             let description = self.utf8Representation()
             self = try Self.init(domainName: description)
         }
@@ -409,33 +412,6 @@ extension Name {
         /// Move the reader index so maybe next decodings don't get stuck on this, if this is an error by the library
         buffer.moveReaderIndex(to: lastSuccessfulIdx)
         throw ProtocolError.failedToValidate("Name", buffer)
-    }
-
-    enum ASCIICheckResult {
-        case containsOnlyASCII
-        case isASCIIButContainsUppercasedLetters
-        case containsNonASCII
-    }
-
-    func performASCIICheck() -> ASCIICheckResult {
-        self.data.withUnsafeReadableBytes { ptr in
-            var containsUppercased = false
-
-            for idx in ptr.indices {
-                let byte = ptr[idx]
-                /// Based on IDNA, all ASCII characters other than uppercased letters are 'valid'
-                /// Uppercased letters are each 'mapped' to their lowercased equivalent.
-                if byte.isUppercasedASCII {
-                    containsUppercased = true
-                } else if byte.isASCII {
-                    continue
-                } else {
-                    return .containsNonASCII
-                }
-            }
-
-            return containsUppercased ? .isASCIIButContainsUppercasedLetters : .containsOnlyASCII
-        }
     }
 
     private func utf8Representation() -> String {
