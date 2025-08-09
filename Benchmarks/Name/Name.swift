@@ -163,20 +163,20 @@ let benchmarks: @Sendable () -> Void = {
     let name1 = try! Name(domainName: "google.com.")
     let name2 = try! Name(domainName: "google.com.")
     Benchmark(
-        "Equality_Check_Identical_CPU_200M",
+        "Equality_Check_CPU_20M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 100_000_000,
         )
     ) { benchmark in
-        for _ in 0..<200_000_000 {
+        for _ in 0..<20_000_000 {
             blackHole(name1 == name2)
         }
     }
 
     Benchmark(
-        "Equality_Check_Identical_Malloc",
+        "Equality_Check_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
