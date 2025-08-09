@@ -14,16 +14,13 @@ extension UInt8 {
             || self >= latin_atoz_start && self <= latin_atoz_end
     }
 
-    @inlinable
-    var isASCIIAlphanumericNonUppercased: Bool {
-        /// TODO: make sure `ClosedRange.contains` indeed has a negative performance impact.
-        /// If not, just use that.
-        let latin_0to9_start = 0x30
-        let latin_0to9_end = 0x39
-        let latin_atoz_start = 0x61
-        let latin_atoz_end = 0x7A
-        return self >= latin_0to9_start && self <= latin_0to9_end
-            || self >= latin_atoz_start && self <= latin_atoz_end
+    /// Assumes the integer is an ASCII byte, and makes sure it is in lowercase.
+    @usableFromInline
+    func uncheckedUppercaseASCIIToLowercase() -> Self {
+        /// https://ss64.com/ascii.html
+        /// The difference between an upper and lower cased ASCII byte is their sixth bit.
+        /// Turn the sixth bit on to ensure lowercased ASCII byte.
+        self | 0b0010_0000
     }
 
     @inlinable

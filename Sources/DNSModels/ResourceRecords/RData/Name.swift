@@ -284,27 +284,24 @@ extension Name {
             knownLength: knownLength
         )
 
-        var containsUTF8OrUncertainASCII = false
-        self.data.withUnsafeMutableReadableBytes { ptr in
-            for idx in ptr.indices {
-                let byte: UInt8 = ptr[idx]
-                if byte.isUppercasedASCII {
-                    ptr[idx] = byte.uncheckedASCIIToLowercase()
-                    /// TODO: check to see what are the valid ASCII chars based on IDNA so we can short-circuit more
-                } else if byte.isASCIIAlphanumericNonUppercased {
-                    continue
-                } else {
-                    containsUTF8OrUncertainASCII = true
-                    break
+        switch self.performASCIICheck() {
+        case .containsOnlyASCII:
+            break
+        case .isASCIIButContainsUppercasedLetters:
+            /// Normalize to lowercase ASCII
+            self.data.withUnsafeMutableReadableBytes { ptr in
+                for idx in ptr.indices {
+                    let byte = ptr[idx]
+                    if byte.isUppercasedASCII {
+                        ptr[idx] = byte.uncheckedUppercaseASCIIToLowercase()
+                    }
                 }
             }
-        }
-
-        if containsUTF8OrUncertainASCII {
+        case .containsNonASCII:
             /// Attempt to repair the domain name if it was not ASCII.
             /// non-ASCII bytes are technically not allowed in DNS.
             let description = self.utf8Representation()
-            try self.init(domainName: description)
+            self = try Self.init(domainName: description)
         }
     }
 
@@ -412,6 +409,33 @@ extension Name {
         /// Move the reader index so maybe next decodings don't get stuck on this, if this is an error by the library
         buffer.moveReaderIndex(to: lastSuccessfulIdx)
         throw ProtocolError.failedToValidate("Name", buffer)
+    }
+
+    enum ASCIICheckResult {
+        case containsOnlyASCII
+        case isASCIIButContainsUppercasedLetters
+        case containsNonASCII
+    }
+
+    func performASCIICheck() -> ASCIICheckResult {
+        self.data.withUnsafeReadableBytes { ptr in
+            var containsUppercased = false
+
+            for idx in ptr.indices {
+                let byte = ptr[idx]
+                /// Based on IDNA, all ASCII characters other than uppercased letters are 'valid'
+                /// Uppercased letters are each 'mapped' to their lowercased equivalent.
+                if byte.isUppercasedASCII {
+                    containsUppercased = true
+                } else if byte.isASCII {
+                    continue
+                } else {
+                    return .containsNonASCII
+                }
+            }
+
+            return containsUppercased ? .isASCIIButContainsUppercasedLetters : .containsOnlyASCII
+        }
     }
 
     private func utf8Representation() -> String {
