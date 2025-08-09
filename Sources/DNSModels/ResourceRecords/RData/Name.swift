@@ -284,22 +284,27 @@ extension Name {
             knownLength: knownLength
         )
 
-        for idx in self.data.readerIndex..<self.data.writerIndex {
-            let byte = self.data.getInteger(at: idx, as: UInt8.self)!
-            if byte.isUppercasedASCII {
-                self.data.setInteger(
-                    byte.uncheckedASCIIToLowercase(),
-                    at: idx
-                )
-            } else if byte.isASCII {
-                continue
-            } else {
-                /// Attempt to repair the domain name if it was not ASCII.
-                /// non-ASCII bytes are technically not allowed in DNS.
-                let description = self.utf8Representation()
-                try self.init(domainName: description)
-                break
+        var containsUTF8OrUncertainASCII = false
+        self.data.withUnsafeMutableReadableBytes { ptr in
+            for idx in ptr.indices {
+                let byte: UInt8 = ptr[idx]
+                if byte.isUppercasedASCII {
+                    ptr[idx] = byte.uncheckedASCIIToLowercase()
+                    /// TODO: check to see what are the valid ASCII chars based on IDNA so we can short-circuit more
+                } else if byte.isASCIIAlphanumericNonUppercased {
+                    continue
+                } else {
+                    containsUTF8OrUncertainASCII = true
+                    break
+                }
             }
+        }
+
+        if containsUTF8OrUncertainASCII {
+            /// Attempt to repair the domain name if it was not ASCII.
+            /// non-ASCII bytes are technically not allowed in DNS.
+            let description = self.utf8Representation()
+            try self.init(domainName: description)
         }
     }
 
@@ -342,6 +347,7 @@ extension Name {
             }
         }
 
+        /// FIXME: use _buffer
         while let byte = buffer.getInteger(at: idx, as: UInt8.self) {
             lastSuccessfulIdx = idx
             switch byte {

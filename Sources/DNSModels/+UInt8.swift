@@ -15,6 +15,18 @@ extension UInt8 {
     }
 
     @inlinable
+    var isASCIIAlphanumericNonUppercased: Bool {
+        /// TODO: make sure `ClosedRange.contains` indeed has a negative performance impact.
+        /// If not, just use that.
+        let latin_0to9_start = 0x30
+        let latin_0to9_end = 0x39
+        let latin_atoz_start = 0x61
+        let latin_atoz_end = 0x7A
+        return self >= latin_0to9_start && self <= latin_0to9_end
+            || self >= latin_atoz_start && self <= latin_atoz_end
+    }
+
+    @inlinable
     var isASCII: Bool {
         self & 0b1000_0000 == 0
     }

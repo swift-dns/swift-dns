@@ -191,13 +191,14 @@ struct NameTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test func decodeFromBufferContainingOtherBytesAsWellThenTurnBackIntoString() throws {
+    @Test func decodeFromBufferContainingOtherBytesAsWellAsUppercasedThenTurnBackIntoString() throws
+    {
         var buffer = DNSBuffer(bytes: [
             0x01, 0x02, 0x03, 0x04,
 
-            0x07, 0x65, 0x78, 0x61,
+            0x07, 0x45, 0x78, 0x61,
             0x6d, 0x70, 0x6c, 0x65,
-            0x03, 0x63, 0x6f, 0x6d,
+            0x03, 0x63, 0x4f, 0x6d,
             0x00,
 
             0x01, 0x02, 0x03,
