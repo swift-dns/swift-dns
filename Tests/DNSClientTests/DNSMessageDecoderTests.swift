@@ -44,16 +44,16 @@ struct DNSMessageDecoderTests {
         case .identifiableError(let id, let error):
             #expect(id == 8204)
             switch error as? ProtocolError {
-            case .failedToRead(let name, var buffer):
-                #expect(String(describing: name) == "Name.label")
+            case .failedToValidate(let name, var buffer):
+                #expect(String(describing: name) == "Name")
                 /// Preferably whenever possible when decoding fails, the bytes that failed to decode
                 /// should be marked as read already.
                 ///
                 /// The behavior that is happening here might not be the same, but see
                 /// `DNSBuffer.withTruncatedReadableBytes` comments for more details.
-                #expect(buffer.getToEnd().readableBytes == 0)
+                #expect(buffer.getToEnd().readableBytes == 1)
             default:
-                Issue.record("Expected ProtocolError.failedToRead but got \(error)")
+                Issue.record("Expected ProtocolError.failedToValidate but got \(error)")
             }
         case .message(let message):
             Issue.record("Expected identifiable error but got message: \(message)")

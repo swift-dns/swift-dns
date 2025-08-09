@@ -22,12 +22,12 @@ package struct DNSBuffer: Sendable {
     }
 
     @usableFromInline
-    var writerIndex: Int {
+    package var writerIndex: Int {
         self._buffer.writerIndex
     }
 
     @usableFromInline
-    var readableBytes: Int {
+    package var readableBytes: Int {
         self._buffer.readableBytes
     }
 
@@ -169,10 +169,10 @@ package struct DNSBuffer: Sendable {
     @inlinable
     mutating func truncate(length: Int) -> Int? {
         let readableBytes = self._buffer.readableBytes
-        let writerIndex = self._buffer.writerIndex
         guard readableBytes >= length else {
             return nil
         }
+        let writerIndex = self._buffer.writerIndex
         let limitedWriterIndex = writerIndex - (readableBytes - length)
         self._buffer.moveWriterIndex(to: limitedWriterIndex)
         return writerIndex
@@ -227,6 +227,26 @@ package struct DNSBuffer: Sendable {
         self._buffer
     }
 
+    @inlinable
+    public func getInteger<T: FixedWidthInteger>(
+        at index: Int,
+        endianness: Endianness = Endianness.big,
+        as: T.Type = T.self
+    ) -> T? {
+        self._buffer.getInteger(at: index, as: T.self)
+    }
+
+    @discardableResult
+    @inlinable
+    package mutating func writeImmutableBuffer(_ buffer: ByteBuffer) -> Int {
+        self._buffer.writeImmutableBuffer(buffer)
+    }
+
+    @inlinable
+    package func getSlice(at index: Int, length: Int) -> ByteBuffer? {
+        self._buffer.getSlice(at: index, length: length)
+    }
+
     @available(swiftDNSApplePlatforms 26, *)
     package mutating func writeBytes<let elementCount: Int>(
         _ bytes: InlineArray<elementCount, UInt8>
@@ -274,46 +294,6 @@ package struct DNSBuffer: Sendable {
             throw ProtocolError.failedToRead(name, self)
         }
         return buffer
-    }
-
-    package mutating func readLengthPrefixedString<IntegerType: FixedWidthInteger>(
-        name: StaticString,
-        decodeLengthAs _: IntegerType.Type = UInt8.self,
-        into bytes: inout [UInt8],
-        performLengthCheck: (IntegerType, DNSBuffer) throws -> Void
-    ) throws {
-        assert(
-            IntegerType.max <= Int.max,
-            /// ByteBuffer can't fit more than UInt32 bytes anyway.
-            "This function assumes the length will fit into an Int."
-        )
-        guard let length = self.readInteger(as: IntegerType.self) else {
-            throw ProtocolError.failedToRead(name, self)
-        }
-
-        try performLengthCheck(length, self)
-
-        let intLength = Int(length)
-        guard
-            let range = self.rangeWithinReadableBytes(
-                index: self.readerIndex,
-                length: intLength
-            )
-        else {
-            throw ProtocolError.failedToRead(name, self)
-        }
-
-        self._buffer.withUnsafeReadableBytes { ptr in
-            // this is not technically correct because we shouldn't just bind
-            // the memory to `UInt8` but it's not a real issue either and we
-            // need to work around https://bugs.swift.org/browse/SR-9604
-            bytes.append(
-                contentsOf: UnsafeRawBufferPointer(rebasing: ptr[range])
-                    .bindMemory(to: UInt8.self)
-            )
-        }
-
-        self.moveReaderIndex(forwardBy: intLength)
     }
 
     /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035#section-3.3)
