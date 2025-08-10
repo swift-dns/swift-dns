@@ -1,5 +1,6 @@
 import DNSCore
 import DNSModels
+import NIOCore
 import Testing
 
 @Suite
@@ -7,35 +8,35 @@ struct NameTests {
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
-            (name: "*", isFQDN: false, data: [42], borders: [1]),
-            (name: "a", isFQDN: false, data: [97], borders: [1]),
-            (name: "*.b", isFQDN: false, data: [42, 98], borders: [1, 2]),
-            (name: "a.b", isFQDN: false, data: [97, 98], borders: [1, 2]),
-            (name: "*.b.c", isFQDN: false, data: [42, 98, 99], borders: [1, 2, 3]),
-            (name: "a.b.c", isFQDN: false, data: [97, 98, 99], borders: [1, 2, 3]),
-            (name: "a.b.c.", isFQDN: true, data: [97, 98, 99], borders: [1, 2, 3]),
-            (name: #"test\."#, isFQDN: true, data: [116, 101, 115, 116, 92], borders: [5]),
+            (name: "*", isFQDN: false, data: ByteBuffer([1, 42])),
+            (name: "a", isFQDN: false, data: ByteBuffer([1, 97])),
+            (name: "*.b", isFQDN: false, data: ByteBuffer([1, 42, 1, 98])),
+            (name: "a.b", isFQDN: false, data: ByteBuffer([1, 97, 1, 98])),
+            (name: "*.b.c", isFQDN: false, data: ByteBuffer([1, 42, 1, 98, 1, 99])),
+            (name: "a.b.c", isFQDN: false, data: ByteBuffer([1, 97, 1, 98, 1, 99])),
+            (name: "a.b.c.", isFQDN: true, data: ByteBuffer([1, 97, 1, 98, 1, 99])),
+            (name: #"test\."#, isFQDN: true, data: ByteBuffer([5, 116, 101, 115, 116, 92])),
             (
                 name: "Mijia Cloud",
                 isFQDN: false,
-                data: [109, 105, 106, 105, 97, 32, 99, 108, 111, 117, 100],
-                borders: [11]
+                data: ByteBuffer([
+                    11, 109, 105, 106, 105, 97, 32, 99, 108, 111, 117, 100,
+                ])
             ),
             (
                 name: "helloß.co.uk.",
                 isFQDN: true,
-                data: [
-                    120, 110, 45, 45, 104, 101, 108, 108, 111, 45, 112, 113, 97, 99, 111, 117, 107,
-                ],
-                borders: [13, 15, 17]
+                data: ByteBuffer([
+                    13, 120, 110, 45, 45, 104, 101, 108, 108, 111, 45, 112, 113, 97,
+                    2, 99, 111, 2, 117, 107,
+                ])
             ),
         ]
     )
-    func initFromString(name: String, isFQDN: Bool, data: [UInt8], borders: [UInt8]) throws {
+    func initFromString(name: String, isFQDN: Bool, data: ByteBuffer) throws {
         let domainName = try Name(domainName: name)
         #expect(domainName.isFQDN == isFQDN)
         #expect(domainName.data == data)
-        #expect(domainName.borders == borders)
     }
 
     @available(swiftDNSApplePlatforms 26, *)
@@ -190,14 +191,25 @@ struct NameTests {
     }
 
     @available(swiftDNSApplePlatforms 26, *)
-    @Test func decodeFromBufferAndTurnBackIntoString() throws {
+    @Test func decodeFromBufferContainingOtherBytesAsWellAsUppercasedThenTurnBackIntoString() throws
+    {
         var buffer = DNSBuffer(bytes: [
-            0x07, 0x65, 0x78, 0x61,
+            0x01, 0x02, 0x03, 0x04,
+
+            0x07, 0x45, 0x78, 0x61,
             0x6d, 0x70, 0x6c, 0x65,
-            0x03, 0x63, 0x6f, 0x6d,
+            0x03, 0x63, 0x4f, 0x6d,
             0x00,
+
+            0x01, 0x02, 0x03,
         ])
+        /// The first 4 and the last 3 bytes are intentionally not part of the name
+        buffer.moveReaderIndex(forwardBy: 4)
+        let endIndex = buffer.writerIndex
         let name = try Name(from: &buffer)
+        #expect(name.data.readableBytesView.last != 0)
+        #expect(buffer.readerIndex == endIndex - 3)
+        #expect(buffer.readableBytes == 3)
         #expect(
             name.description(format: .unicode, options: .sourceAccurate)
                 == "example.com."
@@ -216,7 +228,11 @@ struct NameTests {
             0xb8, 0xad, 0xe5, 0x9b,
             0xbd, 0x0,
         ])
+        let endIndex = buffer.writerIndex
         let name = try Name(from: &buffer)
+        #expect(name.data.readableBytesView.last != 0)
+        #expect(buffer.readerIndex == endIndex)
+        #expect(buffer.readableBytes == 0)
         #expect(name.description == "新华网.中国")
         #expect(
             name.description(format: .unicode, options: .sourceAccurate)

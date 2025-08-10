@@ -8,10 +8,8 @@ public struct NS: Sendable {
 }
 
 extension NS {
-    /// Expects the whole buffer to be the `NS` record.
-    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer, knownLength: buffer.readableBytes)
+        self.name = try Name(from: &buffer)
     }
 }
 

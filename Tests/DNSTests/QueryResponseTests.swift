@@ -361,8 +361,7 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [112, 107, 105, 103, 111, 111, 103],
-                            borders: [3, 7]
+                            data: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
                         )
                     ),
                     [
@@ -389,8 +388,9 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [99, 111, 109, 111, 100, 111, 99, 97, 99, 111, 109],
-                            borders: [8, 11]
+                            data: ByteBuffer([
+                                8, 99, 111, 109, 111, 100, 111, 99, 97, 3, 99, 111, 109,
+                            ])
                         )
                     ),
                     []
@@ -415,8 +415,7 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [112, 107, 105, 103, 111, 111, 103],
-                            borders: [3, 7]
+                            data: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
                         )
                     ),
                     [
@@ -440,8 +439,9 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [99, 111, 109, 111, 100, 111, 99, 97, 99, 111, 109],
-                            borders: [8, 11]
+                            data: ByteBuffer([
+                                8, 99, 111, 109, 111, 100, 111, 99, 97, 3, 99, 111, 109,
+                            ])
                         )
                     ),
                     []
@@ -456,8 +456,7 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [115, 115, 108, 99, 111, 109],
-                            borders: [3, 6]
+                            data: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
                         )
                     ),
                     []
@@ -472,8 +471,9 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [100, 105, 103, 105, 99, 101, 114, 116, 99, 111, 109],
-                            borders: [8, 11]
+                            data: ByteBuffer([
+                                8, 100, 105, 103, 105, 99, 101, 114, 116, 3, 99, 111, 109,
+                            ])
                         )
                     ),
                     [
@@ -497,8 +497,7 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [115, 115, 108, 99, 111, 109],
-                            borders: [3, 6]
+                            data: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
                         )
                     ),
                     []
@@ -513,10 +512,10 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [
-                                108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 111, 114, 103,
-                            ],
-                            borders: [11, 14]
+                            data: ByteBuffer([
+                                11, 108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 3, 111,
+                                114, 103,
+                            ])
                         )
                     ),
                     []
@@ -533,8 +532,9 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [100, 105, 103, 105, 99, 101, 114, 116, 99, 111, 109],
-                            borders: [8, 11]
+                            data: ByteBuffer([
+                                8, 100, 105, 103, 105, 99, 101, 114, 116, 3, 99, 111, 109,
+                            ])
                         )
                     ),
                     [
@@ -558,10 +558,10 @@ struct QueryResponseTests {
                     Optional(
                         Name(
                             isFQDN: false,
-                            data: [
-                                108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 111, 114, 103,
-                            ],
-                            borders: [11, 14]
+                            data: ByteBuffer([
+                                11, 108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 3, 111,
+                                114, 103,
+                            ])
                         )
                     ),
                     []

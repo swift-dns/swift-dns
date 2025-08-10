@@ -26,13 +26,11 @@ public struct MX: Sendable {
 }
 
 extension MX {
-    /// Expects the whole buffer to be the `MX` record.
-    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
         self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("MX.preference", buffer)
         )
-        self.exchange = try Name(from: &buffer, knownLength: buffer.readableBytes)
+        self.exchange = try Name(from: &buffer)
     }
 }
 

@@ -159,8 +159,7 @@ jobs:
             benchmark thresholds update \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
-            --range \
-            --relative
+            --range
 
       - name: Format threshold files with jq
         if: steps.comparison.outputs.exit-status != '0'
@@ -184,21 +183,22 @@ jobs:
             echo "changes-count=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit threshold changes to a new branch
+      - name: Commit threshold changes to another branch
         if: steps.check-modifications.outputs.has-modifications == 'true'
         id: commit-update
         run: |
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
-          NEW_BRANCH="thresholds-update/${{ github.run_id }}/${CURRENT_BRANCH}"
+          NEW_BRANCH="thr-update/${CURRENT_BRANCH}"
 
           echo "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
 
-          git checkout -b "${NEW_BRANCH}"
+          git checkout -B "${NEW_BRANCH}" "origin/${CURRENT_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
           git commit -m "Update of benchmark thresholds with the deviated baselines
 
           Triggered by: ${RUN_LINK}"
-          git push origin "${NEW_BRANCH}"
+
+          git push -f origin "${NEW_BRANCH}"
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
@@ -229,10 +229,10 @@ jobs:
           if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
             SHORT_SHA="$(echo '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
             COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}"
-            RUN_ID="${{ github.run_id }}"
-            BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${{ steps.commit-update.outputs.new-branch }}"
+            BRANCH_NAME="${{ steps.commit-update.outputs.new-branch }}"
+            BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${BRANCH_NAME}"
             echo '' >> comment.md
-            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to branch [${RUN_ID}](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
+            echo "Pushed commit [${SHORT_SHA}](${COMMIT_LINK}) to branch [${BRANCH_NAME}](${BRANCH_LINK}) containing an update of current thresholds with the deviated baseline." >> comment.md
           fi
 
           echo '<details>' >> comment.md

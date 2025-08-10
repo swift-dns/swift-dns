@@ -55,8 +55,6 @@ public struct NAPTR: Sendable {
 }
 
 extension NAPTR {
-    /// Expects the whole buffer to be the `NAPTR` record.
-    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
         self.order = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("NAPTR.order", buffer)
@@ -67,7 +65,7 @@ extension NAPTR {
         self.flags = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.flags")
         self.services = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.services")
         self.regexp = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.regexp")
-        self.replacement = try Name(from: &buffer, knownLength: buffer.readableBytes)
+        self.replacement = try Name(from: &buffer)
     }
 }
 
