@@ -110,9 +110,7 @@ jobs:
             COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
           fi
 
-          COMMAND="$COMMAND 2>&1 | grep 'Running the command'"
-
-          eval "$COMMAND"
+          eval "$COMMAND" 2>&1 | grep 'Running the command multiple times'
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
