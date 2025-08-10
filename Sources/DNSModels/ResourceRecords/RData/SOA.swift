@@ -71,13 +71,9 @@ public struct SOA: Sendable {
 }
 
 extension SOA {
-    /// Expects the whole buffer to be the `SOA` record.
-    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
         self.mName = try Name(from: &buffer)
-        /// The remaining bytes for the `rName` are the total readable bytes minus the 5 4-byte integers below.
-        let remainingBytesForRName = buffer.readableBytes - 5 * 4
-        self.rName = try Name(from: &buffer, knownLength: remainingBytesForRName)
+        self.rName = try Name(from: &buffer)
         self.serial = try buffer.readInteger(as: UInt32.self).unwrap(
             or: .failedToRead("SOA.serial", buffer)
         )

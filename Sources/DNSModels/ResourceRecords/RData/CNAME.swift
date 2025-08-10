@@ -24,10 +24,8 @@ public struct CNAME: Sendable {
 }
 
 extension CNAME {
-    /// Expects the whole buffer to be the `CNAME` record.
-    /// This is always true when called from `RData.init(from:recordType:)`.
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer, knownLength: buffer.readableBytes)
+        self.name = try Name(from: &buffer)
     }
 }
 

@@ -130,6 +130,7 @@ extension Name: Sequence {
     public struct Iterator: IteratorProtocol {
         public typealias Label = ByteBuffer
 
+        /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
         let name: Name
         var startIndex: Int
 
@@ -289,14 +290,10 @@ extension Name {
 }
 
 extension Name {
-    /// `knownLength` is the length of the name in bytes including the null byte, if known.
-    package init(from buffer: inout DNSBuffer, knownLength: Int? = nil) throws {
+    package init(from buffer: inout DNSBuffer) throws {
         self.init()
 
-        try self.read(
-            from: &buffer,
-            knownLength: knownLength
-        )
+        try self.read(from: &buffer)
 
         let checkResult = self.data.withUnsafeReadableBytes {
             IDNA.performCharacterCheck(dnsWireFormatBytes: $0)
@@ -322,13 +319,8 @@ extension Name {
         }
     }
 
-    /// Reads the domain name from the buffer, replacing it with the current name.
-    /// `knownLength` is the length of the name in bytes including the null byte, if known.
-    /// This is usually useful to use with empty names.
-    package mutating func read(
-        from buffer: inout DNSBuffer,
-        knownLength: Int?
-    ) throws {
+    /// Reads the domain name from the buffer, appending it to the current name.
+    package mutating func read(from buffer: inout DNSBuffer) throws {
         let startIndex = buffer.readerIndex
 
         var lastSuccessfulIdx = startIndex
@@ -399,7 +391,7 @@ extension Name {
                     guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
                         throw ProtocolError.failedToValidate("Name.label.offset", buffer)
                     }
-                    try self.read(from: &buffer, knownLength: nil)
+                    try self.read(from: &buffer)
                     /// Reset the reader index to where we were, +2 for the pointer bytes
                     /// There is no null byte at the end, for pointers
                     buffer.moveReaderIndex(to: idx + 2)
