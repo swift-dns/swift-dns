@@ -159,8 +159,7 @@ jobs:
             benchmark thresholds update \
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
-            --range \
-            --relative
+            --range
 
       - name: Format threshold files with jq
         if: steps.comparison.outputs.exit-status != '0'

@@ -95,8 +95,7 @@ jobs:
             benchmark thresholds update \
             --path "${{ env.THRESHOLDS_PATH }}" \
             --run-count ${{ inputs.run_count }} \
-            --range \
-            --relative"
+            --range"
 
           if [[ -n '${{ inputs.target }}' ]]; then
             COMMAND="$COMMAND --target '${{ inputs.target }}'"
