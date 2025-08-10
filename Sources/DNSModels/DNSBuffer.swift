@@ -228,7 +228,7 @@ package struct DNSBuffer: Sendable {
     }
 
     @inlinable
-    public func getInteger<T: FixedWidthInteger>(
+    package func getInteger<T: FixedWidthInteger>(
         at index: Int,
         endianness: Endianness = Endianness.big,
         as: T.Type = T.self

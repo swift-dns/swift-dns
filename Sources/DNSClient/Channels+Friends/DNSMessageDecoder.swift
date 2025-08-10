@@ -59,6 +59,17 @@ package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
             let id = dnsBuffer.readInteger(as: UInt16.self)!
             dnsBuffer.moveReaderIndex(to: endIndex)
 
+            assert(
+                startIndex != endIndex,
+                """
+                The readerIndex has not changed after a decoding failure.
+                This should never happen and might result in an infinite loop.
+                The header reads must have moved the reader index forward.
+                Buffer dump (max 512 bytes):
+                \(buffer.hexDump(format: .detailed(maxBytes: 512)))
+                """
+            )
+
             return .identifiableError(id: id, error: error)
         }
     }

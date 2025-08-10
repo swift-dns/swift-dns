@@ -41,8 +41,8 @@ public struct Name: Sendable {
     /// Lowercased ASCII bytes only.
     ///
     /// Non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
-    /// will never make it to the stored properties of `Name` such as `data`.
-    /// non-lowercased ASCII names are converted to lowercase ASCII in the initializers.
+    /// must/will never make it to the stored properties of `Name` such as `data`.
+    /// Non-lowercased ASCII names are converted to lowercased ASCII in the initializers.
     /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
     /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
     ///
@@ -71,10 +71,11 @@ public struct Name: Sendable {
     public var labelsCount: Int {
         var containsWildcard = false
         var count = 0
-        for label in self {
+        var iterator = self.makeIterator()
+        while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
             if count == 0,
-                label.readableBytes == 1,
-                label.peekInteger() == UInt8.asciiStar
+                length == 1,
+                self.data.getInteger(at: startIndex, as: UInt8.self) == UInt8.asciiStar
             {
                 containsWildcard = true
             }
@@ -137,7 +138,7 @@ extension Name: Sequence {
             self.startIndex = self.name.data.readerIndex
         }
 
-        public mutating func next() -> Label? {
+        public mutating func nextLabelPositionInNameData() -> (startIndex: Int, length: Int)? {
             if self.startIndex == self.name.data.writerIndex {
                 return nil
             }
@@ -155,16 +156,24 @@ extension Name: Sequence {
                 "Label length 0 means the root label has made it into name.data, which is not allowed"
             )
 
+            defer {
+                /// Move startIndex forward by the length, +1 for the length byte itself
+                self.startIndex += length + 1
+            }
+
+            return (self.startIndex + 1, length)
+        }
+
+        public mutating func next() -> Label? {
+            guard let (startIndex, length) = self.nextLabelPositionInNameData() else {
+                return nil
+            }
+
             /// Such invalid data should never get to here so we consider this safe to force-unwrap
-            let slice = self.name.data.getSlice(
-                at: self.startIndex + 1,
+            return self.name.data.getSlice(
+                at: startIndex,
                 length: length
             )!
-
-            /// Move startIndex forward by the length, +1 for the length byte itself
-            self.startIndex += length + 1
-
-            return slice
         }
     }
 
@@ -220,7 +229,8 @@ extension Name {
     }
 
     @usableFromInline
-    init(expectingASCIIBytes bytes: some Collection<UInt8>, name: StaticString) throws {
+    init(expectingASCIIBytes bytes: some BidirectionalCollection<UInt8>, name: StaticString) throws
+    {
         guard bytes.allSatisfy(\.isASCII) else {
             /// FIXME: throw a better error
             throw ProtocolError.failedToValidate(name, DNSBuffer(bytes: bytes))
@@ -230,47 +240,51 @@ extension Name {
     }
 
     @usableFromInline
-    init(guaranteedASCIIBytes bytes: some Collection<UInt8>) throws {
+    init(guaranteedASCIIBytes bytes: some BidirectionalCollection<UInt8>) throws {
         self.init()
         try Self.from(guaranteedASCIIBytes: bytes, into: &self)
     }
 
     @usableFromInline
     static func from(
-        guaranteedASCIIBytes bytes: some Collection<UInt8>,
+        guaranteedASCIIBytes bytes: some BidirectionalCollection<UInt8>,
         into name: inout Name
     ) throws {
         assert(bytes.allSatisfy(\.isASCII))
 
-        name.data.reserveCapacity(Int(bytes.count))
+        /// Reserve enough bytes for the wire format
+        /// Assumes the
+        let lengthWithoutRootLabel = bytes.last == 0 ? bytes.count - 1 : bytes.count
+
+        if name.encodedLength + lengthWithoutRootLabel > Self.maxLength {
+            throw ProtocolError.lengthLimitExceeded(
+                "Name",
+                actual: lengthWithoutRootLabel + 1,
+                max: Int(Self.maxLength),
+                DNSBuffer(bytes: bytes)
+            )
+        }
+
+        name.data.reserveCapacity(lengthWithoutRootLabel)
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
                 throw ProtocolError.failedToValidate("Name", DNSBuffer(bytes: bytes))
             }
-            try name.extendName(Array(label))
+
+            /// Outside the loop already checked the domain length is good, but still need to check label length
+            if label.count > Self.maxLabelLength {
+                throw ProtocolError.lengthLimitExceeded(
+                    "Name.label",
+                    actual: label.count,
+                    max: Int(Self.maxLabelLength),
+                    DNSBuffer(bytes: bytes)
+                )
+            }
+
+            name.data.writeInteger(UInt8(label.count))
+            name.data.writeBytes(label)
         }
-    }
-
-    /// Extend the name with the offered label, and ensure maximum name length is not exceeded.
-    /// Does not check if the label is not empty. That needs to be checked by the caller.
-    /// In the wire format labels cannot be empty, but in the string format they can, so the caller
-    /// will need to check that.
-    @usableFromInline
-    mutating func extendName(_ label: [UInt8]) throws {
-        let newLength = self.encodedLength + label.count + 1
-
-        if newLength > Self.maxLength {
-            throw ProtocolError.lengthLimitExceeded(
-                "Name.label",
-                actual: newLength,
-                max: Int(Self.maxLength),
-                DNSBuffer(bytes: label)
-            )
-        }
-
-        self.data.writeInteger(UInt8(label.count))
-        self.data.writeBytes(label)
     }
 }
 
@@ -409,7 +423,7 @@ extension Name {
         }
 
         /// Should finish with a null byte, so this is an error
-        /// Move the reader index so maybe next decodings don't get stuck on this, if this is an error by the library
+        /// Move the reader index so maybe next decodings don't get stuck on this
         buffer.moveReaderIndex(to: lastSuccessfulIdx)
         throw ProtocolError.failedToValidate("Name", buffer)
     }
@@ -471,18 +485,29 @@ extension Name {
         options: DescriptionOptions = []
     ) -> String {
         var scalars: [Unicode.Scalar] = []
-        scalars.reserveCapacity(self.encodedLength)
+        let neededCapacity =
+            options.contains(.includeRootLabelIndicator)
+            ? self.encodedLength : self.encodedLength - 1
+        scalars.reserveCapacity(neededCapacity)
 
         var iterator = self.makeIterator()
-        if let firstLabel = iterator.next() {
-            /// FIXME: something better than `readableBytesView`?
-            scalars.append(contentsOf: firstLabel.readableBytesView.map(Unicode.Scalar.init))
+        if let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+            /// These are all ASCII bytes so safe to map directly
+            self.data.withUnsafeReadableBytes { ptr in
+                for idx in startIndex..<(startIndex + length) {
+                    scalars.append(Unicode.Scalar(ptr[idx]))
+                }
+            }
         }
 
-        while let label = iterator.next() {
+        while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
             scalars.append(".")
-            /// FIXME: something better than `readableBytesView`?
-            scalars.append(contentsOf: label.readableBytesView.map(Unicode.Scalar.init))
+            /// These are all ASCII bytes so safe to map directly
+            self.data.withUnsafeReadableBytes { ptr in
+                for idx in startIndex..<(startIndex + length) {
+                    scalars.append(Unicode.Scalar(ptr[idx]))
+                }
+            }
         }
 
         var domainName = String(String.UnicodeScalarView(scalars))
