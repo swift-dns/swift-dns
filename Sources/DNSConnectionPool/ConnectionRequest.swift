@@ -6,18 +6,18 @@ public struct ConnectionRequest<Connection: PooledConnection>: ConnectionRequest
     public var id: ID
 
     @usableFromInline
-    private(set) var continuation: CheckedContinuation<Connection, any Error>
+    private(set) var continuation: CheckedContinuation<ConnectionLease<Connection>, any Error>
 
     @inlinable
     init(
         id: Int,
-        continuation: CheckedContinuation<Connection, any Error>
+        continuation: CheckedContinuation<ConnectionLease<Connection>, any Error>
     ) {
         self.id = id
         self.continuation = continuation
     }
 
-    public func complete(with result: Result<Connection, ConnectionPoolError>) {
+    public func complete(with result: Result<ConnectionLease<Connection>, ConnectionPoolError>) {
         self.continuation.resume(with: result)
     }
 }
@@ -47,7 +47,7 @@ extension ConnectionPool where Request == ConnectionRequest<Connection> {
     }
 
     @inlinable
-    public func leaseConnection() async throws -> Connection {
+    public func leaseConnection() async throws -> ConnectionLease<Connection> {
         let requestID = requestIDGenerator.next()
 
         let connection = try await withTaskCancellationHandler {
@@ -55,7 +55,7 @@ extension ConnectionPool where Request == ConnectionRequest<Connection> {
                 throw CancellationError()
             }
 
-            return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Connection, Error>) in
+            return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ConnectionLease<Connection>, Error>) in
                 let request = Request(
                     id: requestID,
                     continuation: continuation
@@ -72,8 +72,8 @@ extension ConnectionPool where Request == ConnectionRequest<Connection> {
 
     @inlinable
     public func withConnection<Result>(_ closure: (Connection) async throws -> Result) async throws -> Result {
-        let connection = try await self.leaseConnection()
-        defer { self.releaseConnection(connection) }
-        return try await closure(connection)
+        let lease = try await self.leaseConnection()
+        defer { lease.release() }
+        return try await closure(lease.connection)
     }
 }

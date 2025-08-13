@@ -169,14 +169,14 @@ extension TCPDNSClientTransport {
             DNSConnection
         ) async throws -> Message
     ) async throws -> Message {
-        let connection = try await self.leaseConnection()
+        let lease = try await self.leaseConnection()
 
-        defer { self.connectionPool.releaseConnection(connection) }
+        defer { lease.release() }
 
-        return try await operation(factory, options, connection)
+        return try await operation(factory, options, lease.connection)
     }
 
-    func leaseConnection() async throws -> DNSConnection {
+    func leaseConnection() async throws -> ConnectionLease<DNSConnection> {
         if !self.isRunning.load(ordering: .relaxed) {
             self.logger.warning(
                 "Trying to lease connection from `TCPDNSClientTransport`, but `TCPDNSClientTransport.run()` hasn't been called yet from `DNSClient.run()`."
