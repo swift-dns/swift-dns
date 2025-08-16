@@ -31,11 +31,11 @@ A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, reso
 
 ## Platform Requirements
 
-* Requires Swift 6.2.
-* On Apple platforms, requires macOS/iOS 26 etc... as well, _to use_.
-* You can still depend on this library in packages supporting macOS 15 and lower.
-  * But you'll need to guard your usage of this library with `@available` or `#available`.
-  * Example: `@available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)`.
+- Requires Swift 6.2.
+- On Apple platforms, requires macOS/iOS 26 etc... as well, _to use_.
+- You can still depend on this library in packages supporting macOS 15 and lower.
+  - But you'll need to guard your usage of this library with `@available` or `#available`.
+  - Example: `@available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)`.
 
 ## Usage
 
@@ -48,7 +48,11 @@ import DNSModels
 /// Create a `DNSClient`
 let client = try DNSClient(
     transport: .default(
-        serverAddress: .domain(name: "1.1.1.1", port: 53)
+        serverAddress: .domain(
+            /// Connect to Cloudflare's DNS primary server @ 1.1.1.1
+            name: Name(ipAddress: IPv4Address(bytes: [1, 1, 1, 1])),
+            port: 53
+        )
     )
 )
 

@@ -148,7 +148,7 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     }
 
     func makeUDPConnection() async throws -> DNSConnection {
-        let udpConnectionFactory = try ConnectionFactory(
+        let udpConnectionFactory = try DNSConnectionFactory(
             configuration: self.connectionConfiguration,
             serverAddress: serverAddress
         )

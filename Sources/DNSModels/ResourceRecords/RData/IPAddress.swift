@@ -1,6 +1,6 @@
 /// An IP address, either IPv4 or IPv6.
 ///
-/// This enum can contain either an [`Ipv4Addr`] or an [`Ipv6Addr`], see their
+/// This enum can contain either an `IPv4Address` or an `IPv6Address`, see their
 /// respective documentation for more details.
 @available(swiftDNSApplePlatforms 26, *)
 public enum IPAddress: Sendable, Hashable {
@@ -8,6 +8,18 @@ public enum IPAddress: Sendable, Hashable {
     case v4(IPv4Address)
     /// An IPv6 address.
     case v6(IPv6Address)
+}
+
+@available(swiftDNSApplePlatforms 26, *)
+extension IPAddress: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .v4(let ipv4):
+            return ipv4.description
+        case .v6(let ipv6):
+            return ipv6.description
+        }
+    }
 }
 
 /// An IPv4 address.

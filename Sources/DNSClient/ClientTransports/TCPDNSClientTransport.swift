@@ -54,7 +54,7 @@ package actor TCPDNSClientTransport {
         eventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
         logger: Logger = .noopLogger
     ) throws {
-        let tcpConnectionFactory = try ConnectionFactory(
+        let tcpConnectionFactory = try DNSConnectionFactory(
             configuration: configuration.connectionConfiguration,
             serverAddress: serverAddress
         )

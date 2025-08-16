@@ -244,6 +244,33 @@ struct NameTests {
         )
     }
 
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test func ipv4AddressToName() throws {
+        let ipAddress = IPv4Address(bytes: [192, 168, 1, 1])
+        let name1 = Name(ipAddress: ipAddress)
+        let name2 = Name(ipAddress: .v4(ipAddress))
+        #expect(name1.debugDescription == "192.168.1.1")
+        #expect(name2.debugDescription == "192.168.1.1")
+    }
+
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test func ipv6AddressToName() {
+        let ipAddress = IPv6Address(bytes: [
+            0x2a, 0x01,
+            0x5c, 0xc0,
+            0x00, 0x01,
+            0x00, 0x02,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x04,
+        ])
+        let name1 = Name(ipAddress: ipAddress)
+        let name2 = Name(ipAddress: .v6(ipAddress))
+        #expect(name1.debugDescription == "[2a01:5cc0:1:2:0:0:0:4]")
+        #expect(name2.debugDescription == "[2a01:5cc0:1:2:0:0:0:4]")
+    }
+
     /// The file pointing to `Resources.topDomains` contains only 200 top domains, but you can
     /// try bigger files too.
     /// For example you can manually go to cloudflare radar (https://radar.cloudflare.com/domains)
