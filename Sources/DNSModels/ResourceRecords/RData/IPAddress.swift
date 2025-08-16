@@ -2,8 +2,11 @@
 ///
 /// This enum can contain either an `IPv4Address` or an `IPv6Address`, see their
 /// respective documentation for more details.
+///
+/// This enum is marked as indirect to avoid this issue:
+/// https://github.com/swiftlang/swift/issues/83774
 @available(swiftDNSApplePlatforms 26, *)
-public enum IPAddress: Sendable, Hashable {
+public indirect enum IPAddress: Sendable, Hashable {
     /// An IPv4 address.
     case v4(IPv4Address)
     /// An IPv6 address.

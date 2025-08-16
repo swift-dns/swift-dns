@@ -1,6 +1,6 @@
-public import enum NIOCore.SocketAddress
 public import enum DNSModels.IPAddress
 public import struct DNSModels.Name
+public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
 @available(swiftDNSApplePlatforms 26, *)

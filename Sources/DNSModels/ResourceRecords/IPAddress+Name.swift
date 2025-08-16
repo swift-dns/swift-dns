@@ -45,7 +45,6 @@ extension Name {
     }
 
     public init(ipAddress: IPv6Address) {
-        print("2", ipAddress.bytes.indices.map { String(ipAddress.bytes[$0], radix: 16) })
         var buffer = ByteBuffer()
         buffer.reserveCapacity(26)
 

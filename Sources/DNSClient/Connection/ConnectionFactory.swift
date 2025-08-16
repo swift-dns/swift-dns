@@ -1,6 +1,7 @@
 public import Logging
 public import NIOCore
 import NIOPosix
+
 import struct DNSModels.Name
 
 #if canImport(Network)
@@ -13,7 +14,10 @@ package struct DNSConnectionFactory {
     let socketAddress: SocketAddress
     let configuration: DNSConnectionConfiguration
 
-    package init(configuration: DNSConnectionConfiguration, serverAddress: DNSServerAddress) throws {
+    package init(
+        configuration: DNSConnectionConfiguration,
+        serverAddress: DNSServerAddress
+    ) throws {
         self.configuration = configuration
         self.socketAddress = try serverAddress.asSocketAddress()
     }
