@@ -357,6 +357,12 @@ package struct DNSBuffer: Sendable {
             fitLengthInto: fitLengthInto
         )
     }
+
+    package mutating func withUnsafeReadableBytes<T>(
+        _ body: (UnsafeRawBufferPointer) throws -> T
+    ) rethrows -> T {
+        try self._buffer.withUnsafeReadableBytes(body)
+    }
 }
 
 extension DNSBuffer {

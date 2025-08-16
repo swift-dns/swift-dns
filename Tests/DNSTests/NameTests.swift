@@ -246,7 +246,7 @@ struct NameTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test func ipv4AddressToName() throws {
-        let ipAddress = IPv4Address(bytes: [192, 168, 1, 1])
+        let ipAddress = IPv4Address(192, 168, 1, 1)
         let name1 = Name(ipAddress: ipAddress)
         let name2 = Name(ipAddress: .v4(ipAddress))
         #expect(name1.debugDescription == "192.168.1.1")
@@ -255,7 +255,7 @@ struct NameTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test func ipv6AddressToName() {
-        let ipAddress = IPv6Address(bytes: [
+        let ipAddress = IPv6Address(
             0x2a, 0x01,
             0x5c, 0xc0,
             0x00, 0x01,
@@ -264,7 +264,7 @@ struct NameTests {
             0x00, 0x00,
             0x00, 0x00,
             0x00, 0x04,
-        ])
+        )
         let name1 = Name(ipAddress: ipAddress)
         let name2 = Name(ipAddress: .v6(ipAddress))
         #expect(name1.debugDescription == "[2a01:5cc0:1:2:0:0:0:4]")

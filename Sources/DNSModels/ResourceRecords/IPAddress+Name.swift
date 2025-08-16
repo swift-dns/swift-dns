@@ -16,8 +16,11 @@ extension Name {
         var buffer = ByteBuffer()
         buffer.reserveCapacity(8)
 
-        for idx in ipAddress.bytes.indices {
-            let string = String(ipAddress.bytes[idx])
+        for idx in 0..<4 {
+            let shift = 8 &* (3 &- idx)
+            let shifted = ipAddress.address &>> shift
+            let byte = UInt8(truncatingIfNeeded: shifted)
+            let string = String(byte)
 
             let lengthPrefixIndex = buffer.writerIndex
             buffer.writeInteger(.zero, as: UInt8.self)
@@ -60,10 +63,11 @@ extension Name {
 
         /// TODO: This should write the compact form of the ipv6, not the full form.
         /// e.g. `[2a01:5cc0:1:2::4]`, not `[2a01:5cc0:1:2:0:0:0:4]`
-        for idx in 0..<(IPv6Address.size / 2) {
+        for idx in 0..<8 {
             let doubledIdx = idx * 2
-            let combined =
-                UInt16(ipAddress.bytes[doubledIdx]) << 8 | UInt16(ipAddress.bytes[doubledIdx + 1])
+            let shift = 8 &* (14 &- doubledIdx)
+            let shifted = ipAddress.address &>> shift
+            let combined = UInt16(truncatingIfNeeded: shifted)
 
             /// TODO: Optimize writing the integers as strings, should not need to allocate a
             /// whole string. Can do manual hexadecimal conversions.

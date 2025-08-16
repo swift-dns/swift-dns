@@ -64,16 +64,7 @@ struct IntegrationTests {
             let ipv4s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv4s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// The 'additional' was an EDNS
             #expect(response.additionals.count == 0)
@@ -145,16 +136,7 @@ struct IntegrationTests {
             let ipv4s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv4s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// response.additionals.count is whatever
 
@@ -225,16 +207,7 @@ struct IntegrationTests {
             let ipv6s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv6s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv6s.allSatisfy { $0.address != 0 })
 
             /// The 'additional' was an EDNS
             #expect(response.additionals.count == 0)
@@ -913,7 +886,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -933,7 +906,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -1007,7 +980,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
@@ -1026,7 +999,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -1109,7 +1082,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -1124,7 +1097,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(bytes: [8, 8, 4, 4])),
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(

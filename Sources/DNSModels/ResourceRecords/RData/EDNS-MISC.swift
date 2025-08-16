@@ -399,30 +399,18 @@ extension EDNSOption.ClientSubnet {
 
         switch self.address {
         case .v4(let address):
-            guard addressLength <= IPv4Address.size else {
-                throw ProtocolError.failedToValidate(
-                    "EDNSOption.ClientSubnet.v4.addressLength",
-                    buffer
-                )
-            }
             buffer.writeInteger(1 as UInt8)  // family
             buffer.writeInteger(self.sourcePrefix)
             buffer.writeInteger(self.scopePrefix)
-            address.encode(
+            try address.encode(
                 into: &buffer,
                 addressLength: numericCast(addressLength)
             )
         case .v6(let address):
-            guard addressLength <= IPv6Address.size else {
-                throw ProtocolError.failedToValidate(
-                    "EDNSOption.ClientSubnet.v6.addressLength",
-                    buffer
-                )
-            }
             buffer.writeInteger(2 as UInt8)  // family
             buffer.writeInteger(self.sourcePrefix)
             buffer.writeInteger(self.scopePrefix)
-            address.encode(
+            try address.encode(
                 into: &buffer,
                 addressLength: numericCast(addressLength)
             )

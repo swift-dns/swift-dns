@@ -50,7 +50,7 @@ let client = try DNSClient(
     transport: .default(
         serverAddress: .domain(
             /// Connect to Cloudflare's DNS primary server @ 1.1.1.1
-            name: Name(ipAddress: IPv4Address(bytes: [1, 1, 1, 1])),
+            name: Name(ipAddress: IPv4Address(1, 1, 1, 1)),
             port: 53
         )
     )
@@ -91,7 +91,10 @@ Currently a TCP-only transport is also supported:
 /// Create a `DNSClient` with the TCP transport
 let client = try DNSClient(
     transport: .tcp(
-        serverAddress: .domain(name: "1.1.1.1", port: 53)
+        serverAddress: .domain(
+            name: Name(ipAddress: IPv4Address(1, 1, 1, 1)),
+            port: 53
+        )
     )
 )
 ```

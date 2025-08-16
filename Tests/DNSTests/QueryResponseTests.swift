@@ -102,12 +102,12 @@ struct QueryResponseTests {
             }
         }
         let expectedIPv4s = [
-            IPv4Address(bytes: [23, 215, 0, 136]),
-            IPv4Address(bytes: [96, 7, 128, 198]),
-            IPv4Address(bytes: [23, 192, 228, 80]),
-            IPv4Address(bytes: [23, 215, 0, 138]),
-            IPv4Address(bytes: [23, 192, 228, 84]),
-            IPv4Address(bytes: [96, 7, 128, 175]),
+            IPv4Address(23, 215, 0, 136),
+            IPv4Address(96, 7, 128, 198),
+            IPv4Address(23, 192, 228, 80),
+            IPv4Address(23, 215, 0, 138),
+            IPv4Address(23, 192, 228, 84),
+            IPv4Address(96, 7, 128, 175),
         ]
         #expect(ipv4s == expectedIPv4s)
 
@@ -226,18 +226,18 @@ struct QueryResponseTests {
             }
         }
         let expectedIPv6s = [
-            IPv6Address(bytes: [
+            IPv6Address(
                 0x26, 0x06, 0x47, 0,
                 0, 0, 0, 0,
                 0, 0, 0, 0,
                 0x68, 0x10, 0x84, 0xe5,
-            ]),
-            IPv6Address(bytes: [
+            ),
+            IPv6Address(
                 0x26, 0x06, 0x47, 0,
                 0, 0, 0, 0,
                 0, 0, 0, 0,
                 0x68, 0x10, 0x85, 0xe5,
-            ]),
+            ),
         ]
         #expect(ipv6s == expectedIPv6s)
 
