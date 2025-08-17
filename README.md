@@ -57,6 +57,7 @@ let client = try DNSClient(
 )
 
 try await withThrowingTaskGroup(of: Void.self) { taskGroup in
+    /// Use `addImmediateTask` instead of `addTask` on macOS 26 or Linux.
     taskGroup.addTask {
         try await client.run()  /// !important
     }
