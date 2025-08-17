@@ -1,7 +1,10 @@
+public import struct DNSModels.DNSBuffer
 public import struct DNSModels.DNSRequestOptions
 public import struct DNSModels.Message
 public import struct DNSModels.MessageFactory
 public import typealias DNSModels.RDataConvertible
+public import struct NIOCore.ByteBuffer
+public import struct NIOCore.ByteBufferAllocator
 public import struct NIOCore.NIODeadline
 
 @available(swiftDNSApplePlatforms 15, *)
@@ -14,15 +17,30 @@ package struct QueryProducer: ~Copyable {
     }
 
     @usableFromInline
-    package mutating func produceMessage(
+    package mutating func produceDNSMessage(
         message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions
-    ) throws(MessageIDGenerator.Errors) -> ProducedMessage {
+    ) throws -> Message {
         let requestID = try self.messageIDGenerator.next()
         factory.apply(options: options)
         factory.apply(requestID: requestID)
-        let message = factory.takeMessage()
-        return ProducedMessage(message: message)
+        return factory.takeMessage()
+    }
+
+    @usableFromInline
+    package mutating func produceMessage(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions,
+        allocator: ByteBufferAllocator
+    ) throws -> ProducedMessage {
+        let message = try self.produceDNSMessage(
+            message: factory,
+            options: options
+        )
+        return try ProducedMessage(
+            message: message,
+            allocator: allocator
+        )
     }
 
     @usableFromInline
@@ -49,11 +67,18 @@ package struct QueryProducer: ~Copyable {
 @usableFromInline
 package struct ProducedMessage {
     @usableFromInline
-    package let message: Message
+    package let buffer: DNSBuffer
+    @usableFromInline
+    package let messageID: UInt16
 
     @usableFromInline
-    package init(message: Message) {
-        self.message = message
+    package init(message: Message, allocator: ByteBufferAllocator) throws {
+        self.messageID = message.header.id
+        var buffer = DNSBuffer(
+            buffer: allocator.buffer(capacity: 512)
+        )
+        try message.encode(into: &buffer)
+        self.buffer = buffer
     }
 
     @usableFromInline
@@ -63,7 +88,7 @@ package struct ProducedMessage {
     ) -> PendingQuery {
         PendingQuery(
             __promise: promise,
-            requestID: self.message.header.id,
+            requestID: self.messageID,
             deadline: deadline
         )
     }

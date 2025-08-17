@@ -66,13 +66,15 @@ public final actor DNSConnection: Sendable {
     @inlinable
     func send(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions
+        options: DNSRequestOptions,
+        allocator: ByteBufferAllocator
     ) async throws -> Message {
         let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
-            options: options
+            options: options,
+            allocator: allocator
         )
-        let requestID = producedMessage.message.header.id
+        let requestID = producedMessage.messageID
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
                 throw DNSClientError.cancelled

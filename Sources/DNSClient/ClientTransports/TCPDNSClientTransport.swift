@@ -3,6 +3,7 @@ public import Synchronization
 public import _DNSConnectionPool
 
 package import struct Logging.Logger
+package import struct NIOCore.ByteBufferAllocator
 package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
@@ -45,6 +46,7 @@ package actor TCPDNSClientTransport {
     let eventLoopGroup: any EventLoopGroup
     let logger: Logger
 
+    let allocator: ByteBufferAllocator
     @usableFromInline
     let isRunning: Atomic<Bool>
 
@@ -82,6 +84,7 @@ package actor TCPDNSClientTransport {
         }
         self.eventLoopGroup = eventLoopGroup
         self.logger = logger
+        self.allocator = ByteBufferAllocator()
         self.isRunning = Atomic(false)
     }
 
@@ -148,7 +151,8 @@ extension TCPDNSClientTransport {
     ) async throws -> Message {
         try await connection.send(
             message: factory,
-            options: options
+            options: options,
+            allocator: self.allocator
         )
     }
 

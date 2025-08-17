@@ -351,7 +351,9 @@ extension DNSBuffer {
 }
 
 extension ByteBuffer {
-    package init(dnsBuffer: DNSBuffer) {
+    /// consuming doesn't do much here but that's what I expect (that the DNSBuffer is
+    /// no longer touched after getting the underlying ByteBuffer)
+    package init(dnsBuffer: consuming DNSBuffer) {
         self = dnsBuffer._buffer
     }
 }
