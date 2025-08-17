@@ -1,5 +1,5 @@
 {
-  "originHash" : "7380d116c2f48d34ae3815c7148950b439acb5d2f7b7bc094101ae1de4f985f5",
+  "originHash" : "bf4809c303acca1a821915a9c62c8bc805aede45521ff40be52be816eafee66e",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/MahdiBM/package-benchmark.git",
       "state" : {
         "branch" : "mmbm-range-relative-thresholds-options",
-        "revision" : "1dabba7cd0be1307ec9b4db7805d26602e6d9a95"
+        "revision" : "75ac53b9aad1ed26aeae7d0d8f9f08880183d62c"
       }
     },
     {
