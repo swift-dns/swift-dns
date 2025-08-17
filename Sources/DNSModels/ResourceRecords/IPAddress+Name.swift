@@ -16,33 +16,33 @@ extension Name {
         var buffer = ByteBuffer()
         buffer.reserveCapacity(8)
 
-        for idx in 0..<4 {
-            let shift = 8 &* (3 &- idx)
-            let shifted = ipAddress.address &>> shift
-            let byte = UInt8(truncatingIfNeeded: shifted)
-            let string = String(byte)
+        let lengthPrefixIndex = buffer.writerIndex
+        buffer.writeInteger(.zero, as: UInt8.self)
 
-            let lengthPrefixIndex = buffer.writerIndex
-            buffer.writeInteger(.zero, as: UInt8.self)
+        let startWriterIndex = buffer.writerIndex
 
-            let startWriterIndex = buffer.writerIndex
+        /// TODO: Optimize writing the integers as strings, should not need to allocate a
+        /// whole string. Can do manual decimal conversions.
+        let bytes = ipAddress.bytes
+        buffer.writeString(String(bytes.0))
+        buffer.writeInteger(UInt8.asciiDot)
+        buffer.writeString(String(bytes.1))
+        buffer.writeInteger(UInt8.asciiDot)
+        buffer.writeString(String(bytes.2))
+        buffer.writeInteger(UInt8.asciiDot)
+        buffer.writeString(String(bytes.3))
 
-            /// TODO: Optimize writing the integers as strings, should not need to allocate a
-            /// whole string. Can do manual decimal conversions.
-            buffer.writeString(string)
+        let endWriterIndex = buffer.writerIndex
+        let bytesWritten = endWriterIndex - startWriterIndex
 
-            let endWriterIndex = buffer.writerIndex
-            let bytesWritten = endWriterIndex - startWriterIndex
+        /// This is safe to unwrap. The implementation above cannot more bytes than a UInt8 can represent.
+        let lengthPrefix = UInt8(exactly: bytesWritten).unsafelyUnwrapped
 
-            /// This is safe to unwrap. The implementation above cannot more bytes than a UInt8 can represent.
-            let lengthPrefix = UInt8(exactly: bytesWritten).unsafelyUnwrapped
-
-            buffer.setInteger(
-                lengthPrefix,
-                at: lengthPrefixIndex,
-                as: UInt8.self
-            )
-        }
+        buffer.setInteger(
+            lengthPrefix,
+            at: lengthPrefixIndex,
+            as: UInt8.self
+        )
 
         self.init(isFQDN: false, data: buffer)
     }
@@ -59,28 +59,34 @@ extension Name {
 
         let startWriterIndex = buffer.writerIndex
 
-        buffer.writeInteger(UInt8.asciiOpeningSquareBracket)
+        func add(_ bytePair: UInt16) {
+            /// TODO: Optimize writing the integers as strings, should not need to allocate a
+            /// whole string. Can do manual hexadecimal conversions.
+            buffer.writeString(
+                String(bytePair, radix: 16, uppercase: false)
+            )
+        }
 
         /// TODO: This should write the compact form of the ipv6, not the full form.
         /// e.g. `[2a01:5cc0:1:2::4]`, not `[2a01:5cc0:1:2:0:0:0:4]`
-        for idx in 0..<8 {
-            let doubledIdx = idx * 2
-            let shift = 8 &* (14 &- doubledIdx)
-            let shifted = ipAddress.address &>> shift
-            let combined = UInt16(truncatingIfNeeded: shifted)
+        let bytePairs = ipAddress.bytePairs
 
-            /// TODO: Optimize writing the integers as strings, should not need to allocate a
-            /// whole string. Can do manual hexadecimal conversions.
-            let string = String(combined, radix: 16, uppercase: false)
-
-            /// This is safe to unwrap. No integer is larger than 255 characters in hexadecimal.
-            buffer.writeString(string)
-
-            if idx < 7 {
-                buffer.writeInteger(UInt8.asciiColon)
-            }
-        }
-
+        buffer.writeInteger(UInt8.asciiOpeningSquareBracket)
+        add(bytePairs.0)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.1)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.2)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.3)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.4)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.5)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.6)
+        buffer.writeInteger(UInt8.asciiColon)
+        add(bytePairs.7)
         buffer.writeInteger(UInt8.asciiClosingSquareBracket)
 
         let endWriterIndex = buffer.writerIndex

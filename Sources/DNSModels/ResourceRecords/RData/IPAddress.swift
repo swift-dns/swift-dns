@@ -60,16 +60,29 @@ public struct IPv4Address: Sendable, Hashable {
     }
 }
 
+extension IPv4Address {
+    public var bytes: (UInt8, UInt8, UInt8, UInt8) {
+        withUnsafeBytes(of: self.address) { ptr in
+            (ptr[3], ptr[2], ptr[1], ptr[0])
+        }
+    }
+}
+
 extension IPv4Address: CustomStringConvertible {
     public var description: String {
         var result: String = ""
         /// TODO: Smarter reserving capacity
         result.reserveCapacity(7)
         withUnsafeBytes(of: self.address) {
-            for idx in 0..<4 {
-                if idx > 0 {
-                    result.append(".")
-                }
+            let range = 0..<4
+            var iterator = range.makeIterator()
+
+            let first = iterator.next().unsafelyUnwrapped
+            /// TODO: This can be optimized to not have to convert to a string
+            result.append(String($0[first]))
+
+            while let idx = iterator.next() {
+                result.append(".")
                 /// TODO: This can be optimized to not have to convert to a string
                 result.append(String($0[idx]))
             }
@@ -107,7 +120,8 @@ extension IPv4Address {
                 case true:
                     let byte = ptr[idx]
                     /// All these unchecked operations are safe because idx is always in 0..<4
-                    self.address |= UInt32(byte) &<< (8 &* (3 &- idx))
+                    let shift = 8 &* (3 &- idx)
+                    self.address |= UInt32(byte) &<< shift
                 case false:
                     break
                 }
@@ -135,8 +149,7 @@ extension IPv4Address {
             /// All these unchecked operations are safe because idx is always in 0..<4
             let shift = 8 &* (3 &- idx)
             let shifted = self.address &>> shift
-            let masked = shifted & 0xFF
-            let byte = UInt8(exactly: masked).unsafelyUnwrapped
+            let byte = UInt8(truncatingIfNeeded: shifted)
             buffer.writeInteger(byte)
         }
     }
@@ -285,6 +298,42 @@ public struct IPv6Address: Sendable, Hashable {
             self.address
             | (UInt128(_15) &<< 8)
             | UInt128(_16)
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPv6Address {
+    public var bytes:
+        (
+            UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+            UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+        )
+    {
+        withUnsafeBytes(of: self.address) { ptr in
+            (
+                ptr[15], ptr[14], ptr[13], ptr[12], ptr[11], ptr[10], ptr[9], ptr[8],
+                ptr[7], ptr[6], ptr[5], ptr[4], ptr[3], ptr[2], ptr[1], ptr[0]
+            )
+        }
+    }
+
+    public var bytePairs:
+        (
+            UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16
+        )
+    {
+        withUnsafeBytes(of: self.address) { ptr in
+            (
+                UInt16(ptr[15]) << 8 | UInt16(ptr[14]),
+                UInt16(ptr[13]) << 8 | UInt16(ptr[12]),
+                UInt16(ptr[11]) << 8 | UInt16(ptr[10]),
+                UInt16(ptr[9]) << 8 | UInt16(ptr[8]),
+                UInt16(ptr[7]) << 8 | UInt16(ptr[6]),
+                UInt16(ptr[5]) << 8 | UInt16(ptr[4]),
+                UInt16(ptr[3]) << 8 | UInt16(ptr[2]),
+                UInt16(ptr[1]) << 8 | UInt16(ptr[0])
+            )
+        }
     }
 }
 
