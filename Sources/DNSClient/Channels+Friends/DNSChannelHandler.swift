@@ -4,11 +4,11 @@ import DequeModule
 import Logging
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 private let channelHandlerIDGenerator = IncrementalIDGenerator()
 
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-@available(swiftDNSApplePlatforms 26, *)
 package final class DNSChannelHandler: ChannelDuplexHandler {
 
     struct DeadlineSchedule: NIOScheduledCallbackHandler {
@@ -82,7 +82,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
     @usableFromInline
     func write(
@@ -191,7 +191,7 @@ extension DNSChannelHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
     @usableFromInline
     package func handlerRemoved(context: ChannelHandlerContext) {

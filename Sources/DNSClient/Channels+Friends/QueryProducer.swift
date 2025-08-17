@@ -4,8 +4,8 @@ public import struct DNSModels.MessageFactory
 public import typealias DNSModels.RDataConvertible
 public import struct NIOCore.NIODeadline
 
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-@available(swiftDNSApplePlatforms 26, *)
 package struct QueryProducer: ~Copyable {
     private var messageIDGenerator: MessageIDGenerator
 
@@ -45,7 +45,7 @@ package struct QueryProducer: ~Copyable {
 }
 
 /// A message with a handle to create a PendingQuery from it.
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
 package struct ProducedMessage {
     @usableFromInline

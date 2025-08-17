@@ -35,7 +35,7 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 }
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -137,7 +137,7 @@ package actor TCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension TCPDNSClientTransport {
     @usableFromInline
     func query(

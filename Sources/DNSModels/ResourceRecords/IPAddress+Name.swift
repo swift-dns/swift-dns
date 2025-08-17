@@ -1,7 +1,7 @@
 import NIOCore
 
 /// FIXME: add tests for dot in name string
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension Name {
     public init(ipAddress: IPAddress) {
         switch ipAddress {

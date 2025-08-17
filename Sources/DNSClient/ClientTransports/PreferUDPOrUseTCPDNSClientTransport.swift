@@ -10,7 +10,7 @@ import ServiceLifecycle
 #endif
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -83,7 +83,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(

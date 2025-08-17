@@ -48,7 +48,7 @@ extension CDS {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension CDS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -65,7 +65,7 @@ extension CDS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension CDS: Queryable {
     @inlinable
     public static var recordType: RecordType { .CDS }

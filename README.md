@@ -32,10 +32,10 @@ A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, reso
 ## Platform Requirements
 
 - Requires Swift 6.2.
-- On Apple platforms, requires macOS/iOS 26 etc... as well, _to use_.
-- You can still depend on this library in packages supporting macOS 15 and lower.
+- On Apple platforms, requires macOS 15, iOS 18 etc... as well, _to use_.
+- You can still depend on this library in packages supporting macOS 14 and lower.
   - But you'll need to guard your usage of this library with `@available` or `#available`.
-  - Example: `@available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)`.
+  - Example: `@available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 1, *)`.
 
 ## Usage
 
@@ -57,8 +57,8 @@ let client = try DNSClient(
 )
 
 try await withThrowingTaskGroup(of: Void.self) { taskGroup in
-    taskGroup.addImmediateTask {
-        await client.run()  /// !important
+    taskGroup.addTask {
+        try await client.run()  /// !important
     }
 
     /// You can use the client while the `client.run()` method is not cancelled.

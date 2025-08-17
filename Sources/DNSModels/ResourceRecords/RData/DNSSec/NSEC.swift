@@ -47,7 +47,7 @@ extension NSEC {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension NSEC: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -64,7 +64,7 @@ extension NSEC: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension NSEC: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC }

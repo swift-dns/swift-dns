@@ -5,7 +5,7 @@ import Testing
 
 @Suite
 struct DNSMessageDecoderTests {
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func decodesDNSMessage() throws {
         let decoder = DNSMessageDecoder()
         let resource = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket
@@ -21,7 +21,7 @@ struct DNSMessageDecoderTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func decodingBufferWithLessThan12BytesReturnsNil() {
         let decoder = DNSMessageDecoder()
         var buffer = ByteBuffer()
@@ -30,7 +30,7 @@ struct DNSMessageDecoderTests {
         #expect(result == nil)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func throwsIdentifiableErrorWhenDecodingFailsAndReturnsEmptyBuffer() throws {
         let decoder = DNSMessageDecoder()
         let resource = Resources.dnsResponseCERTForDnsCertTestingMahdibmComPacket

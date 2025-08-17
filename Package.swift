@@ -103,9 +103,6 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("StrictMemorySafety"),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
-        ),
-        .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 15:macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2"
         ),
         .enableExperimentalFeature(

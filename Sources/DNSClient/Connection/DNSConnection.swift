@@ -10,7 +10,7 @@ import NIOTransportServices
 #endif
 
 /// Single connection to a DNS server
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 public final actor DNSConnection: Sendable {
     nonisolated public let unownedExecutor: UnownedSerialExecutor
 
