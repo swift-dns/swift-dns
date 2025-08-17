@@ -69,6 +69,8 @@ public final actor DNSConnection: Sendable {
         options: DNSRequestOptions,
         allocator: ByteBufferAllocator
     ) async throws -> Message {
+        try self.channelHandler.preflightCheck()
+
         let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
             options: options,

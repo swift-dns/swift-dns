@@ -3,7 +3,6 @@ public enum DNSClientError: Error {
     case cancelled
     case connectionClosing
     case connectionClosed
-    case unsolicitedResponse
     case queryTimeout
     case connectionClosedDueToCancellation
     case handlerRemoved
@@ -17,6 +16,31 @@ public enum DNSClientError: Error {
             return true
         default:
             return false
+        }
+    }
+}
+
+extension DNSClientError: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .cancelled:
+            return "cancelled"
+        case .connectionClosing:
+            return "connectionClosing"
+        case .connectionClosed:
+            return "connectionClosed"
+        case .queryTimeout:
+            return "queryTimeout"
+        case .connectionClosedDueToCancellation:
+            return "connectionClosedDueToCancellation"
+        case .handlerRemoved:
+            return "handlerRemoved"
+        case .channelInactive:
+            return "channelInactive"
+        case .decodingError(let error):
+            return "decodingError(\(String(reflecting: error)))"
+        case .encodingError(let error):
+            return "encodingError(\(String(reflecting: error)))"
         }
     }
 }

@@ -101,6 +101,24 @@ extension DNSChannelHandler {
             }
         }
 
+        /// A send-query preflight check to see if it's needed to process the query at all or not
+        package mutating func preflightCheck() throws {
+            switch consume self._state {
+            case .initialized:
+                preconditionFailure("Cannot have intention of sending a query when initialized")
+            case .processing(let state):
+                if state.isClosing {
+                    self = .processing(state)
+                    throw DNSClientError.connectionClosing
+                } else {
+                    self = .processing(state)
+                }
+            case .closed(let error):
+                self = .closed(error)
+                throw DNSClientError.connectionClosed
+            }
+        }
+
         @usableFromInline
         package enum SendQueryAction {
             case sendQuery(Context, DeadlineCallbackAction)

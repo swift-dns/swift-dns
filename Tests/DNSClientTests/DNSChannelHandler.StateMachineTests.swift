@@ -55,6 +55,87 @@ struct DNSChannelHandlerStateMachineTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
+    @Test func preflightCheckThrowsDoesNothingWhenProcessing() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+
+        #expect(throws: Never.self) {
+            try stateMachine.preflightCheck()
+        }
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func preflightCheckThrowsErrorWhenClosing() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+        var queryProducer = QueryProducer()
+        let (_, pendingQuery) = queryProducer.produceFakeMessageAndPendingQuery()
+
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+
+        let action1 = stateMachine.sendQuery(pendingQuery)
+        #expect(action1 == .sendQuery("context!", .reschedule(pendingQuery.deadline)))
+
+        let action2 = stateMachine.gracefulShutdown()
+        #expect(action2 == .waitForPendingQueries("context!"))
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
+        )
+
+        #expect(throws: DNSClientError.connectionClosing) {
+            try stateMachine.preflightCheck()
+        }
+        expect(
+            stateMachine._state
+                == State.processing(
+                    .__for_testing(
+                        context: "context!",
+                        isClosing: true,
+                        pendingQueries: [pendingQuery]
+                    )
+                )
+        )
+
+        queryProducer.fullfilQuery(
+            pendingQuery: pendingQuery,
+            with: DNSClientError.connectionClosed
+        )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func preflightCheckThrowsErrorWhenClosed() {
+        typealias StateMachine = DNSChannelHandler.StateMachine<String>
+        typealias State = StateMachine.State
+        var stateMachine = StateMachine()
+
+        stateMachine.setProcessing(context: "context!")
+        expect(stateMachine._state == State.processing(.init(context: "context!")))
+
+        let action2 = stateMachine.gracefulShutdown()
+        #expect(action2 == .closeConnection("context!"))
+        expect(stateMachine._state == State.closed(nil))
+
+        #expect(throws: DNSClientError.connectionClosed) {
+            try stateMachine.preflightCheck()
+        }
+        expect(stateMachine._state == State.closed(nil))
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func sendQueryAndReceivedResponseWorks() {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -1471,6 +1552,13 @@ where Context: Equatable {
         default:
             return false
         }
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension DNSClientError: Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.description == rhs.description
     }
 }
 

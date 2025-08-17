@@ -85,6 +85,11 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
 @available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
     @usableFromInline
+    func preflightCheck() throws {
+        try self.stateMachine.preflightCheck()
+    }
+
+    @usableFromInline
     func write(
         producedMessage: consuming ProducedMessage,
         promise: PendingQuery.DynamicPromise<Message>
