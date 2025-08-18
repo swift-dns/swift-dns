@@ -194,9 +194,9 @@ jobs:
 
           git checkout -B "${NEW_BRANCH}" "origin/${CURRENT_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
-          git commit -m "Update of benchmark thresholds with the deviated baselines
+          git commit -m "Update of benchmark thresholds with the deviated baseline
 
-          Triggered by: ${RUN_LINK}"
+          Committed by: ${RUN_LINK}"
 
           git push -f origin "${NEW_BRANCH}"
 

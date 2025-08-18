@@ -73,7 +73,7 @@ jobs:
           git add .
           git commit -m "Formatting update
 
-          Triggered by: ${RUN_LINK}"
+          Committed by: ${RUN_LINK}"
           git push origin "${NEW_BRANCH}"
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
