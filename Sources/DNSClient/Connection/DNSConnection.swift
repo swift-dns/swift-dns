@@ -12,7 +12,12 @@ import NIOTransportServices
 /// Single connection to a DNS server
 @available(swiftDNSApplePlatforms 15, *)
 public final actor DNSConnection: Sendable {
-    nonisolated public let unownedExecutor: UnownedSerialExecutor
+    @usableFromInline
+    let executor: any SerialExecutor
+    @inlinable
+    nonisolated public var unownedExecutor: UnownedSerialExecutor {
+        self.executor.asUnownedSerialExecutor()
+    }
 
     /// Connection ID, used by connection pool
     public let id: ID
@@ -36,7 +41,7 @@ public final actor DNSConnection: Sendable {
         configuration: DNSConnectionConfiguration,
         logger: Logger
     ) {
-        self.unownedExecutor = channel.eventLoop.executor.asUnownedSerialExecutor()
+        self.executor = channel.eventLoop.executor
         self.channel = channel
         self.channelHandler = channelHandler
         self.configuration = configuration
