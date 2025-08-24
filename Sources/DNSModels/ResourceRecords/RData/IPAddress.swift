@@ -2,11 +2,8 @@
 ///
 /// This enum can contain either an `IPv4Address` or an `IPv6Address`, see their
 /// respective documentation for more details.
-///
-/// This enum is marked as indirect to avoid this issue:
-/// https://github.com/swiftlang/swift/issues/83774
 @available(swiftDNSApplePlatforms 15, *)
-public indirect enum IPAddress: Sendable, Hashable {
+public enum IPAddress: Sendable, Hashable {
     /// An IPv4 address.
     case v4(IPv4Address)
     /// An IPv6 address.
@@ -324,14 +321,14 @@ extension IPv6Address {
     {
         withUnsafeBytes(of: self.address) { ptr in
             (
-                UInt16(ptr[15]) << 8 | UInt16(ptr[14]),
-                UInt16(ptr[13]) << 8 | UInt16(ptr[12]),
-                UInt16(ptr[11]) << 8 | UInt16(ptr[10]),
-                UInt16(ptr[9]) << 8 | UInt16(ptr[8]),
-                UInt16(ptr[7]) << 8 | UInt16(ptr[6]),
-                UInt16(ptr[5]) << 8 | UInt16(ptr[4]),
-                UInt16(ptr[3]) << 8 | UInt16(ptr[2]),
-                UInt16(ptr[1]) << 8 | UInt16(ptr[0])
+                UInt16(ptr[15]) &<< 8 | UInt16(ptr[14]),
+                UInt16(ptr[13]) &<< 8 | UInt16(ptr[12]),
+                UInt16(ptr[11]) &<< 8 | UInt16(ptr[10]),
+                UInt16(ptr[9]) &<< 8 | UInt16(ptr[8]),
+                UInt16(ptr[7]) &<< 8 | UInt16(ptr[6]),
+                UInt16(ptr[5]) &<< 8 | UInt16(ptr[4]),
+                UInt16(ptr[3]) &<< 8 | UInt16(ptr[2]),
+                UInt16(ptr[1]) &<< 8 | UInt16(ptr[0])
             )
         }
     }
@@ -339,21 +336,109 @@ extension IPv6Address {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: CustomStringConvertible {
+    /// The textual representation of an IPv6 address, enclosed in `[]`.
+    ///
+    /// Compliant with [RFC 5952, A Recommendation for IPv6 Address Text Representation, August 2010](https://tools.ietf.org/html/rfc5952).
     public var description: String {
-        /// FIXME: use proper formatting, e.g. using `::`.
-        var result: String = ""
-        result.reserveCapacity(39)
-        for idx in 0..<8 {
-            if idx > 0 {
-                result.append(":")
-            }
-            let shift = 8 &* (14 &- idx)
-            let shifted = self.address &>> shift
-            let masked = shifted & 0xFFFF
-            let string = String(masked, radix: 16, uppercase: false)
-            result.append(string)
+        /// Short-circuit "0".
+        if self.address == 0 {
+            return "[::]"
         }
-        return result
+
+        return withUnsafeBytes(of: self.address) { ptr in
+            func isZero(octalIdx idx: Int) -> Bool {
+                let doubled = idx &* 2
+                return ptr[15 &- doubled] == 0 && ptr[14 &- doubled] == 0
+            }
+            var compressedRange: Range<Int>? = nil
+            var idx = 0
+            /// idx < `7` instead of `8` because even if 7 is a zero it'll be a lone zero and
+            /// we won't compress it anyway.
+            while idx < 7 {
+                guard isZero(octalIdx: idx) else {
+                    idx &+= 1
+                    continue
+                }
+
+                var endIndex = idx
+
+                /// This range is guaranteed to be non-empty because we know idx < 7 (6 max)
+                /// and (6+1)..<8 is still a range with 1 number in it.
+                for nextIdx in (idx + 1)..<8 {
+                    guard isZero(octalIdx: nextIdx) else {
+                        break
+                    }
+                    endIndex = nextIdx
+                }
+
+                if endIndex != idx {
+                    /// If a compressed range already exists and is not smaller than the new range,
+                    /// then don't do anything.
+                    /// Otherwise use the `newRange` as the `compressedRange`.
+                    let newRange = idx..<endIndex
+                    if let existingRange = compressedRange {
+                        if existingRange.count < newRange.count {
+                            compressedRange = newRange
+                        }
+                    } else {
+                        compressedRange = newRange
+                    }
+                }
+
+                idx = endIndex &+ 1
+            }
+
+            assert(compressedRange?.isEmpty != true)
+
+            var result = "["
+            /// Reserve the max possibly needed capacity.
+            let toReserve: Int
+            if let compressedRange {
+                let segmentsCount = 8 &- compressedRange.count
+                let colonsCount = max(segmentsCount &- 1, 2)
+                let bracketsCount = 2
+                toReserve = bracketsCount &+ colonsCount &+ (segmentsCount &* 4)
+            } else {
+                toReserve = 41
+            }
+            result.reserveCapacity(toReserve)
+
+            func uint16(octalIdx idx: Int) -> UInt16 {
+                let doubled = idx &* 2
+                let left = UInt16(ptr[15 &- doubled]) &<< 8
+                let right = UInt16(ptr[14 &- doubled])
+                return left | right
+            }
+
+            /// Reset `idx`. It was used in a loop above.
+            idx = 0
+            while idx < 8 {
+                if let compressedRange,
+                    idx == compressedRange.lowerBound
+                {
+                    if idx == 0 {
+                        result.append("::")
+                    } else {
+                        result.append(":")
+                    }
+                    idx = compressedRange.upperBound &+ 1
+                    continue
+                }
+
+                let uint16 = uint16(octalIdx: idx)
+                let string = String(uint16, radix: 16, uppercase: false)
+                result.append(string)
+                if idx < 7 {
+                    result.append(":")
+                }
+
+                idx &+= 1
+            }
+
+            result += "]"
+
+            return result
+        }
     }
 }
 

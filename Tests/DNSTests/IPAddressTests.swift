@@ -68,4 +68,22 @@ struct IPAddressTests {
         #expect(ip.bytePairs.6 == 0x0000)
         #expect(ip.bytePairs.7 == 0x0100)
     }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [
+            (0x2001_0DB8_85A3_0000_0000_0000_0000_0100, "[2001:db8:85a3::100]"),
+            (0x2001_0DB8_0000_0000_0001_0000_0000_0001, "[2001:db8::1:0:0:1]"),
+            (0x2001_0000_0000_0000_0001_0000_0000_0001, "[2001::1:0:0:1]"),
+            (0x2001_0000_0000_0001_0000_0000_0000_0001, "[2001:0:0:1::1]"),
+            (0x2001_0DB8_AAAA_BBBB_CCCC_DDDD_EEEE_0001, "[2001:db8:aaaa:bbbb:cccc:dddd:eeee:1]"),
+            (0x2001_0DB8_0000_0000_0001_0000_0000_0001, "[2001:db8::1:0:0:1]"),
+            (0x0000_0000_0000_0000_0000_0000_0000_0000, "[::]"),
+            (0x2001_0000_0000_0001_0000_0000_0000_0000, "[2001:0:0:1::]"),
+            (0x0000_0000_0000_0000_0001_0000_0000_0001, "[::1:0:0:1]")
+        ]
+    )
+    func ipv6AddressDescription(ip: UInt128, expectedDescription: String) {
+        #expect(IPv6Address(ip).description == expectedDescription)
+    }
 }
