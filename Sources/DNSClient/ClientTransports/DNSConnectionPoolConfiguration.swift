@@ -50,7 +50,7 @@ public struct DNSConnectionPoolConfiguration: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension DNSConnectionPoolConfiguration {
     func toConnectionPoolConfig() -> _DNSConnectionPool.ConnectionPoolConfiguration {
         var config = _DNSConnectionPool.ConnectionPoolConfiguration()

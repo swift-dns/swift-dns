@@ -10,9 +10,14 @@ import NIOTransportServices
 #endif
 
 /// Single connection to a DNS server
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 public final actor DNSConnection: Sendable {
-    nonisolated public let unownedExecutor: UnownedSerialExecutor
+    @usableFromInline
+    let executor: any SerialExecutor
+    @inlinable
+    nonisolated public var unownedExecutor: UnownedSerialExecutor {
+        self.executor.asUnownedSerialExecutor()
+    }
 
     /// Connection ID, used by connection pool
     public let id: ID
@@ -36,7 +41,7 @@ public final actor DNSConnection: Sendable {
         configuration: DNSConnectionConfiguration,
         logger: Logger
     ) {
-        self.unownedExecutor = channel.eventLoop.executor.asUnownedSerialExecutor()
+        self.executor = channel.eventLoop.executor
         self.channel = channel
         self.channelHandler = channelHandler
         self.configuration = configuration
@@ -66,13 +71,17 @@ public final actor DNSConnection: Sendable {
     @inlinable
     func send(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions
+        options: DNSRequestOptions,
+        allocator: ByteBufferAllocator
     ) async throws -> Message {
+        try self.channelHandler.preflightCheck()
+
         let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
-            options: options
+            options: options,
+            allocator: allocator
         )
-        let requestID = producedMessage.message.header.id
+        let requestID = producedMessage.messageID
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
                 throw DNSClientError.cancelled

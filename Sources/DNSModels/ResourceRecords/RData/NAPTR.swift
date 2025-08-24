@@ -95,7 +95,7 @@ extension NAPTR {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension NAPTR: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -112,7 +112,7 @@ extension NAPTR: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension NAPTR: Queryable {
     @inlinable
     public static var recordType: RecordType { .NAPTR }

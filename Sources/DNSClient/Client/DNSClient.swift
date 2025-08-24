@@ -5,7 +5,7 @@ public import ServiceLifecycle
 #endif
 
 /// FIXME: The module and the type are both named `DNSClient`.
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 public struct DNSClient {
     @usableFromInline
     enum Transport: Sendable {
@@ -21,7 +21,8 @@ public struct DNSClient {
     }
 
     /// Run DNSClient connection pool
-    public func run() async {
+    /// This is intentionally marked as throws so it can fail in the future if it needs to.
+    public func run() async throws {
         switch self.transport {
         case .preferUDPOrUseTCP(let transport):
             await transport.run()
@@ -58,6 +59,6 @@ public struct DNSClient {
 }
 
 #if ServiceLifecycleSupport
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSClient: Service {}
 #endif  // ServiceLifecycle

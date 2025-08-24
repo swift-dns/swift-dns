@@ -3,6 +3,7 @@ import Synchronization
 import _DNSConnectionPool
 
 package import struct Logging.Logger
+package import struct NIOCore.ByteBufferAllocator
 package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
@@ -10,7 +11,7 @@ import ServiceLifecycle
 #endif
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -22,6 +23,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     let udpEventLoopGroup: any EventLoopGroup
     let tcpTransport: TCPDNSClientTransport
     let logger: Logger
+    let allocator: ByteBufferAllocator
     var isRunning: Bool {
         self.tcpTransport.isRunning.load(ordering: .relaxed)
     }
@@ -44,6 +46,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
         )
         self.udpEventLoopGroup = udpEventLoopGroup
         self.logger = logger
+        self.allocator = ByteBufferAllocator()
     }
 
     /// Run PreferUDPOrUseTCPDNSClientTransport's TCP connection pool
@@ -83,7 +86,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(
@@ -94,7 +97,8 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     ) async throws -> Message {
         try await connection.send(
             message: factory,
-            options: options
+            options: options,
+            allocator: self.allocator
         )
     }
 
@@ -148,7 +152,7 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     }
 
     func makeUDPConnection() async throws -> DNSConnection {
-        let udpConnectionFactory = try ConnectionFactory(
+        let udpConnectionFactory = try DNSConnectionFactory(
             configuration: self.connectionConfiguration,
             serverAddress: serverAddress
         )

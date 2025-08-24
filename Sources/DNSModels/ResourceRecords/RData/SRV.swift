@@ -96,7 +96,7 @@ extension SRV {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension SRV: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -113,7 +113,7 @@ extension SRV: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension SRV: Queryable {
     @inlinable
     public static var recordType: RecordType { .SRV }

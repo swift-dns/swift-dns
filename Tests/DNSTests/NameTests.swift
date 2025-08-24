@@ -5,7 +5,6 @@ import Testing
 
 @Suite
 struct NameTests {
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", isFQDN: false, data: ByteBuffer([1, 42])),
@@ -39,7 +38,6 @@ struct NameTests {
         #expect(domainName.data == data)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [".mahdibm.com", ""]
     )
@@ -49,7 +47,6 @@ struct NameTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (
@@ -108,7 +105,6 @@ struct NameTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func equalityWhichMustBeCaseInsensitive() throws {
         let name = try Name(domainName: "example.com.")
         let duplicate = try Name(domainName: "example.com.")
@@ -140,7 +136,6 @@ struct NameTests {
         #expect(weirdPartiallyUppercaseDomain == weirdUppercaseDomain)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: ".", isFQDN: true),
@@ -155,7 +150,6 @@ struct NameTests {
         try #expect(Name(domainName: name).isFQDN == isFQDN)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: ".", expected: "."),
@@ -175,7 +169,6 @@ struct NameTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [
             (name: "*", expectedLabelsCount: 0),
@@ -190,7 +183,6 @@ struct NameTests {
         try #expect(Name(domainName: name).labelsCount == expectedLabelsCount)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeFromBufferContainingOtherBytesAsWellAsUppercasedThenTurnBackIntoString() throws
     {
         var buffer = DNSBuffer(bytes: [
@@ -219,7 +211,6 @@ struct NameTests {
     /// Testing `新华网.中国.` which turns into `xn--xkrr14bows.xn--fiqs8s.` based on punycode.
     /// There are non-ascii bytes in this buffer which is technically not correct.
     /// The initializer is expected to repair the bytes into ASCII.
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func decodeInvalidNonASCIIDomainAndRepairItIntoASCII() throws {
         var buffer = DNSBuffer(bytes: [
             0x9, 0xe6, 0x96, 0xb0,
@@ -244,6 +235,41 @@ struct NameTests {
         )
     }
 
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func ipv4AddressToName() throws {
+        let ipAddress = IPv4Address(192, 168, 1, 1)
+        let name1 = Name(ipAddress: ipAddress)
+        let name2 = Name(ipAddress: .v4(ipAddress))
+        #expect(name1.debugDescription == "192.168.1.1")
+        #expect(name2.debugDescription == "192.168.1.1")
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func ipv6AddressToName() {
+        let ipAddress = IPv6Address(
+            0x2a,
+            0x01,
+            0x5c,
+            0xc0,
+            0x00,
+            0x01,
+            0x00,
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x04,
+        )
+        let name1 = Name(ipAddress: ipAddress)
+        let name2 = Name(ipAddress: .v6(ipAddress))
+        #expect(name1.debugDescription == "[2a01:5cc0:1:2:0:0:0:4]")
+        #expect(name2.debugDescription == "[2a01:5cc0:1:2:0:0:0:4]")
+    }
+
     /// The file pointing to `Resources.topDomains` contains only 200 top domains, but you can
     /// try bigger files too.
     /// For example you can manually go to cloudflare radar (https://radar.cloudflare.com/domains)
@@ -255,7 +281,6 @@ struct NameTests {
     ///
     /// Not using swift-testing arguments because that slows things down significantly if we're
     /// testing against 1 million domains.
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func testAgainstTopCloudflareRadarDomains() throws {
         for (index, domainName) in enumeratedTopDomains() {
             let comment: Comment = "index: \(index), domainName: \(domainName)"

@@ -70,6 +70,21 @@ extension UInt8 {
     }
 
     @inlinable
+    static var asciiOpeningSquareBracket: UInt8 {
+        0x5B
+    }
+
+    @inlinable
+    static var asciiClosingSquareBracket: UInt8 {
+        0x5D
+    }
+
+    @inlinable
+    static var asciiColon: UInt8 {
+        0x3A
+    }
+
+    @inlinable
     static var nullByte: UInt8 {
         0x00
     }

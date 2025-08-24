@@ -3,7 +3,6 @@ import Testing
 
 @Suite
 struct HeaderTests {
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func setGetWorksInBytes16To31WithDefaultTrue() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
@@ -50,7 +49,6 @@ struct HeaderTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func setGetWorksInBytes16To31WithDefaultFalse() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
@@ -97,7 +95,6 @@ struct HeaderTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func setGetWorksInBytes16To31WithDefaultFalseAndReverseOrdering() throws {
         do {
             var bytes16To31 = Header.Bytes16To31(rawValue: 0)
@@ -144,7 +141,6 @@ struct HeaderTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func testRealWorldBytes16To31Parsing() throws {
         let bytes16To31 = Header.Bytes16To31(rawValue: 33152)
         #expect(bytes16To31.messageType == .Response)
@@ -158,7 +154,6 @@ struct HeaderTests {
         #expect(bytes16To31.responseCode == .NoError)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
     @Test func headerParsesCorrectly() throws {
         var buffer = DNSBuffer(bytes: [
             0xAA, 0xAA, 0x01, 0x00,

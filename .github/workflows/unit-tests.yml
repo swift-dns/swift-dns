@@ -148,8 +148,6 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
-      # This step currently doesn't do much because this package requires macos 26 and so
-      # most if not all tests are marked as so.
       - name: Run tests
         run: |
           swift test \

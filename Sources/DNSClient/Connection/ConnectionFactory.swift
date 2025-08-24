@@ -1,18 +1,23 @@
-import Logging
-import NIOCore
+public import Logging
+public import NIOCore
 import NIOPosix
+
+import struct DNSModels.Name
 
 #if canImport(Network)
 import Network
 import NIOTransportServices
 #endif
 
-@available(swiftDNSApplePlatforms 26, *)
-struct ConnectionFactory {
+@available(swiftDNSApplePlatforms 15, *)
+package struct DNSConnectionFactory {
     let socketAddress: SocketAddress
     let configuration: DNSConnectionConfiguration
 
-    init(configuration: DNSConnectionConfiguration, serverAddress: DNSServerAddress) throws {
+    package init(
+        configuration: DNSConnectionConfiguration,
+        serverAddress: DNSServerAddress
+    ) throws {
         self.configuration = configuration
         self.socketAddress = try serverAddress.asSocketAddress()
     }
@@ -70,8 +75,8 @@ struct ConnectionFactory {
 }
 
 // MARK: - UDP
-@available(swiftDNSApplePlatforms 26, *)
-extension ConnectionFactory {
+@available(swiftDNSApplePlatforms 15, *)
+extension DNSConnectionFactory {
     private func makeUDPBootstrap(
         eventLoop: any EventLoop,
         isolation: isolated (any Actor)?
@@ -162,8 +167,8 @@ extension ConnectionFactory {
 }
 
 // MARK: - TCP
-@available(swiftDNSApplePlatforms 26, *)
-extension ConnectionFactory {
+@available(swiftDNSApplePlatforms 15, *)
+extension DNSConnectionFactory {
     @inlinable
     func makeTCPBootstrap(
         address: DNSServerAddress,
@@ -307,14 +312,14 @@ extension ConnectionFactory {
 }
 
 // MARK: - +NIOClientTCPBootstrapProtocol
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension NIOClientTCPBootstrapProtocol {
     func connect(target: DNSServerAddress) -> EventLoopFuture<any Channel> {
         switch target {
         case .ipAddress(_, let socketAddress):
             return self.connect(to: socketAddress)
         case .domain(let domain, let port):
-            return self.connect(host: domain, port: port)
+            return self.connect(host: domain.description(format: .ascii), port: Int(port))
         case .unixSocket(let path):
             return self.connect(unixDomainSocketPath: path)
         }

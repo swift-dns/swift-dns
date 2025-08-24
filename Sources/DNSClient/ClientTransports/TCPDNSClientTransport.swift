@@ -3,6 +3,7 @@ public import Synchronization
 public import _DNSConnectionPool
 
 package import struct Logging.Logger
+package import struct NIOCore.ByteBufferAllocator
 package import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
@@ -35,7 +36,7 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 }
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -45,6 +46,7 @@ package actor TCPDNSClientTransport {
     let eventLoopGroup: any EventLoopGroup
     let logger: Logger
 
+    let allocator: ByteBufferAllocator
     @usableFromInline
     let isRunning: Atomic<Bool>
 
@@ -54,7 +56,7 @@ package actor TCPDNSClientTransport {
         eventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
         logger: Logger = .noopLogger
     ) throws {
-        let tcpConnectionFactory = try ConnectionFactory(
+        let tcpConnectionFactory = try DNSConnectionFactory(
             configuration: configuration.connectionConfiguration,
             serverAddress: serverAddress
         )
@@ -82,6 +84,7 @@ package actor TCPDNSClientTransport {
         }
         self.eventLoopGroup = eventLoopGroup
         self.logger = logger
+        self.allocator = ByteBufferAllocator()
         self.isRunning = Atomic(false)
     }
 
@@ -137,7 +140,7 @@ package actor TCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension TCPDNSClientTransport {
     @usableFromInline
     func query(
@@ -148,7 +151,8 @@ extension TCPDNSClientTransport {
     ) async throws -> Message {
         try await connection.send(
             message: factory,
-            options: options
+            options: options,
+            allocator: self.allocator
         )
     }
 

@@ -344,7 +344,7 @@ extension TLSA.Matching {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension TLSA: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -361,7 +361,7 @@ extension TLSA: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension TLSA: Queryable {
     @inlinable
     public static var recordType: RecordType { .TLSA }

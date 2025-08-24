@@ -4,11 +4,11 @@ import DequeModule
 import Logging
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 private let channelHandlerIDGenerator = IncrementalIDGenerator()
 
+@available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-@available(swiftDNSApplePlatforms 26, *)
 package final class DNSChannelHandler: ChannelDuplexHandler {
 
     struct DeadlineSchedule: NIOScheduledCallbackHandler {
@@ -82,8 +82,13 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
+    @usableFromInline
+    func preflightCheck() throws {
+        try self.stateMachine.preflightCheck()
+    }
+
     @usableFromInline
     func write(
         producedMessage: consuming ProducedMessage,
@@ -100,36 +105,10 @@ extension DNSChannelHandler {
         case .sendQuery(let context, let deadlineCallbackAction):
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
 
-            var buffer = DNSBuffer(buffer: context.channel.allocator.buffer(capacity: 512))
-            do {
-                try producedMessage.message.encode(into: &buffer)
-            } catch {
-                /// Act as if we received an early response for the query
-                switch self.stateMachine.receivedResponse(requestID: pendingQuery.requestID) {
-                case .respond(let pendingQuery, let deadlineAction):
-                    self.processDeadlineCallbackAction(action: deadlineAction)
-                    self.queryProducer.fullfilQuery(
-                        pendingQuery: pendingQuery,
-                        with: DNSClientError.encodingError(error)
-                    )
-                case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
-                    self.queryProducer.fullfilQuery(
-                        pendingQuery: pendingQuery,
-                        with: DNSClientError.encodingError(error)
-                    )
-                    /// The error we got is unrelated to connection closure, so we don't pass it
-                    self.closeConnectionAndTakeDeadlineAction(
-                        context: context,
-                        deadlineCallbackAction: deadlineCallbackAction,
-                        error: nil
-                    )
-                case .doNothing:
-                    break
-                }
-
-                return
-            }
-            context.writeAndFlush(self.wrapOutboundOut(ByteBuffer(dnsBuffer: buffer)), promise: nil)
+            context.writeAndFlush(
+                self.wrapOutboundOut(ByteBuffer(dnsBuffer: producedMessage.buffer)),
+                promise: nil
+            )
         case .throwError(let error):
             self.queryProducer.fullfilQuery(
                 pendingQuery: pendingQuery,
@@ -191,7 +170,7 @@ extension DNSChannelHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
     @usableFromInline
     package func handlerRemoved(context: ChannelHandlerContext) {

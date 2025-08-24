@@ -156,7 +156,7 @@ jobs:
           Filter: '${{ inputs.filter }}'
           Skip: '${{ inputs.skip }}'
 
-          Triggered by: ${RUN_LINK}"
+          Committed by: ${RUN_LINK}"
 
           git push -f origin "${NEW_BRANCH}"
 

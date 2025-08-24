@@ -120,49 +120,6 @@ package struct DNSBuffer: Sendable {
         self._buffer.readString(length: length)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
-    package mutating func readInlineArray<
-        let count: Int,
-        IntegerType: FixedWidthInteger
-    >(
-        endianness: Endianness = .big,
-        as: InlineArray<count, IntegerType>.Type = InlineArray<count, IntegerType>.self
-    ) -> InlineArray<count, IntegerType>? {
-        let length = MemoryLayout<IntegerType>.size
-        assert(!length.multipliedReportingOverflow(by: count).overflow)
-        let bytesRequired = length &* count
-
-        guard self.readableBytes >= bytesRequired else {
-            return nil
-        }
-
-        return self._buffer.readWithUnsafeReadableBytes {
-            ptr -> (Int, InlineArray<count, IntegerType>) in
-            assert(ptr.count >= bytesRequired)
-
-            let values = InlineArray<count, IntegerType> { index in
-                switch endianness {
-                case .big:
-                    return IntegerType(
-                        bigEndian: ptr.load(
-                            fromByteOffset: index &* length,
-                            as: IntegerType.self
-                        )
-                    )
-                case .little:
-                    return IntegerType(
-                        littleEndian: ptr.load(
-                            fromByteOffset: index &* length,
-                            as: IntegerType.self
-                        )
-                    )
-                }
-            }
-
-            return (bytesRequired, values)
-        }
-    }
-
     /// Truncates the buffer and returns the previous `writerIndex`.
     /// To limit the readable bytes to a specific length.
     /// Returns `nil` if the buffer has less readable bytes than requested.
@@ -245,13 +202,6 @@ package struct DNSBuffer: Sendable {
     @inlinable
     package func getSlice(at index: Int, length: Int) -> ByteBuffer? {
         self._buffer.getSlice(at: index, length: length)
-    }
-
-    @available(swiftDNSApplePlatforms 26, *)
-    package mutating func writeBytes<let elementCount: Int>(
-        _ bytes: InlineArray<elementCount, UInt8>
-    ) {
-        self._buffer.writeBytes(bytes.span.bytes)
     }
 
     package mutating func writeBuffer(_ buffer: ByteBuffer) {
@@ -357,6 +307,12 @@ package struct DNSBuffer: Sendable {
             fitLengthInto: fitLengthInto
         )
     }
+
+    package mutating func withUnsafeReadableBytes<T>(
+        _ body: (UnsafeRawBufferPointer) throws -> T
+    ) rethrows -> T {
+        try self._buffer.withUnsafeReadableBytes(body)
+    }
 }
 
 extension DNSBuffer {
@@ -395,7 +351,9 @@ extension DNSBuffer {
 }
 
 extension ByteBuffer {
-    package init(dnsBuffer: DNSBuffer) {
+    /// consuming doesn't do much here but that's what I expect (that the DNSBuffer is
+    /// no longer touched after getting the underlying ByteBuffer)
+    package init(dnsBuffer: consuming DNSBuffer) {
         self = dnsBuffer._buffer
     }
 }

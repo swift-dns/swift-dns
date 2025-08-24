@@ -2,7 +2,7 @@ public import NIOCore
 
 import struct OrderedCollections.OrderedDictionary
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {
     @usableFromInline
     package struct StateMachine<Context>: ~Copyable {
@@ -98,6 +98,24 @@ extension DNSChannelHandler {
                 preconditionFailure("Cannot set processing when already processing")
             case .closed:
                 preconditionFailure("Cannot set connected state when state is closed")
+            }
+        }
+
+        /// A send-query preflight check to see if it's needed to process the query at all or not
+        package mutating func preflightCheck() throws {
+            switch consume self._state {
+            case .initialized:
+                preconditionFailure("Cannot have intention of sending a query when initialized")
+            case .processing(let state):
+                if state.isClosing {
+                    self = .processing(state)
+                    throw DNSClientError.connectionClosing
+                } else {
+                    self = .processing(state)
+                }
+            case .closed(let error):
+                self = .closed(error)
+                throw DNSClientError.connectionClosed
             }
         }
 
@@ -355,7 +373,7 @@ extension DNSChannelHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler.StateMachine.ProcessingState {
     package static func __for_testing(
         context: Context,

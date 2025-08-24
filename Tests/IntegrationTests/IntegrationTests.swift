@@ -9,7 +9,7 @@ import struct NIOCore.ByteBuffer
 
 @Suite(.serialized)
 struct IntegrationTests {
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -64,16 +64,7 @@ struct IntegrationTests {
             let ipv4s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv4s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// The 'additional' was an EDNS
             #expect(response.additionals.count == 0)
@@ -90,7 +81,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -145,16 +136,7 @@ struct IntegrationTests {
             let ipv4s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv4s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// response.additionals.count is whatever
 
@@ -170,7 +152,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -225,16 +207,7 @@ struct IntegrationTests {
             let ipv6s = try response.answers.map {
                 try $0.rdata.value
             }
-            #expect(
-                ipv6s.allSatisfy {
-                    /// Weird way to check if the IPv4 is not just some zero bytes
-                    var sum: UInt32 = 0
-                    for idx in $0.bytes.indices {
-                        sum += UInt32($0.bytes[idx])
-                    }
-                    return sum != 0
-                }
-            )
+            #expect(ipv6s.allSatisfy { $0.address != 0 })
 
             /// The 'additional' was an EDNS
             #expect(response.additionals.count == 0)
@@ -251,7 +224,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -327,7 +300,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryCERT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -425,7 +398,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -490,7 +463,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -566,7 +539,7 @@ struct IntegrationTests {
         /// TODO: try `education.github.com`
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -650,7 +623,7 @@ struct IntegrationTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -741,7 +714,7 @@ struct IntegrationTests {
     /// OPT is used in every other query, so it's already well-tested.
     @Test func queryOPT() async throws {}
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -831,7 +804,7 @@ struct IntegrationTests {
 
     @Test func queryTLSA() async throws {}
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClients())
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -907,12 +880,15 @@ struct IntegrationTests {
 
     @Test func queryUpdate0() async throws {}
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     private static func makeTestingDNSClientsForConcurrentTest() -> [DNSClient] {
         [
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
                     tcpConfiguration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(20)),
@@ -929,7 +905,10 @@ struct IntegrationTests {
             ),
             try! DNSClient(
                 transport: .tcp(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     configuration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(20)),
                         connectionPoolConfiguration: .init(
@@ -946,7 +925,7 @@ struct IntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(arguments: makeTestingDNSClientsForConcurrentTest())
     func query100DomainsConcurrently(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -995,12 +974,15 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     private static func makeTestingDNSClientsForSequentialTest() -> [DNSClient] {
         [
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
                     tcpConfiguration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -1016,7 +998,10 @@ struct IntegrationTests {
             ),
             try! DNSClient(
                 transport: .tcp(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     configuration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(10)),
                         connectionPoolConfiguration: .init(
@@ -1032,7 +1017,7 @@ struct IntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(
         .tags(.timeConsuming),
         arguments: makeTestingDNSClientsForSequentialTest()
@@ -1091,12 +1076,15 @@ struct IntegrationTests {
         .map(String.init)
     }
 
-    @available(swiftDNSApplePlatforms 26, *)
+    @available(swiftDNSApplePlatforms 15, *)
     private static func makeTestingDNSClients() -> [DNSClient] {
         [
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
                     tcpConfiguration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(20)),
@@ -1108,7 +1096,10 @@ struct IntegrationTests {
             ),
             try! DNSClient(
                 transport: .tcp(
-                    serverAddress: .domain(name: "8.8.4.4", port: 53),
+                    serverAddress: .domain(
+                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        port: 53
+                    ),
                     configuration: .init(
                         connectionConfiguration: .init(queryTimeout: .seconds(20)),
                         connectionPoolConfiguration: .init(),

@@ -35,8 +35,7 @@ public struct Name: Sendable {
     /// A domain name whose last label identifies a root of the graph is fully qualified other domain names whose
     /// labels form a strict prefix of a fully qualified domain name are relative to its first omitted node.
     /// ```
-    @usableFromInline
-    package var isFQDN: Bool
+    public var isFQDN: Bool
     /// The raw data of the domain name, as in the wire format, excluding the root label (trailing null byte).
     /// Lowercased ASCII bytes only.
     ///
