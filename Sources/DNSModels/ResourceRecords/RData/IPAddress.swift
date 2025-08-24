@@ -76,12 +76,12 @@ extension IPv4Address: CustomStringConvertible {
 
             let first = iterator.next().unsafelyUnwrapped
             /// TODO: This can be optimized to not have to convert to a string
-            result.append(String($0[first]))
+            result.append(String($0[3 - first]))
 
             while let idx = iterator.next() {
                 result.append(".")
                 /// TODO: This can be optimized to not have to convert to a string
-                result.append(String($0[idx]))
+                result.append(String($0[3 - idx]))
             }
         }
         return result

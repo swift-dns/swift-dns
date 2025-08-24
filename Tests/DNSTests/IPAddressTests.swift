@@ -9,6 +9,23 @@ struct IPAddressTests {
         #expect(ip.bytes == (0x7F, 0x00, 0x00, 0x01))
     }
 
+    @Test(
+        arguments: [
+            (IPv4Address(127, 0, 0, 1), "127.0.0.1"),
+            (IPv4Address(0, 0, 0, 0), "0.0.0.0"),
+            (IPv4Address(0, 0, 0, 1), "0.0.0.1"),
+            (IPv4Address(0, 0, 1, 0), "0.0.1.0"),
+            (IPv4Address(0, 1, 0, 0), "0.1.0.0"),
+            (IPv4Address(1, 0, 0, 0), "1.0.0.0"),
+            (IPv4Address(1, 1, 1, 1), "1.1.1.1"),
+            (IPv4Address(255, 255, 255, 255), "255.255.255.255"),
+            (IPv4Address(192, 168, 1, 98), "192.168.1.98"),
+        ]
+    )
+    func ipv4AddressDescription(ip: IPv4Address, expectedDescription: String) {
+        #expect(ip.description == expectedDescription)
+    }
+
     @available(swiftDNSApplePlatforms 15, *)
     @Test func ipv6Address() {
         let ipWithUInt16 = IPv6Address(
@@ -80,7 +97,7 @@ struct IPAddressTests {
             (0x2001_0DB8_0000_0000_0001_0000_0000_0001, "[2001:db8::1:0:0:1]"),
             (0x0000_0000_0000_0000_0000_0000_0000_0000, "[::]"),
             (0x2001_0000_0000_0001_0000_0000_0000_0000, "[2001:0:0:1::]"),
-            (0x0000_0000_0000_0000_0001_0000_0000_0001, "[::1:0:0:1]")
+            (0x0000_0000_0000_0000_0001_0000_0000_0001, "[::1:0:0:1]"),
         ]
     )
     func ipv6AddressDescription(ip: UInt128, expectedDescription: String) {
