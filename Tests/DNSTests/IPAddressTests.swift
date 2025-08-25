@@ -18,12 +18,40 @@ struct IPAddressTests {
             (IPv4Address(0, 1, 0, 0), "0.1.0.0"),
             (IPv4Address(1, 0, 0, 0), "1.0.0.0"),
             (IPv4Address(1, 1, 1, 1), "1.1.1.1"),
+            (IPv4Address(123, 251, 98, 234), "123.251.98.234"),
             (IPv4Address(255, 255, 255, 255), "255.255.255.255"),
             (IPv4Address(192, 168, 1, 98), "192.168.1.98"),
         ]
     )
     func ipv4AddressDescription(ip: IPv4Address, expectedDescription: String) {
         #expect(ip.description == expectedDescription)
+    }
+
+    @Test(
+        arguments: [
+            ("127.0.0.1", IPv4Address(127, 0, 0, 1)),
+            ("0.0.0.0", IPv4Address(0, 0, 0, 0)),
+            ("0.0.0.1", IPv4Address(0, 0, 0, 1)),
+            ("0.0.1.0", IPv4Address(0, 0, 1, 0)),
+            ("0.1.0.0", IPv4Address(0, 1, 0, 0)),
+            ("1.0.0.0", IPv4Address(1, 0, 0, 0)),
+            ("1.1.1.1", IPv4Address(1, 1, 1, 1)),
+            ("123.251.98.234", IPv4Address(123, 251, 98, 234)),
+            ("255.255.255.255", IPv4Address(255, 255, 255, 255)),
+            ("192.168.1.98", IPv4Address(192, 168, 1, 98)),
+            ("192.168.1.256", nil),
+            ("192.168.1.", nil),
+            ("192.168.1", nil),
+            (".168.1.123", nil),
+            ("168.1.123", nil),
+            ("-1.168.1.123", nil),
+            ("1.-168.1.123", nil),
+            ("1.-168.1.0xaa", nil),
+            ("1.-168.1.aa", nil),
+        ]
+    )
+    func ipv4AddressFromString(string: String, expectedAddress: IPv4Address?) {
+        #expect(IPv4Address(string) == expectedAddress)
     }
 
     @available(swiftDNSApplePlatforms 15, *)
