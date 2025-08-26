@@ -76,34 +76,35 @@ extension IPv4Address: LosslessStringConvertible {
         let scalars = description.unicodeScalars
 
         var byteIdx = 0
-        var startIndex = scalars.startIndex
+        var chunkStartIndex = scalars.startIndex
         let endIndex = scalars.endIndex
         /// We accept any of the 4 IDNA label separators (including `.`)
         /// This will make sure a valid ipv4 domain-name parses fine using this method
-        while let nextSeparatorIdx = scalars[startIndex..<endIndex].firstIndex(
+        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(
             where: \.isIDNALabelSeparator
         ) {
             /// TODO: Don't go through an String conversion here
             guard
                 let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
-                    scalars[startIndex..<nextSeparatorIdx]
+                    scalars[chunkStartIndex..<nextSeparatorIdx]
                 ),
                 let byte = UInt8(String(part))
             else {
                 return nil
             }
 
-            address |= UInt32(byte) &<< (8 &* (3 &- byteIdx))
+            let shift = 8 &* (3 &- byteIdx)
+            address |= UInt32(byte) &<< shift
 
             /// This is safe, nothing will crash with this increase in index
-            startIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+            chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
 
             if byteIdx == 2 {
                 /// TODO: Don't go through an String conversion here
                 /// Read last byte and return
                 guard
                     let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
-                        scalars[startIndex..<endIndex]
+                        scalars[chunkStartIndex..<endIndex]
                     ),
                     let byte = UInt8(String(part))
                 else {

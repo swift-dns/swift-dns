@@ -276,7 +276,8 @@ extension IPv6Address: CustomStringConvertible {
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: LosslessStringConvertible {
     public init?(_ description: String) {
-        var address: UInt128 = 0
+        var addressLhs: UInt128 = 0
+        var addressRhs: UInt128 = 0
 
         let scalars = description.unicodeScalars
 
@@ -294,49 +295,100 @@ extension IPv6Address: LosslessStringConvertible {
         }) == true {
             endIndex = scalars.index(before: endIndex)
         }
+        var chunkStartIndex = startIndex
 
         var partIdx = 0
-        while let nextSeparatorIdx = scalars[startIndex..<endIndex].firstIndex(
+        /// Have seen '::' or not
+        var seenCompressionSign = false
+        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(
             where: { IPv6Address.isIDNAEquivalent(to: .asciiColon, scalar: $0) }
         ) {
+            let scalarsPart = scalars[chunkStartIndex..<nextSeparatorIdx]
+            if scalarsPart.isEmpty {
+                if seenCompressionSign {
+                    if nextSeparatorIdx == scalars.index(before: endIndex) {
+                        /// Must have reached end with no rhs
+                        self.init(addressLhs)
+                        return
+                    } else if nextSeparatorIdx == scalars.index(after: startIndex) {
+                        /// Must have seen an immediate compression sign, in an address like `::1`
+                        chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+                        continue
+                    } else {
+                        /// We've already seen a compression sign, so this is invalid
+                        return nil
+                    }
+                }
+
+                seenCompressionSign = true
+                chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+                continue
+            }
+
             /// TODO: Don't go through an String conversion here
             guard
-                let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(
-                    scalars[startIndex..<nextSeparatorIdx]
-                ),
+                let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(scalarsPart),
                 let byte = UInt16(String(part), radix: 16)
             else {
                 return nil
             }
 
-            address |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+            if seenCompressionSign {
+                addressRhs |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+            } else {
+                addressLhs |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+            }
 
             /// This is safe, nothing will crash with this increase in index
-            startIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
-
-            if partIdx == 6 {
-                /// TODO: Don't go through an String conversion here
-                /// Read last byte and return
-                guard
-                    let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(
-                        scalars[startIndex..<endIndex]
-                    ),
-                    let byte = UInt16(String(part), radix: 16)
-                else {
-                    return nil
-                }
-
-                address |= UInt128(byte)
-
-                self.init(address)
-                return
-            }
+            chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
 
             partIdx &+= 1
         }
 
-        /// Should not have reached here
-        return nil
+        /// TODO: Don't go through an String conversion here
+        /// Read last remaining byte-pair
+
+        let scalarsPart = scalars[chunkStartIndex..<endIndex]
+        if scalarsPart.isEmpty {
+            if seenCompressionSign {
+                /// Must have reached end with no rhs
+                self.init(addressLhs)
+                return
+            } else {
+                /// No compression sign, but still have an empty part?!
+                return nil
+            }
+        }
+
+        guard
+            let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(scalarsPart),
+            let byte = UInt16(String(part), radix: 16)
+        else {
+            return nil
+        }
+
+        /// If we've reached partIdx of 6, then seenCompressionSign must not have happened
+
+        if seenCompressionSign {
+            addressRhs |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+        } else {
+            addressLhs |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+        }
+
+        /// We've reached the end of the string
+
+        /// We must have seen a compression sign, or have had enough parts
+        guard partIdx == 7 || seenCompressionSign else {
+            return nil
+        }
+
+        let compressedPartsCount = 8 &- partIdx &- 1
+        let shift = 16 &* compressedPartsCount
+        addressLhs |= addressRhs &>> shift
+
+        print(String(addressLhs, radix: 16), "---", String(addressRhs, radix: 16), "---", partIdx)
+
+        self.init(addressLhs)
     }
 
     /// Based on https://www.unicode.org/Public/idna/17.0.0/IdnaMappingTable.txt
