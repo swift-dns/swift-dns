@@ -1,3 +1,5 @@
+import SwiftIDNA
+
 /// An IPv6 address.
 ///
 /// IPv6 addresses are defined as 128-bit integers in [IETF RFC 4291].
@@ -79,17 +81,14 @@ public struct IPv6Address: Sendable, Hashable {
         _ _8: UInt16
     ) {
         /// Broken into 2 steps so compiler is happy
-        self.address =
-            (UInt128(_1) &<< 112)
-            | (UInt128(_2) &<< 96)
-            | (UInt128(_3) &<< 80)
-            | (UInt128(_4) &<< 64)
-        self.address =
-            self.address
-            | (UInt128(_5) &<< 48)
-            | (UInt128(_6) &<< 32)
-            | (UInt128(_7) &<< 16)
-            | UInt128(_8)
+        self.address = UInt128(_1) &<< 112
+        self.address |= UInt128(_2) &<< 96
+        self.address |= UInt128(_3) &<< 80
+        self.address |= UInt128(_4) &<< 64
+        self.address |= UInt128(_5) &<< 48
+        self.address |= UInt128(_6) &<< 32
+        self.address |= UInt128(_7) &<< 16
+        self.address |= UInt128(_8)
     }
 
     public init(
@@ -111,37 +110,22 @@ public struct IPv6Address: Sendable, Hashable {
         _ _16: UInt8
     ) {
         /// FIXME: Better way without turning each into a UInt128?
-        self.address =
-            (UInt128(_1) &<< 120)
-            | (UInt128(_2) &<< 112)
-        self.address =
-            self.address
-            | (UInt128(_3) &<< 104)
-            | (UInt128(_4) &<< 96)
-        self.address =
-            self.address
-            | (UInt128(_5) &<< 88)
-            | (UInt128(_6) &<< 80)
-        self.address =
-            self.address
-            | (UInt128(_7) &<< 72)
-            | (UInt128(_8) &<< 64)
-        self.address =
-            self.address
-            | (UInt128(_9) &<< 56)
-            | (UInt128(_10) &<< 48)
-        self.address =
-            self.address
-            | (UInt128(_11) &<< 40)
-            | (UInt128(_12) &<< 32)
-        self.address =
-            self.address
-            | (UInt128(_13) &<< 24)
-            | (UInt128(_14) &<< 16)
-        self.address =
-            self.address
-            | (UInt128(_15) &<< 8)
-            | UInt128(_16)
+        self.address = UInt128(_1) &<< 120
+        self.address |= UInt128(_2) &<< 112
+        self.address |= UInt128(_3) &<< 104
+        self.address |= UInt128(_4) &<< 96
+        self.address |= UInt128(_5) &<< 88
+        self.address |= UInt128(_6) &<< 80
+        self.address |= UInt128(_7) &<< 72
+        self.address |= UInt128(_8) &<< 64
+        self.address |= UInt128(_9) &<< 56
+        self.address |= UInt128(_10) &<< 48
+        self.address |= UInt128(_11) &<< 40
+        self.address |= UInt128(_12) &<< 32
+        self.address |= UInt128(_13) &<< 24
+        self.address |= UInt128(_14) &<< 16
+        self.address |= UInt128(_15) &<< 8
+        self.address |= UInt128(_16)
     }
 }
 
@@ -286,6 +270,124 @@ extension IPv6Address: CustomStringConvertible {
 
             return result
         }
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPv6Address: LosslessStringConvertible {
+    public init?(_ description: String) {
+        var address: UInt128 = 0
+
+        let scalars = description.unicodeScalars
+
+        var startIndex = scalars.startIndex
+        var endIndex = scalars.endIndex
+
+        /// Drop the square brackets if they are present
+        if (scalars.first).map({
+            IPv6Address.isIDNAEquivalent(to: .asciiLeftSquareBracket, scalar: $0)
+        }) == true {
+            startIndex = scalars.index(after: startIndex)
+        }
+        if (scalars.last).map({
+            IPv6Address.isIDNAEquivalent(to: .asciiRightSquareBracket, scalar: $0)
+        }) == true {
+            endIndex = scalars.index(before: endIndex)
+        }
+
+        var partIdx = 0
+        while let nextSeparatorIdx = scalars[startIndex..<endIndex].firstIndex(
+            where: { IPv6Address.isIDNAEquivalent(to: .asciiColon, scalar: $0) }
+        ) {
+            /// TODO: Don't go through an String conversion here
+            guard
+                let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(
+                    scalars[startIndex..<nextSeparatorIdx]
+                ),
+                let byte = UInt16(String(part), radix: 16)
+            else {
+                return nil
+            }
+
+            address |= UInt128(byte) &<< (16 &* (7 &- partIdx))
+
+            /// This is safe, nothing will crash with this increase in index
+            startIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+
+            if partIdx == 6 {
+                /// TODO: Don't go through an String conversion here
+                /// Read last byte and return
+                guard
+                    let part = IPv6Address.mapToHexadecimalDigitsBasedOnIDNA(
+                        scalars[startIndex..<endIndex]
+                    ),
+                    let byte = UInt16(String(part), radix: 16)
+                else {
+                    return nil
+                }
+
+                address |= UInt128(byte)
+
+                self.init(address)
+                return
+            }
+
+            partIdx &+= 1
+        }
+
+        /// Should not have reached here
+        return nil
+    }
+
+    /// Based on https://www.unicode.org/Public/idna/17.0.0/IdnaMappingTable.txt
+    static func isIDNAEquivalent(to toScalar: Unicode.Scalar, scalar: Unicode.Scalar) -> Bool {
+        switch IDNAMapping.for(scalar: scalar) {
+        case .valid:
+            return scalar == toScalar
+        case .mapped(let mapped), .deviation(let mapped):
+            return mapped.count == 1 && mapped.first == toScalar
+        case .disallowed, .ignored:
+            return false
+        }
+    }
+
+    static func mapToHexadecimalDigitsBasedOnIDNA(
+        _ scalars: String.UnicodeScalarView.SubSequence
+    ) -> String.UnicodeScalarView.SubSequence? {
+        /// Short-circuit if all scalars are ASCII
+        if scalars.allSatisfy(\.isASCII) {
+            /// Still might not be a valid number
+            return scalars
+        }
+
+        var newScalars = [Unicode.Scalar]()
+        newScalars.reserveCapacity(scalars.count)
+
+        for idx in scalars.indices {
+            let scalar = scalars[idx]
+            if scalar.isUppercasedASCIILetter {
+                /// Uppercased letters are fine, the Swift String-to-Int conversion accepts them.
+                newScalars.append(scalar)
+                continue
+            }
+
+            switch IDNAMapping.for(scalar: scalar) {
+            case .valid:
+                newScalars.append(scalar)
+            case .mapped(let mapped), .deviation(let mapped):
+                guard mapped.count == 1 else {
+                    /// If this was a hexadecimal number it would have never had a mapped value of > 1
+                    return nil
+                }
+                newScalars.append(mapped.first.unsafelyUnwrapped)
+            case .ignored:
+                continue
+            case .disallowed:
+                return nil
+            }
+        }
+
+        return String.UnicodeScalarView.SubSequence(newScalars)
     }
 }
 

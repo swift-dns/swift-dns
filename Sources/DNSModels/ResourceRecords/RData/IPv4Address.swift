@@ -1,3 +1,5 @@
+import SwiftIDNA
+
 /// An IPv4 address.
 ///
 /// IPv4 addresses are defined as 32-bit integers in [IETF RFC 791].
@@ -29,7 +31,10 @@ public struct IPv4Address: Sendable, Hashable {
 
     public init(_ _1: UInt8, _ _2: UInt8, _ _3: UInt8, _ _4: UInt8) {
         /// All these unchecked operations are safe because _1, _2, _3, _4 are always in 0..<256
-        self.address = UInt32(_1) &<< 24 | UInt32(_2) &<< 16 | UInt32(_3) &<< 8 | UInt32(_4)
+        self.address = UInt32(_1) &<< 24
+        self.address |= UInt32(_2) &<< 16
+        self.address |= UInt32(_3) &<< 8
+        self.address |= UInt32(_4)
     }
 }
 
@@ -68,16 +73,22 @@ extension IPv4Address: LosslessStringConvertible {
     public init?(_ description: String) {
         var address: UInt32 = 0
 
-        let utf8 = description.utf8
+        let scalars = description.unicodeScalars
 
         var byteIdx = 0
-        var startIndex = utf8.startIndex
+        var startIndex = scalars.startIndex
+        let endIndex = scalars.endIndex
         /// We accept any of the 4 IDNA label separators (including `.`)
         /// This will make sure a valid ipv4 domain-name parses fine using this method
-        while let nextSeparatorIdx = utf8[startIndex...].firstIndex(where: \.isIDNALabelSeparator) {
+        while let nextSeparatorIdx = scalars[startIndex..<endIndex].firstIndex(
+            where: \.isIDNALabelSeparator
+        ) {
             /// TODO: Don't go through an String conversion here
-            guard let string = String(utf8[startIndex..<nextSeparatorIdx]),
-                let byte = UInt8(string)
+            guard
+                let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
+                    scalars[startIndex..<nextSeparatorIdx]
+                ),
+                let byte = UInt8(String(part))
             else {
                 return nil
             }
@@ -85,12 +96,16 @@ extension IPv4Address: LosslessStringConvertible {
             address |= UInt32(byte) &<< (8 &* (3 &- byteIdx))
 
             /// This is safe, nothing will crash with this increase in index
-            startIndex = utf8.index(nextSeparatorIdx, offsetBy: 1)
+            startIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
 
             if byteIdx == 2 {
+                /// TODO: Don't go through an String conversion here
                 /// Read last byte and return
-                guard let string = String(utf8[startIndex...]),
-                    let byte = UInt8(string)
+                guard
+                    let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
+                        scalars[startIndex..<endIndex]
+                    ),
+                    let byte = UInt8(String(part))
                 else {
                     return nil
                 }
@@ -106,6 +121,39 @@ extension IPv4Address: LosslessStringConvertible {
 
         /// Should not have reached here
         return nil
+    }
+
+    static func mapToDecimalDigitsBasedOnIDNA(
+        _ scalars: String.UnicodeScalarView.SubSequence
+    ) -> String.UnicodeScalarView.SubSequence? {
+        /// Short-circuit if all scalars are ASCII
+        if scalars.allSatisfy(\.isASCII) {
+            /// Still might not be a valid number
+            return scalars
+        }
+
+        var newScalars = [Unicode.Scalar]()
+        newScalars.reserveCapacity(scalars.count)
+
+        for idx in scalars.indices {
+            let scalar = scalars[idx]
+            switch IDNAMapping.for(scalar: scalar) {
+            case .valid:
+                newScalars.append(scalar)
+            case .mapped(let mapped), .deviation(let mapped):
+                guard mapped.count == 1 else {
+                    /// If this was a number it would have never had a mapped value of > 1
+                    return nil
+                }
+                newScalars.append(mapped.first.unsafelyUnwrapped)
+            case .ignored:
+                continue
+            case .disallowed:
+                return nil
+            }
+        }
+
+        return String.UnicodeScalarView.SubSequence(newScalars)
     }
 }
 
