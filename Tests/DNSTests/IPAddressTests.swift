@@ -28,7 +28,7 @@ struct IPAddressTests {
     }
 
     @Test(
-        arguments: [
+        arguments: [(String, IPv4Address?)]([
             ("127.0.0.1", IPv4Address(127, 0, 0, 1)),
             ("0.0.0.0", IPv4Address(0, 0, 0, 0)),
             ("0.0.0.1", IPv4Address(0, 0, 0, 1)),
@@ -61,7 +61,8 @@ struct IPAddressTests {
             ("9", nil),
             ("9.87", nil),
             ("", nil),
-        ][10...10]
+            ("1111:2222:3333:4444:5555:6666:7777:8888", nil),
+        ])
     )
     func ipv4AddressFromString(string: String, expectedAddress: IPv4Address?) {
         #expect(IPv4Address(string) == expectedAddress)
@@ -182,6 +183,7 @@ struct IPAddressTests {
             ("0:1:2:3:4:0:5:6", 0x0000_0001_0002_0003_0004_0000_0005_0006),
             ("[::1]", 0x0000_0000_0000_0000_0000_0000_0000_0001),
             ("::1", 0x0000_0000_0000_0000_0000_0000_0000_0001),
+            ("", nil),
             (":", nil),
             ("[:]", nil),
             (":::", nil),
@@ -199,10 +201,38 @@ struct IPAddressTests {
             ("[0:1:2:3:4:0:5:6:7]", nil),
             ("[0:1:2:3:4:0:5:-6]", nil),
             ("[0:1:2:3:4:0:5:g]", nil),
+            ("192.168.1.256", nil),
         ])
     )
     /// Add failed tests with too many or too few parts, or not hexadecimal (negative or bad letters)
     func ipv6AddressFromString(string: String, expectedAddress: UInt128?) {
         #expect(IPv6Address(string)?.address == expectedAddress)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [
+            (IPAddress.v4(IPv4Address(192, 168, 1, 1)), "192.168.1.1"),
+            (
+                IPAddress.v6(IPv6Address(0x2001_0DB8_85A3_0000_0000_0000_0000_0100)),
+                "[2001:db8:85a3::100]"
+            ),
+        ]
+    )
+    func ipAddressDescription(ip: IPAddress, expectedDescription: String) {
+        #expect(ip.description == expectedDescription)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [(String, IPAddress?)]([
+            ("192.168.1.1", .v4(IPv4Address(192, 168, 1, 1))),
+            ("[192.168.1.256]", nil),
+            ("[2001:0:0:1::]", .v6(IPv6Address(0x2001_0000_0000_0001_0000_0000_0000_0000))),
+            ("[0:1:2:3:4:0:5:6::]", nil),
+        ])
+    )
+    func ipAddressFromString(string: String, expectedAddress: IPAddress?) {
+        #expect(IPAddress(string) == expectedAddress)
     }
 }

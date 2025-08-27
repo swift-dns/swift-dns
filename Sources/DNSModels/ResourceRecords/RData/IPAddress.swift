@@ -21,3 +21,16 @@ extension IPAddress: CustomStringConvertible {
         }
     }
 }
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPAddress: LosslessStringConvertible {
+    public init?(_ description: String) {
+        if let ipv4 = IPv4Address(description) {
+            self = .v4(ipv4)
+        } else if let ipv6 = IPv6Address(description) {
+            self = .v6(ipv6)
+        } else {
+            return nil
+        }
+    }
+}
