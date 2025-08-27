@@ -284,17 +284,31 @@ extension IPv6Address: LosslessStringConvertible {
         var startIndex = scalars.startIndex
         var endIndex = scalars.endIndex
 
-        /// Drop the square brackets if they are present
-        if (scalars.first).map({
-            IPv6Address.isIDNAEquivalent(to: .asciiLeftSquareBracket, scalar: $0)
-        }) == true {
+        let startsWithBracket =
+            (scalars.first).map({
+                IPv6Address.isIDNAEquivalent(
+                    to: .asciiLeftSquareBracket,
+                    scalar: $0
+                )
+            }) == true
+        let endsWithBracket =
+            (scalars.last).map({
+                IPv6Address.isIDNAEquivalent(
+                    to: .asciiRightSquareBracket,
+                    scalar: $0
+                )
+            }) == true
+
+        switch (startsWithBracket, endsWithBracket) {
+        case (true, true):
             startIndex = scalars.index(after: startIndex)
-        }
-        if (scalars.last).map({
-            IPv6Address.isIDNAEquivalent(to: .asciiRightSquareBracket, scalar: $0)
-        }) == true {
             endIndex = scalars.index(before: endIndex)
+        case (false, false):
+            break
+        case (true, false), (false, true):
+            return nil
         }
+
         var chunkStartIndex = startIndex
 
         var partIdx = 0
@@ -306,23 +320,56 @@ extension IPv6Address: LosslessStringConvertible {
             let scalarsPart = scalars[chunkStartIndex..<nextSeparatorIdx]
             if scalarsPart.isEmpty {
                 if seenCompressionSign {
-                    if nextSeparatorIdx == scalars.index(before: endIndex) {
-                        /// Must have reached end with no rhs
-                        self.init(addressLhs)
-                        return
-                    } else if nextSeparatorIdx == scalars.index(after: startIndex) {
-                        /// Must have seen an immediate compression sign, in an address like `::1`
-                        chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
-                        continue
-                    } else {
-                        /// We've already seen a compression sign, so this is invalid
-                        return nil
-                    }
+                    /// We've already seen a compression sign, so this is invalid
+                    return nil
                 }
 
-                seenCompressionSign = true
-                chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
-                continue
+                /// If we're at the first index
+                if nextSeparatorIdx == startIndex {
+                    /// This is guaranteed valid
+                    let nextIdx = scalars.index(after: nextSeparatorIdx)
+
+                    guard
+                        nextIdx != endIndex,
+                        IPv6Address.isIDNAEquivalent(
+                            to: .asciiColon,
+                            scalar: scalars[nextIdx]
+                        )
+                    else {
+                        return nil
+                    }
+
+                    seenCompressionSign = true
+                    /// This is safe, nothing will crash with this increase in index
+                    chunkStartIndex = scalars.index(after: nextIdx)
+                    continue
+                } else if nextSeparatorIdx == scalars.index(before: endIndex) {
+                    guard partIdx <= 7 else {
+                        return nil
+                    }
+                    /// Must have reached end with no rhs
+                    self.init(addressLhs)
+                    return
+                } else {
+                    guard
+                        let previousIdx = scalars.index(
+                            nextSeparatorIdx,
+                            offsetBy: -1,
+                            limitedBy: startIndex
+                        ),
+                        IPv6Address.isIDNAEquivalent(
+                            to: .asciiColon,
+                            scalar: scalars[previousIdx]
+                        )
+                    else {
+                        return nil
+                    }
+
+                    seenCompressionSign = true
+                    /// This is safe, nothing will crash with this increase in index
+                    chunkStartIndex = scalars.index(after: nextSeparatorIdx)
+                    continue
+                }
             }
 
             /// TODO: Don't go through an String conversion here
@@ -340,9 +387,13 @@ extension IPv6Address: LosslessStringConvertible {
             }
 
             /// This is safe, nothing will crash with this increase in index
-            chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+            chunkStartIndex = scalars.index(after: nextSeparatorIdx)
 
             partIdx &+= 1
+        }
+
+        guard partIdx <= (7 &- (seenCompressionSign ? 1 : 0)) else {
+            return nil
         }
 
         /// TODO: Don't go through an String conversion here
@@ -385,8 +436,6 @@ extension IPv6Address: LosslessStringConvertible {
         let compressedPartsCount = 8 &- partIdx &- 1
         let shift = 16 &* compressedPartsCount
         addressLhs |= addressRhs &>> shift
-
-        print(String(addressLhs, radix: 16), "---", String(addressRhs, radix: 16), "---", partIdx)
 
         self.init(addressLhs)
     }
