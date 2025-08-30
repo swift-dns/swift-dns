@@ -150,4 +150,16 @@ package.targets += [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
     ),
+    .executableTarget(
+        name: "IPAddress",
+        dependencies: [
+            "DNSModels",
+            .product(name: "Benchmark", package: "package-benchmark"),
+        ],
+        path: "IPAddress",
+        swiftSettings: settings,
+        plugins: [
+            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+        ]
+    ),
 ]

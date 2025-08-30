@@ -3,7 +3,8 @@
 set -eu
 
 # This script is in `./scripts` directory so `./scripts/..` would be the same as `./`.
-BASE_DIR=$(dirname "$0")/..
+SCRIPT_PATH=$(readlink -f "$0")
+BASE_DIR=$(dirname "$SCRIPT_PATH")/..
 
 swift package -c release \
   --package-path "$BASE_DIR/Benchmarks" \
