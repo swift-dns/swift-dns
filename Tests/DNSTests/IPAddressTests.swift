@@ -75,7 +75,7 @@ struct IPAddressTests {
             (IPv4Address(18, 52, 86, 120), "::ffff:1234:5678"),
             (IPv4Address(171, 205, 239, 1), "::ffff:abcd:ef01"),
             (nil, "0:0:1:0:0:ffff:abcd:ef01"),
-            (nil, "ffff:ffff:ffff:ffff:ffff:ffff:abcd:ef01")
+            (nil, "ffff:ffff:ffff:ffff:ffff:ffff:abcd:ef01"),
         ])
     )
     func ipv4AddressFromIpv6Address(
