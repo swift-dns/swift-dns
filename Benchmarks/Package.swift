@@ -161,5 +161,5 @@ package.targets += [
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
-    )
+    ),
 ]
