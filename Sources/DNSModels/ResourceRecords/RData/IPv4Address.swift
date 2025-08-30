@@ -1,17 +1,17 @@
-import SwiftIDNA
+public import SwiftIDNA
 
 /// An IPv4 address.
 ///
 /// IPv4 addresses are defined as 32-bit integers in [IETF RFC 791].
 /// They are usually represented as four octets.
 ///
-/// See [`IpAddr`] for a type encompassing both IPv4 and IPv6 addresses.
+/// See [`IPAddress`] for a type encompassing both IPv4 and IPv6 addresses.
 ///
 /// [IETF RFC 791]: https://tools.ietf.org/html/rfc791
 ///
 /// # Textual representation
 ///
-/// `Ipv4Addr` provides a [`FromStr`] implementation. The four octets are in decimal
+/// `IPv4Address` provides an initializer that accepts a string. The four octets are in decimal
 /// notation, divided by `.` (this is called "dot-decimal notation").
 /// Notably, octal numbers (which are indicated with a leading `0`) and hexadecimal numbers (which
 /// are indicated with a leading `0x`) are not allowed per [IETF RFC 6943].
@@ -25,16 +25,84 @@ public struct IPv4Address: Sendable, Hashable {
 
     public var address: UInt32
 
+    @inlinable
+    public var isLoopback: Bool {
+        withUnsafeBytes(of: self.address) { ptr in
+            ptr[3] == 0x7F
+                && ptr[2] == 0x00
+                && ptr[1] == 0x00
+                && ptr[0] == 0x01
+        }
+    }
+
+    @inlinable
+    public var isMulticast: Bool {
+        withUnsafeBytes(of: self.address) { ptr in
+            (ptr[3] &>> 4) == 0b1110
+        }
+    }
+
+    @inlinable
+    public var isLinkLocalUnicast: Bool {
+        withUnsafeBytes(of: self.address) { ptr in
+            ptr[3] == 169 && ptr[2] == 254
+        }
+    }
+
+    @inlinable
     public init(_ address: UInt32) {
         self.address = address
     }
 
+    /// Maps an IPv6 address to an IPv4 address if the ipv6 is in a specific address space mentioned in [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
+    ///
+    /// ```text
+    /// 2.5.5.2.  IPv4-Mapped IPv6 Address
+    ///
+    ///    A second type of IPv6 address that holds an embedded IPv4 address is
+    ///    defined.  This address type is used to represent the addresses of
+    ///    IPv4 nodes as IPv6 addresses.  The format of the "IPv4-mapped IPv6
+    ///    address" is as follows:
+    ///
+    /// Hinden                      Standards Track                    [Page 10]
+    /// RFC 4291              IPv6 Addressing Architecture         February 2006
+    ///
+    ///    |                80 bits               | 16 |      32 bits        |
+    ///    +--------------------------------------+--------------------------+
+    ///    |0000..............................0000|FFFF|    IPv4 address     |
+    ///    +--------------------------------------+----+---------------------+
+    ///
+    ///    See [RFC4038] for background on the usage of the "IPv4-mapped IPv6
+    ///    address".
+    /// ```
+    @available(swiftDNSApplePlatforms 15, *)
+    @inlinable
+    public init?(_ ipv6: IPv6Address) {
+        guard
+            withUnsafeBytes(
+                of: ipv6.address,
+                { ptr in
+                    ptr[4] == 0xFF
+                        && ptr[5] == 0xFF
+                        && (6..<16).allSatisfy { ptr[$0] == 0x00 }
+                }
+            )
+        else {
+            return nil
+        }
+
+        self.address = UInt32(truncatingIfNeeded: ipv6.address)
+    }
+
+    @inlinable
     public init(_ _1: UInt8, _ _2: UInt8, _ _3: UInt8, _ _4: UInt8) {
-        /// All these unchecked operations are safe because _1, _2, _3, _4 are always in 0..<256
-        self.address = UInt32(_1) &<< 24
-        self.address |= UInt32(_2) &<< 16
-        self.address |= UInt32(_3) &<< 8
-        self.address |= UInt32(_4)
+        self.address = 0
+        withUnsafeMutableBytes(of: &self.address) { ptr in
+            ptr[3] = _1
+            ptr[2] = _2
+            ptr[1] = _3
+            ptr[0] = _4
+        }
     }
 }
 
@@ -47,6 +115,7 @@ extension IPv4Address {
 }
 
 extension IPv4Address: CustomStringConvertible {
+    @inlinable
     public var description: String {
         var result: String = ""
         /// TODO: Smarter reserving capacity
@@ -70,6 +139,7 @@ extension IPv4Address: CustomStringConvertible {
 }
 
 extension IPv4Address: LosslessStringConvertible {
+    @inlinable
     public init?(_ description: String) {
         var address: UInt32 = 0
 
@@ -124,6 +194,7 @@ extension IPv4Address: LosslessStringConvertible {
         return nil
     }
 
+    @usableFromInline
     static func mapToDecimalDigitsBasedOnIDNA(
         _ scalars: String.UnicodeScalarView.SubSequence
     ) -> String.UnicodeScalarView.SubSequence? {

@@ -9,7 +9,7 @@ import SwiftIDNA
 ///
 /// # Embedding IPv4 Addresses
 ///
-/// See [`IpAddr`] for a type encompassing both IPv4 and IPv6 addresses.
+/// See [`IPAddress`] for a type encompassing both IPv4 and IPv6 addresses.
 ///
 /// To assist in the transition from IPv4 to IPv6 two types of IPv6 addresses that embed an IPv4 address were defined:
 /// IPv4-compatible and IPv4-mapped addresses. Of these IPv4-compatible addresses have been officially deprecated.
@@ -51,7 +51,7 @@ import SwiftIDNA
 ///
 /// # Textual representation
 ///
-/// `Ipv6Addr` provides a [`FromStr`] implementation. There are many ways to represent
+/// `IPv6Address` provides an initializer that accepts a string. There are many ways to represent
 /// an IPv6 address in text, but in general, each segments is written in hexadecimal
 /// notation, and segments are separated by `:`. For more information, see
 /// [IETF RFC 5952].
@@ -66,10 +66,66 @@ public struct IPv6Address: Sendable, Hashable {
 
     public var address: UInt128
 
+    @inlinable
+    public var isLoopback: Bool {
+        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a loopback address there?
+        withUnsafeBytes(of: self.address) { ptr in
+            ptr[0] == 0x01 && (1..<16).allSatisfy { ptr[$0] == 0x00 }
+        }
+    }
+
+    @inlinable
+    public var isMulticast: Bool {
+        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a multicast address there?
+        withUnsafeBytes(of: self.address) { ptr in
+            ptr[15] == 0xFF
+        }
+    }
+
+    @inlinable
+    public var isLinkLocalUnicast: Bool {
+        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a link local unicast address there?
+        withUnsafeBytes(of: self.address) { ptr in
+            ptr[15] == 0xFE && ptr[14] &>> 6 == 0b10
+        }
+    }
+
+    @inlinable
     public init(_ address: UInt128) {
         self.address = address
     }
 
+    /// Maps an IPv4 address to an IPv6 address in the reserved address space by [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
+    ///
+    /// ```text
+    /// 2.5.5.2.  IPv4-Mapped IPv6 Address
+    ///
+    ///    A second type of IPv6 address that holds an embedded IPv4 address is
+    ///    defined.  This address type is used to represent the addresses of
+    ///    IPv4 nodes as IPv6 addresses.  The format of the "IPv4-mapped IPv6
+    ///    address" is as follows:
+    ///
+    /// Hinden                      Standards Track                    [Page 10]
+    /// RFC 4291              IPv6 Addressing Architecture         February 2006
+    ///
+    ///    |                80 bits               | 16 |      32 bits        |
+    ///    +--------------------------------------+--------------------------+
+    ///    |0000..............................0000|FFFF|    IPv4 address     |
+    ///    +--------------------------------------+----+---------------------+
+    ///
+    ///    See [RFC4038] for background on the usage of the "IPv4-mapped IPv6
+    ///    address".
+    /// ```
+    @inlinable
+    public init(_ ipv4: IPv4Address) {
+        self.address = UInt128(ipv4.address)
+        withUnsafeMutableBytes(of: &self.address) { ptr in
+            ptr[4] = 0xFF
+            ptr[5] = 0xFF
+        }
+    }
+
+    @inlinable
     public init(
         _ _1: UInt16,
         _ _2: UInt16,
@@ -80,17 +136,28 @@ public struct IPv6Address: Sendable, Hashable {
         _ _7: UInt16,
         _ _8: UInt16
     ) {
-        /// Broken into 2 steps so compiler is happy
-        self.address = UInt128(_1) &<< 112
-        self.address |= UInt128(_2) &<< 96
-        self.address |= UInt128(_3) &<< 80
-        self.address |= UInt128(_4) &<< 64
-        self.address |= UInt128(_5) &<< 48
-        self.address |= UInt128(_6) &<< 32
-        self.address |= UInt128(_7) &<< 16
-        self.address |= UInt128(_8)
+        self.address = 0
+        withUnsafeMutableBytes(of: &self.address) { ptr in
+            ptr[15] = UInt8(_1 &>> 8)
+            ptr[14] = UInt8(truncatingIfNeeded: _1)
+            ptr[13] = UInt8(_2 &>> 8)
+            ptr[12] = UInt8(truncatingIfNeeded: _2)
+            ptr[11] = UInt8(_3 &>> 8)
+            ptr[10] = UInt8(truncatingIfNeeded: _3)
+            ptr[9] = UInt8(_4 &>> 8)
+            ptr[8] = UInt8(truncatingIfNeeded: _4)
+            ptr[7] = UInt8(_5 &>> 8)
+            ptr[6] = UInt8(truncatingIfNeeded: _5)
+            ptr[5] = UInt8(_6 &>> 8)
+            ptr[4] = UInt8(truncatingIfNeeded: _6)
+            ptr[3] = UInt8(_7 &>> 8)
+            ptr[2] = UInt8(truncatingIfNeeded: _7)
+            ptr[1] = UInt8(_8 &>> 8)
+            ptr[0] = UInt8(truncatingIfNeeded: _8)
+        }
     }
 
+    @inlinable
     public init(
         _ _1: UInt8,
         _ _2: UInt8,
@@ -109,28 +176,31 @@ public struct IPv6Address: Sendable, Hashable {
         _ _15: UInt8,
         _ _16: UInt8
     ) {
-        /// FIXME: Better way without turning each into a UInt128?
-        self.address = UInt128(_1) &<< 120
-        self.address |= UInt128(_2) &<< 112
-        self.address |= UInt128(_3) &<< 104
-        self.address |= UInt128(_4) &<< 96
-        self.address |= UInt128(_5) &<< 88
-        self.address |= UInt128(_6) &<< 80
-        self.address |= UInt128(_7) &<< 72
-        self.address |= UInt128(_8) &<< 64
-        self.address |= UInt128(_9) &<< 56
-        self.address |= UInt128(_10) &<< 48
-        self.address |= UInt128(_11) &<< 40
-        self.address |= UInt128(_12) &<< 32
-        self.address |= UInt128(_13) &<< 24
-        self.address |= UInt128(_14) &<< 16
-        self.address |= UInt128(_15) &<< 8
-        self.address |= UInt128(_16)
+        self.address = 0
+        withUnsafeMutableBytes(of: &self.address) { ptr in
+            ptr[15] = _1
+            ptr[14] = _2
+            ptr[13] = _3
+            ptr[12] = _4
+            ptr[11] = _5
+            ptr[10] = _6
+            ptr[9] = _7
+            ptr[8] = _8
+            ptr[7] = _9
+            ptr[6] = _10
+            ptr[5] = _11
+            ptr[4] = _12
+            ptr[3] = _13
+            ptr[2] = _14
+            ptr[1] = _15
+            ptr[0] = _16
+        }
     }
 }
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address {
+    @inlinable
     public var bytes:
         (
             UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
@@ -145,6 +215,7 @@ extension IPv6Address {
         }
     }
 
+    @inlinable
     public var bytePairs:
         (
             UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16
@@ -170,6 +241,7 @@ extension IPv6Address: CustomStringConvertible {
     /// The textual representation of an IPv6 address, enclosed in `[]`.
     ///
     /// Compliant with [RFC 5952, A Recommendation for IPv6 Address Text Representation, August 2010](https://tools.ietf.org/html/rfc5952).
+    @inlinable
     public var description: String {
         /// Short-circuit "0".
         if self.address == 0 {
@@ -275,6 +347,7 @@ extension IPv6Address: CustomStringConvertible {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: LosslessStringConvertible {
+    @inlinable
     public init?(_ description: String) {
         var addressLhs: UInt128 = 0
         var addressRhs: UInt128 = 0
@@ -439,6 +512,7 @@ extension IPv6Address: LosslessStringConvertible {
     }
 
     /// Based on https://www.unicode.org/Public/idna/17.0.0/IdnaMappingTable.txt
+    @usableFromInline
     static func isIDNAEquivalent(to toScalar: Unicode.Scalar, scalar: Unicode.Scalar) -> Bool {
         switch IDNAMapping.for(scalar: scalar) {
         case .valid:
@@ -450,6 +524,7 @@ extension IPv6Address: LosslessStringConvertible {
         }
     }
 
+    @usableFromInline
     static func mapToHexadecimalDigitsBasedOnIDNA(
         _ scalars: String.UnicodeScalarView.SubSequence
     ) -> String.UnicodeScalarView.SubSequence? {

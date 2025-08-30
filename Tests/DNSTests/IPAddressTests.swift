@@ -69,6 +69,62 @@ struct IPAddressTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [(IPv4Address?, String)]([
+            (IPv4Address(192, 0, 2, 128), "::ffff:c000:0280"),
+            (IPv4Address(18, 52, 86, 120), "::ffff:1234:5678"),
+            (IPv4Address(171, 205, 239, 1), "::ffff:abcd:ef01"),
+            (nil, "0:0:1:0:0:ffff:abcd:ef01"),
+            (nil, "ffff:ffff:ffff:ffff:ffff:ffff:abcd:ef01")
+        ])
+    )
+    func ipv4AddressFromIpv6Address(
+        ipv4: IPv4Address?,
+        expectedIPv6: String
+    ) throws {
+        let ipv6 = try #require(IPv6Address(expectedIPv6))
+        #expect(ipv4 == IPv4Address(ipv6))
+    }
+
+    @Test(
+        arguments: [(IPv4Address, String, (@Sendable (IPv4Address) -> Bool))]([
+            (IPv4Address(127, 0, 0, 1), "isLoopback", \.isLoopback),
+            (IPv4Address(127, 0, 0, 2), "!isLoopback", { @Sendable in !$0.isLoopback }),
+            (IPv4Address(224, 0, 0, 0), "isMulticast", \.isMulticast),
+            (IPv4Address(239, 255, 255, 255), "isMulticast", \.isMulticast),
+            (IPv4Address(229, 28, 192, 233), "isMulticast", \.isMulticast),
+            (IPv4Address(244, 0, 0, 0), "!isMulticast", { @Sendable in !$0.isMulticast }),
+            (IPv4Address(169, 254, 0, 0), "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            (IPv4Address(169, 254, 0, 0), "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            (IPv4Address(169, 254, 222, 138), "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            (IPv4Address(169, 254, 255, 255), "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            (
+                IPv4Address(169, 253, 0, 0), "!isLinkLocalUnicast",
+                { @Sendable in !$0.isLinkLocalUnicast }
+            ),
+            (
+                IPv4Address(169, 255, 0, 0), "!isLinkLocalUnicast",
+                { @Sendable in !$0.isLinkLocalUnicast }
+            ),
+            (
+                IPv4Address(168, 254, 0, 0), "!isLinkLocalUnicast",
+                { @Sendable in !$0.isLinkLocalUnicast }
+            ),
+            (
+                IPv4Address(170, 254, 0, 0), "!isLinkLocalUnicast",
+                { @Sendable in !$0.isLinkLocalUnicast }
+            ),
+        ])
+    )
+    func ipv4AddressPropertiesWorkCorrectly(
+        ip: IPv4Address,
+        testCaseDescription: String,
+        predicate: @Sendable (IPv4Address) -> Bool
+    ) throws {
+        #expect(predicate(ip), "\(testCaseDescription)")
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func ipv6Address() {
         let ipWithUInt16 = IPv6Address(
             0x2001,
@@ -240,5 +296,46 @@ struct IPAddressTests {
     )
     func ipAddressFromString(string: String, expectedAddress: IPAddress?) {
         #expect(IPAddress(string) == expectedAddress)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [(String, IPv4Address)]([
+            ("::ffff:c000:0280", IPv4Address(192, 0, 2, 128)),
+            ("::ffff:1234:5678", IPv4Address(18, 52, 86, 120)),
+            ("::ffff:abcd:ef01", IPv4Address(171, 205, 239, 1)),
+        ])
+    )
+    func ipv6AddressFromIpv4Address(
+        ipv6: String,
+        expectedIPv4: IPv4Address
+    ) throws {
+        let ipv6 = try #require(IPv6Address(ipv6))
+        #expect(ipv6 == IPv6Address(expectedIPv4))
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [(String, String, (@Sendable (IPv6Address) -> Bool))]([
+            ("::1", "isLoopback", \.isLoopback),
+            ("::1:1", "!isLoopback", { @Sendable in !$0.isLoopback }),
+            ("FF00::", "isMulticast", \.isMulticast),
+            ("FF92::", "isMulticast", \.isMulticast),
+            ("FFFF:998A::1", "isMulticast", \.isMulticast),
+            ("FAFF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
+            ("FE80::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            ("FE90::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            ("FEBF::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            ("FEAA:9876:1928::9", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            ("FE70::", "!isLinkLocalUnicast", { @Sendable in !$0.isLinkLocalUnicast }),
+        ])
+    )
+    func ipv6AddressPropertiesWorkCorrectly(
+        ip: String,
+        testCaseDescription: String,
+        predicate: @Sendable (IPv6Address) -> Bool
+    ) throws {
+        let ip = try #require(IPv6Address(ip))
+        #expect(predicate(ip), "\(testCaseDescription)")
     }
 }
