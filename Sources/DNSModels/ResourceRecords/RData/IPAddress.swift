@@ -9,6 +9,9 @@ public enum IPAddress: Sendable, Hashable {
     /// An IPv6 address.
     case v6(IPv6Address)
 
+    /// Whether this address is the Loopback address, known as localhost, or not.
+    /// Equivalent to 127.0.0.0/8` in IPv4 CIDR notation or only the `::1` IP in IPv6 description format.
+    /// See the dedicated `IPv4Address` and `IPv6Address` `isLoopback` comments for more info.
     @inlinable
     public var isLoopback: Bool {
         switch self {
@@ -19,6 +22,9 @@ public enum IPAddress: Sendable, Hashable {
         }
     }
 
+    /// Whether this address is a Multicast address, or not.
+    /// Equivalent to `224.0.0.0/4` in IPv4 CIDR notation or `FF00::/120` in IPv6 CIDR notation.
+    /// See the dedicated `IPv4Address` and `IPv6Address` `isMulticast` comments for more info.
     @inlinable
     public var isMulticast: Bool {
         switch self {
@@ -26,16 +32,6 @@ public enum IPAddress: Sendable, Hashable {
             return ipv4.isMulticast
         case .v6(let ipv6):
             return ipv6.isMulticast
-        }
-    }
-
-    @inlinable
-    public var isLinkLocalUnicast: Bool {
-        switch self {
-        case .v4(let ipv4):
-            return ipv4.isLinkLocalUnicast
-        case .v6(let ipv6):
-            return ipv6.isLinkLocalUnicast
         }
     }
 }

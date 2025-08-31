@@ -88,31 +88,35 @@ struct IPAddressTests {
 
     @Test(
         arguments: [(IPv4Address, String, (@Sendable (IPv4Address) -> Bool))]([
+            (IPv4Address(127, 0, 0, 0), "isLoopback", \.isLoopback),
             (IPv4Address(127, 0, 0, 1), "isLoopback", \.isLoopback),
-            (IPv4Address(127, 0, 0, 2), "!isLoopback", { @Sendable in !$0.isLoopback }),
+            (IPv4Address(127, 128, 9, 22), "isLoopback", \.isLoopback),
+            (IPv4Address(127, 255, 255, 255), "isLoopback", \.isLoopback),
+            (IPv4Address(126, 0, 0, 0), "!isLoopback", { @Sendable in !$0.isLoopback }),
+            (IPv4Address(128, 0, 0, 0), "!isLoopback", { @Sendable in !$0.isLoopback }),
             (IPv4Address(224, 0, 0, 0), "isMulticast", \.isMulticast),
             (IPv4Address(239, 255, 255, 255), "isMulticast", \.isMulticast),
             (IPv4Address(229, 28, 192, 233), "isMulticast", \.isMulticast),
             (IPv4Address(244, 0, 0, 0), "!isMulticast", { @Sendable in !$0.isMulticast }),
-            (IPv4Address(169, 254, 0, 0), "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            (IPv4Address(169, 254, 0, 0), "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            (IPv4Address(169, 254, 222, 138), "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            (IPv4Address(169, 254, 255, 255), "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
+            (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
+            (IPv4Address(169, 254, 222, 138), "isLinkLocal", \.isLinkLocal),
+            (IPv4Address(169, 254, 255, 255), "isLinkLocal", \.isLinkLocal),
             (
-                IPv4Address(169, 253, 0, 0), "!isLinkLocalUnicast",
-                { @Sendable in !$0.isLinkLocalUnicast }
+                IPv4Address(169, 253, 0, 0), "!isLinkLocal",
+                { @Sendable in !$0.isLinkLocal }
             ),
             (
-                IPv4Address(169, 255, 0, 0), "!isLinkLocalUnicast",
-                { @Sendable in !$0.isLinkLocalUnicast }
+                IPv4Address(169, 255, 0, 0), "!isLinkLocal",
+                { @Sendable in !$0.isLinkLocal }
             ),
             (
-                IPv4Address(168, 254, 0, 0), "!isLinkLocalUnicast",
-                { @Sendable in !$0.isLinkLocalUnicast }
+                IPv4Address(168, 254, 0, 0), "!isLinkLocal",
+                { @Sendable in !$0.isLinkLocal }
             ),
             (
-                IPv4Address(170, 254, 0, 0), "!isLinkLocalUnicast",
-                { @Sendable in !$0.isLinkLocalUnicast }
+                IPv4Address(170, 254, 0, 0), "!isLinkLocal",
+                { @Sendable in !$0.isLinkLocal }
             ),
         ])
     )
@@ -232,6 +236,7 @@ struct IPAddressTests {
             ("[2001:0:0:1::2]", 0x2001_0000_0000_0001_0000_0000_0000_0002),
             ("[2001:db8:aaaa:bbbb:cccc:dddd:eeee:1]", 0x2001_0DB8_AAAA_BBBB_CCCC_DDDD_EEEE_0001),
             ("2001:db8:aaaa:bbbb:cccc:dddd:eeee:1", 0x2001_0DB8_AAAA_BBBB_CCCC_DDDD_EEEE_0001),
+            ("01:db8:a0a:bb:cc0:0dd0:ee:1", 0x0001_0DB8_0A0A_00BB_0CC0_0DD0_00EE_0001),
             ("[2001:db8::1:0:0:2]", 0x2001_0DB8_0000_0000_0001_0000_0000_0002),
             ("[::]", 0x0000_0000_0000_0000_0000_0000_0000_0000),
             ("::", 0x0000_0000_0000_0000_0000_0000_0000_0000),
@@ -304,6 +309,7 @@ struct IPAddressTests {
             ("::ffff:c000:0280", IPv4Address(192, 0, 2, 128)),
             ("::ffff:1234:5678", IPv4Address(18, 52, 86, 120)),
             ("::ffff:abcd:ef01", IPv4Address(171, 205, 239, 1)),
+            ("::ffff:7f00:0001", IPv4Address(127, 0, 0, 1)),
         ])
     )
     func ipv6AddressFromIpv4Address(
@@ -322,6 +328,8 @@ struct IPAddressTests {
             ("FF00::", "isMulticast", \.isMulticast),
             ("FF92::", "isMulticast", \.isMulticast),
             ("FFFF:998A::1", "isMulticast", \.isMulticast),
+            ("FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
+            ("00FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
             ("FAFF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
             ("FE80::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
             ("FE90::", "isLinkLocalUnicast", \.isLinkLocalUnicast),

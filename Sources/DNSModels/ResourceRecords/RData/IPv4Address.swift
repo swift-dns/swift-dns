@@ -18,23 +18,31 @@ public import SwiftIDNA
 ///
 /// [IETF RFC 6943]: https://tools.ietf.org/html/rfc6943#section-3.1.1
 public struct IPv4Address: Sendable, Hashable {
+    /// The byte size of an IPv4.
     @usableFromInline
     static var size: Int {
         4
     }
 
+    /// The underlying 32 bits (4 bytes) representing this IPv4 address.
     public var address: UInt32
 
+    /// Whether this address is an IPv4 Loopback address, known as localhost, or not.
+    /// Equivalent to `127.0.0.0/8` in CIDR notation.
+    /// That is, any IPv4 address starting with this sequence of bits: `01111111`.
+    /// In other words, any IPv4 address starting with `127`.
     @inlinable
     public var isLoopback: Bool {
         withUnsafeBytes(of: self.address) { ptr in
             ptr[3] == 0x7F
-                && ptr[2] == 0x00
-                && ptr[1] == 0x00
-                && ptr[0] == 0x01
         }
     }
 
+    /// Whether this address is an IPv4 Multicast address, or not.
+    /// Equivalent to `224.0.0.0/4` in CIDR notation.
+    /// That is, any IPv4 address starting with this sequence of bits: `1110`.
+    /// In other words, any IPv4 address whose first byte is within the range of `224 ... 239`.
+    /// For example `224.1.2.3` and `239.255.2.44` but not `223.x.x.x` and not `240.x.x.x`.
     @inlinable
     public var isMulticast: Bool {
         withUnsafeBytes(of: self.address) { ptr in
@@ -42,13 +50,18 @@ public struct IPv4Address: Sendable, Hashable {
         }
     }
 
+    /// Whether this address is an IPv4 Link Local address, or not.
+    /// Equivalent to `169.254.0.0/16` in CIDR notation.
+    /// That is, any IPv4 address starting with this sequence of bits: `1010100111111110`.
+    /// In other words, any IPv4 address starting with `169.254`.
     @inlinable
-    public var isLinkLocalUnicast: Bool {
+    public var isLinkLocal: Bool {
         withUnsafeBytes(of: self.address) { ptr in
             ptr[3] == 169 && ptr[2] == 254
         }
     }
 
+    /// Directly construct an IPv4 from the UInt32 representing it.
     @inlinable
     public init(_ address: UInt32) {
         self.address = address
@@ -107,6 +120,7 @@ public struct IPv4Address: Sendable, Hashable {
 }
 
 extension IPv4Address {
+    /// The 4 bytes representing this IPv4 address.
     public var bytes: (UInt8, UInt8, UInt8, UInt8) {
         withUnsafeBytes(of: self.address) { ptr in
             (ptr[3], ptr[2], ptr[1], ptr[0])
@@ -115,6 +129,7 @@ extension IPv4Address {
 }
 
 extension IPv4Address: CustomStringConvertible {
+    /// The textual representation of an IPv4 address.
     @inlinable
     public var description: String {
         var result: String = ""
@@ -139,6 +154,10 @@ extension IPv4Address: CustomStringConvertible {
 }
 
 extension IPv4Address: LosslessStringConvertible {
+    /// Initialize an IPv4 address from its textual representation.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// This implementation is IDNA compliant.
+    /// That means the following addresses are considered equal: `192｡₁₆₈｡₁｡98`, `192.168.1.98`.
     @inlinable
     public init?(_ description: String) {
         var address: UInt32 = 0

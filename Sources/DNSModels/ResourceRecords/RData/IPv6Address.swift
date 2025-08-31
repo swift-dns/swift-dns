@@ -59,13 +59,17 @@ import SwiftIDNA
 /// [IETF RFC 5952]: https://tools.ietf.org/html/rfc5952
 @available(swiftDNSApplePlatforms 15, *)
 public struct IPv6Address: Sendable, Hashable {
+    /// The byte size of an IPv6.
     @usableFromInline
     static var size: Int {
         16
     }
 
+    /// The underlying 128 bits (16 bytes) representing this IPv6 address.
     public var address: UInt128
 
+    /// Whether this address is the IPv6 Loopback address, known as localhost, or not.
+    /// Equivalent to `::1` or `0:0:0:0:0:0:0:1` in IPv6 description format.
     @inlinable
     public var isLoopback: Bool {
         /// FIXME: Should check if this IP can be mapped to an ipv6 and is a loopback address there?
@@ -74,6 +78,11 @@ public struct IPv6Address: Sendable, Hashable {
         }
     }
 
+    /// Whether this address is an IPv6 Multicast address, or not.
+    /// Equivalent to `FF00::/120` in CIDR notation.
+    /// That is, any IPv6 address starting with this sequence of bits: `11111111`.
+    /// In other words, any IPv6 address starting with `FFxx`. This does not include an address like
+    /// `FF::` which is equivalent to `00FF::` and does not start with `FF`.
     @inlinable
     public var isMulticast: Bool {
         /// FIXME: Should check if this IP can be mapped to an ipv6 and is a multicast address there?
@@ -82,6 +91,9 @@ public struct IPv6Address: Sendable, Hashable {
         }
     }
 
+    /// Whether this address is an IPv6 Link Local Unicast address, or not.
+    /// Equivalent to `FE80::/10` in CIDR notation.
+    /// That is, any IPv6 address starting with this sequence of bits: `1111111010`.
     @inlinable
     public var isLinkLocalUnicast: Bool {
         /// FIXME: Should check if this IP can be mapped to an ipv6 and is a link local unicast address there?
@@ -90,6 +102,7 @@ public struct IPv6Address: Sendable, Hashable {
         }
     }
 
+    /// Directly construct an IPv6 from the UInt128 representing it.
     @inlinable
     public init(_ address: UInt128) {
         self.address = address
@@ -125,6 +138,9 @@ public struct IPv6Address: Sendable, Hashable {
         }
     }
 
+    /// Directly construct an IPv6 from the 8 16-bits (2-bytes) representing it.
+    /// Example: `IPv6Address(0x0102, 0x0304, 0x0506, 0x0708, 0x090A, 0x0B0C, 0x0D0E, 0x0F10)`
+    /// That is equivalent to this UInt128: `0x0102_0304_0506_0708_090A_0B0C_0D0E_0F10`.
     @inlinable
     public init(
         _ _1: UInt16,
@@ -157,6 +173,9 @@ public struct IPv6Address: Sendable, Hashable {
         }
     }
 
+    /// Directly construct an IPv6 from the 16 bytes representing it.
+    /// Example: `IPv6Address(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10)`
+    /// That is equivalent to this UInt128: `0x0102_0304_0506_0708_090A_0B0C_0D0E_0F10`.
     @inlinable
     public init(
         _ _1: UInt8,
@@ -200,6 +219,7 @@ public struct IPv6Address: Sendable, Hashable {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address {
+    /// The 16 bytes representing this IPv6 address.
     @inlinable
     public var bytes:
         (
@@ -215,6 +235,7 @@ extension IPv6Address {
         }
     }
 
+    /// The 8 16-bits (2-bytes) representing this IPv6 address.
     @inlinable
     public var bytePairs:
         (
@@ -238,9 +259,16 @@ extension IPv6Address {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: CustomStringConvertible {
-    /// The textual representation of an IPv6 address, enclosed in `[]`.
+    /// The textual representation of an IPv6 address.
+    /// That is, 8 16-bits (2-bytes) separated by `:`, enclosed in `[]`, while using
+    /// the compression sign (`::`) when possible.
     ///
     /// Compliant with [RFC 5952, A Recommendation for IPv6 Address Text Representation, August 2010](https://tools.ietf.org/html/rfc5952).
+    ///
+    /// This implementation is IDNA compliant as well.
+    /// That means the following addresses are considered equal:
+    /// `﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈`
+    /// `[2001:db8:85a3:f109:197a:8a2e:370:7334]`
     @inlinable
     public var description: String {
         /// Short-circuit "0".
