@@ -75,6 +75,8 @@ jobs:
       matrix:
         macos:
           - version: macos-15
+        xcode:
+          - version: 16.4
         swift:
           - version: 6.2-snapshot
         config:
@@ -89,13 +91,10 @@ jobs:
       - name: Setup appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ matrix.xcode-version }}
+          xcode-version: ${{ matrix.xcode.version }}
 
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v4
-
-      - name: Install zstd for faster caching, and curl for codecov action
-        run: brew install zstd curl
 
       - name: Update swift via Swiftly
         run: |
@@ -114,7 +113,6 @@ jobs:
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}
           swiftly use --assume-yes ${{ matrix.swift.version }}
-          hash -r
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
