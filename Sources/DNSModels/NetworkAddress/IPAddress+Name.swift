@@ -72,6 +72,7 @@ extension Name {
         let bytePairs = ipAddress.bytePairs
 
         buffer.writeInteger(UInt8.asciiOpeningSquareBracket)
+        /// FIXME: Turn this into a loop with reading unsafeBytes?
         add(bytePairs.0)
         buffer.writeInteger(UInt8.asciiColon)
         add(bytePairs.1)

@@ -72,10 +72,7 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     /// Equivalent to `::1` or `0:0:0:0:0:0:0:1` in IPv6 description format.
     @inlinable
     public var isLoopback: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0x0000_0000_0000_0000_0000_0000_0000_0001,
-            countOfMaskedBits: 128
-        ).contains(self)
+        CIDR<Self>.loopback.contains(self)
     }
 
     /// Whether this address is an IPv6 Multicast address, or not.
@@ -85,10 +82,7 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     /// `FF::` which is equivalent to `00FF::` and does not start with `FF`.
     @inlinable
     public var isMulticast: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0xFF00_0000_0000_0000_0000_0000_0000_0000,
-            countOfMaskedBits: 8
-        ).contains(self)
+        CIDR<Self>.multicast.contains(self)
     }
 
     /// Whether this address is an IPv6 Link Local Unicast address, or not.
@@ -96,10 +90,7 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     /// That is, any IPv6 address starting with this sequence of bits: `1111111010`.
     @inlinable
     public var isLinkLocalUnicast: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0xFE80_0000_0000_0000_0000_0000_0000_0000,
-            countOfMaskedBits: 10
-        ).contains(self)
+        CIDR<Self>.linkLocalUnicast.contains(self)
     }
 
     public init(_ address: UInt128) {

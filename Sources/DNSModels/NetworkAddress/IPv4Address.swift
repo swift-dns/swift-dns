@@ -34,10 +34,7 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLoopback: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0x7F_00_00_00,
-            countOfMaskedBits: 8
-        ).contains(self)
+        CIDR<Self>.loopback.contains(self)
     }
 
     /// Whether this address is an IPv4 Multicast address, or not.
@@ -48,10 +45,7 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isMulticast: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0xE0_00_00_00,
-            countOfMaskedBits: 4
-        ).contains(self)
+        CIDR<Self>.multicast.contains(self)
     }
 
     /// Whether this address is an IPv4 Link Local address, or not.
@@ -61,10 +55,7 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLinkLocal: Bool {
-        CIDR<Self>(
-            uncheckedPrefix: 0xA9_FE_00_00,
-            countOfMaskedBits: 16
-        ).contains(self)
+        CIDR<Self>.linkLocal.contains(self)
     }
 
     public init(_ address: UInt32) {
