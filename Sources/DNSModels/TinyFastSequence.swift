@@ -1,5 +1,5 @@
 /// A `Sequence` that does not heap allocate, if it carries no elements
-public struct TinyFastSequence<Element>: Sequence {
+public struct TinyFastSequence<Element> {
     @usableFromInline
     enum Base {
         case none(reserveCapacity: Int)
@@ -95,7 +95,9 @@ public struct TinyFastSequence<Element>: Sequence {
             self.base = .n(existing)
         }
     }
+}
 
+extension TinyFastSequence: Sequence {
     @inlinable
     public func makeIterator() -> Iterator {
         Iterator(self)
@@ -137,6 +139,7 @@ extension TinyFastSequence.Base: Hashable where Element: Hashable {}
 
 extension TinyFastSequence: Sendable where Element: Sendable {}
 extension TinyFastSequence.Base: Sendable where Element: Sendable {}
+extension TinyFastSequence.Iterator: Sendable where Element: Sendable {}
 
 extension TinyFastSequence: ExpressibleByArrayLiteral {
     @inlinable

@@ -83,9 +83,10 @@ struct IPAddressTests {
         expectedIPv6: String
     ) throws {
         let ipv6 = try #require(IPv6Address(expectedIPv6))
-        #expect(ipv4 == IPv4Address(ipv6))
+        #expect(ipv4 == IPv4Address(ipv6: ipv6))
     }
 
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(
         arguments: [(IPv4Address, String, (@Sendable (IPv4Address) -> Bool))]([
             (IPv4Address(127, 0, 0, 0), "isLoopback", \.isLoopback),
@@ -98,7 +99,6 @@ struct IPAddressTests {
             (IPv4Address(239, 255, 255, 255), "isMulticast", \.isMulticast),
             (IPv4Address(229, 28, 192, 233), "isMulticast", \.isMulticast),
             (IPv4Address(244, 0, 0, 0), "!isMulticast", { @Sendable in !$0.isMulticast }),
-            (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 222, 138), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 255, 255), "isLinkLocal", \.isLinkLocal),
@@ -317,7 +317,7 @@ struct IPAddressTests {
         expectedIPv4: IPv4Address
     ) throws {
         let ipv6 = try #require(IPv6Address(ipv6))
-        #expect(ipv6 == IPv6Address(expectedIPv4))
+        #expect(ipv6 == IPv6Address(ipv4: expectedIPv4))
     }
 
     @available(swiftDNSApplePlatforms 15, *)

@@ -58,7 +58,7 @@ import SwiftIDNA
 ///
 /// [IETF RFC 5952]: https://tools.ietf.org/html/rfc5952
 @available(swiftDNSApplePlatforms 15, *)
-public struct IPv6Address: Sendable, Hashable {
+public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     /// The byte size of an IPv6.
     @usableFromInline
     static var size: Int {
@@ -72,10 +72,10 @@ public struct IPv6Address: Sendable, Hashable {
     /// Equivalent to `::1` or `0:0:0:0:0:0:0:1` in IPv6 description format.
     @inlinable
     public var isLoopback: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a loopback address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[0] == 0x01 && (1..<16).allSatisfy { ptr[$0] == 0x00 }
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0x0000_0000_0000_0000_0000_0000_0000_0001,
+            countOfMaskedBits: 128
+        ).contains(self)
     }
 
     /// Whether this address is an IPv6 Multicast address, or not.
@@ -85,10 +85,10 @@ public struct IPv6Address: Sendable, Hashable {
     /// `FF::` which is equivalent to `00FF::` and does not start with `FF`.
     @inlinable
     public var isMulticast: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a multicast address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[15] == 0xFF
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0xFF00_0000_0000_0000_0000_0000_0000_0000,
+            countOfMaskedBits: 8
+        ).contains(self)
     }
 
     /// Whether this address is an IPv6 Link Local Unicast address, or not.
@@ -96,14 +96,12 @@ public struct IPv6Address: Sendable, Hashable {
     /// That is, any IPv6 address starting with this sequence of bits: `1111111010`.
     @inlinable
     public var isLinkLocalUnicast: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a link local unicast address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[15] == 0xFE && ptr[14] &>> 6 == 0b10
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0xFE80_0000_0000_0000_0000_0000_0000_0000,
+            countOfMaskedBits: 10
+        ).contains(self)
     }
 
-    /// Directly construct an IPv6 from the UInt128 representing it.
-    @inlinable
     public init(_ address: UInt128) {
         self.address = address
     }
@@ -130,7 +128,7 @@ public struct IPv6Address: Sendable, Hashable {
     ///    address".
     /// ```
     @inlinable
-    public init(_ ipv4: IPv4Address) {
+    public init(ipv4: IPv4Address) {
         self.address = UInt128(ipv4.address)
         withUnsafeMutableBytes(of: &self.address) { ptr in
             ptr[4] = 0xFF
@@ -254,6 +252,13 @@ extension IPv6Address {
                 UInt16(ptr[1]) &<< 8 | UInt16(ptr[0])
             )
         }
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPv6Address: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: UInt128) {
+        self.address = value
     }
 }
 

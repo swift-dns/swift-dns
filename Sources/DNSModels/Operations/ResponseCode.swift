@@ -36,7 +36,7 @@
 ///
 ///                 6-15            Reserved for future use.
 ///  ```
-public enum ResponseCode {
+public enum ResponseCode: Sendable {
     /// No Error [RFC 1035](https://tools.ietf.org/html/rfc1035)
     case NoError
     /// Format Error [RFC 1035](https://tools.ietf.org/html/rfc1035)

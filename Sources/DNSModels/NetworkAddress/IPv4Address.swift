@@ -17,7 +17,7 @@ public import SwiftIDNA
 /// are indicated with a leading `0x`) are not allowed per [IETF RFC 6943].
 ///
 /// [IETF RFC 6943]: https://tools.ietf.org/html/rfc6943#section-3.1.1
-public struct IPv4Address: Sendable, Hashable {
+public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     /// The byte size of an IPv4.
     @usableFromInline
     static var size: Int {
@@ -31,11 +31,13 @@ public struct IPv4Address: Sendable, Hashable {
     /// Equivalent to `127.0.0.0/8` in CIDR notation.
     /// That is, any IPv4 address starting with this sequence of bits: `01111111`.
     /// In other words, any IPv4 address starting with `127`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLoopback: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[3] == 0x7F
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0x7F_00_00_00,
+            countOfMaskedBits: 8
+        ).contains(self)
     }
 
     /// Whether this address is an IPv4 Multicast address, or not.
@@ -43,26 +45,28 @@ public struct IPv4Address: Sendable, Hashable {
     /// That is, any IPv4 address starting with this sequence of bits: `1110`.
     /// In other words, any IPv4 address whose first byte is within the range of `224 ... 239`.
     /// For example `224.1.2.3` and `239.255.2.44` but not `223.x.x.x` and not `240.x.x.x`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isMulticast: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            (ptr[3] &>> 4) == 0b1110
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0xE0_00_00_00,
+            countOfMaskedBits: 4
+        ).contains(self)
     }
 
     /// Whether this address is an IPv4 Link Local address, or not.
     /// Equivalent to `169.254.0.0/16` in CIDR notation.
     /// That is, any IPv4 address starting with this sequence of bits: `1010100111111110`.
     /// In other words, any IPv4 address starting with `169.254`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLinkLocal: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[3] == 169 && ptr[2] == 254
-        }
+        CIDR<Self>(
+            uncheckedPrefix: 0xA9_FE_00_00,
+            countOfMaskedBits: 16
+        ).contains(self)
     }
 
-    /// Directly construct an IPv4 from the UInt32 representing it.
-    @inlinable
     public init(_ address: UInt32) {
         self.address = address
     }
@@ -90,7 +94,7 @@ public struct IPv4Address: Sendable, Hashable {
     /// ```
     @available(swiftDNSApplePlatforms 15, *)
     @inlinable
-    public init?(_ ipv6: IPv6Address) {
+    public init?(ipv6: IPv6Address) {
         guard
             withUnsafeBytes(
                 of: ipv6.address,
@@ -150,6 +154,12 @@ extension IPv4Address: CustomStringConvertible {
             }
         }
         return result
+    }
+}
+
+extension IPv4Address: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: UInt32) {
+        self.address = value
     }
 }
 
