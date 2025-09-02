@@ -4,7 +4,7 @@ extension CIDR<IPv6Address> {
     @inlinable
     public static var loopback: Self {
         Self(
-            uncheckedPrefix: 0x0000_0000_0000_0000_0000_0000_0000_0001,
+            prefix: 0x0000_0000_0000_0000_0000_0000_0000_0001,
             countOfMaskedBits: 128
         )
     }
@@ -13,7 +13,7 @@ extension CIDR<IPv6Address> {
     @inlinable
     public static var multicast: Self {
         Self(
-            uncheckedPrefix: 0xFF00_0000_0000_0000_0000_0000_0000_0000,
+            prefix: 0xFF00_0000_0000_0000_0000_0000_0000_0000,
             countOfMaskedBits: 8
         )
     }
@@ -22,7 +22,7 @@ extension CIDR<IPv6Address> {
     @inlinable
     public static var linkLocalUnicast: Self {
         Self(
-            uncheckedPrefix: 0xFE80_0000_0000_0000_0000_0000_0000_0000,
+            prefix: 0xFE80_0000_0000_0000_0000_0000_0000_0000,
             countOfMaskedBits: 10
         )
     }

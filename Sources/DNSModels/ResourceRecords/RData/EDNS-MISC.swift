@@ -294,7 +294,7 @@ extension EDNSOption.SupportedAlgorithms {
         Self.Sequence(base: self)
     }
 
-    public struct Sequence: Swift.Sequence {
+    public struct Sequence: Sendable, Swift.Sequence {
         var base: EDNSOption.SupportedAlgorithms
 
         init(base: EDNSOption.SupportedAlgorithms) {
@@ -305,7 +305,7 @@ extension EDNSOption.SupportedAlgorithms {
             Iterator(base: self.base)
         }
 
-        public struct Iterator: IteratorProtocol {
+        public struct Iterator: Sendable, IteratorProtocol {
             public typealias Element = DNSSECAlgorithmEDNSSubset
 
             var base: EDNSOption.SupportedAlgorithms
@@ -434,7 +434,7 @@ extension EDNSOption.Keepalive {
 }
 
 /// FIXME: what if we need to grow the size of this enum?
-public enum DNSSECAlgorithmEDNSSubset: UInt8 {
+public enum DNSSECAlgorithmEDNSSubset: UInt8, Sendable {
 
     /// I know the explicit numbers are not needed and Swift already does this.
     /// Just being explicit for the sake of clarity.

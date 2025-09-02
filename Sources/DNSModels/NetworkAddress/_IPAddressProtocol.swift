@@ -1,15 +1,16 @@
-/// Not intended to be implemented by users.
+/// DO NOT IMPLEMENT THIS PROTOCOL YOURSELF.
 /// Use `IPv4Address` or `IPv6Address` which conform to this protocol.
-public protocol _IPAddressProtocol: Sendable, Hashable, ExpressibleByIntegerLiteral {
-    associatedtype
-        AddressType:
-            Sendable,
-            Hashable,
-            FixedWidthInteger,
-            UnsignedInteger,
-            BitwiseCopyable,
-            Comparable
-    where AddressType == IntegerLiteralType
-
-    var address: AddressType { get }
+public protocol _IPAddressProtocol:
+    Sendable,
+    Hashable,
+    ExpressibleByIntegerLiteral
+where
+    IntegerLiteralType: Sendable
+        & Hashable
+        & FixedWidthInteger
+        & UnsignedInteger
+        & BitwiseCopyable
+        & Comparable
+{
+    var address: IntegerLiteralType { get }
 }

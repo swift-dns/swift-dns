@@ -4,7 +4,7 @@ extension CIDR<IPv4Address> {
     @inlinable
     public static var loopback: Self {
         Self(
-            uncheckedPrefix: 0x7F_00_00_00,
+            prefix: 0x7F_00_00_00,
             countOfMaskedBits: 8
         )
     }
@@ -13,7 +13,7 @@ extension CIDR<IPv4Address> {
     @inlinable
     public static var multicast: Self {
         Self(
-            uncheckedPrefix: 0xE0_00_00_00,
+            prefix: 0xE0_00_00_00,
             countOfMaskedBits: 4
         )
     }
@@ -22,7 +22,7 @@ extension CIDR<IPv4Address> {
     @inlinable
     public static var linkLocal: Self {
         Self(
-            uncheckedPrefix: 0xA9_FE_00_00,
+            prefix: 0xA9_FE_00_00,
             countOfMaskedBits: 16
         )
     }
