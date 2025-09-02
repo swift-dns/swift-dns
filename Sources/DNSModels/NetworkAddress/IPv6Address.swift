@@ -1,4 +1,4 @@
-import SwiftIDNA
+public import SwiftIDNA
 
 /// An IPv6 address.
 ///
@@ -396,14 +396,14 @@ extension IPv6Address: LosslessStringConvertible {
 
         let startsWithBracket =
             (scalars.first).map({
-                IPv6Address.isIDNAEquivalent(
+                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                     to: .asciiLeftSquareBracket,
                     scalar: $0
                 )
             }) == true
         let endsWithBracket =
             (scalars.last).map({
-                IPv6Address.isIDNAEquivalent(
+                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                     to: .asciiRightSquareBracket,
                     scalar: $0
                 )
@@ -429,9 +429,12 @@ extension IPv6Address: LosslessStringConvertible {
         var groupIdx = 0
         /// Have seen '::' or not
         var seenCompressionSign = false
-        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(
-            where: { IPv6Address.isIDNAEquivalent(to: .asciiColon, scalar: $0) }
-        ) {
+        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(where: {
+            IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
+                to: .asciiColon,
+                scalar: $0
+            )
+        }) {
             let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
             if scalarsGroup.isEmpty {
                 if seenCompressionSign {
@@ -444,7 +447,7 @@ extension IPv6Address: LosslessStringConvertible {
                     let nextIdx = scalars.index(after: nextSeparatorIdx)
 
                     guard
-                        IPv6Address.isIDNAEquivalent(
+                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                             to: .asciiColon,
                             scalar: scalars[nextIdx]
                         )
@@ -466,7 +469,7 @@ extension IPv6Address: LosslessStringConvertible {
                     return
                 } else {
                     guard
-                        IPv6Address.isIDNAEquivalent(
+                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                             to: .asciiColon,
                             scalar: scalars[scalars.index(before: nextSeparatorIdx)]
                         )
@@ -546,19 +549,6 @@ extension IPv6Address: LosslessStringConvertible {
         addressLhs |= addressRhs &>> shift
 
         self.init(addressLhs)
-    }
-
-    /// Based on https://www.unicode.org/Public/idna/17.0.0/IdnaMappingTable.txt
-    @usableFromInline
-    static func isIDNAEquivalent(to toScalar: Unicode.Scalar, scalar: Unicode.Scalar) -> Bool {
-        switch IDNAMapping.for(scalar: scalar) {
-        case .valid:
-            return scalar == toScalar
-        case .mapped(let mapped), .deviation(let mapped):
-            return mapped.count == 1 && mapped.first.unsafelyUnwrapped == toScalar
-        case .disallowed, .ignored:
-            return false
-        }
     }
 
     @usableFromInline
