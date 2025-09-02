@@ -62,6 +62,19 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
         self.address = address
     }
 
+    /// The exact translation of an `IPAddress` to an `IPv4Address`.
+    ///
+    /// This does not handle ipv6-to-ipv4 mappings. Use `init?(ipv6:)` for that.
+    @available(swiftDNSApplePlatforms 15, *)
+    public init?(exactly ipAddress: IPAddress) {
+        switch ipAddress {
+        case .v4(let ipv4):
+            self = ipv4
+        case .v6:
+            return nil
+        }
+    }
+
     /// Maps an IPv6 address to an IPv4 address if the ipv6 is in a specific address space mentioned in [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
     ///
     /// ```text

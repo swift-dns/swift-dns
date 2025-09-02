@@ -69,25 +69,9 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
 
     /// Whether or not the given IPAddress is within this CIDR.
     public func contains(_ other: IPAddress) -> Bool {
-        switch IntegerLiteralType.bitWidth {
-        /// IPv4
-        case 32:
-            switch other {
-            case .v4(let ipv4):
-                return self.contains(ipv4 as! IPAddressType)
-            case .v6:
-                return false
-            }
-        /// IPv6
-        case 128:
-            switch other {
-            case .v4:
-                return false
-            case .v6(let ipv6):
-                return self.contains(ipv6 as! IPAddressType)
-            }
-        default:
-            fatalError("Unsupported IP address type")
+        guard let ip = IPAddressType(exactly: other) else {
+            return false
         }
+        return self.contains(ip)
     }
 }

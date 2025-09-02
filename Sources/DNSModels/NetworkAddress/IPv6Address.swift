@@ -97,6 +97,19 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
         self.address = address
     }
 
+    /// The exact translation of an `IPAddress` to an `IPv4Address`.
+    ///
+    /// This does not handle ipv4-to-ipv6 mappings. Use `init(ipv4:)` for that.
+    @available(swiftDNSApplePlatforms 15, *)
+    public init?(exactly ipAddress: IPAddress) {
+        switch ipAddress {
+        case .v4:
+            return nil
+        case .v6(let ipv6):
+            self = ipv6
+        }
+    }
+
     /// Maps an IPv4 address to an IPv6 address in the reserved address space by [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
     ///
     /// ```text
