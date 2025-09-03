@@ -21,6 +21,15 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// FIXME: should we store `countOfMaskedBits` for the smaller footprint?
     public let mask: IntegerLiteralType
 
+    @inlinable
+    init(
+        prefix: IPAddressType,
+        uncheckedUnsafeMask mask: IntegerLiteralType
+    ) {
+        self.prefix = IPAddressType(integerLiteral: prefix.address & mask)
+        self.mask = mask
+    }
+
     /// Create a new CIDR with the given prefix and mask.
     ///
     /// Examples:
@@ -47,8 +56,7 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
             return nil
         }
 
-        self.prefix = IPAddressType(integerLiteral: prefix.address & mask)
-        self.mask = mask
+        self.init(prefix: prefix, uncheckedUnsafeMask: mask)
     }
 
     /// Create a new CIDR with the given prefix and mask.
@@ -80,8 +88,7 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
                 ) == mask
         )
 
-        self.prefix = IPAddressType(integerLiteral: prefix.address & mask)
-        self.mask = mask
+        self.init(prefix: prefix, uncheckedUnsafeMask: mask)
     }
 
     /// Create a new CIDR with the given prefix and count of masked bits.
@@ -102,23 +109,21 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         countOfMaskedBits: UInt8
     ) {
         let mask = Self.makeMaskBasedOn(countOfMaskedBits: countOfMaskedBits)
-        self.init(prefix: prefix, uncheckedMask: mask)
+        self.init(prefix: prefix, uncheckedUnsafeMask: mask)
     }
 
     /// Ignores bits that are greater than the bit width of the IP address type.
+    /// Creates a number with `countOfMaskedBits` amount of leading 1s followed by all zeros.
     @inlinable
-    static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IntegerLiteralType {
-        let mask: IntegerLiteralType
-        if countOfMaskedBits >= IntegerLiteralType.bitWidth {
-            mask = .max
-        } else {
-            let one = IntegerLiteralType.zero.advanced(by: 1)
-            let bitWidth = UInt8(IntegerLiteralType.bitWidth)
-            let maskBits: IntegerLiteralType = (one &<< countOfMaskedBits) - one
-            let maskTrailingZeroCount = bitWidth - countOfMaskedBits
-            mask = maskBits &<< maskTrailingZeroCount
-        }
-        return mask
+    package static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IntegerLiteralType {
+        let bitWidth = UInt8(IntegerLiteralType.bitWidth)
+        let countOfMaskedBits = min(countOfMaskedBits, bitWidth)
+        let countOfZeros = bitWidth &- countOfMaskedBits
+        /// This combination of unchecked and checked bit-shift is not only safe, but also intended.
+        /// The second bit-shift cannot become an unchecked operation.
+        /// If you're curious, make it unchecked and run `CIDRTests` to see that they fail
+        /// when `countOfMaskedBits` is 0.
+        return (IntegerLiteralType.max &>> countOfZeros) << countOfZeros
     }
 
     /// Whether or not the given IPAddress is within this CIDR.

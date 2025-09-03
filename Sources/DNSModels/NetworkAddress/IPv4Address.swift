@@ -3,7 +3,7 @@ public import SwiftIDNA
 /// An IPv4 address.
 ///
 /// IPv4 addresses are defined as 32-bit integers in [IETF RFC 791].
-/// They are usually represented as four octets.
+/// They are usually represented as four bytes.
 ///
 /// See [`IPAddress`] for a type encompassing both IPv4 and IPv6 addresses.
 ///
@@ -11,7 +11,7 @@ public import SwiftIDNA
 ///
 /// # Textual representation
 ///
-/// `IPv4Address` provides an initializer that accepts a string. The four octets are in decimal
+/// `IPv4Address` provides an initializer that accepts a string. The four bytes are in decimal
 /// notation, divided by `.` (this is called "dot-decimal notation").
 /// Notably, octal numbers (which are indicated with a leading `0`) and hexadecimal numbers (which
 /// are indicated with a leading `0x`) are not allowed per [IETF RFC 6943].
