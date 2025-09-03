@@ -11,7 +11,7 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     public let prefix: IPAddressType
     /// The masked part of the address.
     /// Example: in 127.0.0.1/8, the mask is the first 8 bits / the first segment of the IP
-    /// in 0xFF00::/8, the mask is the first 8 bits / the first segment of the IP
+    /// in 0xFF00::/8, the mask is the first 8 bits / the first 2 letters of the IP
     ///
     /// FIXME: should we store `countOfMaskedBits` for the smaller footprint?
     public let mask: IntegerLiteralType
