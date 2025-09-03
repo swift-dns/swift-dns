@@ -54,7 +54,7 @@ extension IPAddress: CustomStringConvertible {
 extension IPAddress: LosslessStringConvertible {
     @inlinable
     public init?(_ description: String) {
-        /// Find the first either "." or ":" (or their IDNA equivalents) and based on that decide
+        /// Finds the first either "." or ":" (or their IDNA equivalents) and based on that decide
         /// what type of IP Address this must be.
         for scalar in description.unicodeScalars {
             /// TODO: Check which one is faster.
