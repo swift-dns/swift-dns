@@ -83,9 +83,10 @@ struct IPAddressTests {
         expectedIPv6: String
     ) throws {
         let ipv6 = try #require(IPv6Address(expectedIPv6))
-        #expect(ipv4 == IPv4Address(ipv6))
+        #expect(ipv4 == IPv4Address(ipv6: ipv6))
     }
 
+    @available(swiftDNSApplePlatforms 15, *)
     @Test(
         arguments: [(IPv4Address, String, (@Sendable (IPv4Address) -> Bool))]([
             (IPv4Address(127, 0, 0, 0), "isLoopback", \.isLoopback),
@@ -98,7 +99,6 @@ struct IPAddressTests {
             (IPv4Address(239, 255, 255, 255), "isMulticast", \.isMulticast),
             (IPv4Address(229, 28, 192, 233), "isMulticast", \.isMulticast),
             (IPv4Address(244, 0, 0, 0), "!isMulticast", { @Sendable in !$0.isMulticast }),
-            (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 0, 0), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 222, 138), "isLinkLocal", \.isLinkLocal),
             (IPv4Address(169, 254, 255, 255), "isLinkLocal", \.isLinkLocal),
@@ -225,6 +225,8 @@ struct IPAddressTests {
                 0x2001_0DB8_85A3_F109_197A_8A2E_0370_7334
             ),
             ("₁₁₁₁:2222:3333:4444:5555:₆6₆6:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888),
+            ("[FF::]", 0x00FF_0000_0000_0000_0000_0000_0000_0000),
+            ("[0:FF::]", 0x0000_00FF_0000_0000_0000_0000_0000_0000),
             ("[2001:db8:85a3::100]", 0x2001_0DB8_85A3_0000_0000_0000_0000_0100),
             ("2001:db8:85a3::100", 0x2001_0DB8_85A3_0000_0000_0000_0000_0100),
             ("[2001:db8::1:0:0:2]", 0x2001_0DB8_0000_0000_0001_0000_0000_0002),
@@ -317,7 +319,7 @@ struct IPAddressTests {
         expectedIPv4: IPv4Address
     ) throws {
         let ipv6 = try #require(IPv6Address(ipv6))
-        #expect(ipv6 == IPv6Address(expectedIPv4))
+        #expect(ipv6 == IPv6Address(ipv4: expectedIPv4))
     }
 
     @available(swiftDNSApplePlatforms 15, *)

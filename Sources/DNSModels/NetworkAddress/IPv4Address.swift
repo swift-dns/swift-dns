@@ -3,7 +3,7 @@ public import SwiftIDNA
 /// An IPv4 address.
 ///
 /// IPv4 addresses are defined as 32-bit integers in [IETF RFC 791].
-/// They are usually represented as four octets.
+/// They are usually represented as four bytes.
 ///
 /// See [`IPAddress`] for a type encompassing both IPv4 and IPv6 addresses.
 ///
@@ -11,13 +11,13 @@ public import SwiftIDNA
 ///
 /// # Textual representation
 ///
-/// `IPv4Address` provides an initializer that accepts a string. The four octets are in decimal
+/// `IPv4Address` provides an initializer that accepts a string. The four bytes are in decimal
 /// notation, divided by `.` (this is called "dot-decimal notation").
 /// Notably, octal numbers (which are indicated with a leading `0`) and hexadecimal numbers (which
 /// are indicated with a leading `0x`) are not allowed per [IETF RFC 6943].
 ///
 /// [IETF RFC 6943]: https://tools.ietf.org/html/rfc6943#section-3.1.1
-public struct IPv4Address: Sendable, Hashable {
+public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     /// The byte size of an IPv4.
     @usableFromInline
     static var size: Int {
@@ -31,11 +31,10 @@ public struct IPv4Address: Sendable, Hashable {
     /// Equivalent to `127.0.0.0/8` in CIDR notation.
     /// That is, any IPv4 address starting with this sequence of bits: `01111111`.
     /// In other words, any IPv4 address starting with `127`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLoopback: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[3] == 0x7F
-        }
+        CIDR<Self>.loopback.contains(self)
     }
 
     /// Whether this address is an IPv4 Multicast address, or not.
@@ -43,28 +42,37 @@ public struct IPv4Address: Sendable, Hashable {
     /// That is, any IPv4 address starting with this sequence of bits: `1110`.
     /// In other words, any IPv4 address whose first byte is within the range of `224 ... 239`.
     /// For example `224.1.2.3` and `239.255.2.44` but not `223.x.x.x` and not `240.x.x.x`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isMulticast: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            (ptr[3] &>> 4) == 0b1110
-        }
+        CIDR<Self>.multicast.contains(self)
     }
 
     /// Whether this address is an IPv4 Link Local address, or not.
     /// Equivalent to `169.254.0.0/16` in CIDR notation.
     /// That is, any IPv4 address starting with this sequence of bits: `1010100111111110`.
     /// In other words, any IPv4 address starting with `169.254`.
+    @available(swiftDNSApplePlatforms 15, *)
     @inlinable
     public var isLinkLocal: Bool {
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[3] == 169 && ptr[2] == 254
-        }
+        CIDR<Self>.linkLocal.contains(self)
     }
 
-    /// Directly construct an IPv4 from the UInt32 representing it.
-    @inlinable
     public init(_ address: UInt32) {
         self.address = address
+    }
+
+    /// The exact translation of an `IPAddress` to an `IPv4Address`.
+    ///
+    /// This does not handle ipv6-to-ipv4 mappings. Use `init?(ipv6:)` for that.
+    @available(swiftDNSApplePlatforms 15, *)
+    public init?(exactly ipAddress: IPAddress) {
+        switch ipAddress {
+        case .v4(let ipv4):
+            self = ipv4
+        case .v6:
+            return nil
+        }
     }
 
     /// Maps an IPv6 address to an IPv4 address if the ipv6 is in a specific address space mentioned in [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
@@ -90,7 +98,7 @@ public struct IPv4Address: Sendable, Hashable {
     /// ```
     @available(swiftDNSApplePlatforms 15, *)
     @inlinable
-    public init?(_ ipv6: IPv6Address) {
+    public init?(ipv6: IPv6Address) {
         guard
             withUnsafeBytes(
                 of: ipv6.address,
@@ -150,6 +158,12 @@ extension IPv4Address: CustomStringConvertible {
             }
         }
         return result
+    }
+}
+
+extension IPv4Address: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: UInt32) {
+        self.address = value
     }
 }
 

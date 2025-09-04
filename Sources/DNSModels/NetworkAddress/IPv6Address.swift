@@ -1,4 +1,4 @@
-import SwiftIDNA
+public import SwiftIDNA
 
 /// An IPv6 address.
 ///
@@ -58,7 +58,7 @@ import SwiftIDNA
 ///
 /// [IETF RFC 5952]: https://tools.ietf.org/html/rfc5952
 @available(swiftDNSApplePlatforms 15, *)
-public struct IPv6Address: Sendable, Hashable {
+public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     /// The byte size of an IPv6.
     @usableFromInline
     static var size: Int {
@@ -72,10 +72,7 @@ public struct IPv6Address: Sendable, Hashable {
     /// Equivalent to `::1` or `0:0:0:0:0:0:0:1` in IPv6 description format.
     @inlinable
     public var isLoopback: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a loopback address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[0] == 0x01 && (1..<16).allSatisfy { ptr[$0] == 0x00 }
-        }
+        CIDR<Self>.loopback.contains(self)
     }
 
     /// Whether this address is an IPv6 Multicast address, or not.
@@ -85,10 +82,7 @@ public struct IPv6Address: Sendable, Hashable {
     /// `FF::` which is equivalent to `00FF::` and does not start with `FF`.
     @inlinable
     public var isMulticast: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a multicast address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[15] == 0xFF
-        }
+        CIDR<Self>.multicast.contains(self)
     }
 
     /// Whether this address is an IPv6 Link Local Unicast address, or not.
@@ -96,16 +90,24 @@ public struct IPv6Address: Sendable, Hashable {
     /// That is, any IPv6 address starting with this sequence of bits: `1111111010`.
     @inlinable
     public var isLinkLocalUnicast: Bool {
-        /// FIXME: Should check if this IP can be mapped to an ipv6 and is a link local unicast address there?
-        withUnsafeBytes(of: self.address) { ptr in
-            ptr[15] == 0xFE && ptr[14] &>> 6 == 0b10
-        }
+        CIDR<Self>.linkLocalUnicast.contains(self)
     }
 
-    /// Directly construct an IPv6 from the UInt128 representing it.
-    @inlinable
     public init(_ address: UInt128) {
         self.address = address
+    }
+
+    /// The exact translation of an `IPAddress` to an `IPv4Address`.
+    ///
+    /// This does not handle ipv4-to-ipv6 mappings. Use `init(ipv4:)` for that.
+    @available(swiftDNSApplePlatforms 15, *)
+    public init?(exactly ipAddress: IPAddress) {
+        switch ipAddress {
+        case .v4:
+            return nil
+        case .v6(let ipv6):
+            self = ipv6
+        }
     }
 
     /// Maps an IPv4 address to an IPv6 address in the reserved address space by [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
@@ -130,7 +132,7 @@ public struct IPv6Address: Sendable, Hashable {
     ///    address".
     /// ```
     @inlinable
-    public init(_ ipv4: IPv4Address) {
+    public init(ipv4: IPv4Address) {
         self.address = UInt128(ipv4.address)
         withUnsafeMutableBytes(of: &self.address) { ptr in
             ptr[4] = 0xFF
@@ -254,6 +256,13 @@ extension IPv6Address {
                 UInt16(ptr[1]) &<< 8 | UInt16(ptr[0])
             )
         }
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPv6Address: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: UInt128) {
+        self.address = value
     }
 }
 
@@ -387,14 +396,14 @@ extension IPv6Address: LosslessStringConvertible {
 
         let startsWithBracket =
             (scalars.first).map({
-                IPv6Address.isIDNAEquivalent(
+                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                     to: .asciiLeftSquareBracket,
                     scalar: $0
                 )
             }) == true
         let endsWithBracket =
             (scalars.last).map({
-                IPv6Address.isIDNAEquivalent(
+                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                     to: .asciiRightSquareBracket,
                     scalar: $0
                 )
@@ -420,9 +429,12 @@ extension IPv6Address: LosslessStringConvertible {
         var groupIdx = 0
         /// Have seen '::' or not
         var seenCompressionSign = false
-        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(
-            where: { IPv6Address.isIDNAEquivalent(to: .asciiColon, scalar: $0) }
-        ) {
+        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(where: {
+            IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
+                to: .asciiColon,
+                scalar: $0
+            )
+        }) {
             let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
             if scalarsGroup.isEmpty {
                 if seenCompressionSign {
@@ -435,7 +447,7 @@ extension IPv6Address: LosslessStringConvertible {
                     let nextIdx = scalars.index(after: nextSeparatorIdx)
 
                     guard
-                        IPv6Address.isIDNAEquivalent(
+                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                             to: .asciiColon,
                             scalar: scalars[nextIdx]
                         )
@@ -457,7 +469,7 @@ extension IPv6Address: LosslessStringConvertible {
                     return
                 } else {
                     guard
-                        IPv6Address.isIDNAEquivalent(
+                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
                             to: .asciiColon,
                             scalar: scalars[scalars.index(before: nextSeparatorIdx)]
                         )
@@ -537,19 +549,6 @@ extension IPv6Address: LosslessStringConvertible {
         addressLhs |= addressRhs &>> shift
 
         self.init(addressLhs)
-    }
-
-    /// Based on https://www.unicode.org/Public/idna/17.0.0/IdnaMappingTable.txt
-    @usableFromInline
-    static func isIDNAEquivalent(to toScalar: Unicode.Scalar, scalar: Unicode.Scalar) -> Bool {
-        switch IDNAMapping.for(scalar: scalar) {
-        case .valid:
-            return scalar == toScalar
-        case .mapped(let mapped), .deviation(let mapped):
-            return mapped.count == 1 && mapped.first.unsafelyUnwrapped == toScalar
-        case .disallowed, .ignored:
-            return false
-        }
     }
 
     @usableFromInline

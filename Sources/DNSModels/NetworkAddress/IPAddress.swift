@@ -1,3 +1,5 @@
+public import SwiftIDNA
+
 /// An IP address, either IPv4 or IPv6.
 ///
 /// This enum can contain either an `IPv4Address` or an `IPv6Address`, see their
@@ -50,13 +52,33 @@ extension IPAddress: CustomStringConvertible {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPAddress: LosslessStringConvertible {
+    @inlinable
     public init?(_ description: String) {
-        if let ipv4 = IPv4Address(description) {
-            self = .v4(ipv4)
-        } else if let ipv6 = IPv6Address(description) {
-            self = .v6(ipv6)
-        } else {
-            return nil
+        /// Finds the first either "." or ":" (or their IDNA equivalents) and based on that decide
+        /// what type of IP Address this must be.
+        for scalar in description.unicodeScalars {
+            /// TODO: Check which one is faster.
+            /// `isIDNALabelSeparator` that does 4 == checks (might get optimized by the compiler)
+            /// Or `IDNAMapping.isIDNAEquivalent...` which does a C Dictionary lookup.
+            /// Also try using `Set`s.
+            if scalar.isIDNALabelSeparator {
+                guard let ipv4 = IPv4Address(description) else {
+                    return nil
+                }
+                self = .v4(ipv4)
+                return
+            } else if IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
+                to: .asciiColon,
+                scalar: scalar
+            ) {
+                guard let ipv6 = IPv6Address(description) else {
+                    return nil
+                }
+                self = .v6(ipv6)
+                return
+            }
         }
+
+        return nil
     }
 }
