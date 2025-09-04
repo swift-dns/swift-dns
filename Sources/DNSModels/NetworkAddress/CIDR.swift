@@ -143,3 +143,10 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         return self.contains(ip)
     }
 }
+
+@available(swiftDNSApplePlatforms 15, *)
+extension CIDR: CustomStringConvertible {
+    public var description: String {
+        "\(prefix)/\(IntegerLiteralType.bitWidth - mask.trailingZeroBitCount)"
+    }
+}

@@ -5,6 +5,37 @@ import Testing
 struct CIDRTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test(
+        arguments: [(cidr: CIDR<IPv4Address>, expectedDescription: String)]([
+            (
+                cidr: CIDR(prefix: IPv4Address(1, 43, 255, 199), countOfMaskedBits: 8),
+                expectedDescription: "1.0.0.0/8"
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(244, 89, 123, 0), countOfMaskedBits: 24),
+                expectedDescription: "244.89.123.0/24"
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(0, 0, 0, 0), countOfMaskedBits: 0),
+                expectedDescription: "0.0.0.0/0"
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(255, 255, 255, 255), countOfMaskedBits: 32),
+                expectedDescription: "255.255.255.255/32"
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                expectedDescription: "192.168.1.0/24"
+            ),
+        ])
+    ) func `ipv4 CIDR description is calculated correctly`(
+        cidr: CIDR<IPv4Address>,
+        expectedDescription: String
+    ) {
+        #expect(cidr.description == expectedDescription)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
         arguments: [(cidr: CIDR<IPv4Address>, containsIP: IPv4Address, result: Bool)]([
             (
                 cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
@@ -232,20 +263,41 @@ struct CIDRTests {
 
     @available(swiftDNSApplePlatforms 15, *)
     @Test(
+        arguments: [(cidr: CIDR<IPv6Address>, expectedDescription: String)]([
+            (
+                cidr: CIDR(
+                    prefix: IPv6Address(0x2001_0DB8_85A3_0000_0000_0000_0000_0100),
+                    countOfMaskedBits: 24
+                ),
+                expectedDescription: "[2001:d00::]/24"
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
+                expectedDescription: "[ff00::]/8"
+            ),
+            (
+                cidr: CIDR(prefix: 0x0, countOfMaskedBits: 0),
+                expectedDescription: "[::]/0"
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address(UInt128.max), countOfMaskedBits: 128),
+                expectedDescription: "[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/128"
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address(0x2001_0DB8_85A3_0000_0000_0000_0000_0000), countOfMaskedBits: 48),
+                expectedDescription: "[2001:db8:85a3::]/48"
+            ),
+        ])
+    ) func `ipv6 CIDR description is calculated correctly`(
+        cidr: CIDR<IPv6Address>,
+        expectedDescription: String
+    ) {
+        #expect(cidr.description == expectedDescription)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
         arguments: [(cidr: CIDR<IPv6Address>, containsIP: IPv6Address, result: Bool)]([
-            // ("::1", "isLoopback", \.isLoopback),
-            // ("::1:1", "!isLoopback", { @Sendable in !$0.isLoopback }),
-            // ("FF00::", "isMulticast", \.isMulticast),
-            // ("FF92::", "isMulticast", \.isMulticast),
-            // ("FFFF:998A::1", "isMulticast", \.isMulticast),
-            // ("FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
-            // ("00FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
-            // ("FAFF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
-            // ("FE80::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            // ("FE90::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            // ("FEBF::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            // ("FEAA:9876:1928::9", "isLinkLocalUnicast", \.isLinkLocalUnicast),
-            // ("FE70::", "!isLinkLocalUnicast", { @Sendable in !$0.isLinkLocalUnicast }),
             (
                 /// `FF::` is equivalent to `00FF::`
                 cidr: CIDR(prefix: IPv6Address("FF::")!, countOfMaskedBits: 8),
