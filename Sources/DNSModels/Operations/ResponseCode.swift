@@ -16,7 +16,7 @@
 ///                                 unable to process this query due to a
 ///                                 problem with the name server.
 ///
-///                 3               Name Error - Meaningful only for
+///                 3               DomainName Error - Meaningful only for
 ///                                 responses from an authoritative name
 ///                                 server, this code signifies that the
 ///                                 domain name referenced in the query does
@@ -49,7 +49,7 @@ public enum ResponseCode: Sendable {
     case NotImp
     /// Query Refused [RFC 1035](https://tools.ietf.org/html/rfc1035)
     case Refused
-    /// Name Exists when it should not [RFC 2136](https://tools.ietf.org/html/rfc2136)
+    /// DomainName Exists when it should not [RFC 2136](https://tools.ietf.org/html/rfc2136)
     case YXDomain
     /// RR Set Exists when it should not [RFC 2136](https://tools.ietf.org/html/rfc2136)
     case YXRRSet
@@ -58,7 +58,7 @@ public enum ResponseCode: Sendable {
     /// Server Not Authoritative for zone [RFC 2136](https://tools.ietf.org/html/rfc2136)
     /// or Not Authorized [RFC 8945](https://www.rfc-editor.org/rfc/rfc8945)
     case NotAuth
-    /// Name not contained in zone [RFC 2136](https://tools.ietf.org/html/rfc2136)
+    /// DomainName not contained in zone [RFC 2136](https://tools.ietf.org/html/rfc2136)
     case NotZone
     /// Bad OPT Version [RFC 6891](https://tools.ietf.org/html/rfc6891#section-9)
     case BADVERS

@@ -15,13 +15,13 @@ public enum RecordType: Sendable, Hashable {
     case CDS
     /// [RFC 7344](https://tools.ietf.org/html/rfc7344) Child DNSKEY
     case CDNSKEY
-    /// [RFC 4398](https://tools.ietf.org/html/rfc4398) Storing Certificates in the Domain Name System (DNS)
+    /// [RFC 4398](https://tools.ietf.org/html/rfc4398) Storing Certificates in the Domain DomainName System (DNS)
     case CERT
     /// [RFC 1035](https://tools.ietf.org/html/rfc1035) Canonical name record
     case CNAME
     //  DHCID,      // 49 RFC 4701 DHCP identifier
     //  DLV,        //	32769	RFC 4431	DNSSEC Lookaside Validation record
-    //  DNAME,      // 39 RFC 2672 Delegation Name
+    //  DNAME,      // 39 RFC 2672 Delegation DomainName
     /// [RFC 7477](https://tools.ietf.org/html/rfc4034) Child-to-parent synchronization record
     case CSYNC
     /// [RFC 4034](https://tools.ietf.org/html/rfc4034) DNS Key record: RSASHA256 and RSASHA512, RFC5702
@@ -44,7 +44,7 @@ public enum RecordType: Sendable, Hashable {
     case MX
     /// [RFC 3403](https://tools.ietf.org/html/rfc3403) Naming Authority Pointer
     case NAPTR
-    /// [RFC 1035](https://tools.ietf.org/html/rfc1035) Name server record
+    /// [RFC 1035](https://tools.ietf.org/html/rfc1035) DomainName server record
     case NS
     /// [RFC 4034](https://tools.ietf.org/html/rfc4034) Next-Secure record
     case NSEC

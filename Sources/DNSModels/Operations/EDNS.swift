@@ -72,7 +72,7 @@ extension EDNS {
 extension EDNS {
     package func toRecord() -> Record {
         Record(
-            nameLabels: Name.root,
+            nameLabels: DomainName.root,
             dnsClass: DNSClass(forOPT: self.maxPayload),
             ttl: self.ttl,
             rdata: RData.OPT(self.options)

@@ -396,7 +396,7 @@ extension IPv6Address: CustomStringConvertible {
 
 /// This protocol is only to be used internally so we can write IPv6's description into different
 /// types of buffers. Currently using `String` for the `description` of the IPv6, and using
-/// `ByteBuffer` for writing the IPv6 into a `Name`'s buffer.
+/// `ByteBuffer` for writing the IPv6 into a `DomainName`'s buffer.
 @usableFromInline
 protocol _IPv6DescriptionAppendable {
     mutating func append(_ byte: UInt8)

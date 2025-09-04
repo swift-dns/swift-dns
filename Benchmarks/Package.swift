@@ -139,12 +139,12 @@ package.targets += [
         ]
     ),
     .executableTarget(
-        name: "Name",
+        name: "DomainName",
         dependencies: [
             "DNSModels",
             .product(name: "Benchmark", package: "package-benchmark"),
         ],
-        path: "Name",
+        path: "DomainName",
         swiftSettings: settings,
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")

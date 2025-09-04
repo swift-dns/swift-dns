@@ -42,7 +42,7 @@ public import struct NIOCore.ByteBuffer
 ///                            1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 ///        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 ///       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///       /                         Algorithm Name                        /
+///       /                         Algorithm DomainName                        /
 ///       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///       |                                                               |
 ///       |          Time Signed          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -61,7 +61,7 @@ public import struct NIOCore.ByteBuffer
 ///
 ///   The contents of the RDATA fields are:
 ///
-///   Algorithm Name:
+///   Algorithm DomainName:
 ///      an octet sequence identifying the TSIG algorithm in the domain
 ///      name syntax.  (Allowed names are listed in Table 3.)  The name is
 ///      stored in the DNS name wire format as described in [RFC1034].  As
@@ -80,7 +80,7 @@ public import struct NIOCore.ByteBuffer
 ///      an unsigned 16-bit integer giving the length of the MAC field in
 ///      octets.  Truncation is indicated by a MAC Size less than the size
 ///      of the keyed hash produced by the algorithm specified by the
-///      Algorithm Name.
+///      Algorithm DomainName.
 ///
 ///   MAC:
 ///      a sequence of octets whose contents are defined by the TSIG
@@ -118,7 +118,7 @@ public struct TSIG: Sendable {
     /// [RFC8945 Secret Key Transaction Authentication for DNS](https://tools.ietf.org/html/rfc8945#section-6)
     /// ```text
     ///      +==========================+================+=================+
-    ///      | Algorithm Name           | Implementation | Use             |
+    ///      | Algorithm DomainName           | Implementation | Use             |
     ///      +==========================+================+=================+
     ///      | HMAC-MD5.SIG-ALG.REG.INT | MAY            | MUST NOT        |
     ///      +--------------------------+----------------+-----------------+
@@ -163,7 +163,7 @@ public struct TSIG: Sendable {
         /// hmac-sha512-256 (not supported for cryptographic operations)
         case HMAC_SHA512_256
         /// Unknown algorithm
-        case unknown(Name)
+        case unknown(DomainName)
     }
 
     public var algorithm: Algorithm
@@ -267,7 +267,7 @@ extension TSIG.Algorithm: RawRepresentable {
         case "hmac-sha512": self = .HMAC_SHA512
         case "hmac-sha512-256": self = .HMAC_SHA512_256
         default:
-            if let name = try? Name(domainName: rawValue) {
+            if let name = try? DomainName(domainName: rawValue) {
                 self = .unknown(name)
             } else {
                 return nil
@@ -291,7 +291,7 @@ extension TSIG.Algorithm: RawRepresentable {
         }
     }
 
-    package init(name: Name) {
+    package init(name: DomainName) {
         self =
             switch name.description {
             case "hmac-md5.sig-alg.reg.int": .HMAC_MD5
@@ -308,18 +308,18 @@ extension TSIG.Algorithm: RawRepresentable {
             }
     }
 
-    package func toName() throws -> Name {
+    package func toName() throws -> DomainName {
         switch self {
-        case .HMAC_MD5: return try Name(guaranteedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
-        case .GSS: return try Name(guaranteedASCIIBytes: "gss-tsig".utf8)
-        case .HMAC_SHA1: return try Name(guaranteedASCIIBytes: "hmac-sha1".utf8)
-        case .HMAC_SHA224: return try Name(guaranteedASCIIBytes: "hmac-sha224".utf8)
-        case .HMAC_SHA256: return try Name(guaranteedASCIIBytes: "hmac-sha256".utf8)
-        case .HMAC_SHA256_128: return try Name(guaranteedASCIIBytes: "hmac-sha256-128".utf8)
-        case .HMAC_SHA384: return try Name(guaranteedASCIIBytes: "hmac-sha384".utf8)
-        case .HMAC_SHA384_192: return try Name(guaranteedASCIIBytes: "hmac-sha384-192".utf8)
-        case .HMAC_SHA512: return try Name(guaranteedASCIIBytes: "hmac-sha512".utf8)
-        case .HMAC_SHA512_256: return try Name(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
+        case .HMAC_MD5: return try DomainName(guaranteedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
+        case .GSS: return try DomainName(guaranteedASCIIBytes: "gss-tsig".utf8)
+        case .HMAC_SHA1: return try DomainName(guaranteedASCIIBytes: "hmac-sha1".utf8)
+        case .HMAC_SHA224: return try DomainName(guaranteedASCIIBytes: "hmac-sha224".utf8)
+        case .HMAC_SHA256: return try DomainName(guaranteedASCIIBytes: "hmac-sha256".utf8)
+        case .HMAC_SHA256_128: return try DomainName(guaranteedASCIIBytes: "hmac-sha256-128".utf8)
+        case .HMAC_SHA384: return try DomainName(guaranteedASCIIBytes: "hmac-sha384".utf8)
+        case .HMAC_SHA384_192: return try DomainName(guaranteedASCIIBytes: "hmac-sha384-192".utf8)
+        case .HMAC_SHA512: return try DomainName(guaranteedASCIIBytes: "hmac-sha512".utf8)
+        case .HMAC_SHA512_256: return try DomainName(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
         case .unknown(let name): return name
         }
     }
@@ -354,7 +354,7 @@ extension TSIG.Algorithm: CaseIterable {
 
 extension TSIG.Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
-        self.init(name: try Name(from: &buffer))
+        self.init(name: try DomainName(from: &buffer))
     }
 }
 

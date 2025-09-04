@@ -33,7 +33,7 @@ struct NameTests {
         ]
     )
     func initFromString(name: String, isFQDN: Bool, data: ByteBuffer) throws {
-        let domainName = try Name(domainName: name)
+        let domainName = try DomainName(domainName: name)
         #expect(domainName.isFQDN == isFQDN)
         #expect(domainName.data == data)
     }
@@ -43,7 +43,7 @@ struct NameTests {
     )
     func initInvalidFromString(name: String) throws {
         #expect(throws: (any Error).self) {
-            try Name(domainName: name)
+            try DomainName(domainName: name)
         }
     }
 
@@ -81,8 +81,8 @@ struct NameTests {
         asciiNoRootLabel: String,
         unicodeNoRootLabel: String
     ) throws {
-        let name = try Name(domainName: unicode)
-        let nameASCII = try Name(domainName: ascii)
+        let name = try DomainName(domainName: unicode)
+        let nameASCII = try DomainName(domainName: ascii)
 
         /// If the names are the same then we don't need to compare their descriptions
         #expect(name == nameASCII)
@@ -106,15 +106,15 @@ struct NameTests {
     }
 
     @Test func equalityWhichMustBeCaseInsensitive() throws {
-        let name = try Name(domainName: "example.com.")
-        let duplicate = try Name(domainName: "example.com.")
-        let uppercased = try Name(domainName: "EXAMPLE.COM.")
-        let partiallyUppercased = try Name(domainName: "exaMple.com.")
-        let notFQDN = try Name(domainName: "example.com")
-        let letterMismatch = try Name(domainName: "exmmple.com.")
-        let bordersMismatch = try Name(domainName: "example.com.com.")
-        let different = try Name(domainName: "mahdibm.com.")
-        let differentNotFQDN = try Name(domainName: "mahdibm.com")
+        let name = try DomainName(domainName: "example.com.")
+        let duplicate = try DomainName(domainName: "example.com.")
+        let uppercased = try DomainName(domainName: "EXAMPLE.COM.")
+        let partiallyUppercased = try DomainName(domainName: "exaMple.com.")
+        let notFQDN = try DomainName(domainName: "example.com")
+        let letterMismatch = try DomainName(domainName: "exmmple.com.")
+        let bordersMismatch = try DomainName(domainName: "example.com.com.")
+        let different = try DomainName(domainName: "mahdibm.com.")
+        let differentNotFQDN = try DomainName(domainName: "mahdibm.com")
 
         #expect(name == duplicate)
         #expect(name == uppercased)
@@ -125,11 +125,11 @@ struct NameTests {
         #expect(name != different)
         #expect(name != differentNotFQDN)
 
-        let weirdUniccdeLowercaseDomain = try Name(domainName: "helloß.co.uk.")
-        let weirdPartiallyUppercaseDomain = try Name(domainName: "helloSS.co.uk.")
-        let weirdUppercaseDomain = try Name(domainName: "HELLOSS.CO.UK.")
+        let weirdUniccdeLowercaseDomain = try DomainName(domainName: "helloß.co.uk.")
+        let weirdPartiallyUppercaseDomain = try DomainName(domainName: "helloSS.co.uk.")
+        let weirdUppercaseDomain = try DomainName(domainName: "HELLOSS.CO.UK.")
 
-        /// The Name initializers turn non-ascii domain names to IDNA-encoded domain names.
+        /// The DomainName initializers turn non-ascii domain names to IDNA-encoded domain names.
         /// `ß` and `SS` are case-insensitively equal, so with no IDNA these 2 names would be equal.
         #expect(weirdUniccdeLowercaseDomain != weirdPartiallyUppercaseDomain)
         #expect(weirdUniccdeLowercaseDomain != weirdUppercaseDomain)
@@ -147,7 +147,7 @@ struct NameTests {
         ]
     )
     func `fqdnParsing`(name: String, isFQDN: Bool) throws {
-        try #expect(Name(domainName: name).isFQDN == isFQDN)
+        try #expect(DomainName(domainName: name).isFQDN == isFQDN)
     }
 
     @Test(
@@ -162,7 +162,7 @@ struct NameTests {
     )
     func `parsingThenAsStringWorksAsExpected`(name: String, expected: String) throws {
         #expect(
-            try Name(domainName: name).description(
+            try DomainName(domainName: name).description(
                 format: .unicode,
                 options: .sourceAccurate
             ) == expected
@@ -180,7 +180,7 @@ struct NameTests {
         ]
     )
     func `numberOfLabels`(name: String, expectedLabelsCount: Int) throws {
-        try #expect(Name(domainName: name).labelsCount == expectedLabelsCount)
+        try #expect(DomainName(domainName: name).labelsCount == expectedLabelsCount)
     }
 
     @Test func decodeFromBufferContainingOtherBytesAsWellAsUppercasedThenTurnBackIntoString() throws
@@ -198,7 +198,7 @@ struct NameTests {
         /// The first 4 and the last 3 bytes are intentionally not part of the name
         buffer.moveReaderIndex(forwardBy: 4)
         let endIndex = buffer.writerIndex
-        let name = try Name(from: &buffer)
+        let name = try DomainName(from: &buffer)
         #expect(name.data.readableBytesView.last != 0)
         #expect(buffer.readerIndex == endIndex - 3)
         #expect(buffer.readableBytes == 3)
@@ -220,7 +220,7 @@ struct NameTests {
             0xbd, 0x0,
         ])
         let endIndex = buffer.writerIndex
-        let name = try Name(from: &buffer)
+        let name = try DomainName(from: &buffer)
         #expect(name.data.readableBytesView.last != 0)
         #expect(buffer.readerIndex == endIndex)
         #expect(buffer.readableBytes == 0)
@@ -238,8 +238,8 @@ struct NameTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func ipv4AddressToName() throws {
         let ipAddress = IPv4Address(192, 168, 1, 1)
-        let name1 = Name(ipv4: ipAddress)
-        let name2 = Name(ip: .v4(ipAddress))
+        let name1 = DomainName(ipv4: ipAddress)
+        let name2 = DomainName(ip: .v4(ipAddress))
         #expect(name1.description == "192.168.1.1")
         #expect(name2.description == "192.168.1.1")
     }
@@ -247,8 +247,8 @@ struct NameTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func ipv6AddressToName() {
         let ipAddress: IPv6Address = 0x2a01_5cc0_0001_0002_0000_0000_0000_0004
-        let name1 = Name(ipv6: ipAddress)
-        let name2 = Name(ip: .v6(ipAddress))
+        let name1 = DomainName(ipv6: ipAddress)
+        let name2 = DomainName(ip: .v6(ipAddress))
         #expect(name1.description == "[2a01:5cc0:1:2::4]")
         #expect(name2.description == "[2a01:5cc0:1:2::4]")
     }
@@ -268,7 +268,7 @@ struct NameTests {
         for (index, domainName) in enumeratedTopDomains() {
             let comment: Comment = "index: \(index), domainName: \(domainName)"
             #expect(throws: Never.self, comment) {
-                let name = try Name(domainName: domainName)
+                let name = try DomainName(domainName: domainName)
                 let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
                 #expect(recreatedDomainName == domainName, comment)
             }

@@ -2,7 +2,7 @@ import NIOCore
 
 /// FIXME: add tests for dot in name string
 @available(swiftDNSApplePlatforms 15, *)
-extension Name {
+extension DomainName {
     public init(ip: IPAddress) {
         switch ip {
         case .v4(let ipv4):

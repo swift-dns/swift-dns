@@ -1,5 +1,5 @@
+public import struct DNSModels.DomainName
 public import enum DNSModels.IPAddress
-public import struct DNSModels.Name
 public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
@@ -11,7 +11,7 @@ public enum DNSServerAddress: Hashable, Sendable {
     // This serialization includes square brackets, so it is safe to write next to a port number.
     // Note: `address` must have an explicit port.
     case ipAddress(serialization: IPAddress, address: SocketAddress)
-    case domain(name: Name, port: UInt16)
+    case domain(name: DomainName, port: UInt16)
     case unixSocket(path: String)
 }
 

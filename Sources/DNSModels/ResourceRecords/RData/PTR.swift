@@ -1,15 +1,15 @@
 /// The DNS PTR record type
 public struct PTR: Sendable {
-    public var name: Name
+    public var name: DomainName
 
-    public init(name: Name) {
+    public init(name: DomainName) {
         self.name = name
     }
 }
 
 extension PTR {
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer)
+        self.name = try DomainName(from: &buffer)
     }
 }
 

@@ -16,16 +16,16 @@
 ///                 name for the owner.  The owner name is an alias.
 /// ```
 public struct CNAME: Sendable {
-    public var name: Name
+    public var name: DomainName
 
-    public init(name: Name) {
+    public init(name: DomainName) {
         self.name = name
     }
 }
 
 extension CNAME {
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer)
+        self.name = try DomainName(from: &buffer)
     }
 }
 

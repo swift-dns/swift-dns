@@ -1,12 +1,12 @@
 public import struct NIOCore.ByteBuffer
 
-/// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3), Domain Name System Security Extensions, March 1999
+/// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3), Domain DomainName System Security Extensions, March 1999
 ///
 /// text
 /// 3. The KEY Resource Record
 ///
 ///    The KEY resource record (RR) is used to store a public key that is
-///    associated with a Domain Name System (DNS) name.  This can be the
+///    associated with a Domain DomainName System (DNS) name.  This can be the
 ///    public key of a zone, a user, or a host or other end entity. Security
 ///    aware DNS implementations MUST be designed to handle at least two
 ///    simultaneously valid keys of the same type associated with the same
@@ -162,10 +162,10 @@ public struct KEY: Sendable {
         case reserved
     }
 
-    /// [RFC 2137](https://tools.ietf.org/html/rfc2137#section-3.1), Secure Domain Name System Dynamic Update, April 1997
+    /// [RFC 2137](https://tools.ietf.org/html/rfc2137#section-3.1), Secure Domain DomainName System Dynamic Update, April 1997
     ///
     /// text
-    /// 3.1.1 Update Key Name Scope
+    /// 3.1.1 Update Key DomainName Scope
     ///
     ///    The owner name of any update authorizing KEY RR must (1) be the same
     ///    as the owner name of any RRs being added or deleted or (2) a wildcard
@@ -278,7 +278,7 @@ public struct KEY: Sendable {
         }
     }
 
-    /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3.1.3), Domain Name System Security Extensions, March 1999
+    /// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-3.1.3), Domain DomainName System Security Extensions, March 1999
     ///
     /// text
     /// 3.1.3 The Proto Octet

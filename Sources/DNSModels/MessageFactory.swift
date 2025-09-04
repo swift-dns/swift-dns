@@ -20,7 +20,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// Creates a message for a query.
     @inlinable
     public static func forQuery(
-        name: Name,
+        name: DomainName,
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) -> Self {
@@ -67,7 +67,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) throws -> Self {
-        let name = try Name(domainName: name, idnaConfiguration: idnaConfiguration)
+        let name = try DomainName(domainName: name, idnaConfiguration: idnaConfiguration)
         return Self.forQuery(
             name: name,
             recursionDesired: recursionDesired,

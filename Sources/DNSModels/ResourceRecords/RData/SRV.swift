@@ -22,7 +22,7 @@
 ///
 ///  Here is the format of the SRV RR, whose DNS type code is 33:
 ///
-/// _Service._Proto.Name TTL Class SRV Priority Weight Port Target
+/// _Service._Proto.DomainName TTL Class SRV Priority Weight Port Target
 ///
 /// (There is an example near the end of this document.)
 ///
@@ -45,7 +45,7 @@
 /// locally may be used (as for Service).  The Proto is case
 /// insensitive.
 ///
-///  Name
+///  DomainName
 /// The domain this RR refers to.  The SRV RR is unique in that the
 /// name one searches for is not this name; the example near the end
 /// shows this clearly.
@@ -62,9 +62,9 @@ public struct SRV: Sendable {
     public var priority: UInt16
     public var weight: UInt16
     public var port: UInt16
-    public var target: Name
+    public var target: DomainName
 
-    public init(priority: UInt16, weight: UInt16, port: UInt16, target: Name) {
+    public init(priority: UInt16, weight: UInt16, port: UInt16, target: DomainName) {
         self.priority = priority
         self.weight = weight
         self.port = port
@@ -83,7 +83,7 @@ extension SRV {
         self.port = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SRV.port", buffer)
         )
-        self.target = try Name(from: &buffer)
+        self.target = try DomainName(from: &buffer)
     }
 }
 

@@ -176,7 +176,7 @@ public enum RData: Sendable {
     ///
     ///    The presentation format of the record is:
     ///
-    ///    Name TTL IN HTTPS SvcPriority TargetName SvcParams
+    ///    DomainName TTL IN HTTPS SvcPriority TargetName SvcParams
     /// ```
     case HTTPS(HTTPS)
 
@@ -305,7 +305,7 @@ public enum RData: Sendable {
     ///      depending on the potential values found in the flags field.  This
     ///      field is used when the regular expression is a simple replacement
     ///      operation.  Any value in this field MUST be a fully qualified
-    ///      domain-name.  Name compression is not to be used for this field.
+    ///      domain-name.  DomainName compression is not to be used for this field.
     ///
     ///      This field and the REGEXP field together make up the Substitution
     ///      Expression in the DDDS Algorithm.  It is simply a historical
@@ -373,7 +373,7 @@ public enum RData: Sendable {
     /// 6.1.2.  Wire Format
     ///
     ///        +------------+--------------+------------------------------+
-    ///        | Field Name | Field Type   | Description                  |
+    ///        | Field DomainName | Field Type   | Description                  |
     ///        +------------+--------------+------------------------------+
     ///        | NAME       | domain name  | MUST be 0 (root domain)      |
     ///        | TYPE       | u_int16_t    | OPT (41)                     |
@@ -493,7 +493,7 @@ public enum RData: Sendable {
     ///
     /// The format of the SRV RR
     ///
-    ///  _Service._Proto.Name TTL Class SRV Priority Weight Port Target
+    ///  _Service._Proto.DomainName TTL Class SRV Priority Weight Port Target
     /// ```
     case SRV(SRV)
 
