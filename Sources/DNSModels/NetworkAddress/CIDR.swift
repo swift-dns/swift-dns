@@ -46,11 +46,9 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     ) {
         /// Make sure the mask is "continuous" and has no leading zeros
         /// e.g. 0b11110000 is good, but 0b11110001 is not. 0b00001111 is not good either.
-        guard mask.leadingZeroBitCount == 0,
+        guard
             Self.makeMaskBasedOn(
-                countOfMaskedBits: UInt8(
-                    IntegerLiteralType.bitWidth - mask.trailingZeroBitCount
-                )
+                uncheckedCountOfTrailingZeros: UInt8(mask.trailingZeroBitCount)
             ) == mask
         else {
             return nil
@@ -80,12 +78,9 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         uncheckedMask mask: IntegerLiteralType
     ) {
         assert(
-            mask.leadingZeroBitCount == 0
-                && Self.makeMaskBasedOn(
-                    countOfMaskedBits: UInt8(
-                        IntegerLiteralType.bitWidth - mask.trailingZeroBitCount
-                    )
-                ) == mask
+            Self.makeMaskBasedOn(
+                uncheckedCountOfTrailingZeros: UInt8(mask.trailingZeroBitCount)
+            ) == mask
         )
 
         self.init(prefix: prefix, uncheckedUnsafeMask: mask)
@@ -118,12 +113,19 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     package static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IntegerLiteralType {
         let bitWidth = UInt8(IntegerLiteralType.bitWidth)
         let countOfMaskedBits = min(countOfMaskedBits, bitWidth)
-        let countOfZeros = bitWidth &- countOfMaskedBits
+        let countOfTrailingZeros = bitWidth &- countOfMaskedBits
+        return makeMaskBasedOn(uncheckedCountOfTrailingZeros: countOfTrailingZeros)
+    }
+
+    @inlinable
+    package static func makeMaskBasedOn(
+        uncheckedCountOfTrailingZeros countOfTrailingZeros: UInt8
+    ) -> IntegerLiteralType {
         /// This combination of unchecked and checked bit-shift is not only safe, but also intended.
         /// The second bit-shift cannot become an unchecked operation.
         /// If you're curious, make it unchecked and run `CIDRTests` to see that they fail
-        /// when `countOfMaskedBits` is 0.
-        return (IntegerLiteralType.max &>> countOfZeros) << countOfZeros
+        /// when `countOfMaskedBits` is `0`.
+        (IntegerLiteralType.max &>> countOfTrailingZeros) << countOfTrailingZeros
     }
 
     /// Whether or not the given IPAddress is within this CIDR.

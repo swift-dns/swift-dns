@@ -298,7 +298,7 @@ struct CIDRTests {
                 expectedIP: IPv6Address(
                     0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111
                 )
-            )
+            ),
         ])
     ) func `ipv6 CIDR standard initializer truncates prefix if needed`(
         countOfMaskedBits: UInt8,
