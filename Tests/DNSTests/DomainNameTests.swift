@@ -4,7 +4,7 @@ import NIOCore
 import Testing
 
 @Suite
-struct NameTests {
+struct DomainNameTests {
     @Test(
         arguments: [
             (name: "*", isFQDN: false, data: ByteBuffer([1, 42])),
