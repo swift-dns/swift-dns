@@ -189,7 +189,7 @@ public enum DNSSECRData: Sendable {
     ///                       1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
     ///   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    ///  /                      Next Domain Name                         /
+    ///  /                      Next Domain DomainName                         /
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///  /                       Type Bit Maps                           /
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -210,7 +210,7 @@ public enum DNSSECRData: Sendable {
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///  |  Salt Length  |                     Salt                      /
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    ///  |  Hash Length  |             Next Hashed Owner Name            /
+    ///  |  Hash Length  |             Next Hashed Owner DomainName            /
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///  /                         Type Bit Maps                         /
     ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -237,7 +237,7 @@ public enum DNSSECRData: Sendable {
     ///  field.
     ///
     ///  Hash Length is represented as an unsigned octet.  Hash Length
-    ///  represents the length of the Next Hashed Owner Name field in octets.
+    ///  represents the length of the Next Hashed Owner DomainName field in octets.
     ///
     ///  The next hashed owner name is not base32 encoded, unlike the owner
     ///  name of the NSEC3 RR.  It is the unmodified binary hash value.  It
@@ -333,7 +333,7 @@ public enum DNSSECRData: Sendable {
     ///    The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
     ///    1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
     ///    TTL field, a 4 octet Signature Expiration field, a 4 octet Signature
-    ///    Inception field, a 2 octet Key tag, the Signer's Name field, and the
+    ///    Inception field, a 2 octet Key tag, the Signer's DomainName field, and the
     ///    Signature field.
     ///
     ///                         1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -348,7 +348,7 @@ public enum DNSSECRData: Sendable {
     ///    |                      Signature Inception                      |
     ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///    |            Key Tag            |                               /
-    ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+         Signer's Name         /
+    ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+         Signer's DomainName         /
     ///    /                                                               /
     ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///    /                                                               /
@@ -367,7 +367,7 @@ public enum DNSSECRData: Sendable {
     ///    The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
     ///    1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
     ///    TTL field, a 4 octet Signature Expiration field, a 4 octet Signature
-    ///    Inception field, a 2 octet Key tag, the Signer's Name field, and the
+    ///    Inception field, a 2 octet Key tag, the Signer's DomainName field, and the
     ///    Signature field.
     ///
     ///                         1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -382,7 +382,7 @@ public enum DNSSECRData: Sendable {
     ///    |                      Signature Inception                      |
     ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///    |            Key Tag            |                               /
-    ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+         Signer's Name         /
+    ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+         Signer's DomainName         /
     ///    /                                                               /
     ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///    /                                                               /
@@ -434,7 +434,7 @@ public enum DNSSECRData: Sendable {
     ///                            1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
     ///        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
     ///       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    ///       /                         Algorithm Name                        /
+    ///       /                         Algorithm DomainName                        /
     ///       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     ///       |                                                               |
     ///       |          Time Signed          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -453,7 +453,7 @@ public enum DNSSECRData: Sendable {
     ///
     ///   The contents of the RDATA fields are:
     ///
-    ///   Algorithm Name:
+    ///   Algorithm DomainName:
     ///      an octet sequence identifying the TSIG algorithm in the domain
     ///      name syntax.  (Allowed names are listed in Table 3.)  The name is
     ///      stored in the DNS name wire format as described in [RFC1034].  As
@@ -472,7 +472,7 @@ public enum DNSSECRData: Sendable {
     ///      an unsigned 16-bit integer giving the length of the MAC field in
     ///      octets.  Truncation is indicated by a MAC Size less than the size
     ///      of the keyed hash produced by the algorithm specified by the
-    ///      Algorithm Name.
+    ///      Algorithm DomainName.
     ///
     ///   MAC:
     ///      a sequence of octets whose contents are defined by the TSIG

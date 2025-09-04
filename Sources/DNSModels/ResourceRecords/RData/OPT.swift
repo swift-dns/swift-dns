@@ -44,7 +44,7 @@
 ///    The fixed part of an OPT RR is structured as follows:
 ///
 ///        +------------+--------------+------------------------------+
-///        | Field Name | Field Type   | Description                  |
+///        | Field DomainName | Field Type   | Description                  |
 ///        +------------+--------------+------------------------------+
 ///        | NAME       | domain name  | MUST be 0 (root domain)      |
 ///        | TYPE       | u_int16_t    | OPT (41)                     |

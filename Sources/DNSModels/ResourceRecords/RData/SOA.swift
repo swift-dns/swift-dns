@@ -43,8 +43,8 @@
 /// change the SOA RR with known semantics.
 /// ```
 public struct SOA: Sendable {
-    public var mName: Name
-    public var rName: Name
+    public var mName: DomainName
+    public var rName: DomainName
     public var serial: UInt32
     public var refresh: Int32
     public var retry: Int32
@@ -52,8 +52,8 @@ public struct SOA: Sendable {
     public var minimum: UInt32
 
     public init(
-        mName: Name,
-        rName: Name,
+        mName: DomainName,
+        rName: DomainName,
         serial: UInt32,
         refresh: Int32,
         retry: Int32,
@@ -72,8 +72,8 @@ public struct SOA: Sendable {
 
 extension SOA {
     package init(from buffer: inout DNSBuffer) throws {
-        self.mName = try Name(from: &buffer)
-        self.rName = try Name(from: &buffer)
+        self.mName = try DomainName(from: &buffer)
+        self.rName = try DomainName(from: &buffer)
         self.serial = try buffer.readInteger(as: UInt32.self).unwrap(
             or: .failedToRead("SOA.serial", buffer)
         )

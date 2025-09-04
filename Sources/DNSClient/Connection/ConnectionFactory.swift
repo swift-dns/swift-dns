@@ -2,7 +2,7 @@ public import Logging
 public import NIOCore
 import NIOPosix
 
-import struct DNSModels.Name
+import struct DNSModels.DomainName
 
 #if canImport(Network)
 import Network

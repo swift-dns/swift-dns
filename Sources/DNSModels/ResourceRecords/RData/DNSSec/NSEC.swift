@@ -8,7 +8,7 @@
 ///                         1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 ///     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///    /                      Next Domain Name                         /
+///    /                      Next Domain DomainName                         /
 ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///    /                       Type Bit Maps                           /
 ///    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -18,15 +18,15 @@
 ///    If a wildcard owner name appears in a zone, the wildcard label ("*")
 ///    is treated as a literal symbol and is treated the same as any other
 ///    owner name for the purposes of generating NSEC RRs.  Wildcard owner
-///    names appear in the Next Domain Name field without any wildcard
+///    names appear in the Next Domain DomainName field without any wildcard
 ///    expansion.  [RFC4035] describes the impact of wildcards on
 ///    authenticated denial of existence.
 /// ```
 public struct NSEC: Sendable {
-    public var nextDomainName: Name
+    public var nextDomainName: DomainName
     public var typeBitMaps: RecordTypeSet
 
-    public init(nextDomainName: Name, typeBitMaps: RecordTypeSet) {
+    public init(nextDomainName: DomainName, typeBitMaps: RecordTypeSet) {
         self.nextDomainName = nextDomainName
         self.typeBitMaps = typeBitMaps
     }
@@ -35,7 +35,7 @@ public struct NSEC: Sendable {
 extension NSEC {
     /// FIXME: can we know the length of the domain name so we can pre-reserve capacity?
     package init(from buffer: inout DNSBuffer) throws {
-        self.nextDomainName = try Name(from: &buffer)
+        self.nextDomainName = try DomainName(from: &buffer)
         self.typeBitMaps = try RecordTypeSet(from: &buffer)
     }
 }

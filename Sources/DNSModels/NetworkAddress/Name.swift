@@ -12,7 +12,7 @@ public import struct NIOCore.ByteBuffer
 /// Any path of a directed acyclic graph can be represented by a domain name consisting of the labels of its nodes,
 /// ordered by decreasing distance from the root(s) (whiscalaris the normal convention within the DNS).
 /// ```
-public struct Name: Sendable {
+public struct DomainName: Sendable {
     /// Maximum allowed domain name length.
     @usableFromInline
     static var maxLength: UInt8 {
@@ -25,7 +25,7 @@ public struct Name: Sendable {
         63
     }
 
-    /// is Fully Qualified Domain Name.
+    /// is Fully Qualified Domain DomainName.
     ///
     /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
     ///
@@ -40,7 +40,7 @@ public struct Name: Sendable {
     /// Lowercased ASCII bytes only.
     ///
     /// Non-ASCII names are converted to ASCII based on the IDNA spec, in the initializers, and
-    /// must/will never make it to the stored properties of `Name` such as `data`.
+    /// must/will never make it to the stored properties of `DomainName` such as `data`.
     /// Non-lowercased ASCII names are converted to lowercased ASCII in the initializers.
     /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
     /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
@@ -106,34 +106,34 @@ public struct Name: Sendable {
     }
 }
 
-extension Name {
+extension DomainName {
     @inlinable
     public static var root: Self {
         Self(isFQDN: true)
     }
 }
 
-extension Name: Hashable {
+extension DomainName: Hashable {
     /// Equality check without considering the FQDN flag.
-    /// Users usually instantiate `Name` using a domain name which doesn't end in a dot.
-    /// That mean user-instantiate `Name`s usually have `isFQDN` set to `false`.
+    /// Users usually instantiate `DomainName` using a domain name which doesn't end in a dot.
+    /// That mean user-instantiate `DomainName`s usually have `isFQDN` set to `false`.
     /// On the wire though, the root label is almost always present, so `isFQDN` is almost always `true`.
-    /// So this method is useful to make sure a comparison of two `Name`s doesn't fail just because
+    /// So this method is useful to make sure a comparison of two `DomainName`s doesn't fail just because
     /// of the root-label indicator / FQN flag.
     public func isEssentiallyEqual(to other: Self) -> Bool {
         self.data == other.data
     }
 }
 
-extension Name: Sequence {
+extension DomainName: Sequence {
     public struct Iterator: Sendable, IteratorProtocol {
         public typealias Label = ByteBuffer
 
         /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
-        let name: Name
+        let name: DomainName
         var startIndex: Int
 
-        init(base: Name) {
+        init(base: DomainName) {
             self.name = base
             self.startIndex = self.name.data.readerIndex
         }
@@ -182,7 +182,7 @@ extension Name: Sequence {
     }
 }
 
-extension Name {
+extension DomainName {
     @usableFromInline
     enum ParsingState: Sendable, ~Copyable {
         case label
@@ -192,7 +192,7 @@ extension Name {
     }
 
     /// Parses and case-folds the name from the string, and ensures the name is valid.
-    /// Example: try Name(domainName: "mahdibm.com")
+    /// Example: try DomainName(domainName: "mahdibm.com")
     /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
     @inlinable
     public init(domainName: String, idnaConfiguration: IDNA.Configuration = .default) throws {
@@ -215,7 +215,7 @@ extension Name {
             domainName = String(domainName.unicodeScalars.dropLast())
         }
 
-        /// TODO: make sure all initializations of Name go through a single initializer that
+        /// TODO: make sure all initializations of DomainName go through a single initializer that
         /// asserts lowercased ASCII?
 
         /// short-circuits most domain names which won't change with IDNA anyway.
@@ -248,7 +248,7 @@ extension Name {
     @usableFromInline
     static func from(
         guaranteedASCIIBytes bytes: some BidirectionalCollection<UInt8>,
-        into name: inout Name
+        into name: inout DomainName
     ) throws {
         assert(bytes.allSatisfy(\.isASCII))
 
@@ -258,7 +258,7 @@ extension Name {
 
         if name.encodedLength + lengthWithoutRootLabel > Self.maxLength {
             throw ProtocolError.lengthLimitExceeded(
-                "Name",
+                "DomainName",
                 actual: lengthWithoutRootLabel + 1,
                 max: Int(Self.maxLength),
                 DNSBuffer(bytes: bytes)
@@ -269,13 +269,13 @@ extension Name {
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
-                throw ProtocolError.failedToValidate("Name", DNSBuffer(bytes: bytes))
+                throw ProtocolError.failedToValidate("DomainName", DNSBuffer(bytes: bytes))
             }
 
             /// Outside the loop already checked the domain length is good, but still need to check label length
             if label.count > Self.maxLabelLength {
                 throw ProtocolError.lengthLimitExceeded(
-                    "Name.label",
+                    "DomainName.label",
                     actual: label.count,
                     max: Int(Self.maxLabelLength),
                     DNSBuffer(bytes: bytes)
@@ -288,7 +288,7 @@ extension Name {
     }
 }
 
-extension Name {
+extension DomainName {
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
 
@@ -343,7 +343,7 @@ extension Name {
 
                 if self.encodedLength > Self.maxLength {
                     throw ProtocolError.lengthLimitExceeded(
-                        "Name.label",
+                        "DomainName.label",
                         actual: self.encodedLength,
                         max: Int(Self.maxLength),
                         buffer
@@ -357,7 +357,7 @@ extension Name {
             lastSuccessfulIdx = idx
             switch byte {
             case 0:
-                // RFC 1035 Section 3.1 - Name space definitions
+                // RFC 1035 Section 3.1 - DomainName space definitions
                 //
                 // Domain names in messages are expressed in terms of a sequence of labels.
                 // Each label is represented as a one octet length field followed by that
@@ -382,13 +382,13 @@ extension Name {
                     buffer.moveReaderIndex(to: originalReaderIndex)
 
                     let pointer = try buffer.getInteger(at: idx, as: UInt16.self).unwrap(
-                        or: .failedToRead("Name.label", buffer)
+                        or: .failedToRead("DomainName.label", buffer)
                     )
                     let offset = pointer & 0b0011_1111_1111_1111
 
                     /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
                     guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
-                        throw ProtocolError.failedToValidate("Name.label.offset", buffer)
+                        throw ProtocolError.failedToValidate("DomainName.label.offset", buffer)
                     }
                     try self.read(from: &buffer)
                     /// Reset the reader index to where we were, +2 for the pointer bytes
@@ -405,7 +405,7 @@ extension Name {
                     idx += Int(byte) + 1
                 default:
                     throw ProtocolError.badCharacter(
-                        in: "Name.label",
+                        in: "DomainName.label",
                         character: byte,
                         buffer
                     )
@@ -416,7 +416,7 @@ extension Name {
         /// Should finish with a null byte, so this is an error
         /// Move the reader index so maybe next decodings don't get stuck on this
         buffer.moveReaderIndex(to: lastSuccessfulIdx)
-        throw ProtocolError.failedToValidate("Name", buffer)
+        throw ProtocolError.failedToValidate("DomainName", buffer)
     }
 
     private func utf8Representation() -> String {
@@ -430,21 +430,21 @@ extension Name {
     }
 }
 
-extension Name: CustomStringConvertible {
+extension DomainName: CustomStringConvertible {
     /// Unicode-friendly description of the domain name, excluding the possible root label separator.
     public var description: String {
         self.description(format: .unicode)
     }
 }
 
-extension Name: CustomDebugStringConvertible {
+extension DomainName: CustomDebugStringConvertible {
     /// Byte-accurate description of the domain name.
     public var debugDescription: String {
         self.description(format: .ascii, options: .includeRootLabelIndicator)
     }
 }
 
-extension Name {
+extension DomainName {
     /// FIXME: public nonfrozen enum
     public enum DescriptionFormat: Sendable {
         /// ASCII-only description of the domain name, as in the wire format and IDNA.
@@ -522,7 +522,7 @@ extension Name {
     }
 }
 
-extension Name {
+extension DomainName {
     package func encode(into buffer: inout DNSBuffer, asCanonical: Bool = false) throws {
         buffer.writeImmutableBuffer(self.data)
         buffer.writeInteger(UInt8(0))

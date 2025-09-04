@@ -1,6 +1,6 @@
 public import struct NIOCore.ByteBuffer
 
-/// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-4), Domain Name System Security Extensions, March 1999
+/// [RFC 2535](https://tools.ietf.org/html/rfc2535#section-4), Domain DomainName System Security Extensions, March 1999
 ///
 /// NOTE: RFC 2535 was obsoleted with 4034+, with the exception of the
 ///  usage for UPDATE, which is what this implementation is for.
@@ -166,7 +166,7 @@ public struct SIG: Sendable {
     public var sigExpiration: UInt32
     public var sigInception: UInt32
     public var keyTag: UInt16
-    public var signerName: Name
+    public var signerName: DomainName
     public var sig: ByteBuffer
 
     public init(
@@ -177,7 +177,7 @@ public struct SIG: Sendable {
         sigExpiration: UInt32,
         sigInception: UInt32,
         keyTag: UInt16,
-        signerName: Name,
+        signerName: DomainName,
         sig: ByteBuffer
     ) {
         self.typeCovered = typeCovered
@@ -211,7 +211,7 @@ extension SIG {
         self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SIG.keyTag", buffer)
         )
-        self.signerName = try Name(from: &buffer)
+        self.signerName = try DomainName(from: &buffer)
         self.sig = buffer.readToEnd()
     }
 }
@@ -224,7 +224,7 @@ extension SIG {
         buffer.writeInteger(sigExpiration)
         buffer.writeInteger(sigInception)
         buffer.writeInteger(keyTag)
-        // a `Name` is always ASCII lowercased anyway so no need to worry about that.
+        // a `DomainName` is always ASCII lowercased anyway so no need to worry about that.
         try signerName.encode(into: &buffer)
         buffer.writeBuffer(sig)
     }

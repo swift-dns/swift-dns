@@ -17,9 +17,9 @@
 /// ```
 public struct MX: Sendable {
     public var preference: UInt16
-    public var exchange: Name
+    public var exchange: DomainName
 
-    public init(preference: UInt16, exchange: Name) {
+    public init(preference: UInt16, exchange: DomainName) {
         self.preference = preference
         self.exchange = exchange
     }
@@ -30,7 +30,7 @@ extension MX {
         self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("MX.preference", buffer)
         )
-        self.exchange = try Name(from: &buffer)
+        self.exchange = try DomainName(from: &buffer)
     }
 }
 

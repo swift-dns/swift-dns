@@ -8,13 +8,13 @@ public struct CAA: Sendable, Equatable {
     public enum Property: Sendable, Equatable {
         /// The issue property
         ///    entry authorizes the holder of the domain name `Issuer Domain
-        ///    Name`` or a party acting under the explicit authority of the holder
+        ///    DomainName`` or a party acting under the explicit authority of the holder
         ///    of that domain name to issue certificates for the domain in which
         ///    the property is published.
         case issue
         /// The issuewild
         ///    property entry authorizes the holder of the domain name `Issuer
-        ///    Domain Name` or a party acting under the explicit authority of the
+        ///    Domain DomainName` or a party acting under the explicit authority of the
         ///    holder of that domain name to issue wildcard certificates for the
         ///    domain in which the property is published.
         case issueWildcard
@@ -40,7 +40,7 @@ public struct CAA: Sendable, Equatable {
     /// `Unknown` is also used for invalid values of known Tag types that cannot be parsed.
     public enum Value: Sendable, Equatable {
         /// Issuer authorized to issue certs for this zone, and any associated parameters
-        case issuer(Name?, [(key: String, value: String)])
+        case issuer(DomainName?, [(key: String, value: String)])
         /// Url to which to send CA errors
         case url(String)
         /// Uninterpreted data, either for a tag that is not known, or an invalid value
@@ -223,8 +223,8 @@ extension CAA.Value {
 
     static func readIssuer(
         from buffer: inout DNSBuffer
-    ) throws -> (Name?, [(key: String, value: String)]) {
-        let name: Name?
+    ) throws -> (DomainName?, [(key: String, value: String)]) {
+        let name: DomainName?
         if let semicolonIdx = buffer.readableBytesView
             .firstIndex(where: { $0 == UInt8.asciiSemicolon })
         {
@@ -234,7 +234,7 @@ extension CAA.Value {
             if nameBytes.isEmpty {
                 name = nil
             } else {
-                name = try Name(
+                name = try DomainName(
                     expectingASCIIBytes: nameBytes,
                     name: "CAA.issuer.name"
                 )
@@ -242,7 +242,7 @@ extension CAA.Value {
             }
         } else {
             if buffer.readableBytes > 0 {
-                name = try Name(
+                name = try DomainName(
                     expectingASCIIBytes: buffer.readableBytesView,
                     name: "CAA.issuer.name"
                 )

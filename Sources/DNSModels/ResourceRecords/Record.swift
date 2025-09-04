@@ -36,7 +36,7 @@
 /// ```
 @available(swiftDNSApplePlatforms 15, *)
 public struct Record: Sendable {
-    public var nameLabels: Name
+    public var nameLabels: DomainName
     public var recordType: RecordType {
         rdata.recordType
     }
@@ -44,7 +44,7 @@ public struct Record: Sendable {
     public var ttl: UInt32
     public var rdata: RData
 
-    package init(nameLabels: Name, dnsClass: DNSClass, ttl: UInt32, rdata: RData) {
+    package init(nameLabels: DomainName, dnsClass: DNSClass, ttl: UInt32, rdata: RData) {
         self.nameLabels = nameLabels
         self.dnsClass = dnsClass
         self.ttl = ttl
@@ -55,7 +55,7 @@ public struct Record: Sendable {
 @available(swiftDNSApplePlatforms 15, *)
 extension Record {
     package init(from buffer: inout DNSBuffer) throws {
-        self.nameLabels = try Name(from: &buffer)
+        self.nameLabels = try DomainName(from: &buffer)
         let recordType = try RecordType(from: &buffer)
         self.dnsClass = try DNSClass(from: &buffer)
         self.ttl = try buffer.readInteger(as: UInt32.self).unwrap(

@@ -1,15 +1,15 @@
 /// The DNS NS record type
 public struct NS: Sendable {
-    public var name: Name
+    public var name: DomainName
 
-    public init(name: Name) {
+    public init(name: DomainName) {
         self.name = name
     }
 }
 
 extension NS {
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer)
+        self.name = try DomainName(from: &buffer)
     }
 }
 

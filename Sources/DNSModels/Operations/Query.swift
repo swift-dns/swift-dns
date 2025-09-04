@@ -24,13 +24,13 @@
 /// ```
 public struct Query: Sendable {
     /// QNAME
-    public var name: Name
+    public var name: DomainName
     /// QTYPE
     public var queryType: RecordType
     /// QCLASS
     public var queryClass: DNSClass
 
-    public init(name: Name, queryType: RecordType, queryClass: DNSClass) {
+    public init(name: DomainName, queryType: RecordType, queryClass: DNSClass) {
         self.name = name
         self.queryType = queryType
         self.queryClass = queryClass
@@ -39,7 +39,7 @@ public struct Query: Sendable {
 
 extension Query {
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try Name(from: &buffer)
+        self.name = try DomainName(from: &buffer)
         self.queryType = try RecordType(from: &buffer)
         self.queryClass = try DNSClass(from: &buffer)
     }

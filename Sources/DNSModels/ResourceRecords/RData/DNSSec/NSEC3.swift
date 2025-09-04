@@ -51,7 +51,7 @@ public import struct NIOCore.ByteBuffer
 ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///  |  Salt Length  |                     Salt                      /
 ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-///  |  Hash Length  |             Next Hashed Owner Name            /
+///  |  Hash Length  |             Next Hashed Owner DomainName            /
 ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///  /                         Type Bit Maps                         /
 ///  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -78,7 +78,7 @@ public import struct NIOCore.ByteBuffer
 ///  field.
 ///
 ///  Hash Length is represented as an unsigned octet.  Hash Length
-///  represents the length of the Next Hashed Owner Name field in octets.
+///  represents the length of the Next Hashed Owner DomainName field in octets.
 ///
 ///  The next hashed owner name is not base32 encoded, unlike the owner
 ///  name of the NSEC3 RR.  It is the unmodified binary hash value.  It

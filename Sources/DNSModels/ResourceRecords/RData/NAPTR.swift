@@ -35,7 +35,7 @@ public struct NAPTR: Sendable {
     public var flags: ByteBuffer
     public var services: ByteBuffer
     public var regexp: ByteBuffer
-    public var replacement: Name
+    public var replacement: DomainName
 
     public init(
         order: UInt16,
@@ -43,7 +43,7 @@ public struct NAPTR: Sendable {
         flags: ByteBuffer,
         services: ByteBuffer,
         regexp: ByteBuffer,
-        replacement: Name
+        replacement: DomainName
     ) {
         self.order = order
         self.preference = preference
@@ -65,7 +65,7 @@ extension NAPTR {
         self.flags = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.flags")
         self.services = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.services")
         self.regexp = try buffer.readLengthPrefixedStringByteBuffer(name: "NAPTR.regexp")
-        self.replacement = try Name(from: &buffer)
+        self.replacement = try DomainName(from: &buffer)
     }
 }
 

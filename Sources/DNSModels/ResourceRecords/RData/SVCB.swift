@@ -51,7 +51,7 @@ public struct SVCB: Sendable {
     ///    populated with the following initial registrations:
     ///
     ///    +===========+=================+================+=========+==========+
-    ///    |   Number  | Name            | Meaning        |Reference|Change    |
+    ///    |   Number  | DomainName            | Meaning        |Reference|Change    |
     ///    |           |                 |                |         |Controller|
     ///    +===========+=================+================+=========+==========+
     ///    |     0     | mandatory       | Mandatory      |RFC 9460,|IETF      |
@@ -474,10 +474,14 @@ public struct SVCB: Sendable {
     }
 
     public var svcPriority: UInt16
-    public var targetName: Name
+    public var targetName: DomainName
     public var svcParams: [(SVCParamKey, SVCParamValue)]
 
-    public init(svcPriority: UInt16, targetName: Name, svcParams: [(SVCParamKey, SVCParamValue)]) {
+    public init(
+        svcPriority: UInt16,
+        targetName: DomainName,
+        svcParams: [(SVCParamKey, SVCParamValue)]
+    ) {
         self.svcPriority = svcPriority
         self.targetName = targetName
         self.svcParams = svcParams
@@ -490,7 +494,7 @@ extension SVCB {
         self.svcPriority = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SVCB.priority", buffer)
         )
-        self.targetName = try Name(from: &buffer)
+        self.targetName = try DomainName(from: &buffer)
         self.svcParams = []
         var remaining = buffer.readableBytes
         while remaining >= 4 {

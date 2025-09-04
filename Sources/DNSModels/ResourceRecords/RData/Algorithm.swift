@@ -49,7 +49,7 @@
 ///
 ///    6 - 251  Available for assignment by IETF Standards Action.
 ///
-/// (RFC Required) Domain Name System Security (DNSSEC) Algorithm Numbers
+/// (RFC Required) Domain DomainName System Security (DNSSEC) Algorithm Numbers
 /// Created: 2003-11-03, Last Updated: 2024-04-16
 /// https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.txt
 ///
