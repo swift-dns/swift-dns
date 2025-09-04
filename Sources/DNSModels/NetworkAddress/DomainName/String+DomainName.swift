@@ -1,4 +1,5 @@
 public import SwiftIDNA
+
 import struct NIOCore.ByteBuffer
 
 extension DomainName {
