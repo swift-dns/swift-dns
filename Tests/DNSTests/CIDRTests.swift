@@ -284,7 +284,10 @@ struct CIDRTests {
                 expectedDescription: "[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/128"
             ),
             (
-                cidr: CIDR(prefix: IPv6Address(0x2001_0DB8_85A3_0000_0000_0000_0000_0000), countOfMaskedBits: 48),
+                cidr: CIDR(
+                    prefix: IPv6Address(0x2001_0DB8_85A3_0000_0000_0000_0000_0000),
+                    countOfMaskedBits: 48
+                ),
                 expectedDescription: "[2001:db8:85a3::]/48"
             ),
         ])

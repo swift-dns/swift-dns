@@ -126,7 +126,7 @@ extension Name: Hashable {
 }
 
 extension Name: Sequence {
-    public struct Iterator: IteratorProtocol {
+    public struct Iterator: Sendable, IteratorProtocol {
         public typealias Label = ByteBuffer
 
         /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
@@ -184,7 +184,7 @@ extension Name: Sequence {
 
 extension Name {
     @usableFromInline
-    enum ParsingState: ~Copyable {
+    enum ParsingState: Sendable, ~Copyable {
         case label
         case escape1
         case escape2(UInt8)
@@ -446,14 +446,14 @@ extension Name: CustomDebugStringConvertible {
 
 extension Name {
     /// FIXME: public nonfrozen enum
-    public enum DescriptionFormat {
+    public enum DescriptionFormat: Sendable {
         /// ASCII-only description of the domain name, as in the wire format and IDNA.
         case ascii
         /// Unicode representation of the domain name, converting IDNA names to Unicode.
         case unicode
     }
 
-    public struct DescriptionOptions: OptionSet {
+    public struct DescriptionOptions: Sendable, OptionSet {
         public var rawValue: Int
 
         @inlinable
