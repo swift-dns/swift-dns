@@ -4,15 +4,94 @@ import Testing
 @Suite
 struct CIDRTests {
     @available(swiftDNSApplePlatforms 15, *)
-    @Test func testCIDR() {
-        let cidr = CIDR(
-            prefix: IPv4Address(192, 168, 1, 0),
-            countOfMaskedBits: 24
+    @Test(
+        arguments: [(cidr: CIDR<IPv4Address>, containsIP: IPv4Address, result: Bool)]([
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 1, 0),
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 1, 1),
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 1, 255),
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 1, 254),
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 2, 123),
+                result: false
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 0, 123),
+                result: false
+            ),
+            (
+                cidr: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24),
+                containsIP: IPv4Address(192, 168, 255, 123),
+                result: false
+            ),
+        ])
+    )
+    func `ipv4 CIDR containment check works as expected`(
+        cidr: CIDR<IPv4Address>,
+        containsIP: IPv4Address,
+        result: Bool
+    ) {
+        #expect(
+            cidr.contains(containsIP) == result,
+            """
+            IPv4Address containment check failed. A containment result of '\(result)' was expected.
+            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+            checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+            """
         )
-        #expect(cidr.prefix == IPv4Address(192, 168, 1, 0))
-        #expect(cidr.mask == 0b11111111_11111111_11111111_00000000)
-        for number in UInt8(0)...UInt8(255) {
-            #expect(cidr.contains(IPv4Address(192, 168, 1, number)))
+        #expect(
+            cidr.contains(IPAddress.v4(containsIP)) == result,
+            """
+            IPAddress.v4 containment check failed. A containment result of '\(result)' was expected.
+            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+            checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+            """
+        )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func `randomly generated ipv4 CIDR containment checks work as expected`() {
+        for (cidr, containsIP, result) in Self.makeRandom(
+            ofType: IPv4Address.self,
+            countForEachBit: 100
+        ) {
+            #expect(
+                cidr.contains(containsIP) == result,
+                """
+                IPv4Address containment check failed. A containment result of '\(result)' was expected.
+                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+                checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+                """
+            )
+            #expect(
+                cidr.contains(IPAddress.v4(containsIP)) == result,
+                """
+                IPAddress.v4 containment check failed. A containment result of '\(result)' was expected.
+                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+                checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+                """
+            )
         }
     }
 
@@ -149,6 +228,108 @@ struct CIDRTests {
             expected:   0b\(String(expectedMask, radix: 2)); \(expectedMask.trailingZeroBitCount) trailing zeros
             """
         )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(
+        arguments: [(cidr: CIDR<IPv6Address>, containsIP: IPv6Address, result: Bool)]([
+            // ("::1", "isLoopback", \.isLoopback),
+            // ("::1:1", "!isLoopback", { @Sendable in !$0.isLoopback }),
+            // ("FF00::", "isMulticast", \.isMulticast),
+            // ("FF92::", "isMulticast", \.isMulticast),
+            // ("FFFF:998A::1", "isMulticast", \.isMulticast),
+            // ("FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
+            // ("00FF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
+            // ("FAFF::", "!isMulticast", { @Sendable in !$0.isMulticast }),
+            // ("FE80::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            // ("FE90::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            // ("FEBF::", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            // ("FEAA:9876:1928::9", "isLinkLocalUnicast", \.isLinkLocalUnicast),
+            // ("FE70::", "!isLinkLocalUnicast", { @Sendable in !$0.isLinkLocalUnicast }),
+            (
+                /// `FF::` is equivalent to `00FF::`
+                cidr: CIDR(prefix: IPv6Address("FF::")!, countOfMaskedBits: 8),
+                containsIP: IPv6Address("FF00::")!,
+                result: false
+            ),
+            (
+                /// `FF::` is equivalent to `00FF::`
+                cidr: CIDR(prefix: IPv6Address("FF::")!, countOfMaskedBits: 16),
+                containsIP: IPv6Address("FF::")!,
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
+                containsIP: IPv6Address("FF92::")!,
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
+                containsIP: IPv6Address("FFEE:9328:3212:0:1::")!,
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
+                containsIP: IPv6Address("FF00:9328:3212:0:1::")!,
+                result: true
+            ),
+            (
+                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
+                containsIP: IPv6Address("EEFF:9328:3212:0:1::")!,
+                result: false
+            ),
+        ])
+    )
+    func `ipv6 CIDR containment check works as expected`(
+        cidr: CIDR<IPv6Address>,
+        containsIP: IPv6Address,
+        result: Bool
+    ) {
+        #expect(
+            cidr.contains(containsIP) == result,
+            """
+            IPv6Address containment check failed. A containment result of '\(result)' was expected.
+            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+            checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+            """
+        )
+        #expect(
+            cidr.contains(IPAddress.v6(containsIP)) == result,
+            """
+            IPAddress.v6 containment check failed. A containment result of '\(result)' was expected.
+            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+            checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+            """
+        )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func `randomly generated ipv6 CIDR containment checks work as expected`() {
+        for (cidr, containsIP, result) in Self.makeRandom(
+            ofType: IPv6Address.self,
+            countForEachBit: 15
+        ) {
+            #expect(
+                cidr.contains(containsIP) == result,
+                """
+                IPv6Address containment check failed. A containment result of '\(result)' was expected.
+                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+                checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+                """
+            )
+            #expect(
+                cidr.contains(IPAddress.v6(containsIP)) == result,
+                """
+                IPAddress.v6 containment check failed. A containment result of '\(result)' was expected.
+                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
+                checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
+                """
+            )
+        }
     }
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -397,5 +578,70 @@ struct CIDRTests {
             expected:   0b\(String(expectedMask, radix: 2)); \(expectedMask.trailingZeroBitCount) trailing zeros
             """
         )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    /// We intentionally don't use much math operators here like bit-shift, to keep things
+    /// simpler for tests.
+    static func makeRandom<IPAddressType: _IPAddressProtocol>(
+        ofType: IPAddressType.Type,
+        countForEachBit: Int
+    ) -> [(cidr: CIDR<IPAddressType>, containsIP: IPAddressType, result: Bool)] {
+        let bitWidth = UInt8(IPAddressType.IntegerLiteralType.bitWidth)
+        var results: [(cidr: CIDR<IPAddressType>, containsIP: IPAddressType, result: Bool)] = []
+        results.reserveCapacity((Int(bitWidth) + 1) * 2 * countForEachBit)
+
+        for bitCount in UInt8(0)...bitWidth {
+            let cidr = CIDR(
+                prefix: IPAddressType(integerLiteral: .random(in: .all)),
+                countOfMaskedBits: bitCount
+            )
+
+            var cidrPrefixBits = String(cidr.prefix.address, radix: 2)
+            let remainingBits = Int(bitWidth) - cidrPrefixBits.count
+            cidrPrefixBits = String(repeating: "0", count: remainingBits) + cidrPrefixBits
+            let matchingBits = cidrPrefixBits.prefix(Int(bitCount))
+
+            for _ in (0..<countForEachBit) {
+                let theRest = (0..<(bitWidth - bitCount)).map { _ in
+                    "\(UInt8.random(in: 0...1))"
+                }
+                let number = IPAddressType.IntegerLiteralType(
+                    matchingBits + theRest.joined(separator: ""),
+                    radix: 2
+                )!
+                results.append((cidr, IPAddressType(integerLiteral: number), true))
+            }
+
+            guard bitCount > 0 else {
+                continue
+            }
+
+            for _ in (0..<countForEachBit) {
+                var messedUpBits = Array(matchingBits)
+                let howManyToMessUp = Int.random(in: 1...matchingBits.count)
+                let indicesToMessUp = messedUpBits.indices.shuffled().prefix(howManyToMessUp)
+                for index in indicesToMessUp {
+                    let toggled: Character = messedUpBits[index] == "1" ? "0" : "1"
+                    messedUpBits[index] = toggled
+                }
+                let theRest = (0..<(bitWidth - bitCount)).map { _ in
+                    "\(UInt8.random(in: 0...1))"
+                }
+                let number = IPAddressType.IntegerLiteralType(
+                    messedUpBits + theRest.joined(separator: ""),
+                    radix: 2
+                )!
+                results.append((cidr, IPAddressType(integerLiteral: number), false))
+            }
+        }
+
+        return results
+    }
+}
+
+extension ClosedRange where Bound: FixedWidthInteger {
+    fileprivate static var all: Self {
+        Bound.min...Bound.max
     }
 }
