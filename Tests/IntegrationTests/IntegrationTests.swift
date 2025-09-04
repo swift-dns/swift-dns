@@ -886,7 +886,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -906,7 +906,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -980,7 +980,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
@@ -999,7 +999,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -1082,7 +1082,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -1097,7 +1097,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: Name(ipAddress: IPv4Address(8, 8, 4, 4)),
+                        name: Name(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(

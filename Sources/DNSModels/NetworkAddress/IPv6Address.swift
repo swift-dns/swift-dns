@@ -1,5 +1,7 @@
 public import SwiftIDNA
 
+public import struct NIOCore.ByteBuffer
+
 /// An IPv6 address.
 ///
 /// IPv6 addresses are defined as 128-bit integers in [IETF RFC 4291].
@@ -280,9 +282,21 @@ extension IPv6Address: CustomStringConvertible {
     /// `[2001:db8:85a3:f109:197a:8a2e:370:7334]`
     @inlinable
     public var description: String {
+        var string = String()
+        self.description(writeInto: &string)
+        return string
+    }
+
+    @inlinable
+    @_specialize(where IPv6Appendable == ByteBuffer)
+    @_specialize(where IPv6Appendable == String)
+    func description<IPv6Appendable: _IPv6DescriptionAppendable>(
+        writeInto buffer: inout IPv6Appendable
+    ) {
         /// Short-circuit "0".
         if self.address == 0 {
-            return "[::]"
+            buffer.append(contentsOf: "[::]")
+            return
         }
 
         return withUnsafeBytes(of: self.address) { ptr in
@@ -330,7 +344,7 @@ extension IPv6Address: CustomStringConvertible {
 
             assert(rangeToCompress?.isEmpty != true)
 
-            var result = "["
+            buffer.append(.asciiOpeningSquareBracket)
             /// Reserve the max possibly needed capacity.
             let toReserve: Int
             if let rangeToCompress {
@@ -341,7 +355,7 @@ extension IPv6Address: CustomStringConvertible {
             } else {
                 toReserve = 41
             }
-            result.reserveCapacity(toReserve)
+            buffer.reserveCapacity(toReserve)
 
             func uint16(octalIdx idx: Int) -> UInt16 {
                 let doubled = idx &* 2
@@ -356,10 +370,10 @@ extension IPv6Address: CustomStringConvertible {
                 if let rangeToCompress,
                     idx == rangeToCompress.lowerBound
                 {
+                    buffer.append(.asciiColon)
                     if idx == 0 {
-                        result.append("::")
-                    } else {
-                        result.append(":")
+                        /// Need 2 colons in this case, so '::'
+                        buffer.append(.asciiColon)
                     }
                     idx = rangeToCompress.upperBound &+ 1
                     continue
@@ -367,18 +381,45 @@ extension IPv6Address: CustomStringConvertible {
 
                 let uint16 = uint16(octalIdx: idx)
                 let string = String(uint16, radix: 16, uppercase: false)
-                result.append(string)
+                buffer.append(contentsOf: string)
                 if idx < 7 {
-                    result.append(":")
+                    buffer.append(.asciiColon)
                 }
 
                 idx &+= 1
             }
 
-            result += "]"
-
-            return result
+            buffer.append(.asciiClosingSquareBracket)
         }
+    }
+}
+
+/// This protocol is only to be used internally so we can write IPv6's description into different
+/// types of buffers. Currently using `String` for the `description` of the IPv6, and using
+/// `ByteBuffer` for writing the IPv6 into a `Name`'s buffer.
+@usableFromInline
+protocol _IPv6DescriptionAppendable {
+    mutating func append(_ byte: UInt8)
+    mutating func append(contentsOf string: String)
+    mutating func reserveCapacity(_ minimumCapacity: Int)
+}
+
+extension String: _IPv6DescriptionAppendable {
+    @inlinable
+    mutating func append(_ byte: UInt8) {
+        self.append(Character(Unicode.Scalar(byte)))
+    }
+}
+
+extension ByteBuffer: _IPv6DescriptionAppendable {
+    @inlinable
+    mutating func append(_ byte: UInt8) {
+        self.writeInteger(byte)
+    }
+
+    @inlinable
+    mutating func append(contentsOf string: String) {
+        self.writeString(string)
     }
 }
 

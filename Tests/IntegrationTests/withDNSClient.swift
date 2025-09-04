@@ -6,7 +6,7 @@ import Testing
 @available(swiftDNSApplePlatforms 15, *)
 func withRunningDNSClient(
     _ client: DNSClient,
-    function: @Sendable (DNSClient) async throws -> Void
+    function: (DNSClient) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
         taskGroup.addTask {
