@@ -89,6 +89,35 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(ip)
     }
 
+
+    // MARK: - IPv4_Full_Non_ASCII_String_Parsing
+
+    Benchmark(
+        "IPv4_Full_Non_ASCII_String_Parsing_10K",
+        configuration: .init(
+            metrics: [.cpuUser],
+            warmupIterations: 10,
+            maxIterations: 1000
+        )
+    ) { benchmark in
+        for _ in 0..<10_000 {
+            let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
+            blackHole(ip)
+        }
+    }
+
+    Benchmark(
+        "IPv4_Full_Non_ASCII_String_Parsing_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
+        blackHole(ip)
+    }
+
     // MARK: - IPv6_Uncompressed_String_Parsing
 
     Benchmark(

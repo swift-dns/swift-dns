@@ -29,7 +29,7 @@ extension IPv4Address: LosslessStringConvertible {
     /// Initialize an IPv4 address from its textual representation.
     /// That is, 4 decimal UInt8s separated by `.`.
     /// This implementation is IDNA compliant.
-    /// That means the following addresses are considered equal: `192｡₁₆₈｡₁｡98`, `192.168.1.98`.
+    /// That means the following addresses are considered equal: `₁₉₂｡₁₆₈｡₁｡₉₈`, `192.168.1.98`.
     @inlinable
     public init?(_ description: String) {
         var address: UInt32 = 0
