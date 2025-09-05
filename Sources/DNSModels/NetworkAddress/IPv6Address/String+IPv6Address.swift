@@ -397,14 +397,16 @@ extension IPv6Address: LosslessStringConvertible {
         _ scalar: Unicode.Scalar
     ) -> ScalarTranslationResult {
         switch IDNAMapping.for(scalar: scalar) {
-        case .valid:
+        case .valid, .deviation(_):
+            /// Deviations should not be mapped.
+            /// See https://www.unicode.org/reports/tr46/#Processing for more info.
             return mapValidatedScalarToUInt8(scalar)
-        case .mapped(let mapped), .deviation(let mapped):
+        case .mapped(let mapped):
             guard mapped.count == 1 else {
                 /// If this was a decimal number it would have never had a mapped value of > 1
                 return .invalid
             }
-            return mapValidatedScalarToUInt8(mapped.first.unsafelyUnwrapped)
+            return mapValidatedScalarToUInt8(mapped[unchecked: 0])
         case .ignored:
             return .ignore
         case .disallowed:
