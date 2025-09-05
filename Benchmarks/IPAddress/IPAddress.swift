@@ -92,14 +92,14 @@ let benchmarks: @Sendable () -> Void = {
     // MARK: - IPv4_Full_Non_ASCII_String_Parsing
 
     Benchmark(
-        "IPv4_Full_Non_ASCII_String_Parsing_10K",
+        "IPv4_Full_Non_ASCII_String_Parsing_200K",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000 {
+        for _ in 0..<200_000 {
             let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
             blackHole(ip)
         }
@@ -160,14 +160,14 @@ let benchmarks: @Sendable () -> Void = {
     // MARK: - IPv6_Uncompressed_Full_Non_ASCII_String_Parsing
 
     Benchmark(
-        "IPv6_Uncompressed_Full_Non_ASCII_String_Parsing_10K",
+        "IPv6_Uncompressed_Full_Non_ASCII_String_Parsing_200K",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000 {
+        for _ in 0..<200_000 {
             let ip = IPv6Address("﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈").unsafelyUnwrapped
             blackHole(ip)
         }
