@@ -235,8 +235,7 @@ extension IPv6Address: LosslessStringConvertible {
             )
         }) {
             let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
-            let scalarsCount = scalarsGroup.count
-            if scalarsCount == 0 {
+            if scalarsGroup.isEmpty {
                 if seenCompressionSign {
                     /// We've already seen a compression sign, so this is invalid
                     return nil
@@ -288,7 +287,6 @@ extension IPv6Address: LosslessStringConvertible {
                     addressLhs: &addressLhs,
                     addressRhs: &addressRhs,
                     scalarsGroup: scalarsGroup,
-                    scalarsCount: scalarsCount,
                     seenCompressionSign: seenCompressionSign,
                     groupIdx: groupIdx
                 )
@@ -309,8 +307,7 @@ extension IPv6Address: LosslessStringConvertible {
         /// Read last remaining byte-pair
 
         let scalarsGroup = scalars[chunkStartIndex..<endIndex]
-        let scalarsCount = scalarsGroup.count
-        if scalarsCount == 0 {
+        if scalarsGroup.isEmpty {
             if seenCompressionSign {
                 /// Must have reached end with no rhs
                 self.init(addressLhs)
@@ -326,7 +323,6 @@ extension IPv6Address: LosslessStringConvertible {
                 addressLhs: &addressLhs,
                 addressRhs: &addressRhs,
                 scalarsGroup: scalarsGroup,
-                scalarsCount: scalarsCount,
                 seenCompressionSign: seenCompressionSign,
                 groupIdx: groupIdx
             )
@@ -355,20 +351,18 @@ extension IPv6Address: LosslessStringConvertible {
         addressLhs: inout UInt128,
         addressRhs: inout UInt128,
         scalarsGroup: String.UnicodeScalarView.SubSequence,
-        scalarsCount: Int,
         seenCompressionSign: Bool,
         groupIdx: Int
     ) -> Bool {
         var ignored = 0
         let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
-        let maxIdx = scalarsCount &- 1
-        for idx in 0..<scalarsCount {
-            /// We're doing a reversed iteration of the elements so we can properly
-            /// ignore the `ignored` scalars.
-            let indexInGroup = scalarsGroup.index(
-                scalarsGroup.startIndex,
-                offsetBy: maxIdx &- idx
-            )
+        var idx = 0
+        var indexInGroup = scalarsGroup.endIndex
+        while scalarsGroup.formIndex(
+            &indexInGroup,
+            offsetBy: -1,
+            limitedBy: scalarsGroup.startIndex
+        ) {
             let scalar = scalarsGroup[indexInGroup]
             switch IPv6Address.mapScalarToUInt8(scalar) {
             case .valid(let byte):
@@ -383,16 +377,24 @@ extension IPv6Address: LosslessStringConvertible {
                 } else {
                     addressLhs |= UInt128(byte) &<< shift
                 }
+
+                let (newIdx, overflew) = idx.addingReportingOverflow(1)
+                if overflew { return false }
+
+                idx = newIdx
             case .invalid:
                 return false
             case .ignore:
-                let (newIgnored, overflew) = ignored.addingReportingOverflow(1)
-                if overflew { return false }
+                let (newIgnored, overflew1) = ignored.addingReportingOverflow(1)
+                if overflew1 { return false }
+                let (newIdx, overflew2) = idx.addingReportingOverflow(1)
+                if overflew2 { return false }
 
+                idx = newIdx
                 ignored = newIgnored
             }
         }
-        if ignored == scalarsCount {
+        if ignored == idx {
             return false
         }
         return true
