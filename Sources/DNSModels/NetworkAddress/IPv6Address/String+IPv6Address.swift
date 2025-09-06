@@ -176,15 +176,14 @@ extension IPv6Address: LosslessStringConvertible {
         }
 
         /// Trim ignored IDNA unicode scalars
-        let beforeEndIndex = scalars.index(before: endIndex)
         while case .ignored = IDNAMapping.for(scalar: scalars[startIndex]) {
-            guard let after = scalars.index(startIndex, offsetBy: 1, limitedBy: beforeEndIndex) else {
+            guard count > 0 else {
                 /// The whole scalars ended and it only was 'ignored' unicode scalars.
                 /// This means it's not a valid IPv6 anyway.
                 return nil
             }
             count &-= 1
-            startIndex = after
+            scalars.formIndex(&startIndex, offsetBy: 1)
         }
         while let before = scalars.index(endIndex, offsetBy: -1, limitedBy: scalars.startIndex),
             case .ignored = IDNAMapping.for(scalar: scalars[before])
@@ -358,10 +357,12 @@ extension IPv6Address: LosslessStringConvertible {
         let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
         var idx = 0
         var indexInGroup = scalarsGroup.endIndex
+        let startIndex = scalarsGroup.startIndex
+
         while scalarsGroup.formIndex(
             &indexInGroup,
             offsetBy: -1,
-            limitedBy: scalarsGroup.startIndex
+            limitedBy: startIndex
         ) {
             let scalar = scalarsGroup[indexInGroup]
             switch IPv6Address.mapScalarToUInt8(scalar) {
