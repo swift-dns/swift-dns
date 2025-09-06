@@ -131,13 +131,13 @@ extension IPv4Address: LosslessStringConvertible {
     static func mapScalarToUInt8(_ scalar: Unicode.Scalar) -> UInt8? {
         let newValue = scalar.value
         guard
-            newValue >= Unicode.Scalar.asciiZero.value,
+            newValue >= Unicode.Scalar.ascii0.value,
             newValue <= Unicode.Scalar.ascii9.value
         else {
             return nil
         }
         return UInt8(
-            exactly: newValue &- Unicode.Scalar.asciiZero.value
+            exactly: newValue &- Unicode.Scalar.ascii0.value
         ).unsafelyUnwrapped
     }
 }

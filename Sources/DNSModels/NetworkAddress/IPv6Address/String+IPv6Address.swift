@@ -1,5 +1,3 @@
-public import SwiftIDNA
-
 public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 15, *)
@@ -9,11 +7,6 @@ extension IPv6Address: CustomStringConvertible {
     /// the compression sign (`::`) when possible.
     ///
     /// Compliant with [RFC 5952, A Recommendation for IPv6 Address Text Representation, August 2010](https://tools.ietf.org/html/rfc5952).
-    ///
-    /// This implementation is IDNA compliant as well.
-    /// That means the following addresses are considered equal:
-    /// `﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈`
-    /// `[2001:db8:85a3:f109:197a:8a2e:370:7334]`
     @inlinable
     public var description: String {
         var string = ""
@@ -159,6 +152,8 @@ extension ByteBuffer: _IPv6DescriptionAppendable {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: LosslessStringConvertible {
+    /// Initialize an IPv6 address from its textual representation.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:0DB8:1111:0:0:0:0:0`.
     @inlinable
     public init?(_ description: String) {
         var addressLhs: UInt128 = 0
@@ -175,36 +170,9 @@ extension IPv6Address: LosslessStringConvertible {
             return nil
         }
 
-        /// Trim ignored IDNA unicode scalars
-        while case .ignored = IDNAMapping.for(scalar: scalars[startIndex]) {
-            guard count > 0 else {
-                /// The whole scalars ended and it only was 'ignored' unicode scalars.
-                /// This means it's not a valid IPv6 anyway.
-                return nil
-            }
-            count &-= 1
-            scalars.formIndex(&startIndex, offsetBy: 1)
-        }
-        while let before = scalars.index(endIndex, offsetBy: -1, limitedBy: scalars.startIndex),
-            case .ignored = IDNAMapping.for(scalar: scalars[before])
-        {
-            count &-= 1
-            endIndex = before
-        }
-
-        guard count > 1 else {
-            return nil
-        }
-
         /// Trim the left and right square brackets if they both exist
-        let startsWithBracket = IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-            to: .asciiLeftSquareBracket,
-            scalar: scalars[startIndex]
-        )
-        let endsWithBracket = IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-            to: .asciiRightSquareBracket,
-            scalar: scalars[scalars.index(before: endIndex)]
-        )
+        let startsWithBracket = scalars.first == .asciiLeftSquareBracket
+        let endsWithBracket = scalars.last == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
             count &-= 2
@@ -228,10 +196,7 @@ extension IPv6Address: LosslessStringConvertible {
         var seenCompressionSign = false
 
         while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(where: {
-            IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-                to: .asciiColon,
-                scalar: $0
-            )
+            $0 == .asciiColon
         }) {
             let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
             if scalarsGroup.isEmpty {
@@ -244,12 +209,7 @@ extension IPv6Address: LosslessStringConvertible {
                 if nextSeparatorIdx == startIndex {
                     let nextIdx = scalars.index(after: nextSeparatorIdx)
 
-                    guard
-                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-                            to: .asciiColon,
-                            scalar: scalars[nextIdx]
-                        )
-                    else {
+                    guard scalars[nextIdx] == .asciiColon else {
                         return nil
                     }
 
@@ -266,12 +226,7 @@ extension IPv6Address: LosslessStringConvertible {
                     self.init(addressLhs)
                     return
                 } else {
-                    guard
-                        IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-                            to: .asciiColon,
-                            scalar: scalars[scalars.index(before: nextSeparatorIdx)]
-                        )
-                    else {
+                    guard scalars[scalars.index(before: nextSeparatorIdx)] == .asciiColon else {
                         return nil
                     }
 
@@ -353,7 +308,6 @@ extension IPv6Address: LosslessStringConvertible {
         seenCompressionSign: Bool,
         groupIdx: Int
     ) -> Bool {
-        var ignored = 0
         let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
         var idx = 0
         var indexInGroup = scalarsGroup.endIndex
@@ -365,96 +319,58 @@ extension IPv6Address: LosslessStringConvertible {
             limitedBy: startIndex
         ) {
             let scalar = scalarsGroup[indexInGroup]
-            switch IPv6Address.mapScalarToUInt8(scalar) {
-            case .valid(let byte):
-                /// Ignored can't be greater than idx
-                /// We still need to compute the shift using the `idx`
-                let idxWithoutIgnored = idx &- ignored
-                if idxWithoutIgnored > 3 { return false }
-
-                let shift = groupStartIdxInAddress &+ (idxWithoutIgnored &* 4)
-                if seenCompressionSign {
-                    addressRhs |= UInt128(byte) &<< shift
-                } else {
-                    addressLhs |= UInt128(byte) &<< shift
-                }
-
-                let (newIdx, overflew) = idx.addingReportingOverflow(1)
-                if overflew { return false }
-
-                idx = newIdx
-            case .invalid:
+            guard let hexadecimalDigit = IPv6Address.mapScalarToUInt8(scalar) else {
                 return false
-            case .ignore:
-                let (newIgnored, overflew1) = ignored.addingReportingOverflow(1)
-                if overflew1 { return false }
-                let (newIdx, overflew2) = idx.addingReportingOverflow(1)
-                if overflew2 { return false }
-
-                idx = newIdx
-                ignored = newIgnored
             }
+            if idx > 3 { return false }
+
+            let shift = groupStartIdxInAddress &+ (idx &* 4)
+            if seenCompressionSign {
+                addressRhs |= UInt128(hexadecimalDigit) &<< shift
+            } else {
+                addressLhs |= UInt128(hexadecimalDigit) &<< shift
+            }
+
+            let (newIdx, overflew) = idx.addingReportingOverflow(1)
+            if overflew { return false }
+
+            idx = newIdx
         }
-        if ignored == idx {
+
+        if idx == 0 {
             return false
         }
+
         return true
     }
 
-    @usableFromInline
-    enum ScalarTranslationResult: Sendable {
-        case valid(UInt8)
-        case invalid
-        case ignore
-    }
-
     @inlinable
-    static func mapScalarToUInt8(
-        _ scalar: Unicode.Scalar
-    ) -> ScalarTranslationResult {
-        switch IDNAMapping.for(scalar: scalar) {
-        case .valid, .deviation(_):
-            /// Deviations should not be mapped.
-            /// See https://www.unicode.org/reports/tr46/#Processing for more info.
-            return mapValidatedScalarToUInt8(scalar)
-        case .mapped(let mapped):
-            guard mapped.count == 1 else {
-                /// If this was a decimal number it would have never had a mapped value of > 1
-                return .invalid
-            }
-            return mapValidatedScalarToUInt8(mapped[unchecked: 0])
-        case .ignored:
-            return .ignore
-        case .disallowed:
-            return .invalid
-        }
-    }
-
-    @inlinable
-    static func mapValidatedScalarToUInt8(
-        _ scalar: Unicode.Scalar
-    ) -> ScalarTranslationResult {
+    static func mapScalarToUInt8(_ scalar: Unicode.Scalar) -> UInt8? {
         let newValue = scalar.value
 
-        if newValue < Unicode.Scalar.asciiLowercasedA.value {
-            guard
-                newValue >= Unicode.Scalar.asciiZero.value,
-                newValue <= Unicode.Scalar.ascii9.value
-            else {
-                return .invalid
-            }
-            return .valid(
-                UInt8(exactly: newValue &- Unicode.Scalar.asciiZero.value).unsafelyUnwrapped
-            )
-        } else {
+        if newValue >= Unicode.Scalar.asciiLowercasedA.value {
             guard newValue <= Unicode.Scalar.asciiLowercasedF.value else {
-                return .invalid
+                return nil
             }
-            return .valid(
-                UInt8(
-                    exactly: newValue &- Unicode.Scalar.asciiLowercasedA.value &+ 10
-                ).unsafelyUnwrapped
-            )
+            return UInt8(
+                exactly: newValue &- Unicode.Scalar.asciiLowercasedA.value &+ 10
+            ).unsafelyUnwrapped
+        } else if newValue >= Unicode.Scalar.asciiUppercasedA.value {
+            guard newValue <= Unicode.Scalar.asciiUppercasedF.value else {
+                return nil
+            }
+            return UInt8(
+                exactly: newValue &- Unicode.Scalar.asciiUppercasedA.value &+ 10
+            ).unsafelyUnwrapped
+        } else if newValue >= Unicode.Scalar.ascii0.value {
+            guard newValue <= Unicode.Scalar.ascii9.value else {
+                return nil
+            }
+            return UInt8(
+                exactly: newValue &- Unicode.Scalar.ascii0.value
+            ).unsafelyUnwrapped
+        } else {
+            return nil
         }
     }
 }

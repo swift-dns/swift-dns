@@ -35,7 +35,7 @@ extension Unicode.Scalar {
     }
 
     @inlinable
-    static var asciiZero: Unicode.Scalar {
+    static var ascii0: Unicode.Scalar {
         "0"
     }
 
@@ -52,6 +52,16 @@ extension Unicode.Scalar {
     @inlinable
     static var asciiLowercasedF: Unicode.Scalar {
         "f"
+    }
+
+    @inlinable
+    static var asciiUppercasedA: Unicode.Scalar {
+        "A"
+    }
+
+    @inlinable
+    static var asciiUppercasedF: Unicode.Scalar {
+        "F"
     }
 }
 
