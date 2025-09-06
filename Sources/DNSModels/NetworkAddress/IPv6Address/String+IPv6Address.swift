@@ -169,7 +169,9 @@ extension IPv6Address: LosslessStringConvertible {
         var startIndex = scalars.startIndex
         var endIndex = scalars.endIndex
 
-        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
+        var count = scalars.distance(from: startIndex, to: endIndex)
+
+        guard count > 1 else {
             return nil
         }
 
@@ -181,15 +183,17 @@ extension IPv6Address: LosslessStringConvertible {
                 /// This means it's not a valid IPv6 anyway.
                 return nil
             }
+            count &-= 1
             startIndex = after
         }
         while let before = scalars.index(endIndex, offsetBy: -1, limitedBy: scalars.startIndex),
             case .ignored = IDNAMapping.for(scalar: scalars[before])
         {
+            count &-= 1
             endIndex = before
         }
 
-        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
+        guard count > 1 else {
             return nil
         }
 
@@ -204,6 +208,7 @@ extension IPv6Address: LosslessStringConvertible {
         )
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
+            count &-= 2
             startIndex = scalars.index(after: startIndex)
             endIndex = scalars.index(before: endIndex)
         case (false, false):
@@ -212,7 +217,7 @@ extension IPv6Address: LosslessStringConvertible {
             return nil
         }
 
-        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
+        guard count > 1 else {
             return nil
         }
 
