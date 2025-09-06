@@ -169,21 +169,39 @@ extension IPv6Address: LosslessStringConvertible {
         var startIndex = scalars.startIndex
         var endIndex = scalars.endIndex
 
-        let startsWithBracket =
-            (scalars.first).map({
-                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-                    to: .asciiLeftSquareBracket,
-                    scalar: $0
-                )
-            }) == true
-        let endsWithBracket =
-            (scalars.last).map({
-                IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
-                    to: .asciiRightSquareBracket,
-                    scalar: $0
-                )
-            }) == true
+        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
+            return nil
+        }
 
+        /// Trim ignored IDNA unicode scalars
+        let beforeEndIndex = scalars.index(before: endIndex)
+        while case .ignored = IDNAMapping.for(scalar: scalars[startIndex]) {
+            guard let after = scalars.index(startIndex, offsetBy: 1, limitedBy: beforeEndIndex) else {
+                /// The whole scalars ended and it only was 'ignored' unicode scalars.
+                /// This means it's not a valid IPv6 anyway.
+                return nil
+            }
+            startIndex = after
+        }
+        while let before = scalars.index(endIndex, offsetBy: -1, limitedBy: scalars.startIndex),
+            case .ignored = IDNAMapping.for(scalar: scalars[before])
+        {
+            endIndex = before
+        }
+
+        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
+            return nil
+        }
+
+        /// Trim the left and right square brackets if they both exist
+        let startsWithBracket = IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
+            to: .asciiLeftSquareBracket,
+            scalar: scalars[startIndex]
+        )
+        let endsWithBracket = IDNAMapping.isIDNAEquivalentAssumingSingleScalarMapping(
+            to: .asciiRightSquareBracket,
+            scalar: scalars[scalars.index(before: endIndex)]
+        )
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
             startIndex = scalars.index(after: startIndex)
@@ -194,7 +212,7 @@ extension IPv6Address: LosslessStringConvertible {
             return nil
         }
 
-        guard scalars.count > 1 else {
+        guard scalars.distance(from: startIndex, to: endIndex) > 1 else {
             return nil
         }
 
@@ -213,8 +231,7 @@ extension IPv6Address: LosslessStringConvertible {
         }) {
             let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
             let scalarsCount = scalarsGroup.count
-            switch scalarsCount {
-            case 0:
+            if scalarsCount == 0 {
                 if seenCompressionSign {
                     /// We've already seen a compression sign, so this is invalid
                     return nil
@@ -259,10 +276,6 @@ extension IPv6Address: LosslessStringConvertible {
                     chunkStartIndex = scalars.index(after: nextSeparatorIdx)
                     continue
                 }
-            case 1, 2, 3, 4:
-                break
-            default:
-                return nil
             }
 
             guard
@@ -292,8 +305,7 @@ extension IPv6Address: LosslessStringConvertible {
 
         let scalarsGroup = scalars[chunkStartIndex..<endIndex]
         let scalarsCount = scalarsGroup.count
-        switch scalarsCount {
-        case 0:
+        if scalarsCount == 0 {
             if seenCompressionSign {
                 /// Must have reached end with no rhs
                 self.init(addressLhs)
@@ -302,10 +314,6 @@ extension IPv6Address: LosslessStringConvertible {
                 /// No compression sign, but still have an empty group?!
                 return nil
             }
-        case 1, 2, 3, 4:
-            break
-        default:
-            return nil
         }
 
         guard
@@ -362,6 +370,8 @@ extension IPv6Address: LosslessStringConvertible {
                 /// Ignored can't be greater than idx
                 /// We still need to compute the shift using the `idx`
                 let idxWithoutIgnored = idx &- ignored
+                if idxWithoutIgnored > 3 { return false }
+
                 let shift = groupStartIdxInAddress &+ (idxWithoutIgnored &* 4)
                 if seenCompressionSign {
                     addressRhs |= UInt128(byte) &<< shift
@@ -375,8 +385,6 @@ extension IPv6Address: LosslessStringConvertible {
                 if overflew { return false }
 
                 ignored = newIgnored
-
-                continue
             }
         }
         if ignored == scalarsCount {

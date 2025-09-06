@@ -42,12 +42,19 @@ struct IPAddressTests {
             /// These all should work based on IDNA.
             /// For example, the weird `1`s in the ip address below is:
             /// 2081          ; mapped     ; 0031          # 1.1  SUBSCRIPT ONE
-            ("192.₁₆₈.₁.98", IPv4Address(192, 168, 1, 98)),
-            /// Other IDNA label separators other than U+002E ( . ) FULL STOP, are:
+            ///
+            /// IDNA label separators other than U+002E ( . ) FULL STOP, are:
             /// U+FF0E ( ． ) FULLWIDTH FULL STOP
             /// U+3002 ( 。 ) IDEOGRAPHIC FULL STOP
             /// U+FF61 ( ｡ ) HALFWIDTH IDEOGRAPHIC FULL STOP
-            ("192．168。1｡98", IPv4Address(192, 168, 1, 98)),
+            ///
+            /// Some ignored IDNA unicode scalars that are used below:
+            /// U+00AD ( ­ ) SOFT HYPHEN
+            /// U+200B ( ​ ) ZERO WIDTH SPACE
+            /// U+2064 ( ⁤ ) INVISIBLE PLUS
+            ("\u{AD}1\u{AD}92.₁₆\u{2064}\u{200B}\u{AD}₈.₁.98\u{AD}", IPv4Address(192, 168, 1, 98)),
+            ("192．168。1｡\u{AD}98", IPv4Address(192, 168, 1, 98)),
+            ("192.\u{AD}.166.9", nil),
             ("192.168.1.256", nil),
             ("192.168.1.", nil),
             ("1111.168.1.1", nil),
@@ -217,12 +224,20 @@ struct IPAddressTests {
         arguments: [(String, UInt128?)]([
             ("1111:2222:3333:4444:5555:6666:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888),
             /// Contains weird characters that are mapped to the correct characters in IDNA
+            /// These all should work based on IDNA.
+            /// For example, the weird `1`s in the ip address below is:
+            /// 2081          ; mapped     ; 0031          # 1.1  SUBSCRIPT ONE
+            ///
+            /// Some ignored IDNA unicode scalars that are used below:
+            /// U+00AD ( ­ ) SOFT HYPHEN
+            /// U+200B ( ​ ) ZERO WIDTH SPACE
+            /// U+2064 ( ⁤ ) INVISIBLE PLUS
             (
-                "﹇₁₁₁₁:2222︓3333:4444︓5555:₆6₆6:7777:8888﹈",
+                "\u{AD}1\u{AD}111:2222︓\u{AD}3333:4444︓55\u{200B}\u{2064}55:₆6₆6:7777:8888\u{200B}",
                 0x1111_2222_3333_4444_5555_6666_7777_8888
             ),
             (
-                "﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈",
+                "\u{200B}﹇₂₀\u{AD}\u{200B}₀₁︓\u{2064}₀ⒹⒷ₈︓₈₅Ⓐ₃\u{2064}︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈\u{2064}",
                 0x2001_0DB8_85A3_F109_197A_8A2E_0370_7334
             ),
             ("₁₁₁₁:2222:3333:4444:5555:₆6₆6:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888),
@@ -251,6 +266,16 @@ struct IPAddressTests {
             ("0:1:2:3:4:0:5:6", 0x0000_0001_0002_0003_0004_0000_0005_0006),
             ("[::1]", 0x0000_0000_0000_0000_0000_0000_0000_0001),
             ("::1", 0x0000_0000_0000_0000_0000_0000_0000_0001),
+            ("\u{AD}", nil),
+            ("\u{AD}\u{200B}\u{2064}", nil),
+            ("[\u{AD}]", nil),
+            ("[\u{AD}\u{200B}\u{2064}]", nil),
+            /// Optimally we should support parsing these next 4 as valid, but we currently don't.
+            /// If you remove the IDNA-ignored unicode scalars, it becomes clear they are valid.
+            ("[\u{AD}::]", nil),
+            ("[::\u{AD}]", nil),
+            ("[1:\u{AD}:1]", nil),
+            ("[1:\u{AD}\u{200B}:1]", nil),
             ("", nil),
             (":", nil),
             ("[:]", nil),

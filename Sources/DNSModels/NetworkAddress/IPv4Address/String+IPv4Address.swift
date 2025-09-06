@@ -122,8 +122,6 @@ extension IPv4Address: LosslessStringConvertible {
                 if overflew { return false }
 
                 ignored = newIgnored
-
-                continue
             }
         }
         /// This will catch `scalarsCount == 0` as well.
