@@ -43,12 +43,14 @@ jobs:
           fi
 
       - name: Lint
+        id: lint
         run: |
           apt -q update && apt -yq install curl
           curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
+          echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
 
       - name: Check for modifications
-        if: steps.comparison.outputs.exit-status != '0'
+        if: steps.lint.outputs.exit-status != '0'
         id: check-modifications
         run: |
           MODIFICATIONS="$(git status --porcelain)"
@@ -73,7 +75,7 @@ jobs:
           git add .
           git commit -m "Formatting update
 
-          Committed by: ${RUN_LINK}"
+          Committed to ${NEW_BRANCH} by ${RUN_LINK}"
           git push origin "${NEW_BRANCH}"
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
