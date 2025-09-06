@@ -39,22 +39,6 @@ struct IPAddressTests {
             ("123.251.98.234", IPv4Address(123, 251, 98, 234)),
             ("255.255.255.255", IPv4Address(255, 255, 255, 255)),
             ("192.168.1.98", IPv4Address(192, 168, 1, 98)),
-            /// These all should work based on IDNA.
-            /// For example, the weird `1`s in the ip address below is:
-            /// 2081          ; mapped     ; 0031          # 1.1  SUBSCRIPT ONE
-            ///
-            /// IDNA label separators other than U+002E ( . ) FULL STOP, are:
-            /// U+FF0E ( ． ) FULLWIDTH FULL STOP
-            /// U+3002 ( 。 ) IDEOGRAPHIC FULL STOP
-            /// U+FF61 ( ｡ ) HALFWIDTH IDEOGRAPHIC FULL STOP
-            ///
-            /// Some ignored IDNA unicode scalars that are used below:
-            /// U+00AD ( ­ ) SOFT HYPHEN
-            /// U+200B ( ​ ) ZERO WIDTH SPACE
-            /// U+2064 ( ⁤ ) INVISIBLE PLUS
-            ("\u{AD}1\u{AD}92.₁₆\u{2064}\u{200B}\u{AD}₈.₁.98\u{AD}", IPv4Address(192, 168, 1, 98)),
-            ("192．168。1｡\u{AD}98", IPv4Address(192, 168, 1, 98)),
-            ("192.\u{AD}.166.9", nil),
             ("192.168.1.256", nil),
             ("192.168.1.", nil),
             ("1111.168.1.1", nil),
@@ -70,6 +54,25 @@ struct IPAddressTests {
             ("9.87", nil),
             ("", nil),
             ("1111:2222:3333:4444:5555:6666:7777:8888", nil),
+            /// These all should work based on IDNA.
+            /// For example, the weird `1`s in the ip address below is:
+            /// 2081          ; mapped     ; 0031          # 1.1  SUBSCRIPT ONE
+            ///
+            /// IDNA label separators other than U+002E ( . ) FULL STOP, are:
+            /// U+FF0E ( ． ) FULLWIDTH FULL STOP
+            /// U+3002 ( 。 ) IDEOGRAPHIC FULL STOP
+            /// U+FF61 ( ｡ ) HALFWIDTH IDEOGRAPHIC FULL STOP
+            ///
+            /// Some ignored IDNA unicode scalars that are used below:
+            /// U+00AD ( ­ ) SOFT HYPHEN
+            /// U+200B ( ​ ) ZERO WIDTH SPACE
+            /// U+2064 ( ⁤ ) INVISIBLE PLUS
+            ///
+            /// Would parse to 192.168.1.98 assuming IDNA-compliant parsing
+            ("\u{AD}1\u{AD}92.₁₆\u{2064}\u{200B}\u{AD}₈.₁.98\u{AD}", nil),
+            /// Would parse to 192.168.1.98 assuming IDNA-compliant parsing
+            ("192．168。1｡\u{AD}98", nil),
+            ("192.\u{AD}.166.9", nil),
         ])
     )
     func ipv4AddressFromString(string: String, expectedAddress: IPv4Address?) {
