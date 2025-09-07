@@ -89,46 +89,6 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(ip)
     }
 
-    // MARK: - IPv4_Full_Non_ASCII_String_Parsing
-
-    Benchmark(
-        "IPv4_Full_Non_ASCII_String_Parsing_200K",
-        configuration: .init(
-            metrics: [.cpuUser],
-            warmupIterations: 10,
-            maxIterations: 1000
-        )
-    ) { benchmark in
-        for _ in 0..<200_000 {
-            let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
-            blackHole(ip)
-        }
-    }
-
-    Benchmark(
-        "IPv4_Full_Non_ASCII_String_Parsing_Malloc",
-        configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxIterations: 10
-        )
-    ) { benchmark in
-        let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
-        blackHole(ip)
-    }
-
-    Benchmark(
-        "IPv4_Full_Non_ASCII_String_Parsing_Memory_Leaked",
-        configuration: .init(
-            metrics: [.memoryLeaked],
-            warmupIterations: 1,
-            maxIterations: 10
-        )
-    ) { benchmark in
-        let ip = IPv4Address("₁₉₂｡₁₆₈｡₁｡₉₈").unsafelyUnwrapped
-        blackHole(ip)
-    }
-
     // MARK: - IPv6_Uncompressed_String_Parsing
 
     Benchmark(
@@ -154,46 +114,6 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         let ip = IPv6Address("[2001:0db8:85a3:f109:197a:8a2e:0370:7334]").unsafelyUnwrapped
-        blackHole(ip)
-    }
-
-    // MARK: - IPv6_Uncompressed_Full_Non_ASCII_String_Parsing
-
-    Benchmark(
-        "IPv6_Uncompressed_Full_Non_ASCII_String_Parsing_200K",
-        configuration: .init(
-            metrics: [.cpuUser],
-            warmupIterations: 10,
-            maxIterations: 1000
-        )
-    ) { benchmark in
-        for _ in 0..<200_000 {
-            let ip = IPv6Address("﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈").unsafelyUnwrapped
-            blackHole(ip)
-        }
-    }
-
-    Benchmark(
-        "IPv6_Uncompressed_Full_Non_ASCII_String_Parsing_Malloc",
-        configuration: .init(
-            metrics: [.mallocCountTotal],
-            warmupIterations: 1,
-            maxIterations: 10
-        )
-    ) { benchmark in
-        let ip = IPv6Address("﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈").unsafelyUnwrapped
-        blackHole(ip)
-    }
-
-    Benchmark(
-        "IPv6_Uncompressed_Full_Non_ASCII_String_Parsing_Memory_Leaked",
-        configuration: .init(
-            metrics: [.memoryLeaked],
-            warmupIterations: 1,
-            maxIterations: 10
-        )
-    ) { benchmark in
-        let ip = IPv6Address("﹇₂₀₀₁︓₀ⒹⒷ₈︓₈₅Ⓐ₃︓Ⓕ₁₀₉︓₁₉₇Ⓐ︓₈Ⓐ₂Ⓔ︓₀₃₇₀︓₇₃₃₄﹈").unsafelyUnwrapped
         blackHole(ip)
     }
 
