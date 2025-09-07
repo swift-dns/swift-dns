@@ -31,7 +31,7 @@ extension IPv4Address: CustomStringConvertible {
                 }
             }
 
-            return resultIdx &+ 1
+            return resultIdx
         }
     }
 

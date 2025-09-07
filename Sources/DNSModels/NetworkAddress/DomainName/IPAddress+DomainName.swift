@@ -66,7 +66,14 @@ extension DomainName {
             )
         }
 
-        ipv6.description(writeInto: &buffer)
+        buffer = ipv6.makeDescription { (maxWriteableBytes, callback) in
+            buffer.reserveCapacity(minimumWritableBytes: maxWriteableBytes)
+            let written = buffer.withUnsafeMutableWritableBytes { ptr in
+                callback(ptr.bindMemory(to: UInt8.self))
+            }
+            buffer.moveWriterIndex(forwardBy: written)
+            return buffer
+        }
 
         let endWriterIndex = buffer.writerIndex
         let bytesWritten = endWriterIndex - startWriterIndex

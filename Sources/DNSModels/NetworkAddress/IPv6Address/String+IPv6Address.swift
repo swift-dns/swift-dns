@@ -9,21 +9,32 @@ extension IPv6Address: CustomStringConvertible {
     /// Compliant with [RFC 5952, A Recommendation for IPv6 Address Text Representation, August 2010](https://tools.ietf.org/html/rfc5952).
     @inlinable
     public var description: String {
-        var string = ""
-        self.description(writeInto: &string)
-        return string
+        self.makeDescription { (maxWriteableBytes, callback) in
+            String(unsafeUninitializedCapacity: maxWriteableBytes) { buffer in
+                callback(buffer)
+            }
+        }
     }
 
     @inlinable
-    @_specialize(where IPv6Appendable == ByteBuffer)
-    @_specialize(where IPv6Appendable == String)
-    func description<IPv6Appendable: _IPv6DescriptionAppendable>(
-        writeInto buffer: inout IPv6Appendable
-    ) {
+    @_specialize(where Buffer == String)
+    @_specialize(where Buffer == ByteBuffer)
+    func makeDescription<Buffer>(
+        writingToUnsafeMutableBufferPointerOfUInt8: (
+            /*maxWriteableBytes: */ Int,
+            /*callback, returns the number of bytes written*/
+            (UnsafeMutableBufferPointer<UInt8>) -> Int
+        ) -> Buffer
+    ) -> Buffer {
         /// Short-circuit "0".
         if self.address == 0 {
-            buffer.append(contentsOf: "[::]")
-            return
+            return writingToUnsafeMutableBufferPointerOfUInt8(4) { ptr in
+                ptr[0] = .asciiLeftSquareBracket
+                ptr[1] = .asciiColon
+                ptr[2] = .asciiColon
+                ptr[3] = .asciiRightSquareBracket
+                return 4
+            }
         }
 
         return withUnsafeBytes(of: self.address) { ptr in
@@ -71,7 +82,6 @@ extension IPv6Address: CustomStringConvertible {
 
             assert(rangeToCompress?.isEmpty != true)
 
-            buffer.append(.asciiLeftSquareBracket)
             /// Reserve the max possibly needed capacity.
             let toReserve: Int
             if let rangeToCompress {
@@ -82,47 +92,61 @@ extension IPv6Address: CustomStringConvertible {
             } else {
                 toReserve = 41
             }
-            buffer.reserveCapacity(toReserve)
 
-            /// Reset `idx`. It was used in a loop above.
-            idx = 0
-            while idx < 8 {
-                if let rangeToCompress,
-                    idx == rangeToCompress.lowerBound
-                {
-                    buffer.append(.asciiColon)
-                    if idx == 0 {
-                        /// Need 2 colons in this case, so '::'
-                        buffer.append(.asciiColon)
+            return writingToUnsafeMutableBufferPointerOfUInt8(toReserve) { writePtr in
+                var writeIdx = 0
+
+                writePtr[0] = .asciiLeftSquareBracket
+                writeIdx &+= 1
+
+                /// Reset `idx`. It was used in a loop above.
+                idx = 0
+                while idx < 8 {
+                    if let rangeToCompress,
+                        idx == rangeToCompress.lowerBound
+                    {
+                        writePtr[writeIdx] = .asciiColon
+                        writeIdx &+= 1
+
+                        if idx == 0 {
+                            /// Need 2 colons in this case, so '::'
+                            writePtr[writeIdx] = .asciiColon
+                            writeIdx &+= 1
+                        }
+
+                        idx = rangeToCompress.upperBound &+ 1
+                        continue
                     }
-                    idx = rangeToCompress.upperBound &+ 1
-                    continue
+
+                    let doubled = idx &* 2
+                    let left = ptr[15 &- doubled]
+                    let right = ptr[14 &- doubled]
+                    IPv6Address._write(
+                        writeInto: writePtr,
+                        idx: &writeIdx,
+                        bytePair: (left, right)
+                    )
+
+                    if idx < 7 {
+                        writePtr[writeIdx] = .asciiColon
+                        writeIdx &+= 1
+                    }
+
+                    idx &+= 1
                 }
 
-                let doubled = idx &* 2
-                let left = ptr[15 &- doubled]
-                let right = ptr[14 &- doubled]
-                IPv6Address._write(
-                    writeInto: &buffer,
-                    bytePair: (left, right)
-                )
+                writePtr[writeIdx] = .asciiRightSquareBracket
+                writeIdx &+= 1
 
-                if idx < 7 {
-                    buffer.append(.asciiColon)
-                }
-
-                idx &+= 1
+                return writeIdx
             }
-
-            buffer.append(.asciiRightSquareBracket)
         }
     }
 
     @inlinable
-    @_specialize(where IPv6Appendable == ByteBuffer)
-    @_specialize(where IPv6Appendable == String)
-    static func _write<IPv6Appendable: _IPv6DescriptionAppendable>(
-        writeInto buffer: inout IPv6Appendable,
+    static func _write(
+        writeInto ptr: UnsafeMutableBufferPointer<UInt8>,
+        idx: inout Int,
         bytePair: (left: UInt8, right: UInt8)
     ) {
         var soFarAllZeros = true
@@ -134,20 +158,24 @@ extension IPv6Address: CustomStringConvertible {
 
         if _1 != 0 {
             soFarAllZeros = false
-            buffer.append(convertToASCII(_1))
+            ptr[idx] = _convertToASCII(_1)
+            idx &+= 1
         }
         if !(_2 == 0 && soFarAllZeros) {
             soFarAllZeros = false
-            buffer.append(convertToASCII(_2))
+            ptr[idx] = _convertToASCII(_2)
+            idx &+= 1
         }
         if !(_3 == 0 && soFarAllZeros) {
-            buffer.append(convertToASCII(_3))
+            ptr[idx] = _convertToASCII(_3)
+            idx &+= 1
         }
-        buffer.append(convertToASCII(_4))
+        ptr[idx] = _convertToASCII(_4)
+        idx &+= 1
     }
 
     @inlinable
-    static func convertToASCII(_ byte: UInt8) -> UInt8 {
+    static func _convertToASCII(_ byte: UInt8) -> UInt8 {
         byte > 9
             ? byte &+ UInt8.asciiLowercasedA &- 10
             : byte &+ UInt8.ascii0
