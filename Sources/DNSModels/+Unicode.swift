@@ -18,51 +18,6 @@ extension Unicode.Scalar {
     static var asciiDot: Unicode.Scalar {
         "."
     }
-
-    @inlinable
-    static var asciiColon: Unicode.Scalar {
-        ":"
-    }
-
-    @inlinable
-    static var asciiLeftSquareBracket: Unicode.Scalar {
-        "["
-    }
-
-    @inlinable
-    static var asciiRightSquareBracket: Unicode.Scalar {
-        "]"
-    }
-
-    @inlinable
-    static var ascii0: Unicode.Scalar {
-        "0"
-    }
-
-    @inlinable
-    static var ascii9: Unicode.Scalar {
-        "9"
-    }
-
-    @inlinable
-    static var asciiLowercasedA: Unicode.Scalar {
-        "a"
-    }
-
-    @inlinable
-    static var asciiLowercasedF: Unicode.Scalar {
-        "f"
-    }
-
-    @inlinable
-    static var asciiUppercasedA: Unicode.Scalar {
-        "A"
-    }
-
-    @inlinable
-    static var asciiUppercasedF: Unicode.Scalar {
-        "F"
-    }
 }
 
 extension Unicode.GeneralCategory {

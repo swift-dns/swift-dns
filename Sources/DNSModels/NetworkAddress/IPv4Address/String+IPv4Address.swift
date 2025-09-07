@@ -23,6 +23,7 @@ extension IPv4Address: CustomStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 26, *)
 extension IPv4Address: LosslessStringConvertible {
     /// Initialize an IPv4 address from its textual representation.
     /// That is, 4 decimal UInt8s separated by `.`.
@@ -31,21 +32,20 @@ extension IPv4Address: LosslessStringConvertible {
     public init?(_ description: String) {
         var address: UInt32 = 0
 
-        let scalars = description.unicodeScalars
+        var utf8Span = description.utf8Span
+        guard utf8Span.checkForASCII() else {
+            return nil
+        }
+        var span = utf8Span.span
 
         var byteIdx = 0
-        var chunkStartIndex = scalars.startIndex
-        let endIndex = scalars.endIndex
 
-        /// We accept any of the 4 IDNA label separators (including `.`)
         /// This will make sure a valid ipv4 domain-name parses fine using this method
-        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(where: {
-            $0 == .asciiDot
-        }) {
+        while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiDot }) {
             guard
                 IPv4Address._read(
                     into: &address,
-                    scalarsGroup: scalars[chunkStartIndex..<nextSeparatorIdx],
+                    utf8Group: span.extracting(unchecked: 0..<nextSeparatorIdx),
                     byteIdx: byteIdx
                 )
             else {
@@ -53,7 +53,7 @@ extension IPv4Address: LosslessStringConvertible {
             }
 
             /// This is safe, nothing will crash with this increase in index
-            chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+            span = span.extracting((nextSeparatorIdx &+ 1)...)
 
             byteIdx &+= 1
 
@@ -61,7 +61,7 @@ extension IPv4Address: LosslessStringConvertible {
                 guard
                     IPv4Address._read(
                         into: &address,
-                        scalarsGroup: scalars[chunkStartIndex..<endIndex],
+                        utf8Group: span,
                         byteIdx: byteIdx
                     )
                 else {
@@ -80,27 +80,23 @@ extension IPv4Address: LosslessStringConvertible {
     @inlinable
     static func _read(
         into address: inout UInt32,
-        scalarsGroup: String.UnicodeScalarView.SubSequence,
+        utf8Group: Span<UInt8>,
         byteIdx: Int
     ) -> Bool {
-        let scalarsCount = scalarsGroup.count
+        let utf8Count = utf8Group.count
 
-        if scalarsCount == 0 {
+        if utf8Count == 0 {
             return false
         }
 
         var byte: UInt8 = 0
 
-        let maxIdx = scalarsCount &- 1
-        let startIndex = scalarsGroup.startIndex
+        let maxIdx = utf8Count &- 1
 
-        for idx in 0..<scalarsCount {
-            let indexInGroup = scalarsGroup.index(
-                startIndex,
-                offsetBy: maxIdx - idx
-            )
-            let scalar = scalarsGroup[indexInGroup]
-            guard let decimalDigit = IPv4Address.mapScalarToUInt8(scalar) else {
+        for idx in 0..<utf8Count {
+            let indexInGroup = maxIdx - idx
+            let utf8Byte = utf8Group[unchecked: indexInGroup]
+            guard let decimalDigit = IPv4Address.mapUTF8ByteToUInt8(utf8Byte) else {
                 return false
             }
 
@@ -128,16 +124,13 @@ extension IPv4Address: LosslessStringConvertible {
     }
 
     @inlinable
-    static func mapScalarToUInt8(_ scalar: Unicode.Scalar) -> UInt8? {
-        let newValue = scalar.value
+    static func mapUTF8ByteToUInt8(_ utf8Byte: UInt8) -> UInt8? {
         guard
-            newValue >= Unicode.Scalar.ascii0.value,
-            newValue <= Unicode.Scalar.ascii9.value
+            utf8Byte >= UInt8.ascii0,
+            utf8Byte <= UInt8.ascii9
         else {
             return nil
         }
-        return UInt8(
-            exactly: newValue &- Unicode.Scalar.ascii0.value
-        ).unsafelyUnwrapped
+        return utf8Byte &- UInt8.ascii0
     }
 }

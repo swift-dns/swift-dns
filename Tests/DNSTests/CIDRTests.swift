@@ -261,7 +261,7 @@ struct CIDRTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(cidr: CIDR<IPv6Address>, expectedDescription: String)]([
             (
@@ -298,7 +298,7 @@ struct CIDRTests {
         #expect(cidr.description == expectedDescription)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(cidr: CIDR<IPv6Address>, containsIP: IPv6Address, result: Bool)]([
             (

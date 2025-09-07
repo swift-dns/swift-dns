@@ -27,6 +27,7 @@ struct IPAddressTests {
         #expect(ip.description == expectedDescription)
     }
 
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(String, IPv4Address?)]([
             ("127.0.0.1", IPv4Address(127, 0, 0, 1)),
@@ -79,7 +80,7 @@ struct IPAddressTests {
         #expect(IPv4Address(string) == expectedAddress)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(IPv4Address?, String)]([
             (IPv4Address(192, 0, 2, 128), "::ffff:c000:0280"),
@@ -222,7 +223,7 @@ struct IPAddressTests {
         #expect(IPv6Address(ip).description == expectedDescription)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(String, UInt128?)]([
             ("1111:2222:3333:4444:5555:6666:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888),
@@ -260,6 +261,7 @@ struct IPAddressTests {
             ("[:::2001:0:0:1]", nil),
             ("[2001:0:0:1::2", nil),
             ("2001:0:0:1::2]", nil),
+            ("[1::2::]", nil),
             ("[:0:1:2:3:4:0:5:6]", nil),
             ("[0:1:2:3:4:0:5:6:]", nil),
             ("[::0:1:2:3:4:5:6:7]", nil),
@@ -272,7 +274,7 @@ struct IPAddressTests {
             ("[0:1:2:3:4:0:5:-6]", nil),
             ("[0:1:2:3:4:0:5:g]", nil),
             ("[0:11111:2:3:4:0:5:6]", nil),
-            ("192.168.1.256", nil),
+            ("192.168.1.255", nil),
             /// Contains weird characters that are mapped to the correct characters in IDNA
             /// These all should work based on IDNA.
             /// For example, the weird `1`s in the ip address below is:
@@ -327,7 +329,7 @@ struct IPAddressTests {
         #expect(ip.description == expectedDescription)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(String, IPAddress?)]([
             ("192.168.1.1", .v4(IPv4Address(192, 168, 1, 1))),
@@ -340,7 +342,7 @@ struct IPAddressTests {
         #expect(IPAddress(string) == expectedAddress)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(String, IPv4Address)]([
             ("::ffff:c000:0280", IPv4Address(192, 0, 2, 128)),
@@ -357,7 +359,7 @@ struct IPAddressTests {
         #expect(ipv6 == IPv6Address(ipv4: expectedIPv4))
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     @Test(
         arguments: [(String, String, (@Sendable (IPv6Address) -> Bool))]([
             ("::1", "isLoopback", \.isLoopback),

@@ -1,5 +1,5 @@
 {
-  "originHash" : "f55be9238cd293e8a6fc42eb68b3d3e05b393b2e77d57ee97e53cb0a36080207",
+  "originHash" : "4b6824f36b979a141808f2301594ea28820ce798150e87184a112cd9d221519f",
   "pins" : [
     {
       "identity" : "swift-async-algorithms",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mahdibm/swift-idna.git",
       "state" : {
-        "revision" : "e7301182289994ad9b3358b90a473f1d6ae11025",
-        "version" : "1.0.0-beta.6"
+        "revision" : "2dfd6f750ec860b55178a6939408a4856bf52f28",
+        "version" : "1.0.0-beta.7"
       }
     },
     {

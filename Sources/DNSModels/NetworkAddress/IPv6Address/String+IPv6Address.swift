@@ -71,7 +71,7 @@ extension IPv6Address: CustomStringConvertible {
 
             assert(rangeToCompress?.isEmpty != true)
 
-            buffer.append(.asciiOpeningSquareBracket)
+            buffer.append(.asciiLeftSquareBracket)
             /// Reserve the max possibly needed capacity.
             let toReserve: Int
             if let rangeToCompress {
@@ -116,7 +116,7 @@ extension IPv6Address: CustomStringConvertible {
                 idx &+= 1
             }
 
-            buffer.append(.asciiClosingSquareBracket)
+            buffer.append(.asciiRightSquareBracket)
         }
     }
 }
@@ -150,7 +150,7 @@ extension ByteBuffer: _IPv6DescriptionAppendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:0DB8:1111:0:0:0:0:0`.
@@ -159,25 +159,25 @@ extension IPv6Address: LosslessStringConvertible {
         var addressLhs: UInt128 = 0
         var addressRhs: UInt128 = 0
 
-        let scalars = description.unicodeScalars
+        var utf8Span = description.utf8Span
+        guard utf8Span.checkForASCII() else {
+            return nil
+        }
+        var span = utf8Span.span
 
-        var startIndex = scalars.startIndex
-        var endIndex = scalars.endIndex
-
-        var count = scalars.distance(from: startIndex, to: endIndex)
+        var count = span.count
 
         guard count > 1 else {
             return nil
         }
 
         /// Trim the left and right square brackets if they both exist
-        let startsWithBracket = scalars.first == .asciiLeftSquareBracket
-        let endsWithBracket = scalars.last == .asciiRightSquareBracket
+        let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
+        let endsWithBracket = span[unchecked: count &- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
+            span = span.extracting(1..<count &- 1)
             count &-= 2
-            startIndex = scalars.index(after: startIndex)
-            endIndex = scalars.index(before: endIndex)
         case (false, false):
             break
         case (true, false), (false, true):
@@ -188,37 +188,33 @@ extension IPv6Address: LosslessStringConvertible {
             return nil
         }
 
-        let lastIndex = scalars.index(before: endIndex)
-        var chunkStartIndex = startIndex
-
         var groupIdx = 0
         /// Have seen '::' or not
         var seenCompressionSign = false
 
-        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(where: {
-            $0 == .asciiColon
-        }) {
-            let scalarsGroup = scalars[chunkStartIndex..<nextSeparatorIdx]
-            if scalarsGroup.isEmpty {
+        while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiColon }) {
+            let utf8Group = span.extracting(unchecked: 0..<nextSeparatorIdx)
+            if utf8Group.isEmpty {
                 if seenCompressionSign {
                     /// We've already seen a compression sign, so this is invalid
                     return nil
                 }
 
                 /// If we're at the first index
-                if nextSeparatorIdx == startIndex {
-                    let nextIdx = scalars.index(after: nextSeparatorIdx)
+                if groupIdx == 0 {
+                    let nextIdx = nextSeparatorIdx &+ 1
 
-                    guard scalars[nextIdx] == .asciiColon else {
+                    guard span[unchecked: nextIdx] == .asciiColon else {
                         return nil
                     }
 
                     seenCompressionSign = true
-                    chunkStartIndex = scalars.index(after: nextIdx)
+                    groupIdx &+= 2
+                    span = span.extracting((nextIdx &+ 1)...)
                     continue
 
                     /// If we're at the last index
-                } else if nextSeparatorIdx == lastIndex {
+                } else if span.count == 1 {
                     guard groupIdx <= 7 else {
                         return nil
                     }
@@ -226,12 +222,14 @@ extension IPv6Address: LosslessStringConvertible {
                     self.init(addressLhs)
                     return
                 } else {
-                    guard scalars[scalars.index(before: nextSeparatorIdx)] == .asciiColon else {
+                    /// Must be a compression sign in the middle of the string
+                    guard span[unchecked: nextSeparatorIdx &- 1] == .asciiColon else {
                         return nil
                     }
 
                     seenCompressionSign = true
-                    chunkStartIndex = scalars.index(after: nextSeparatorIdx)
+                    groupIdx &+= 1
+                    span = span.extracting((nextSeparatorIdx &+ 1)...)
                     continue
                 }
             }
@@ -240,7 +238,7 @@ extension IPv6Address: LosslessStringConvertible {
                 IPv6Address._read(
                     addressLhs: &addressLhs,
                     addressRhs: &addressRhs,
-                    scalarsGroup: scalarsGroup,
+                    utf8Group: utf8Group,
                     seenCompressionSign: seenCompressionSign,
                     groupIdx: groupIdx
                 )
@@ -248,20 +246,18 @@ extension IPv6Address: LosslessStringConvertible {
                 return nil
             }
 
-            chunkStartIndex = scalars.index(after: nextSeparatorIdx)
+            /// This is safe, nothing will crash with this increase in index
+            span = span.extracting((nextSeparatorIdx + 1)...)
 
             groupIdx &+= 1
         }
 
-        let compressionSignFactor = seenCompressionSign ? 1 : 0
-        guard groupIdx <= (7 &- compressionSignFactor) else {
+        guard groupIdx <= 7 else {
             return nil
         }
 
         /// Read last remaining byte-pair
-
-        let scalarsGroup = scalars[chunkStartIndex..<endIndex]
-        if scalarsGroup.isEmpty {
+        if span.isEmpty {
             if seenCompressionSign {
                 /// Must have reached end with no rhs
                 self.init(addressLhs)
@@ -276,7 +272,7 @@ extension IPv6Address: LosslessStringConvertible {
             IPv6Address._read(
                 addressLhs: &addressLhs,
                 addressRhs: &addressRhs,
-                scalarsGroup: scalarsGroup,
+                utf8Group: span,
                 seenCompressionSign: seenCompressionSign,
                 groupIdx: groupIdx
             )
@@ -285,8 +281,6 @@ extension IPv6Address: LosslessStringConvertible {
         }
 
         /// We've reached the end of the string
-
-        /// We must have seen a compression sign, or have had enough groups
         guard groupIdx == 7 || seenCompressionSign else {
             return nil
         }
@@ -298,31 +292,33 @@ extension IPv6Address: LosslessStringConvertible {
         self.init(addressLhs)
     }
 
-    /// Reads the scalars group integers into addressLhs or addressRhs
-    /// Returns false if the scalars group is invalid, in which case we should return `nil`.
+    /// Reads the `utf8Group` integers into addressLhs or addressRhs
+    /// Returns false if the `utf8Group` is invalid, in which case we should return `nil`.
     @inlinable
     static func _read(
         addressLhs: inout UInt128,
         addressRhs: inout UInt128,
-        scalarsGroup: String.UnicodeScalarView.SubSequence,
+        utf8Group: Span<UInt8>,
         seenCompressionSign: Bool,
         groupIdx: Int
     ) -> Bool {
-        let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
-        var idx = 0
-        var indexInGroup = scalarsGroup.endIndex
-        let startIndex = scalarsGroup.startIndex
+        let utf8Count = utf8Group.count
 
-        while scalarsGroup.formIndex(
-            &indexInGroup,
-            offsetBy: -1,
-            limitedBy: startIndex
-        ) {
-            let scalar = scalarsGroup[indexInGroup]
-            guard let hexadecimalDigit = IPv6Address.mapScalarToUInt8(scalar) else {
+        if utf8Count == 0 || utf8Count > 4 {
+            return false
+        }
+
+        let maxIdx = utf8Count &- 1
+
+        let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
+
+        for idx in 0..<utf8Group.count {
+            let indexInGroup = maxIdx - idx
+            let utf8Byte = utf8Group[unchecked: indexInGroup]
+            guard let hexadecimalDigit = IPv6Address.mapUTF8ByteToUInt8(utf8Byte) else {
                 return false
             }
-            if idx > 3 { return false }
+            /// idx guaranteed to be in 0..<4 because of the `utf8Count > 4` check above
 
             let shift = groupStartIdxInAddress &+ (idx &* 4)
             if seenCompressionSign {
@@ -330,45 +326,28 @@ extension IPv6Address: LosslessStringConvertible {
             } else {
                 addressLhs |= UInt128(hexadecimalDigit) &<< shift
             }
-
-            let (newIdx, overflew) = idx.addingReportingOverflow(1)
-            if overflew { return false }
-
-            idx = newIdx
-        }
-
-        if idx == 0 {
-            return false
         }
 
         return true
     }
 
     @inlinable
-    static func mapScalarToUInt8(_ scalar: Unicode.Scalar) -> UInt8? {
-        let newValue = scalar.value
-
-        if newValue >= Unicode.Scalar.asciiLowercasedA.value {
-            guard newValue <= Unicode.Scalar.asciiLowercasedF.value else {
+    static func mapUTF8ByteToUInt8(_ utf8Byte: UInt8) -> UInt8? {
+        if utf8Byte >= UInt8.asciiLowercasedA {
+            guard utf8Byte <= UInt8.asciiLowercasedF else {
                 return nil
             }
-            return UInt8(
-                exactly: newValue &- Unicode.Scalar.asciiLowercasedA.value &+ 10
-            ).unsafelyUnwrapped
-        } else if newValue >= Unicode.Scalar.asciiUppercasedA.value {
-            guard newValue <= Unicode.Scalar.asciiUppercasedF.value else {
+            return utf8Byte &- UInt8.asciiLowercasedA &+ 10
+        } else if utf8Byte >= UInt8.asciiUppercasedA {
+            guard utf8Byte <= UInt8.asciiUppercasedF else {
                 return nil
             }
-            return UInt8(
-                exactly: newValue &- Unicode.Scalar.asciiUppercasedA.value &+ 10
-            ).unsafelyUnwrapped
-        } else if newValue >= Unicode.Scalar.ascii0.value {
-            guard newValue <= Unicode.Scalar.ascii9.value else {
+            return utf8Byte &- UInt8.asciiUppercasedA &+ 10
+        } else if utf8Byte >= UInt8.ascii0 {
+            guard utf8Byte <= UInt8.ascii9 else {
                 return nil
             }
-            return UInt8(
-                exactly: newValue &- Unicode.Scalar.ascii0.value
-            ).unsafelyUnwrapped
+            return utf8Byte &- UInt8.ascii0
         } else {
             return nil
         }

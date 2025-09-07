@@ -20,6 +20,36 @@ extension UInt8 {
     }
 
     @inlinable
+    static var ascii0: UInt8 {
+        0x30
+    }
+
+    @inlinable
+    static var ascii9: UInt8 {
+        0x39
+    }
+
+    @inlinable
+    static var asciiLowercasedA: UInt8 {
+        0x61
+    }
+
+    @inlinable
+    static var asciiLowercasedF: UInt8 {
+        0x66
+    }
+
+    @inlinable
+    static var asciiUppercasedA: UInt8 {
+        0x41
+    }
+
+    @inlinable
+    static var asciiUppercasedF: UInt8 {
+        0x46
+    }
+
+    @inlinable
     static var asciiPrintableStart: UInt8 {
         0x20
     }
@@ -70,12 +100,12 @@ extension UInt8 {
     }
 
     @inlinable
-    static var asciiOpeningSquareBracket: UInt8 {
+    static var asciiLeftSquareBracket: UInt8 {
         0x5B
     }
 
     @inlinable
-    static var asciiClosingSquareBracket: UInt8 {
+    static var asciiRightSquareBracket: UInt8 {
         0x5D
     }
 
