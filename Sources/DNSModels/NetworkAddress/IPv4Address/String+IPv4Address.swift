@@ -1,44 +1,34 @@
+@available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address: CustomStringConvertible {
     /// The textual representation of an IPv4 address.
     @inlinable
     public var description: String {
-        /// Worst case scenario, we'll have an IP like "123.456.789.012" which is 15 bytes.
-        /// However, Swift uses `_SmallString` internally for strings up to 15 bytes.
-        /// We need to make Swift not use `_SmallString` so it can allocate contiguous storage.
-        /// And when we have contiguous storage, we can directly write to the pointer.
-        /// This is a hack to get around Swift's very inefficient string conversions and appendings.
-        var result: String = "000000000000000"
-        result.reserveCapacity(16)
+        String(unsafeUninitializedCapacity: 15) { buffer in
+            var resultIdx = 0
 
-        var resultIdx = 0
-        result.withUTF8 {
-            /// This is technically illegal, as in the Swift language authors will not like it.
-            /// But it works.
-            let resultBytes = UnsafeMutableBufferPointer(mutating: $0)
             withUnsafeBytes(of: self.address) { addressBytes in
                 let range = 1..<4
                 var iterator = range.makeIterator()
 
                 IPv4Address._write(
-                    into: resultBytes,
+                    into: buffer,
                     idx: &resultIdx,
                     byte: addressBytes[3]
                 )
 
                 while let idx = iterator.next() {
-                    resultBytes[resultIdx] = .asciiDot
+                    buffer[resultIdx] = .asciiDot
                     resultIdx &+= 1
                     IPv4Address._write(
-                        into: resultBytes,
+                        into: buffer,
                         idx: &resultIdx,
                         byte: addressBytes[3 &- idx]
                     )
                 }
             }
-        }
-        result.removeLast(15 &- resultIdx)
 
-        return result
+            return resultIdx &+ 1
+        }
     }
 
     @inlinable
