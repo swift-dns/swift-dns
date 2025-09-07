@@ -21,8 +21,9 @@ extension IPv6Address: CustomStringConvertible {
     @_specialize(where Buffer == ByteBuffer)
     func makeDescription<Buffer>(
         writingToUnsafeMutableBufferPointerOfUInt8: (
-            /*maxWriteableBytes: */ Int,
-            /*callback, returns the number of bytes written*/
+            /// maxWriteableBytes
+            Int,
+            /// callback, returns the number of bytes written
             (UnsafeMutableBufferPointer<UInt8>) -> Int
         ) -> Buffer
     ) -> Buffer {
