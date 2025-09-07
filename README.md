@@ -27,7 +27,7 @@
 
 # swift-dns
 
-A Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
+A high-performance Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
 ## Platform Requirements
 
