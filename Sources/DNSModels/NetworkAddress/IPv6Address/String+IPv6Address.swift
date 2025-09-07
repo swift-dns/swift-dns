@@ -84,13 +84,6 @@ extension IPv6Address: CustomStringConvertible {
             }
             buffer.reserveCapacity(toReserve)
 
-            func uint16(octalIdx idx: Int) -> UInt16 {
-                let doubled = idx &* 2
-                let left = UInt16(ptr[15 &- doubled]) &<< 8
-                let right = UInt16(ptr[14 &- doubled])
-                return left | right
-            }
-
             /// Reset `idx`. It was used in a loop above.
             idx = 0
             while idx < 8 {
@@ -106,9 +99,14 @@ extension IPv6Address: CustomStringConvertible {
                     continue
                 }
 
-                let uint16 = uint16(octalIdx: idx)
-                let string = String(uint16, radix: 16, uppercase: false)
-                buffer.append(contentsOf: string)
+                let doubled = idx &* 2
+                let left = ptr[15 &- doubled]
+                let right = ptr[14 &- doubled]
+                IPv6Address._write(
+                    writeInto: &buffer,
+                    bytePair: (left, right)
+                )
+
                 if idx < 7 {
                     buffer.append(.asciiColon)
                 }
@@ -118,6 +116,41 @@ extension IPv6Address: CustomStringConvertible {
 
             buffer.append(.asciiRightSquareBracket)
         }
+    }
+
+    @inlinable
+    @_specialize(where IPv6Appendable == ByteBuffer)
+    @_specialize(where IPv6Appendable == String)
+    static func _write<IPv6Appendable: _IPv6DescriptionAppendable>(
+        writeInto buffer: inout IPv6Appendable,
+        bytePair: (left: UInt8, right: UInt8)
+    ) {
+        var soFarAllZeros = true
+
+        let _1 = bytePair.left &>> 4
+        let _2 = bytePair.left & 0x0F
+        let _3 = bytePair.right &>> 4
+        let _4 = bytePair.right & 0x0F
+
+        if _1 != 0 {
+            soFarAllZeros = false
+            buffer.append(convertToASCII(_1))
+        }
+        if !(_2 == 0 && soFarAllZeros) {
+            soFarAllZeros = false
+            buffer.append(convertToASCII(_2))
+        }
+        if !(_3 == 0 && soFarAllZeros) {
+            buffer.append(convertToASCII(_3))
+        }
+        buffer.append(convertToASCII(_4))
+    }
+
+    @inlinable
+    static func convertToASCII(_ byte: UInt8) -> UInt8 {
+        byte > 9
+            ? byte &+ UInt8.asciiLowercasedA &- 10
+            : byte &+ UInt8.ascii0
     }
 }
 
@@ -134,7 +167,7 @@ protocol _IPv6DescriptionAppendable {
 extension String: _IPv6DescriptionAppendable {
     @inlinable
     mutating func append(_ byte: UInt8) {
-        self.append(Character(Unicode.Scalar(byte)))
+        self.append(String(Unicode.Scalar(byte)))
     }
 }
 
