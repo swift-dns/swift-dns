@@ -2,24 +2,76 @@ extension IPv4Address: CustomStringConvertible {
     /// The textual representation of an IPv4 address.
     @inlinable
     public var description: String {
-        var result: String = ""
-        /// TODO: Smarter reserving capacity
-        result.reserveCapacity(7)
-        withUnsafeBytes(of: self.address) {
-            let range = 0..<4
-            var iterator = range.makeIterator()
+        /// Worst case scenario, we'll have an IP like "123.456.789.012" which is 15 bytes.
+        /// However, Swift uses `_SmallString` internally for strings up to 15 bytes.
+        /// We need to make Swift not use `_SmallString` so it can allocate contiguous storage.
+        /// And when we have contiguous storage, we can directly write to the pointer.
+        /// This is a hack to get around Swift's very inefficient string conversions and appendings.
+        var result: String = "000000000000000"
+        result.reserveCapacity(16)
 
-            let first = iterator.next().unsafelyUnwrapped
-            /// TODO: This can be optimized to not have to convert to a string
-            result.append(String($0[3 &- first]))
+        var resultIdx = 0
+        result.withUTF8 {
+            /// This is technically illegal, as in the Swift language authors will not like it.
+            /// But it works.
+            let resultBytes = UnsafeMutableBufferPointer(mutating: $0)
+            withUnsafeBytes(of: self.address) { addressBytes in
+                let range = 1..<4
+                var iterator = range.makeIterator()
 
-            while let idx = iterator.next() {
-                result.append(".")
-                /// TODO: This can be optimized to not have to convert to a string
-                result.append(String($0[3 &- idx]))
+                IPv4Address._write(
+                    into: resultBytes,
+                    idx: &resultIdx,
+                    byte: addressBytes[3]
+                )
+
+                while let idx = iterator.next() {
+                    resultBytes[resultIdx] = .asciiDot
+                    resultIdx &+= 1
+                    IPv4Address._write(
+                        into: resultBytes,
+                        idx: &resultIdx,
+                        byte: addressBytes[3 &- idx]
+                    )
+                }
             }
         }
+        result.removeLast(15 &- resultIdx)
+
         return result
+    }
+
+    @inlinable
+    static func _write(
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
+        idx: inout Int,
+        byte: UInt8
+    ) {
+        let (q, r1) = byte.quotientAndRemainder(dividingBy: 10)
+        let (q2, r2) = q.quotientAndRemainder(dividingBy: 10)
+        let r3 = q2 % 10
+
+        var soFarAllZeros = true
+
+        if r3 != 0 {
+            soFarAllZeros = false
+            _writeASCII(into: buffer, idx: &idx, byte: r3)
+        }
+        if !(r2 == 0 && soFarAllZeros) {
+            soFarAllZeros = false
+            _writeASCII(into: buffer, idx: &idx, byte: r2)
+        }
+        _writeASCII(into: buffer, idx: &idx, byte: r1)
+    }
+
+    @inlinable
+    static func _writeASCII(
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
+        idx: inout Int,
+        byte: UInt8
+    ) {
+        buffer[idx] = byte &+ UInt8.ascii0
+        idx &+= 1
     }
 }
 
