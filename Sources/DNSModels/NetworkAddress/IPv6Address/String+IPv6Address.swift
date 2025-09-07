@@ -153,7 +153,7 @@ extension ByteBuffer: _IPv6DescriptionAppendable {
 @available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
-    /// For example `"[2001:db8:1111::]"` will parse into `2001:0DB8:1111:0:0:0:0:0`.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`.
     @inlinable
     public init?(_ description: String) {
         var addressLhs: UInt128 = 0
