@@ -36,8 +36,8 @@ extension IPv4Address: LosslessStringConvertible {
         guard utf8Span.checkForASCII() else {
             return nil
         }
-        var span = utf8Span.span
 
+        var span = utf8Span.span
         var byteIdx = 0
 
         /// This will make sure a valid ipv4 domain-name parses fine using this method
@@ -53,7 +53,7 @@ extension IPv4Address: LosslessStringConvertible {
             }
 
             /// This is safe, nothing will crash with this increase in index
-            span = span.extracting((nextSeparatorIdx &+ 1)...)
+            span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
 
             byteIdx &+= 1
 
@@ -94,7 +94,7 @@ extension IPv4Address: LosslessStringConvertible {
         let maxIdx = utf8Count &- 1
 
         for idx in 0..<utf8Count {
-            let indexInGroup = maxIdx - idx
+            let indexInGroup = maxIdx &- idx
             let utf8Byte = utf8Group[unchecked: indexInGroup]
             guard let decimalDigit = IPv4Address.mapUTF8ByteToUInt8(utf8Byte) else {
                 return false

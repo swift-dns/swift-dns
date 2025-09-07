@@ -163,8 +163,8 @@ extension IPv6Address: LosslessStringConvertible {
         guard utf8Span.checkForASCII() else {
             return nil
         }
-        var span = utf8Span.span
 
+        var span = utf8Span.span
         var count = span.count
 
         guard count > 1 else {
@@ -176,7 +176,7 @@ extension IPv6Address: LosslessStringConvertible {
         let endsWithBracket = span[unchecked: count &- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
-            span = span.extracting(1..<count &- 1)
+            span = span.extracting(1..<(count &- 1))
             count &-= 2
         case (false, false):
             break
@@ -210,7 +210,7 @@ extension IPv6Address: LosslessStringConvertible {
 
                     seenCompressionSign = true
                     groupIdx &+= 2
-                    span = span.extracting((nextIdx &+ 1)...)
+                    span = span.extracting(unchecked: (nextIdx &+ 1)..<span.count)
                     continue
 
                     /// If we're at the last index
@@ -229,7 +229,7 @@ extension IPv6Address: LosslessStringConvertible {
 
                     seenCompressionSign = true
                     groupIdx &+= 1
-                    span = span.extracting((nextSeparatorIdx &+ 1)...)
+                    span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
                     continue
                 }
             }
@@ -247,7 +247,7 @@ extension IPv6Address: LosslessStringConvertible {
             }
 
             /// This is safe, nothing will crash with this increase in index
-            span = span.extracting((nextSeparatorIdx + 1)...)
+            span = span.extracting((nextSeparatorIdx &+ 1)...)
 
             groupIdx &+= 1
         }
@@ -309,16 +309,15 @@ extension IPv6Address: LosslessStringConvertible {
         }
 
         let maxIdx = utf8Count &- 1
-
         let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
 
         for idx in 0..<utf8Group.count {
-            let indexInGroup = maxIdx - idx
+            let indexInGroup = maxIdx &- idx
             let utf8Byte = utf8Group[unchecked: indexInGroup]
             guard let hexadecimalDigit = IPv6Address.mapUTF8ByteToUInt8(utf8Byte) else {
                 return false
             }
-            /// idx guaranteed to be in 0..<4 because of the `utf8Count > 4` check above
+            /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
             let shift = groupStartIdxInAddress &+ (idx &* 4)
             if seenCompressionSign {
