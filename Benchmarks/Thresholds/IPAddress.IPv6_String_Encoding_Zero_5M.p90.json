@@ -1,5 +1,5 @@
 {
-  "throughput": {
+  "cpuUser": {
     "max": 20004863,
     "min": 16670719
   }
