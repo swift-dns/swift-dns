@@ -55,7 +55,6 @@ extension IPv4Address: CustomStringConvertible {
             _writeASCII(into: buffer, idx: &idx, byte: r3)
         }
         if !(r2 == 0 && soFarAllZeros) {
-            soFarAllZeros = false
             _writeASCII(into: buffer, idx: &idx, byte: r2)
         }
         _writeASCII(into: buffer, idx: &idx, byte: r1)

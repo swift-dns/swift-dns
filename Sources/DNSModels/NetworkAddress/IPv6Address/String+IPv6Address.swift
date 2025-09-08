@@ -189,7 +189,8 @@ extension IPv6Address: CustomStringConvertible {
 @available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
-    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
     public init?(_ description: String) {
         var addressLhs: UInt128 = 0
@@ -328,7 +329,7 @@ extension IPv6Address: LosslessStringConvertible {
         self.init(addressLhs)
     }
 
-    /// Reads the `utf8Group` integers into addressLhs or addressRhs
+    /// Reads the `utf8Group` integers into `addressLhs` or `addressRhs`.
     /// Returns false if the `utf8Group` is invalid, in which case we should return `nil`.
     @inlinable
     static func _read(
@@ -350,7 +351,7 @@ extension IPv6Address: LosslessStringConvertible {
         for idx in 0..<utf8Group.count {
             let indexInGroup = maxIdx &- idx
             let utf8Byte = utf8Group[unchecked: indexInGroup]
-            guard let hexadecimalDigit = IPv6Address.mapUTF8ByteToUInt8(utf8Byte) else {
+            guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
                 return false
             }
             /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
@@ -367,7 +368,7 @@ extension IPv6Address: LosslessStringConvertible {
     }
 
     @inlinable
-    static func mapUTF8ByteToUInt8(_ utf8Byte: UInt8) -> UInt8? {
+    static func mapHexadecimalASCIIToUInt8(_ utf8Byte: UInt8) -> UInt8? {
         if utf8Byte >= UInt8.asciiLowercasedA {
             guard utf8Byte <= UInt8.asciiLowercasedF else {
                 return nil

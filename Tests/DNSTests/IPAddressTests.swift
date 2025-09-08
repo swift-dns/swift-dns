@@ -12,6 +12,7 @@ struct IPAddressTests {
     @Test(
         arguments: [
             (IPv4Address(127, 0, 0, 1), "127.0.0.1"),
+            (IPv4Address(120, 102, 12, 100), "120.102.12.100"),
             (IPv4Address(0, 0, 0, 0), "0.0.0.0"),
             (IPv4Address(0, 0, 0, 1), "0.0.0.1"),
             (IPv4Address(0, 0, 1, 0), "0.0.1.0"),
