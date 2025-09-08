@@ -29,14 +29,6 @@
 
 A high-performance Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
-## Platform Requirements
-
-- Requires Swift 6.2.
-- On Apple platforms, requires macOS 15, iOS 18 etc... as well, _to use_.
-- You can still depend on this library in packages supporting macOS 14 and lower.
-  - But you'll need to guard your usage of this library with `@available` or `#available`.
-  - Example: `@available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 1, *)`.
-
 ## Usage
 
 Initialize a `DNSClient`, then use the `query` methods:
