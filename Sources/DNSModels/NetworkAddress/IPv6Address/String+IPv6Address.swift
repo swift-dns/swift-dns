@@ -122,9 +122,9 @@ extension IPv6Address: CustomStringConvertible {
                     let doubled = idx &* 2
                     let left = ptr[15 &- doubled]
                     let right = ptr[14 &- doubled]
-                    IPv6Address._write(
-                        writeInto: writePtr,
-                        idx: &writeIdx,
+                    IPv6Address._writeUInt16AsLowercasedASCII(
+                        into: writePtr,
+                        advancingIdx: &writeIdx,
                         bytePair: (left, right)
                     )
 
@@ -144,10 +144,11 @@ extension IPv6Address: CustomStringConvertible {
         }
     }
 
+    /// Equivalent to `String(bytePairAsUInt16, radix: 16, uppercase: false)`, but faster.
     @inlinable
-    static func _write(
-        writeInto ptr: UnsafeMutableBufferPointer<UInt8>,
-        idx: inout Int,
+    static func _writeUInt16AsLowercasedASCII(
+        into ptr: UnsafeMutableBufferPointer<UInt8>,
+        advancingIdx idx: inout Int,
         bytePair: (left: UInt8, right: UInt8)
     ) {
         var soFarAllZeros = true
@@ -180,35 +181,6 @@ extension IPv6Address: CustomStringConvertible {
         byte > 9
             ? byte &+ UInt8.asciiLowercasedA &- 10
             : byte &+ UInt8.ascii0
-    }
-}
-
-/// This protocol is only to be used internally so we can write IPv6's description into different
-/// types of buffers. Currently using `String` for the `description` of the IPv6, and using
-/// `ByteBuffer` for writing the IPv6 into a `DomainName`'s buffer.
-@usableFromInline
-protocol _IPv6DescriptionAppendable {
-    mutating func append(_ byte: UInt8)
-    mutating func append(contentsOf string: String)
-    mutating func reserveCapacity(_ minimumCapacity: Int)
-}
-
-extension String: _IPv6DescriptionAppendable {
-    @inlinable
-    mutating func append(_ byte: UInt8) {
-        self.append(String(Unicode.Scalar(byte)))
-    }
-}
-
-extension ByteBuffer: _IPv6DescriptionAppendable {
-    @inlinable
-    mutating func append(_ byte: UInt8) {
-        self.writeInteger(byte)
-    }
-
-    @inlinable
-    mutating func append(contentsOf string: String) {
-        self.writeString(string)
     }
 }
 

@@ -59,10 +59,8 @@ let ipv6AddressToStringBenchmarks: @Sendable () -> Void = {
             maxIterations: 20_000_000
         )
     ) { benchmark in
-        for _ in 0..<2_000_000 {
-            let description = ipv6Mixed.description
-            blackHole(description)
-        }
+        let description = ipv6Mixed.description
+        blackHole(description)
     }
 
     Benchmark(
