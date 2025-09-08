@@ -174,7 +174,7 @@ extension IPv6Address: CustomStringConvertible {
 
     @inlinable
     static func _writeLowercasedASCII(
-        into ptr: UnsafeMutableBufferPointer<UInt8>,
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
         idx: inout Int,
         byte: UInt8
     ) {

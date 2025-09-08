@@ -41,6 +41,9 @@ extension IPv4Address: CustomStringConvertible {
         advancingIdx idx: inout Int,
         byte: UInt8
     ) {
+        /// The compiler is smart enough to not actually do division by 10, but instead use the
+        /// multiply-by-205-then-bitshift-by-11 trick.
+        /// See it for yourself: https://godbolt.org/z/vYxTj78qd
         let (q, r1) = byte.quotientAndRemainder(dividingBy: 10)
         let (q2, r2) = q.quotientAndRemainder(dividingBy: 10)
         let r3 = q2 % 10
