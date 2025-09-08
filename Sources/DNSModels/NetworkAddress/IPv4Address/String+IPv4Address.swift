@@ -14,18 +14,18 @@ extension IPv4Address: CustomStringConvertible {
                 let range = 1..<4
                 var iterator = range.makeIterator()
 
-                IPv4Address._write(
+                IPv4Address._writeUInt8AsDecimalASCII(
                     into: buffer,
-                    idx: &resultIdx,
+                    advancingIdx: &resultIdx,
                     byte: addressBytes[3]
                 )
 
                 while let idx = iterator.next() {
                     buffer[resultIdx] = .asciiDot
                     resultIdx &+= 1
-                    IPv4Address._write(
+                    IPv4Address._writeUInt8AsDecimalASCII(
                         into: buffer,
-                        idx: &resultIdx,
+                        advancingIdx: &resultIdx,
                         byte: addressBytes[3 &- idx]
                     )
                 }
@@ -36,9 +36,9 @@ extension IPv4Address: CustomStringConvertible {
     }
 
     @inlinable
-    static func _write(
+    static func _writeUInt8AsDecimalASCII(
         into buffer: UnsafeMutableBufferPointer<UInt8>,
-        idx: inout Int,
+        advancingIdx idx: inout Int,
         byte: UInt8
     ) {
         let (q, r1) = byte.quotientAndRemainder(dividingBy: 10)

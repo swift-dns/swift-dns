@@ -1,4 +1,4 @@
-public import struct NIOCore.ByteBuffer
+import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: CustomStringConvertible {
@@ -94,10 +94,10 @@ extension IPv6Address: CustomStringConvertible {
                 toReserve = 41
             }
 
-            return writingToUnsafeMutableBufferPointerOfUInt8(toReserve) { writePtr in
+            return writingToUnsafeMutableBufferPointerOfUInt8(toReserve) { buffer in
                 var writeIdx = 0
 
-                writePtr[0] = .asciiLeftSquareBracket
+                buffer[0] = .asciiLeftSquareBracket
                 writeIdx &+= 1
 
                 /// Reset `idx`. It was used in a loop above.
@@ -106,12 +106,12 @@ extension IPv6Address: CustomStringConvertible {
                     if let rangeToCompress,
                         idx == rangeToCompress.lowerBound
                     {
-                        writePtr[writeIdx] = .asciiColon
+                        buffer[writeIdx] = .asciiColon
                         writeIdx &+= 1
 
                         if idx == 0 {
                             /// Need 2 colons in this case, so '::'
-                            writePtr[writeIdx] = .asciiColon
+                            buffer[writeIdx] = .asciiColon
                             writeIdx &+= 1
                         }
 
@@ -123,20 +123,20 @@ extension IPv6Address: CustomStringConvertible {
                     let left = ptr[15 &- doubled]
                     let right = ptr[14 &- doubled]
                     IPv6Address._writeUInt16AsLowercasedASCII(
-                        into: writePtr,
+                        into: buffer,
                         advancingIdx: &writeIdx,
                         bytePair: (left, right)
                     )
 
                     if idx < 7 {
-                        writePtr[writeIdx] = .asciiColon
+                        buffer[writeIdx] = .asciiColon
                         writeIdx &+= 1
                     }
 
                     idx &+= 1
                 }
 
-                writePtr[writeIdx] = .asciiRightSquareBracket
+                buffer[writeIdx] = .asciiRightSquareBracket
                 writeIdx &+= 1
 
                 return writeIdx
@@ -147,7 +147,7 @@ extension IPv6Address: CustomStringConvertible {
     /// Equivalent to `String(bytePairAsUInt16, radix: 16, uppercase: false)`, but faster.
     @inlinable
     static func _writeUInt16AsLowercasedASCII(
-        into ptr: UnsafeMutableBufferPointer<UInt8>,
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
         advancingIdx idx: inout Int,
         bytePair: (left: UInt8, right: UInt8)
     ) {
@@ -160,27 +160,29 @@ extension IPv6Address: CustomStringConvertible {
 
         if _1 != 0 {
             soFarAllZeros = false
-            ptr[idx] = _convertToASCII(_1)
-            idx &+= 1
+            _writeLowercasedASCII(into: buffer, idx: &idx, byte: _1)
         }
         if !(_2 == 0 && soFarAllZeros) {
             soFarAllZeros = false
-            ptr[idx] = _convertToASCII(_2)
-            idx &+= 1
+            _writeLowercasedASCII(into: buffer, idx: &idx, byte: _2)
         }
         if !(_3 == 0 && soFarAllZeros) {
-            ptr[idx] = _convertToASCII(_3)
-            idx &+= 1
+            _writeLowercasedASCII(into: buffer, idx: &idx, byte: _3)
         }
-        ptr[idx] = _convertToASCII(_4)
-        idx &+= 1
+        _writeLowercasedASCII(into: buffer, idx: &idx, byte: _4)
     }
 
     @inlinable
-    static func _convertToASCII(_ byte: UInt8) -> UInt8 {
-        byte > 9
+    static func _writeLowercasedASCII(
+        into ptr: UnsafeMutableBufferPointer<UInt8>,
+        idx: inout Int,
+        byte: UInt8
+    ) {
+        buffer[idx] =
+            byte > 9
             ? byte &+ UInt8.asciiLowercasedA &- 10
             : byte &+ UInt8.ascii0
+        idx &+= 1
     }
 }
 
