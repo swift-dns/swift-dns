@@ -7,14 +7,14 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
 
     let ipv4Zero = IPv4Address(0, 0, 0, 0)
     Benchmark(
-        "IPv4_String_Encoding_Zero_10M",
+        "IPv4_String_Encoding_Zero_15M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000_000 {
+        for _ in 0..<15_000_000 {
             let description = ipv4Zero.description
             blackHole(description)
         }
@@ -24,14 +24,14 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
 
     let ipv4Localhost = IPv4Address(127, 0, 0, 1)
     Benchmark(
-        "IPv4_String_Encoding_Localhost_10M",
+        "IPv4_String_Encoding_Localhost_15M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000_000 {
+        for _ in 0..<15_000_000 {
             let description = ipv4Localhost.description
             blackHole(description)
         }
@@ -41,14 +41,14 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
 
     let ipv4LocalBroadcast = IPv4Address(255, 255, 255, 255)
     Benchmark(
-        "IPv4_String_Encoding_Local_Broadcast_10M",
+        "IPv4_String_Encoding_Local_Broadcast_15M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000_000 {
+        for _ in 0..<15_000_000 {
             let description = ipv4LocalBroadcast.description
             blackHole(description)
         }
@@ -58,14 +58,14 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
 
     let ipv4Mixed = IPv4Address(123, 45, 6, 0)
     Benchmark(
-        "IPv4_String_Encoding_Mixed_10M",
+        "IPv4_String_Encoding_Mixed_15M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<10_000_000 {
+        for _ in 0..<15_000_000 {
             let description = ipv4Mixed.description
             blackHole(description)
         }
