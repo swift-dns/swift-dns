@@ -58,15 +58,12 @@ extension DomainName {
 
         let startWriterIndex = buffer.writerIndex
 
-        func add(_ bytePair: UInt16) {
-            /// TODO: Optimize writing the integers as strings, should not need to allocate a
-            /// whole string. Can do manual hexadecimal conversions.
-            buffer.writeString(
-                String(bytePair, radix: 16, uppercase: false)
-            )
+        buffer = ipv6.makeDescription { (maxWriteableBytes, callback) in
+            buffer.writeWithUnsafeMutableBytes(minimumWritableBytes: maxWriteableBytes) { ptr in
+                callback(ptr.bindMemory(to: UInt8.self))
+            }
+            return buffer
         }
-
-        ipv6.description(writeInto: &buffer)
 
         let endWriterIndex = buffer.writerIndex
         let bytesWritten = endWriterIndex - startWriterIndex

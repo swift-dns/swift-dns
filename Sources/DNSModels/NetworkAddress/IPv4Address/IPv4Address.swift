@@ -125,6 +125,12 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
     }
 }
 
+extension IPv4Address: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: UInt32) {
+        self.address = value
+    }
+}
+
 extension IPv4Address {
     /// The 4 bytes representing this IPv4 address.
     public var bytes: (UInt8, UInt8, UInt8, UInt8) {

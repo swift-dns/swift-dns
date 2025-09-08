@@ -14,7 +14,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/mahdibm/swift-idna.git", from: "1.0.0-beta.3"),
+        .package(url: "https://github.com/mahdibm/swift-idna.git", from: "1.0.0-beta.7"),
 
         /// For the connection pool implementation copied from `PostgresNIO`.
         /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
@@ -102,6 +102,9 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("InternalImportsByDefault"),
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("StrictMemorySafety"),
+        .enableExperimentalFeature(
+            "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
+        ),
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 15:macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2"
         ),

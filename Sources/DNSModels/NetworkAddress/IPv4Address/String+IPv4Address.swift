@@ -1,127 +1,184 @@
-public import SwiftIDNA
-
+@available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address: CustomStringConvertible {
     /// The textual representation of an IPv4 address.
     @inlinable
     public var description: String {
-        var result: String = ""
-        /// TODO: Smarter reserving capacity
-        result.reserveCapacity(7)
-        withUnsafeBytes(of: self.address) {
-            let range = 0..<4
-            var iterator = range.makeIterator()
+        /// 15 is enough for the biggest possible IPv4Address description.
+        /// For example for "255.255.255.255".
+        /// Coincidentally, Swift's `_SmallString` supports up to 15 bytes, which helps make this
+        /// implementation as fast as possible.
+        String(unsafeUninitializedCapacity: 15) { buffer in
+            var resultIdx = 0
 
-            let first = iterator.next().unsafelyUnwrapped
-            /// TODO: This can be optimized to not have to convert to a string
-            result.append(String($0[3 - first]))
+            withUnsafeBytes(of: self.address) { addressBytes in
+                let range = 1..<4
+                var iterator = range.makeIterator()
 
-            while let idx = iterator.next() {
-                result.append(".")
-                /// TODO: This can be optimized to not have to convert to a string
-                result.append(String($0[3 - idx]))
+                IPv4Address._writeUInt8AsDecimalASCII(
+                    into: buffer,
+                    advancingIdx: &resultIdx,
+                    byte: addressBytes[3]
+                )
+
+                while let idx = iterator.next() {
+                    buffer[resultIdx] = .asciiDot
+                    resultIdx &+= 1
+                    IPv4Address._writeUInt8AsDecimalASCII(
+                        into: buffer,
+                        advancingIdx: &resultIdx,
+                        byte: addressBytes[3 &- idx]
+                    )
+                }
             }
+
+            return resultIdx
         }
-        return result
+    }
+
+    @inlinable
+    static func _writeUInt8AsDecimalASCII(
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
+        advancingIdx idx: inout Int,
+        byte: UInt8
+    ) {
+        /// The compiler is smart enough to not actually do division by 10, but instead use the
+        /// multiply-by-205-then-bitshift-by-11 trick.
+        /// See it for yourself: https://godbolt.org/z/vYxTj78qd
+        let (q, r1) = byte.quotientAndRemainder(dividingBy: 10)
+        let (q2, r2) = q.quotientAndRemainder(dividingBy: 10)
+        let r3 = q2 % 10
+
+        var soFarAllZeros = true
+
+        if r3 != 0 {
+            soFarAllZeros = false
+            _writeASCII(into: buffer, idx: &idx, byte: r3)
+        }
+        if !(r2 == 0 && soFarAllZeros) {
+            _writeASCII(into: buffer, idx: &idx, byte: r2)
+        }
+        _writeASCII(into: buffer, idx: &idx, byte: r1)
+    }
+
+    @inlinable
+    static func _writeASCII(
+        into buffer: UnsafeMutableBufferPointer<UInt8>,
+        idx: inout Int,
+        byte: UInt8
+    ) {
+        buffer[idx] = byte &+ UInt8.ascii0
+        idx &+= 1
     }
 }
 
-extension IPv4Address: ExpressibleByIntegerLiteral {
-    public init(integerLiteral value: UInt32) {
-        self.address = value
-    }
-}
-
+@available(swiftDNSApplePlatforms 26, *)
 extension IPv4Address: LosslessStringConvertible {
     /// Initialize an IPv4 address from its textual representation.
     /// That is, 4 decimal UInt8s separated by `.`.
-    /// This implementation is IDNA compliant.
-    /// That means the following addresses are considered equal: `192｡₁₆₈｡₁｡98`, `192.168.1.98`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
     public init?(_ description: String) {
         var address: UInt32 = 0
 
-        let scalars = description.unicodeScalars
+        var utf8Span = description.utf8Span
+        guard utf8Span.checkForASCII() else {
+            return nil
+        }
 
+        var span = utf8Span.span
         var byteIdx = 0
-        var chunkStartIndex = scalars.startIndex
-        let endIndex = scalars.endIndex
-        /// We accept any of the 4 IDNA label separators (including `.`)
+
         /// This will make sure a valid ipv4 domain-name parses fine using this method
-        while let nextSeparatorIdx = scalars[chunkStartIndex..<endIndex].firstIndex(
-            where: \.isIDNALabelSeparator
-        ) {
-            /// TODO: Don't go through an String conversion here
+        while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiDot }) {
             guard
-                let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
-                    scalars[chunkStartIndex..<nextSeparatorIdx]
-                ),
-                let byte = UInt8(String(part))
+                IPv4Address._read(
+                    into: &address,
+                    utf8Group: span.extracting(unchecked: 0..<nextSeparatorIdx),
+                    byteIdx: byteIdx
+                )
             else {
                 return nil
             }
 
-            let shift = 8 &* (3 &- byteIdx)
-            address |= UInt32(byte) &<< shift
-
             /// This is safe, nothing will crash with this increase in index
-            chunkStartIndex = scalars.index(nextSeparatorIdx, offsetBy: 1)
+            span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
 
-            if byteIdx == 2 {
-                /// TODO: Don't go through an String conversion here
-                /// Read last byte and return
+            byteIdx &+= 1
+
+            if byteIdx == 3 {
                 guard
-                    let part = IPv4Address.mapToDecimalDigitsBasedOnIDNA(
-                        scalars[chunkStartIndex..<endIndex]
-                    ),
-                    let byte = UInt8(String(part))
+                    IPv4Address._read(
+                        into: &address,
+                        utf8Group: span,
+                        byteIdx: byteIdx
+                    )
                 else {
                     return nil
                 }
 
-                address |= UInt32(byte)
-
                 self.init(address)
                 return
             }
-
-            byteIdx &+= 1
         }
 
         /// Should not have reached here
         return nil
     }
 
-    @usableFromInline
-    static func mapToDecimalDigitsBasedOnIDNA(
-        _ scalars: String.UnicodeScalarView.SubSequence
-    ) -> String.UnicodeScalarView.SubSequence? {
-        /// Short-circuit if all scalars are ASCII
-        if scalars.allSatisfy(\.isASCII) {
-            /// Still might not be a valid number
-            return scalars
+    @inlinable
+    static func _read(
+        into address: inout UInt32,
+        utf8Group: Span<UInt8>,
+        byteIdx: Int
+    ) -> Bool {
+        let utf8Count = utf8Group.count
+
+        if utf8Count == 0 {
+            return false
         }
 
-        var newScalars = [Unicode.Scalar]()
-        newScalars.reserveCapacity(scalars.count)
+        var byte: UInt8 = 0
 
-        for idx in scalars.indices {
-            let scalar = scalars[idx]
-            switch IDNAMapping.for(scalar: scalar) {
-            case .valid:
-                newScalars.append(scalar)
-            case .mapped(let mapped), .deviation(let mapped):
-                guard mapped.count == 1 else {
-                    /// If this was a number it would have never had a mapped value of > 1
-                    return nil
-                }
-                newScalars.append(mapped.first.unsafelyUnwrapped)
-            case .ignored:
-                continue
-            case .disallowed:
-                return nil
+        let maxIdx = utf8Count &- 1
+
+        for idx in 0..<utf8Count {
+            let indexInGroup = maxIdx &- idx
+            let utf8Byte = utf8Group[unchecked: indexInGroup]
+            guard let decimalDigit = IPv4Address.mapUTF8ByteToUInt8(utf8Byte) else {
+                return false
             }
+
+            let factor: UInt8
+            switch idx {
+            case 0: factor = 1
+            case 1: factor = 10
+            case 2: factor = 100
+            default: return false
+            }
+
+            let (value, overflew1) = decimalDigit.multipliedReportingOverflow(by: factor)
+            if overflew1 { return false }
+
+            let (newByte, overflew2) = byte.addingReportingOverflow(value)
+            if overflew2 { return false }
+
+            byte = newByte
         }
 
-        return String.UnicodeScalarView.SubSequence(newScalars)
+        let shift = 8 &* (3 &- byteIdx)
+        address |= UInt32(byte) &<< shift
+
+        return true
+    }
+
+    @inlinable
+    static func mapUTF8ByteToUInt8(_ utf8Byte: UInt8) -> UInt8? {
+        guard
+            utf8Byte >= UInt8.ascii0,
+            utf8Byte <= UInt8.ascii9
+        else {
+            return nil
+        }
+        return utf8Byte &- UInt8.ascii0
     }
 }

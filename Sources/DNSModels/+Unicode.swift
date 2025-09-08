@@ -16,22 +16,7 @@ extension Unicode.Scalar {
 
     @inlinable
     static var asciiDot: Unicode.Scalar {
-        Unicode.Scalar(0x2E).unsafelyUnwrapped
-    }
-
-    @inlinable
-    static var asciiColon: Unicode.Scalar {
-        Unicode.Scalar(0x3A).unsafelyUnwrapped
-    }
-
-    @inlinable
-    static var asciiLeftSquareBracket: Unicode.Scalar {
-        Unicode.Scalar(0x5B).unsafelyUnwrapped
-    }
-
-    @inlinable
-    static var asciiRightSquareBracket: Unicode.Scalar {
-        Unicode.Scalar(0x5D).unsafelyUnwrapped
+        "."
     }
 }
 

@@ -1,4 +1,5 @@
 public import SwiftIDNA
+
 import struct NIOCore.ByteBuffer
 
 extension DomainName {
@@ -11,7 +12,7 @@ extension DomainName {
 
         // short circuit root parse
         if domainName.unicodeScalars.count == 1,
-            domainName.unicodeScalars.first == Unicode.Scalar.asciiDot
+            domainName.unicodeScalars.first?.isIDNALabelSeparator == true
         {
             self.isFQDN = true
             return

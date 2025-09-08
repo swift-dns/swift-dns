@@ -121,6 +121,7 @@ jobs:
           key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
 
       - name: Format threshold files with jq
+        if: always()
         run: |
           echo "Processing threshold files..."
           for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
@@ -130,6 +131,7 @@ jobs:
 
       - name: Check for modifications
         id: check-modifications
+        if: always()
         run: |
           MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
           if [ -n "$MODIFICATIONS" ]; then
@@ -141,7 +143,7 @@ jobs:
           fi
 
       - name: Commit threshold changes to another branch
-        if: steps.check-modifications.outputs.has-modifications == 'true'
+        if: always() && (steps.check-modifications.outputs.has-modifications == 'true')
         id: commit-update
         run: |
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
@@ -158,13 +160,14 @@ jobs:
           Filter: '${{ inputs.filter }}'
           Skip: '${{ inputs.skip }}'
 
-          Committed by: ${RUN_LINK}"
+          Committed to ${NEW_BRANCH} by ${RUN_LINK}"
 
           git push -f origin "${NEW_BRANCH}"
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
       - name: Construct result comment
+        if: always()
         run: |
           echo "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> comment.md
           echo 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files changed.' >> comment.md
@@ -179,7 +182,7 @@ jobs:
           fi
 
       - name: Update comment in PR
-        if: ${{ inputs.pr_number != '' }}
+        if: always() && (inputs.pr_number != '')
         id: pr-comment
         uses: thollander/actions-comment-pull-request@v3
         with:
@@ -188,6 +191,7 @@ jobs:
           comment-tag: benchmark-thresholds-update-comment
 
       - name: Output the comment as job summary
+        if: always()
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
           if [[ -n '${{ inputs.pr_number }}' ]]; then
