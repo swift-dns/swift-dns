@@ -17,8 +17,6 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// Of type `UInt32` for `IPv4Address` or `UInt128` for `IPv6Address`.
     /// Example: in 127.0.0.1/8, the mask is the first 8 bits / the first segment of the IP
     /// in 0xFF00::/8, the mask is the first 8 bits / the first 2 letters of the IP
-    ///
-    /// FIXME: should we store `countOfMaskedBits` for the smaller footprint?
     public let mask: IntegerLiteralType
 
     @inlinable
@@ -71,7 +69,6 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     ///     The mask will not be verified by the initializer but MUST be in a "continuous" form.
     ///     e.g. 0b11110000 is good, but 0b11110001 is not. 0b00001111 is not good either.
     ///     There must be only 1 group of leading ones and 1 group of trailing zeros.
-    ///     Also there must be no leading zeros in the mask.
     @inlinable
     public init(
         prefix: IPAddressType,
@@ -121,11 +118,11 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     package static func makeMaskBasedOn(
         uncheckedCountOfTrailingZeros countOfTrailingZeros: UInt8
     ) -> IntegerLiteralType {
-        /// This combination of unchecked and checked bit-shift is not only safe, but also intended.
-        /// The second bit-shift cannot become an unchecked operation.
-        /// If you're curious, make it unchecked and run `CIDRTests` to see that they fail
-        /// when `countOfMaskedBits` is `0`.
-        (IntegerLiteralType.max &>> countOfTrailingZeros) << countOfTrailingZeros
+        if countOfTrailingZeros == IntegerLiteralType.bitWidth {
+            return 0
+        } else {
+            return (IntegerLiteralType.max &>> countOfTrailingZeros) &<< countOfTrailingZeros
+        }
     }
 
     /// Whether or not the given IPAddress is within this CIDR.

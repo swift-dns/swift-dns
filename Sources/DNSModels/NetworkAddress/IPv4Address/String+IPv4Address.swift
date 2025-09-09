@@ -1,3 +1,5 @@
+public import func DNSCore.debugOnly
+
 @available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address: CustomStringConvertible {
     /// The textual representation of an IPv4 address.
@@ -78,20 +80,58 @@ extension IPv4Address: LosslessStringConvertible {
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
     public init?(_ description: String) {
-        var address: UInt32 = 0
+        self.init(utf8Span: description.utf8Span)
+    }
 
-        var utf8Span = description.utf8Span
+    /// Initialize an IPv4 address from its textual representation.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
+    @inlinable
+    public init?(_ description: Substring) {
+        self.init(utf8Span: description.utf8Span)
+    }
+
+    /// Initialize an IPv4 address from a `UTF8Span` of its textual representation.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
+    @inlinable
+    public init?(utf8Span: UTF8Span) {
+        var utf8Span = utf8Span
         guard utf8Span.checkForASCII() else {
             return nil
         }
 
-        var span = utf8Span.span
+        self.init(_uncheckedASCIIspan: utf8Span.span)
+    }
+}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension IPv4Address {
+    /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
+    /// The provided span is expected to be ASCII.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
+    @inlinable
+    public init?(_uncheckedASCIIspan span: Span<UInt8>) {
+        debugOnly {
+            for idx in span.indices {
+                if !span[unchecked: idx].isASCII {
+                    fatalError(
+                        "IPv4Address initializer should not be used with non-ASCII character: \(span[unchecked: idx])"
+                    )
+                }
+            }
+        }
+
+        var address: UInt32 = 0
+
+        var span = span
         var byteIdx = 0
 
         /// This will make sure a valid ipv4 domain-name parses fine using this method
         while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiDot }) {
             guard
-                IPv4Address._read(
+                IPv4Address._readASCIIBytes(
                     into: &address,
                     utf8Group: span.extracting(unchecked: 0..<nextSeparatorIdx),
                     byteIdx: byteIdx
@@ -107,7 +147,7 @@ extension IPv4Address: LosslessStringConvertible {
 
             if byteIdx == 3 {
                 guard
-                    IPv4Address._read(
+                    IPv4Address._readASCIIBytes(
                         into: &address,
                         utf8Group: span,
                         byteIdx: byteIdx
@@ -125,8 +165,10 @@ extension IPv4Address: LosslessStringConvertible {
         return nil
     }
 
+    /// Reads bytes like "127" as a `UInt8` into `address` at the given `byteIdx` (left to right).
+    /// Returns false if the `utf8Group` is invalid, in which case we should return `nil`.
     @inlinable
-    static func _read(
+    static func _readASCIIBytes(
         into address: inout UInt32,
         utf8Group: Span<UInt8>,
         byteIdx: Int

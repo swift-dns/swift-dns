@@ -127,19 +127,29 @@ extension DomainName: Hashable {
 
 extension DomainName: Sequence {
     public struct Iterator: Sendable, IteratorProtocol {
+        /// TODO: dedicated label type?
         public typealias Label = ByteBuffer
 
         /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
+        @usableFromInline
         let name: DomainName
+        @usableFromInline
         var startIndex: Int
 
+        @usableFromInline
         init(base: DomainName) {
             self.name = base
             self.startIndex = self.name.data.readerIndex
         }
 
+        @inlinable
+        public func reachedEnd() -> Bool {
+            self.startIndex == self.name.data.writerIndex
+        }
+
+        @inlinable
         public mutating func nextLabelPositionInNameData() -> (startIndex: Int, length: Int)? {
-            if self.startIndex == self.name.data.writerIndex {
+            if self.reachedEnd() {
                 return nil
             }
 
@@ -164,6 +174,7 @@ extension DomainName: Sequence {
             return (self.startIndex + 1, length)
         }
 
+        @inlinable
         public mutating func next() -> Label? {
             guard let (startIndex, length) = self.nextLabelPositionInNameData() else {
                 return nil
@@ -177,6 +188,7 @@ extension DomainName: Sequence {
         }
     }
 
+    @inlinable
     public func makeIterator() -> Self.Iterator {
         Iterator(base: self)
     }
