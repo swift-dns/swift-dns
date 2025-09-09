@@ -27,7 +27,7 @@ extension CIDR<IPv6Address> {
         )
     }
 
-@inlinable
+    @inlinable
     public static var ipv4Mapped: Self {
         Self(
             prefix: 0x0000_0000_0000_0000_0000_FFFF_0000_0000,
