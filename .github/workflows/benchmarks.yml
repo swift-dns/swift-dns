@@ -153,7 +153,6 @@ jobs:
       - name: Update thresholds based on the failed benchmark
         if: steps.comparison.outputs.exit-status != '0'
         run: |
-          git status
           swift package -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
@@ -161,25 +160,20 @@ jobs:
             '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
             --range
-            cat /__w/swift-dns/swift-dns/Benchmarks/Thresholds/IPAddress.IPv4_Local_Broadcast_String_Description.p90.json
-            git status
 
       - name: Format threshold files with jq
         if: steps.comparison.outputs.exit-status != '0'
         run: |
-          git status
           echo "Processing threshold files..."
           for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
             echo "Processing: ${file}"
             jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
-          git status
 
       - name: Check for modifications
         if: steps.comparison.outputs.exit-status != '0'
         id: check-modifications
         run: |
-          git status
           MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
           if [ -n "$MODIFICATIONS" ]; then
             echo "has-modifications=true" >> $GITHUB_OUTPUT

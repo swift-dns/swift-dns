@@ -3,10 +3,10 @@ import DNSModels
 import NIOCore
 
 let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
-    // MARK: - IPv6_Uncompressed_String_Parsing
+    // MARK: - IPv6_String_Decoding_Uncompressed
 
     Benchmark(
-        "IPv6_Uncompressed_String_Parsing_2M",
+        "IPv6_String_Decoding_Uncompressed_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -19,10 +19,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_Zero_Compressed_String_Parsing
+    // MARK: - IPv6_String_Decoding_Zero_Compressed
 
     Benchmark(
-        "IPv6_Zero_Compressed_String_Parsing_10M",
+        "IPv6_String_Decoding_Zero_Compressed_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -35,10 +35,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_Zero_Uncompressed_String_Parsing
+    // MARK: - IPv6_String_Decoding_Zero_Uncompressed
 
     Benchmark(
-        "IPv6_Zero_Uncompressed_String_Parsing_2M",
+        "IPv6_String_Decoding_Zero_Uncompressed_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -51,10 +51,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_Localhost_Compressed_String_Parsing
+    // MARK: - IPv6_String_Decoding_Localhost_Compressed
 
     Benchmark(
-        "IPv6_Localhost_Compressed_String_Parsing_10M",
+        "IPv6_String_Decoding_Localhost_Compressed_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -67,10 +67,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_2_Groups_Compressed_In_The_Middle_String_Parsing
+    // MARK: - IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle
 
     Benchmark(
-        "IPv6_2_Groups_Compressed_In_The_Middle_String_Parsing_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -84,7 +84,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "IPv6_2_Groups_Compressed_In_The_Middle_String_Parsing_Malloc",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -95,10 +95,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         blackHole(ip)
     }
 
-    // MARK: - IPv6_2_Groups_Compressed_At_The_End_String_Parsing
+    // MARK: - IPv6_String_Decoding_2_Groups_Compressed_At_The_End
 
     Benchmark(
-        "IPv6_2_Groups_Compressed_At_The_End_String_Parsing_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_At_The_End_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -111,10 +111,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_2_Groups_Compressed_At_The_Begining_String_Parsing
+    // MARK: - IPv6_String_Decoding_2_Groups_Compressed_At_The_Begining
 
     Benchmark(
-        "IPv6_2_Groups_Compressed_At_The_Begining_String_Parsing_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_At_The_Begining_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,

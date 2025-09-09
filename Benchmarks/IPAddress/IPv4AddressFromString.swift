@@ -3,10 +3,10 @@ import DNSModels
 import NIOCore
 
 let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
-    // MARK: - IPv4_Zero_String_Parsing
+    // MARK: - IPv4_String_Decoding_Zero
 
     Benchmark(
-        "IPv4_Zero_String_Parsing_10M",
+        "IPv4_String_Decoding_Zero_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -19,10 +19,10 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv4_Localhost_String_Parsing
+    // MARK: - IPv4_String_Decoding_Localhost
 
     Benchmark(
-        "IPv4_Localhost_String_Parsing_10M",
+        "IPv4_String_Decoding_Localhost_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -35,10 +35,10 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv4_Local_Broadcast_String_Parsing
+    // MARK: - IPv4_String_Decoding_Local_Broadcast
 
     Benchmark(
-        "IPv4_Local_Broadcast_String_Parsing_10M",
+        "IPv4_String_Decoding_Local_Broadcast_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 10,
@@ -52,7 +52,7 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "IPv4_Local_Broadcast_String_Parsing_Malloc",
+        "IPv4_String_Decoding_Local_Broadcast_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
