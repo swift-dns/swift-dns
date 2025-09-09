@@ -9,6 +9,28 @@ public enum IPAddress: Sendable, Hashable {
     /// An IPv6 address.
     case v6(IPv6Address)
 
+    /// Whether or not this instance corresponds to the `v4` case.
+    @inlinable
+    public var isIPv4: Bool {
+        switch self {
+        case .v4:
+            return true
+        case .v6:
+            return false
+        }
+    }
+
+    /// Whether or not this instance corresponds to the `v6` case.
+    @inlinable
+    public var isIPv6: Bool {
+        switch self {
+        case .v6:
+            return true
+        case .v4:
+            return false
+        }
+    }
+
     /// Whether this address is the Loopback address, known as localhost, or not.
     /// Equivalent to `127.0.0.0/8` in IPv4 CIDR notation or only the `::1` IP in IPv6 description format.
     /// See the dedicated `IPv4Address` and `IPv6Address` `isLoopback` comments for more info.
