@@ -56,63 +56,13 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
         CIDR<Self>.linkLocal.contains(self)
     }
 
+    /// Initialize an `IPv4Address` from its raw 32-bit unsigned integer representation.
     public init(_ address: UInt32) {
         self.address = address
     }
 
-    /// The exact translation of an `IPAddress` to an `IPv4Address`.
-    ///
-    /// This does not handle ipv6-to-ipv4 mappings. Use `init?(ipv6:)` for that.
-    @available(swiftDNSApplePlatforms 15, *)
-    public init?(exactly ipAddress: IPAddress) {
-        switch ipAddress {
-        case .v4(let ipv4):
-            self = ipv4
-        case .v6:
-            return nil
-        }
-    }
-
-    /// Maps an IPv6 address to an IPv4 address if the ipv6 is in a specific address space mentioned in [RFC 4291, IP Version 6 Addressing Architecture, February 2006](https://datatracker.ietf.org/doc/rfc4291#section-2.5.5.2).
-    ///
-    /// ```text
-    /// 2.5.5.2.  IPv4-Mapped IPv6 Address
-    ///
-    ///    A second type of IPv6 address that holds an embedded IPv4 address is
-    ///    defined.  This address type is used to represent the addresses of
-    ///    IPv4 nodes as IPv6 addresses.  The format of the "IPv4-mapped IPv6
-    ///    address" is as follows:
-    ///
-    /// Hinden                      Standards Track                    [Page 10]
-    /// RFC 4291              IPv6 Addressing Architecture         February 2006
-    ///
-    ///    |                80 bits               | 16 |      32 bits        |
-    ///    +--------------------------------------+--------------------------+
-    ///    |0000..............................0000|FFFF|    IPv4 address     |
-    ///    +--------------------------------------+----+---------------------+
-    ///
-    ///    See [RFC4038] for background on the usage of the "IPv4-mapped IPv6
-    ///    address".
-    /// ```
-    @available(swiftDNSApplePlatforms 15, *)
-    @inlinable
-    public init?(ipv6: IPv6Address) {
-        guard
-            withUnsafeBytes(
-                of: ipv6.address,
-                { ptr in
-                    ptr[4] == 0xFF
-                        && ptr[5] == 0xFF
-                        && (6..<16).allSatisfy { ptr[$0] == 0x00 }
-                }
-            )
-        else {
-            return nil
-        }
-
-        self.address = UInt32(truncatingIfNeeded: ipv6.address)
-    }
-
+    /// Initialize an IPv4 from the 4 8-bits (1-bytes) representing it.
+    /// For example `IPv4Address(127, 0, 0, 1)` will result in an IP address equal to `127.0.0.1`.
     @inlinable
     public init(_ _1: UInt8, _ _2: UInt8, _ _3: UInt8, _ _4: UInt8) {
         self.address = 0
@@ -126,6 +76,7 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
 }
 
 extension IPv4Address: ExpressibleByIntegerLiteral {
+    /// Initialize an `IPv4Address` from its raw 32-bit unsigned integer representation.
     public init(integerLiteral value: UInt32) {
         self.address = value
     }

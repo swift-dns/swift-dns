@@ -26,4 +26,12 @@ extension CIDR<IPv6Address> {
             countOfMaskedBits: 10
         )
     }
+
+    @inlinable
+    public static var ipv4Mapped: Self {
+        Self(
+            prefix: 0x0000_0000_0000_0000_0000_FFFF_0000_0000,
+            countOfMaskedBits: 96
+        )
+    }
 }

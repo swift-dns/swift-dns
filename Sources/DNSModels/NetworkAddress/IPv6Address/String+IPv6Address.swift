@@ -1,3 +1,4 @@
+public import func DNSCore.debugOnly
 import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 15, *)
@@ -17,14 +18,12 @@ extension IPv6Address: CustomStringConvertible {
     }
 
     @inlinable
-    @_specialize(where Buffer == String)
-    @_specialize(where Buffer == ByteBuffer)
+    @_specialize(exported:true,kind:full,where Buffer == String)
+    @_specialize(exported:true,kind:full,where Buffer == ByteBuffer)
     func makeDescription<Buffer>(
         writingToUnsafeMutableBufferPointerOfUInt8: (
-            /// maxWriteableBytes
-            Int,
-            /// callback, returns the number of bytes written
-            (UnsafeMutableBufferPointer<UInt8>) -> Int
+            _ maxWriteableBytes: Int,
+            _ callbackReturningBytesWritten: (UnsafeMutableBufferPointer<UInt8>) -> Int
         ) -> Buffer
     ) -> Buffer {
         /// Short-circuit "0".
@@ -193,15 +192,68 @@ extension IPv6Address: LosslessStringConvertible {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
     public init?(_ description: String) {
-        var addressLhs: UInt128 = 0
-        var addressRhs: UInt128 = 0
+        self.init(utf8Span: description.utf8Span)
+    }
 
-        var utf8Span = description.utf8Span
+    /// Initialize an IPv6 address from its textual representation.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    @inlinable
+    public init?(_ description: Substring) {
+        self.init(utf8Span: description.utf8Span)
+    }
+
+    /// Initialize an IPv6 address from a `UTF8Span` of its textual representation.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    @inlinable
+    public init?(utf8Span: UTF8Span) {
+        var utf8Span = utf8Span
         guard utf8Span.checkForASCII() else {
             return nil
         }
 
-        var span = utf8Span.span
+        self.init(_uncheckedASCIIspan: utf8Span.span)
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+extension IPv6Address {
+    /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
+    /// The provided **span is required to be ASCII**.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    @inlinable
+    public init?(span: Span<UInt8>) {
+        for idx in span.indices {
+            if !span[unchecked: idx].isASCII {
+                return nil
+            }
+        }
+
+        self.init(_uncheckedASCIIspan: span)
+    }
+
+    /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
+    /// The provided span is expected to be ASCII.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    @inlinable
+    init?(_uncheckedASCIIspan span: Span<UInt8>) {
+        debugOnly {
+            for idx in span.indices {
+                if !span[unchecked: idx].isASCII {
+                    fatalError(
+                        "IPv6Address initializer should not be used with non-ASCII character: \(span[unchecked: idx])"
+                    )
+                }
+            }
+        }
+
+        var addressLhs: UInt128 = 0
+        var addressRhs: UInt128 = 0
+
+        var span = span
         var count = span.count
 
         guard count > 1 else {
@@ -209,7 +261,10 @@ extension IPv6Address: LosslessStringConvertible {
         }
 
         /// Trim the left and right square brackets if they both exist
+
+        /// Unchecked because we just checked count > 1 above
         let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
+        /// Unchecked because we just checked count > 1 above
         let endsWithBracket = span[unchecked: count &- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
