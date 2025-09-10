@@ -247,7 +247,9 @@ struct IPAddressTests {
         #expect(IPv6Address(string)?.address == expectedAddress)
         #expect(IPv6Address(Substring(string))?.address == expectedAddress)
         #expect(IPv6Address(textualRepresentation: string.utf8Span)?.address == expectedAddress)
-        #expect(IPv6Address(textualRepresentation: string.utf8Span.span)?.address == expectedAddress)
+        #expect(
+            IPv6Address(textualRepresentation: string.utf8Span.span)?.address == expectedAddress
+        )
 
         if isValidIPv4 {
             #expect(IPAddress(string)?.isIPv4 == true)

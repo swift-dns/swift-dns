@@ -70,7 +70,7 @@ struct CIDRTests {
             (text: "5.5.5.5/-1", expectedCIDR: nil),
             (text: "/", expectedCIDR: nil),
             (text: "/20", expectedCIDR: nil),
-            (text: "1.1.1.1/", expectedCIDR: nil)
+            (text: "1.1.1.1/", expectedCIDR: nil),
         ])
     )
     func `ipv4 CIDR description is read correctly`(
@@ -389,7 +389,7 @@ struct CIDRTests {
             (
                 text: "[FFFF:FFFF:FFFF:FFGF:FFFF:FFFF:FFFF:FFFF]/100",
                 expectedCIDR: nil
-            )
+            ),
         ])
     )
     func `ipv6 CIDR description is read correctly`(
