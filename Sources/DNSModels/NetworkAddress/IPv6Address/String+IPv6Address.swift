@@ -220,6 +220,21 @@ extension IPv6Address: LosslessStringConvertible {
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
+    /// The provided **span is required to be ASCII**.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    @inlinable
+    public init?(span: Span<UInt8>) {
+        for idx in span.indices {
+            if !span[unchecked: idx].isASCII {
+                return nil
+            }
+        }
+
+        self.init(_uncheckedASCIIspan: span)
+    }
+
+    /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
     /// The provided span is expected to be ASCII.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.

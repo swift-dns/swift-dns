@@ -107,12 +107,28 @@ extension IPv4Address: LosslessStringConvertible {
 
 @available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address {
+
+    /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
+    /// The provided **span is required to be ASCII**.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
+    @inlinable
+    public init?(span: Span<UInt8>) {
+        for idx in span.indices {
+            if !span[unchecked: idx].isASCII {
+                return nil
+            }
+        }
+
+        self.init(_uncheckedASCIIspan: span)
+    }
+
     /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
     /// The provided span is expected to be ASCII.
     /// That is, 4 decimal UInt8s separated by `.`.
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
-    public init?(_uncheckedASCIIspan span: Span<UInt8>) {
+    init?(_uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
             for idx in span.indices {
                 if !span[unchecked: idx].isASCII {

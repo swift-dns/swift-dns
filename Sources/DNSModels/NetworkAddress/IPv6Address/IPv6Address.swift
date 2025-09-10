@@ -91,13 +91,14 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
         CIDR<Self>.linkLocalUnicast.contains(self)
     }
 
+    /// Initialize an `IPv6Address` from its raw 128-bit unsigned integer representation.
     public init(_ address: UInt128) {
         self.address = address
     }
 
-    /// Directly construct an IPv6 from the 8 16-bits (2-bytes) representing it.
-    /// Example: `IPv6Address(0x0102, 0x0304, 0x0506, 0x0708, 0x090A, 0x0B0C, 0x0D0E, 0x0F10)`
-    /// That is equivalent to this UInt128: `0x0102_0304_0506_0708_090A_0B0C_0D0E_0F10`.
+    /// Initialize an IPv6 from the 8 16-bits (2-bytes) representing it.
+    /// For example `IPv6Address(0x0102, 0x0304, 0x0506, 0x0708, 0x090A, 0x0B0C, 0x0D0E, 0x0F10)`
+    /// will result in an IP address equal to `0102:0304:0506:0708:090A:0B0C:0D0E:0F10`.
     @inlinable
     public init(
         _ _1: UInt16,
@@ -130,9 +131,9 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
         }
     }
 
-    /// Directly construct an IPv6 from the 16 bytes representing it.
-    /// Example: `IPv6Address(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10)`
-    /// That is equivalent to this UInt128: `0x0102_0304_0506_0708_090A_0B0C_0D0E_0F10`.
+    /// Initialize an IPv6 from the 16 bytes representing it.
+    /// For example `IPv6Address(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10)`
+    /// will result in an IP address equal to `0102:0304:0506:0708:090A:0B0C:0D0E:0F10`.
     @inlinable
     public init(
         _ _1: UInt8,
@@ -193,6 +194,7 @@ extension IPv6Address {
     }
 
     /// The 8 16-bits (2-bytes) representing this IPv6 address.
+    /// The same as 8-segments / groups divided by colons (`:`) in the textual representation.
     @inlinable
     public var bytePairs:
         (
@@ -216,6 +218,7 @@ extension IPv6Address {
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: ExpressibleByIntegerLiteral {
+    /// Initialize an `IPv6Address` from its raw 128-bit unsigned integer representation.
     public init(integerLiteral value: UInt128) {
         self.address = value
     }

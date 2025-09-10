@@ -31,7 +31,7 @@ public enum IPAddress: Sendable, Hashable {
         }
     }
 
-    /// Whether this address is the Loopback address, known as localhost, or not.
+    /// Whether this address is a Loopback address, known as localhost, or not.
     /// Equivalent to `127.0.0.0/8` in IPv4 CIDR notation or only the `::1` IP in IPv6 description format.
     /// See the dedicated `IPv4Address` and `IPv6Address` `isLoopback` comments for more info.
     @inlinable

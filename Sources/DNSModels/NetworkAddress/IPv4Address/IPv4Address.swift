@@ -56,10 +56,13 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
         CIDR<Self>.linkLocal.contains(self)
     }
 
+    /// Initialize an `IPv4Address` from its raw 32-bit unsigned integer representation.
     public init(_ address: UInt32) {
         self.address = address
     }
 
+    /// Initialize an IPv4 from the 4 8-bits (1-bytes) representing it.
+    /// For example `IPv4Address(127, 0, 0, 1)` will result in an IP address equal to `127.0.0.1`.
     @inlinable
     public init(_ _1: UInt8, _ _2: UInt8, _ _3: UInt8, _ _4: UInt8) {
         self.address = 0
@@ -73,6 +76,7 @@ public struct IPv4Address: Sendable, Hashable, _IPAddressProtocol {
 }
 
 extension IPv4Address: ExpressibleByIntegerLiteral {
+    /// Initialize an `IPv4Address` from its raw 32-bit unsigned integer representation.
     public init(integerLiteral value: UInt32) {
         self.address = value
     }

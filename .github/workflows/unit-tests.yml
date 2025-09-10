@@ -102,9 +102,6 @@ jobs:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v4
 
-      - name: Install zstd for faster caching, and curl for codecov action
-        run: brew install zstd curl
-
       - name: Update swift via Swiftly
         run: |
           # Installation commands from https://www.swift.org/install/macos

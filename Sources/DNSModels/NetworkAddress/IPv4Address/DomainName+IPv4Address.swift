@@ -2,6 +2,9 @@ public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 26, *)
 extension IPv4Address {
+    /// Initialize an `IPv4Address` from a `DomainName`.
+    /// The domain name must correspond to a valid IPv4 address.
+    /// For example a domain name like `"127.0.0.1"` will parse into the IPv4 address `127.0.0.1`.
     @inlinable
     public init?(domainName: DomainName) {
         guard
