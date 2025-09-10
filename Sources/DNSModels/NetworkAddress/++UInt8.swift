@@ -1,7 +1,7 @@
 @available(swiftDNSApplePlatforms 13, *)
 extension UInt8 {
-    /// Reads bytes like "127" as a `UInt8` into `address` at the given `byteIdx` (left to right).
-    /// Returns `nil` if the `span` is invalid.
+    /// Reads a span of a text like "127" as a `UInt8`, if the bytes are in correct form.
+    /// Otherwise returns `nil`.
     @inlinable
     init?(decimalRepresentation span: Span<UInt8>) {
         let count = span.count
