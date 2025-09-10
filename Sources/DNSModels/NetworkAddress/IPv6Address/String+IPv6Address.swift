@@ -192,7 +192,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
     public init?(_ description: String) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IPv6 address from its textual representation.
@@ -200,48 +200,49 @@ extension IPv6Address: LosslessStringConvertible {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
     public init?(_ description: Substring) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IPv6 address from a `UTF8Span` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
-    public init?(utf8Span: UTF8Span) {
+    public init?(textualRepresentation utf8Span: UTF8Span) {
         var utf8Span = utf8Span
         guard utf8Span.checkForASCII() else {
             return nil
         }
 
-        self.init(_uncheckedASCIIspan: utf8Span.span)
+        self.init(__uncheckedASCIIspan: utf8Span.span)
     }
 }
 
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
-    /// The provided **span is required to be ASCII**.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
-    public init?(span: Span<UInt8>) {
+    public init?(textualRepresentation span: Span<UInt8>) {
         for idx in span.indices {
+            /// Unchecked because `idx` comes right from `span.indices`
             if !span[unchecked: idx].isASCII {
                 return nil
             }
         }
 
-        self.init(_uncheckedASCIIspan: span)
+        self.init(__uncheckedASCIIspan: span)
     }
 
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
-    /// The provided span is expected to be ASCII.
+    /// The provided **span is required to be ASCII**.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     @inlinable
-    init?(_uncheckedASCIIspan span: Span<UInt8>) {
+    public init?(__uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
             for idx in span.indices {
+                /// Unchecked because `idx` comes right from `span.indices`
                 if !span[unchecked: idx].isASCII {
                     fatalError(
                         "IPv6Address initializer should not be used with non-ASCII character: \(span[unchecked: idx])"
@@ -268,6 +269,7 @@ extension IPv6Address {
         let endsWithBracket = span[unchecked: count &- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
+            /// Unchecked because we just checked count > 1 above
             span = span.extracting(1..<(count &- 1))
             count &-= 2
         case (false, false):
@@ -285,8 +287,8 @@ extension IPv6Address {
         var seenCompressionSign = false
 
         while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiColon }) {
-            let utf8Group = span.extracting(unchecked: 0..<nextSeparatorIdx)
-            if utf8Group.isEmpty {
+            let asciiGroup = span.extracting(unchecked: 0..<nextSeparatorIdx)
+            if asciiGroup.isEmpty {
                 if seenCompressionSign {
                     /// We've already seen a compression sign, so this is invalid
                     return nil
@@ -294,6 +296,7 @@ extension IPv6Address {
 
                 /// If we're at the first index
                 if groupIdx == 0 {
+                    /// Unchecked because it can't exceed `span.count` anyway
                     let nextIdx = nextSeparatorIdx &+ 1
 
                     guard span[unchecked: nextIdx] == .asciiColon else {
@@ -301,6 +304,7 @@ extension IPv6Address {
                     }
 
                     seenCompressionSign = true
+                    /// Unchecked because it can't exceed `span.count` anyway
                     groupIdx &+= 2
                     span = span.extracting(unchecked: (nextIdx &+ 1)..<span.count)
                     continue
@@ -315,11 +319,13 @@ extension IPv6Address {
                     return
                 } else {
                     /// Must be a compression sign in the middle of the string
+                    /// Unchecked because it can't exceed `span.count` anyway
                     guard span[unchecked: nextSeparatorIdx &- 1] == .asciiColon else {
                         return nil
                     }
 
                     seenCompressionSign = true
+                    /// Unchecked because it can't exceed `span.count` anyway
                     groupIdx &+= 1
                     span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
                     continue
@@ -327,10 +333,10 @@ extension IPv6Address {
             }
 
             guard
-                IPv6Address._read(
+                IPv6Address._readIPv6Group(
                     addressLhs: &addressLhs,
                     addressRhs: &addressRhs,
-                    utf8Group: utf8Group,
+                    textualRepresentation: asciiGroup,
                     seenCompressionSign: seenCompressionSign,
                     groupIdx: groupIdx
                 )
@@ -339,6 +345,7 @@ extension IPv6Address {
             }
 
             /// This is safe, nothing will crash with this increase in index
+            /// Unchecked because it can't exceed `span.count` anyway
             span = span.extracting((nextSeparatorIdx &+ 1)...)
 
             groupIdx &+= 1
@@ -361,10 +368,10 @@ extension IPv6Address {
         }
 
         guard
-            IPv6Address._read(
+            IPv6Address._readIPv6Group(
                 addressLhs: &addressLhs,
                 addressRhs: &addressRhs,
-                utf8Group: span,
+                textualRepresentation: span,
                 seenCompressionSign: seenCompressionSign,
                 groupIdx: groupIdx
             )
@@ -377,41 +384,50 @@ extension IPv6Address {
             return nil
         }
 
+        /// Unchecked because there is a `groupIdx <= 7` check above
+        /// So this number is guaranteed to be in range of `0...7`
         let compressedGroupsCount = 8 &- groupIdx &- 1
+        /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...7`
         let shift = 16 &* compressedGroupsCount
+        /// Unchecked because `shift` is guaranteed to be in range of `0...128`
         addressLhs |= addressRhs &>> shift
 
         self.init(addressLhs)
     }
 
-    /// Reads the `utf8Group` integers into `addressLhs` or `addressRhs`.
-    /// Returns false if the `utf8Group` is invalid, in which case we should return `nil`.
+    /// Reads the `asciiGroup` integers into `addressLhs` or `addressRhs`.
+    /// Returns false if the `asciiGroup` is invalid, in which case we should return `nil`.
     @inlinable
-    static func _read(
+    static func _readIPv6Group(
         addressLhs: inout UInt128,
         addressRhs: inout UInt128,
-        utf8Group: Span<UInt8>,
+        textualRepresentation asciiGroup: Span<UInt8>,
         seenCompressionSign: Bool,
         groupIdx: Int
     ) -> Bool {
-        let utf8Count = utf8Group.count
+        let utf8Count = asciiGroup.count
 
         if utf8Count == 0 || utf8Count > 4 {
             return false
         }
 
+        /// Unchecked because it must be in range of 0...3 based on the check above
         let maxIdx = utf8Count &- 1
+        /// Unchecked because `groupIdx` is guaranteed to be in range of 0...7
         let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
 
-        for idx in 0..<utf8Group.count {
+        for idx in 0..<asciiGroup.count {
+            /// Unchecked because it's less than `asciiGroup.count` anyway
             let indexInGroup = maxIdx &- idx
-            let utf8Byte = utf8Group[unchecked: indexInGroup]
+            let utf8Byte = asciiGroup[unchecked: indexInGroup]
             guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
                 return false
             }
             /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
+            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is guaranteed to be in range of `0...128`
             let shift = groupStartIdxInAddress &+ (idx &* 4)
+            /// Unchecked because it can't exceed `128` anyway
             if seenCompressionSign {
                 addressRhs |= UInt128(hexadecimalDigit) &<< shift
             } else {
