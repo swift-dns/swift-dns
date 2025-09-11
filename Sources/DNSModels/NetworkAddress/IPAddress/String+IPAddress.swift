@@ -20,7 +20,7 @@ extension IPAddress: LosslessStringConvertible {
     /// or in other words `.v6(0x2001_0DB8_1111_0000_0000_0000_0000_0000)`.
     @inlinable
     public init?(_ description: String) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IP address from its textual representation.
@@ -29,7 +29,7 @@ extension IPAddress: LosslessStringConvertible {
     /// or in other words `.v6(0x2001_0DB8_1111_0000_0000_0000_0000_0000)`.
     @inlinable
     public init?(_ description: Substring) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IP address from a `UTF8Span` of its textual representation.
@@ -37,13 +37,13 @@ extension IPAddress: LosslessStringConvertible {
     /// and `"[2001:db8:1111::]"` will parse into `.v6(2001:DB8:1111:0:0:0:0:0)`,
     /// or in other words `.v6(0x2001_0DB8_1111_0000_0000_0000_0000_0000)`.
     @inlinable
-    public init?(utf8Span: UTF8Span) {
+    public init?(textualRepresentation utf8Span: UTF8Span) {
         var utf8Span = utf8Span
         guard utf8Span.checkForASCII() else {
             return nil
         }
 
-        self.init(_uncheckedASCIIspan: utf8Span.span)
+        self.init(__uncheckedASCIIspan: utf8Span.span)
     }
 }
 
@@ -54,14 +54,15 @@ extension IPAddress {
     /// and `"[2001:db8:1111::]"` will parse into `.v6(2001:DB8:1111:0:0:0:0:0)`,
     /// or in other words `.v6(0x2001_0DB8_1111_0000_0000_0000_0000_0000)`.
     @inlinable
-    public init?(span: Span<UInt8>) {
+    public init?(textualRepresentation span: Span<UInt8>) {
         for idx in span.indices {
+            /// Unchecked because `idx` comes right from `span.indices`
             if !span[unchecked: idx].isASCII {
                 return nil
             }
         }
 
-        self.init(_uncheckedASCIIspan: span)
+        self.init(__uncheckedASCIIspan: span)
     }
 
     /// Initialize an IP address from a `Span<UInt8>` of its textual representation.
@@ -70,9 +71,10 @@ extension IPAddress {
     /// and `"[2001:db8:1111::]"` will parse into `.v6(2001:DB8:1111:0:0:0:0:0)`,
     /// or in other words `.v6(0x2001_0DB8_1111_0000_0000_0000_0000_0000)`.
     @inlinable
-    init?(_uncheckedASCIIspan span: Span<UInt8>) {
+    init?(__uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
             for idx in span.indices {
+                /// Unchecked because `idx` comes right from `span.indices`
                 if !span[unchecked: idx].isASCII {
                     fatalError(
                         "IPAddress initializer should not be used with non-ASCII character: \(span[unchecked: idx])"
@@ -83,16 +85,17 @@ extension IPAddress {
 
         /// Finds the first either "." or ":" and based on that decide what IP version this could be.
         for idx in span.indices {
+            /// Unchecked because `idx` comes right from `span.indices`
             let utf8Byte = span[unchecked: idx]
             switch utf8Byte {
             case .asciiDot:
-                guard let ipv4 = IPv4Address(_uncheckedASCIIspan: span) else {
+                guard let ipv4 = IPv4Address(__uncheckedASCIIspan: span) else {
                     return nil
                 }
                 self = .v4(ipv4)
                 return
             case .asciiColon:
-                guard let ipv6 = IPv6Address(_uncheckedASCIIspan: span) else {
+                guard let ipv6 = IPv6Address(__uncheckedASCIIspan: span) else {
                     return nil
                 }
                 self = .v6(ipv6)

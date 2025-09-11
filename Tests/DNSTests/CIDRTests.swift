@@ -27,11 +27,60 @@ struct CIDRTests {
                 expectedDescription: "192.168.1.0/24"
             ),
         ])
-    ) func `ipv4 CIDR description is calculated correctly`(
+    )
+    func `ipv4 CIDR description is calculated correctly`(
         cidr: CIDR<IPv4Address>,
         expectedDescription: String
     ) {
         #expect(cidr.description == expectedDescription)
+    }
+
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test(
+        arguments: [(text: String, expectedCIDR: CIDR<IPv4Address>?)]([
+            (
+                text: "192.168.1.0/24",
+                expectedCIDR: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 24)
+            ),
+            (
+                text: "192.168.1.0/27",
+                expectedCIDR: CIDR(prefix: IPv4Address(192, 168, 1, 0), countOfMaskedBits: 27)
+            ),
+            (
+                text: "192.168.1.1/120",
+                expectedCIDR: CIDR(prefix: IPv4Address(192, 168, 1, 1), countOfMaskedBits: 32)
+            ),
+            (
+                text: "233.122.61.98/0",
+                expectedCIDR: CIDR(prefix: IPv4Address(0, 0, 0, 0), countOfMaskedBits: 0)
+            ),
+            (
+                text: "233.122.61.98/8",
+                expectedCIDR: CIDR(prefix: IPv4Address(233, 0, 0, 0), countOfMaskedBits: 8)
+            ),
+            (
+                text: "255.255.255.255/32",
+                expectedCIDR: CIDR(prefix: IPv4Address(255, 255, 255, 255), countOfMaskedBits: 32)
+            ),
+            (
+                text: "0.0.0.0/0",
+                expectedCIDR: CIDR(prefix: IPv4Address(0, 0, 0, 0), countOfMaskedBits: 0)
+            ),
+            (text: "256.122.61.98/8", expectedCIDR: nil),
+            (text: "5.5.5.5/-1", expectedCIDR: nil),
+            (text: "/", expectedCIDR: nil),
+            (text: "/20", expectedCIDR: nil),
+            (text: "1.1.1.1/", expectedCIDR: nil),
+        ])
+    )
+    func `ipv4 CIDR description is read correctly`(
+        text: String,
+        expectedCIDR: CIDR<IPv4Address>?
+    ) {
+        #expect(CIDR<IPv4Address>(text) == expectedCIDR)
+        #expect(CIDR<IPv4Address>(Substring(text)) == expectedCIDR)
+        #expect(CIDR<IPv4Address>(textualRepresentation: text.utf8Span) == expectedCIDR)
+        #expect(CIDR<IPv4Address>(textualRepresentation: text.utf8Span.span) == expectedCIDR)
     }
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -291,11 +340,66 @@ struct CIDRTests {
                 expectedDescription: "[2001:db8:85a3::]/48"
             ),
         ])
-    ) func `ipv6 CIDR description is calculated correctly`(
+    )
+    func `ipv6 CIDR description is calculated correctly`(
         cidr: CIDR<IPv6Address>,
         expectedDescription: String
     ) {
         #expect(cidr.description == expectedDescription)
+    }
+
+    @available(swiftDNSApplePlatforms 26, *)
+    @Test(
+        arguments: [(text: String, expectedCIDR: CIDR<IPv6Address>?)]([
+            (
+                text: "FF::/24",
+                expectedCIDR: CIDR(prefix: IPv6Address("FF::")!, countOfMaskedBits: 24)
+            ),
+            (
+                text: "12::/111",
+                expectedCIDR: CIDR(prefix: IPv6Address("12::")!, countOfMaskedBits: 111)
+            ),
+            (
+                text: "[1234:5678::]/188",
+                expectedCIDR: CIDR(prefix: IPv6Address("1234:5678::")!, countOfMaskedBits: 128)
+            ),
+            (
+                text: "::1234/0",
+                expectedCIDR: CIDR(prefix: IPv6Address("::")!, countOfMaskedBits: 0)
+            ),
+            (
+                text: "[::]/8",
+                expectedCIDR: CIDR(prefix: IPv6Address("::")!, countOfMaskedBits: 8)
+            ),
+            (
+                text: "[FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]/32",
+                expectedCIDR: CIDR(
+                    prefix: IPv6Address("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:0000:0000")!,
+                    countOfMaskedBits: 32
+                )
+            ),
+            (
+                text: "[::]/0",
+                expectedCIDR: CIDR(prefix: IPv6Address("::")!, countOfMaskedBits: 0)
+            ),
+            (text: "[::]/-1", expectedCIDR: nil),
+            (text: "/", expectedCIDR: nil),
+            (text: "/20", expectedCIDR: nil),
+            (text: "[::]/", expectedCIDR: nil),
+            (
+                text: "[FFFF:FFFF:FFFF:FFGF:FFFF:FFFF:FFFF:FFFF]/100",
+                expectedCIDR: nil
+            ),
+        ])
+    )
+    func `ipv6 CIDR description is read correctly`(
+        text: String,
+        expectedCIDR: CIDR<IPv6Address>?
+    ) {
+        #expect(CIDR<IPv6Address>(text) == expectedCIDR)
+        #expect(CIDR<IPv6Address>(Substring(text)) == expectedCIDR)
+        #expect(CIDR<IPv6Address>(textualRepresentation: text.utf8Span) == expectedCIDR)
+        #expect(CIDR<IPv6Address>(textualRepresentation: text.utf8Span.span) == expectedCIDR)
     }
 
     @available(swiftDNSApplePlatforms 26, *)

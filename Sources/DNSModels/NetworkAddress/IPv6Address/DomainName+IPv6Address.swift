@@ -21,7 +21,7 @@ extension IPv6Address {
             let span = ptr.bindMemory(to: UInt8.self).span
             return IPv6Address.init(
                 /// `DomainName.data` always only contains ASCII bytes
-                _uncheckedASCIIspan: span.extracting(unchecked: range)
+                __uncheckedASCIIspan: span.extracting(unchecked: range)
             )
         }) {
             self = ipv6Address

@@ -80,7 +80,7 @@ extension IPv4Address: LosslessStringConvertible {
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
     public init?(_ description: String) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IPv4 address from its textual representation.
@@ -88,49 +88,49 @@ extension IPv4Address: LosslessStringConvertible {
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
     public init?(_ description: Substring) {
-        self.init(utf8Span: description.utf8Span)
+        self.init(textualRepresentation: description.utf8Span)
     }
 
     /// Initialize an IPv4 address from a `UTF8Span` of its textual representation.
     /// That is, 4 decimal UInt8s separated by `.`.
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
-    public init?(utf8Span: UTF8Span) {
+    public init?(textualRepresentation utf8Span: UTF8Span) {
         var utf8Span = utf8Span
         guard utf8Span.checkForASCII() else {
             return nil
         }
 
-        self.init(_uncheckedASCIIspan: utf8Span.span)
+        self.init(__uncheckedASCIIspan: utf8Span.span)
     }
 }
 
 @available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address {
+    /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
+    /// That is, 4 decimal UInt8s separated by `.`.
+    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
+    @inlinable
+    public init?(textualRepresentation span: Span<UInt8>) {
+        for idx in span.indices {
+            /// Unchecked because `idx` comes right from `span.indices`
+            if !span[unchecked: idx].isASCII {
+                return nil
+            }
+        }
+
+        self.init(__uncheckedASCIIspan: span)
+    }
 
     /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
     /// The provided **span is required to be ASCII**.
     /// That is, 4 decimal UInt8s separated by `.`.
     /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
     @inlinable
-    public init?(span: Span<UInt8>) {
-        for idx in span.indices {
-            if !span[unchecked: idx].isASCII {
-                return nil
-            }
-        }
-
-        self.init(_uncheckedASCIIspan: span)
-    }
-
-    /// Initialize an IPv4 address from a `Span<UInt8>` of its textual representation.
-    /// The provided span is expected to be ASCII.
-    /// That is, 4 decimal UInt8s separated by `.`.
-    /// For example `"192.168.1.98"` will parse into `192.168.1.98`.
-    @inlinable
-    init?(_uncheckedASCIIspan span: Span<UInt8>) {
+    public init?(__uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
             for idx in span.indices {
+                /// Unchecked because `idx` comes right from `span.indices`
                 if !span[unchecked: idx].isASCII {
                     fatalError(
                         "IPv4Address initializer should not be used with non-ASCII character: \(span[unchecked: idx])"
@@ -147,30 +147,30 @@ extension IPv4Address {
         /// This will make sure a valid ipv4 domain-name parses fine using this method
         while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiDot }) {
             guard
-                IPv4Address._readASCIIBytes(
-                    into: &address,
-                    utf8Group: span.extracting(unchecked: 0..<nextSeparatorIdx),
-                    byteIdx: byteIdx
+                let byte = UInt8(
+                    decimalRepresentation: span.extracting(unchecked: 0..<nextSeparatorIdx)
                 )
             else {
                 return nil
             }
 
+            /// Unchecked because `byteIdx` can't exceed `3` anyway
+            let shift = 8 &* (3 &- byteIdx)
+            address |= UInt32(byte) &<< shift
+
             /// This is safe, nothing will crash with this increase in index
+            /// Unchecked because it can't exceed `span.count` anyway
             span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
 
+            /// Unchecked because it can't exceed `3` anyway
             byteIdx &+= 1
 
             if byteIdx == 3 {
-                guard
-                    IPv4Address._readASCIIBytes(
-                        into: &address,
-                        utf8Group: span,
-                        byteIdx: byteIdx
-                    )
-                else {
+                guard let byte = UInt8(decimalRepresentation: span) else {
                     return nil
                 }
+
+                address |= UInt32(byte)
 
                 self.init(address)
                 return
@@ -179,64 +179,5 @@ extension IPv4Address {
 
         /// Should not have reached here
         return nil
-    }
-
-    /// Reads bytes like "127" as a `UInt8` into `address` at the given `byteIdx` (left to right).
-    /// Returns false if the `utf8Group` is invalid, in which case we should return `nil`.
-    @inlinable
-    static func _readASCIIBytes(
-        into address: inout UInt32,
-        utf8Group: Span<UInt8>,
-        byteIdx: Int
-    ) -> Bool {
-        let utf8Count = utf8Group.count
-
-        if utf8Count == 0 {
-            return false
-        }
-
-        var byte: UInt8 = 0
-
-        let maxIdx = utf8Count &- 1
-
-        for idx in 0..<utf8Count {
-            let indexInGroup = maxIdx &- idx
-            let utf8Byte = utf8Group[unchecked: indexInGroup]
-            guard let decimalDigit = IPv4Address.mapUTF8ByteToUInt8(utf8Byte) else {
-                return false
-            }
-
-            let factor: UInt8
-            switch idx {
-            case 0: factor = 1
-            case 1: factor = 10
-            case 2: factor = 100
-            default: return false
-            }
-
-            let (value, overflew1) = decimalDigit.multipliedReportingOverflow(by: factor)
-            if overflew1 { return false }
-
-            let (newByte, overflew2) = byte.addingReportingOverflow(value)
-            if overflew2 { return false }
-
-            byte = newByte
-        }
-
-        let shift = 8 &* (3 &- byteIdx)
-        address |= UInt32(byte) &<< shift
-
-        return true
-    }
-
-    @inlinable
-    static func mapUTF8ByteToUInt8(_ utf8Byte: UInt8) -> UInt8? {
-        guard
-            utf8Byte >= UInt8.ascii0,
-            utf8Byte <= UInt8.ascii9
-        else {
-            return nil
-        }
-        return utf8Byte &- UInt8.ascii0
     }
 }

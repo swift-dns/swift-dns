@@ -50,6 +50,11 @@ extension UInt8 {
     }
 
     @inlinable
+    static var asciiForwardSlash: UInt8 {
+        0x2F
+    }
+
+    @inlinable
     static var asciiPrintableStart: UInt8 {
         0x20
     }

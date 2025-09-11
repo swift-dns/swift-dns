@@ -11,21 +11,23 @@ extension IPv4Address {
             let result = domainName.data.withUnsafeReadableBytes({ ptr -> IPv4Address? in
                 var ipv4 = IPv4Address(0)
                 var iterator = domainName.makeIterator()
-                let span = ptr.bindMemory(to: UInt8.self).span
+                /// `DomainName.data` always only contains ASCII bytes
+                let asciiSpan = ptr.bindMemory(to: UInt8.self).span
 
                 var idx = 0
                 while let position = iterator.nextLabelPositionInNameData() {
                     let range = position.startIndex..<(position.startIndex &+ position.length)
                     guard
-                        IPv4Address._readASCIIBytes(
-                            into: &ipv4.address,
-                            /// `DomainName.data` always only contains ASCII bytes
-                            utf8Group: span.extracting(unchecked: range),
-                            byteIdx: idx
+                        let byte = UInt8(
+                            decimalRepresentation: asciiSpan.extracting(unchecked: range)
                         )
                     else {
                         return nil
                     }
+
+                    /// Unchecked because `idx` can't exceed `3` anyway
+                    let shift = 8 &* (3 &- idx)
+                    ipv4.address |= UInt32(byte) &<< shift
 
                     if idx == 3 {
                         if iterator.reachedEnd() {

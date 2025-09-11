@@ -40,20 +40,20 @@ struct IPAddressTests {
     ) {
         #expect(IPv4Address(string) == expectedAddress)
         #expect(IPv4Address(Substring(string)) == expectedAddress)
-        #expect(IPv4Address(utf8Span: string.utf8Span) == expectedAddress)
-        #expect(IPv4Address(span: string.utf8Span.span) == expectedAddress)
+        #expect(IPv4Address(textualRepresentation: string.utf8Span) == expectedAddress)
+        #expect(IPv4Address(textualRepresentation: string.utf8Span.span) == expectedAddress)
 
         if isValidIPv6 {
             #expect(IPAddress(string)?.isIPv6 == true)
             #expect(IPAddress(Substring(string))?.isIPv6 == true)
-            #expect(IPAddress(utf8Span: string.utf8Span)?.isIPv6 == true)
-            #expect(IPAddress(span: string.utf8Span.span)?.isIPv6 == true)
+            #expect(IPAddress(textualRepresentation: string.utf8Span)?.isIPv6 == true)
+            #expect(IPAddress(textualRepresentation: string.utf8Span.span)?.isIPv6 == true)
         } else {
             let expectedIPv4: IPAddress? = expectedAddress.map { .v4($0) }
             #expect(IPAddress(string) == expectedIPv4)
             #expect(IPAddress(Substring(string)) == expectedIPv4)
-            #expect(IPAddress(utf8Span: string.utf8Span) == expectedIPv4)
-            #expect(IPAddress(span: string.utf8Span.span) == expectedIPv4)
+            #expect(IPAddress(textualRepresentation: string.utf8Span) == expectedIPv4)
+            #expect(IPAddress(textualRepresentation: string.utf8Span.span) == expectedIPv4)
         }
     }
 
@@ -246,20 +246,22 @@ struct IPAddressTests {
     ) {
         #expect(IPv6Address(string)?.address == expectedAddress)
         #expect(IPv6Address(Substring(string))?.address == expectedAddress)
-        #expect(IPv6Address(utf8Span: string.utf8Span)?.address == expectedAddress)
-        #expect(IPv6Address(span: string.utf8Span.span)?.address == expectedAddress)
+        #expect(IPv6Address(textualRepresentation: string.utf8Span)?.address == expectedAddress)
+        #expect(
+            IPv6Address(textualRepresentation: string.utf8Span.span)?.address == expectedAddress
+        )
 
         if isValidIPv4 {
             #expect(IPAddress(string)?.isIPv4 == true)
             #expect(IPAddress(Substring(string))?.isIPv4 == true)
-            #expect(IPAddress(utf8Span: string.utf8Span)?.isIPv4 == true)
-            #expect(IPAddress(span: string.utf8Span.span)?.isIPv4 == true)
+            #expect(IPAddress(textualRepresentation: string.utf8Span)?.isIPv4 == true)
+            #expect(IPAddress(textualRepresentation: string.utf8Span.span)?.isIPv4 == true)
         } else {
             let expectedIPv6: IPAddress? = expectedAddress.map { .v6(IPv6Address($0)) }
             #expect(IPAddress(string) == expectedIPv6)
             #expect(IPAddress(Substring(string)) == expectedIPv6)
-            #expect(IPAddress(utf8Span: string.utf8Span) == expectedIPv6)
-            #expect(IPAddress(span: string.utf8Span.span) == expectedIPv6)
+            #expect(IPAddress(textualRepresentation: string.utf8Span) == expectedIPv6)
+            #expect(IPAddress(textualRepresentation: string.utf8Span.span) == expectedIPv6)
         }
     }
 
@@ -459,6 +461,8 @@ private let ipv6StringAndAddressTestCases = [(String, UInt128?, Bool)]([
     ("[::0:1:2:3:4:5:6:7]", nil, false),
     ("[0:1:2:3:4:5:6:7::]", nil, false),
     ("[0:1:2:3:4:0:5]", nil, false),
+    ("[1:2:3:4:5:6:7]", nil, false),
+    ("[1:2:3:4:5:6:7:8:9]", nil, false),
     ("[1:2:3]", nil, false),
     ("[1:2:3:]", nil, false),
     ("[:1:2:3]", nil, false),
