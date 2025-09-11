@@ -24,11 +24,12 @@ extension UInt8 {
                 return nil
             }
 
+            /// Unchecked because `(self == (0...9)) + (10 * (0...9))` is always in range of `0...99`,
+            /// which is a valid `UInt8`.
             self &+= 10 &* second
 
-            if count > 2 {
-                /// Above we checked `count < 4` == `count <= 3` which means `maxIdx <= 2`.
-                /// Here we've reached the `maxIdx` which is `2`. So instead of
+            if count == 3 {
+                /// `count == 3` means `maxIdx == 2`. So instead of
                 /// `span[unchecked: maxIdx &- 2]` we can directly go for `span[unchecked: 0]`.
                 guard let third = UInt8.mapUTF8ByteToUInt8(span[unchecked: 0]) else {
                     return nil
