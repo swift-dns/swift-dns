@@ -2,10 +2,10 @@ public import func DNSCore.debugOnly
 
 @available(swiftDNSApplePlatforms 15, *)
 extension CIDR: CustomStringConvertible {
-    /// The textual representation of the CIDR, in form `<ip-address>/<mask>`.
+    /// The textual representation of the CIDR, in form `<ip-address>/<masked-bits-count>`.
     /// For example `"192.168.1.98/24"`, or `"[2001:db8:1111::]/64"`.
     public var description: String {
-        "\(prefix)/\(IntegerLiteralType.bitWidth - mask.trailingZeroBitCount)"
+        "\(prefix)/\(IntegerLiteralType.bitWidth - mask.address.trailingZeroBitCount)"
     }
 }
 
@@ -49,7 +49,7 @@ extension CIDR: LosslessStringConvertible {
             return nil
         }
 
-        self.init(_uncheckedASCIIspan: utf8Span.span)
+        self.init(__uncheckedASCIIspan: utf8Span.span)
     }
 }
 
@@ -71,7 +71,7 @@ extension CIDR {
             }
         }
 
-        self.init(_uncheckedASCIIspan: span)
+        self.init(__uncheckedASCIIspan: span)
     }
 
     /// Initialize an CIDR from a `Span<UInt8>` of its textual representation.
@@ -83,7 +83,7 @@ extension CIDR {
     /// e.g. 192.168.1.98/24 will be repaired to 192.168.1.0/24, and
     /// 2001::/220 will be repaired to 2001::/128.
     @inlinable
-    init?(_uncheckedASCIIspan span: Span<UInt8>) {
+    init?(__uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
             for idx in span.indices {
                 /// Unchecked because `idx` comes right from `span.indices`

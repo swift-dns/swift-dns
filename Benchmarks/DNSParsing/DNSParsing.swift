@@ -12,7 +12,7 @@ let benchmarks: @Sendable () -> Void = {
         "A_Response_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
             setup: {
                 buffer = Resources.dnsResponseAExampleComPacket.buffer()
@@ -67,7 +67,7 @@ let benchmarks: @Sendable () -> Void = {
         "AAAA_Response_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
             setup: {
                 buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
@@ -105,7 +105,7 @@ let benchmarks: @Sendable () -> Void = {
         "TXT_Response_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
             setup: {
                 buffer = Resources.dnsResponseTXTExampleComPacket.buffer()

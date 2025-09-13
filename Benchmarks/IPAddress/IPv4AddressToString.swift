@@ -10,7 +10,7 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv4_String_Encoding_Zero_15M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -27,7 +27,7 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv4_String_Encoding_Localhost_15M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -44,7 +44,7 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv4_String_Encoding_Local_Broadcast_15M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -61,7 +61,7 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv4_String_Encoding_Mixed_15M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in

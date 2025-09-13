@@ -9,7 +9,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_Uncompressed_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -25,7 +25,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_Zero_Compressed_10M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -41,7 +41,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_Zero_Uncompressed_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -57,7 +57,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_Localhost_Compressed_10M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -73,7 +73,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -101,7 +101,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_2_Groups_Compressed_At_The_End_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -117,7 +117,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Decoding_2_Groups_Compressed_At_The_Begining_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in

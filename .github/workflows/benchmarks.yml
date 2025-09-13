@@ -202,7 +202,7 @@ jobs:
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Construct result comment
+      - name: Construct result comment if the benchmark-process succeeded
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
 
@@ -251,8 +251,22 @@ jobs:
           echo '' >> comment.md
           echo '</details>' >> comment.md
 
+      - name: Construct result comment if the benchmark process was cancelled
+        if: cancelled()
+        run: |
+          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
+
+          echo '**🔕 Benchmark process was cancelled 🔕**' >> comment.md
+
+      - name: Construct result comment if the benchmark process failed
+        if: failure()
+        run: |
+          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
+
+          echo '**🛑 Benchmark process failed to complete 🛑**' >> comment.md
+
       - name: Update comment in PR
-        if: steps.commit-info.outputs.pr_number != ''
+        if: always() && (steps.commit-info.outputs.pr_number != '')
         id: pr-comment
         uses: thollander/actions-comment-pull-request@v3
         with:
@@ -261,6 +275,7 @@ jobs:
           comment-tag: benchmark-ci-comment
 
       - name: Output the comment as job summary
+        if: always()
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
           if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
