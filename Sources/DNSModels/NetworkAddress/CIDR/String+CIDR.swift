@@ -2,10 +2,10 @@ public import func DNSCore.debugOnly
 
 @available(swiftDNSApplePlatforms 15, *)
 extension CIDR: CustomStringConvertible {
-    /// The textual representation of the CIDR, in form `<ip-address>/<mask>`.
+    /// The textual representation of the CIDR, in form `<ip-address>/<masked-bits-count>`.
     /// For example `"192.168.1.98/24"`, or `"[2001:db8:1111::]/64"`.
     public var description: String {
-        "\(prefix)/\(IntegerLiteralType.bitWidth - mask.trailingZeroBitCount)"
+        "\(prefix)/\(IntegerLiteralType.bitWidth - mask.address.trailingZeroBitCount)"
     }
 }
 

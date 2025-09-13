@@ -19,22 +19,22 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// in 0xFF00::/8, the mask is the first 8 bits / the first 2 letters of the IP.
     /// That means in those 2 cases, the mask is an integer with 8 leading 1s and all the rest bits
     /// set to zeros. For example for IPv4 that'd be: `0b11111111_00000000_00000000_00000000`,
-    /// which is equal to `4_278_190_080` in decimal.
-    public let mask: IntegerLiteralType
+    /// which is equal to `127.0.0.0`.
+    public let mask: IPAddressType
 
     @inlinable
     init(
         prefix: IPAddressType,
-        uncheckedUnsafeMask mask: IntegerLiteralType
+        uncheckedUnsafeMask mask: IPAddressType
     ) {
-        self.prefix = IPAddressType(integerLiteral: prefix.address & mask)
+        self.prefix = IPAddressType(integerLiteral: prefix.address & mask.address)
         self.mask = mask
     }
 
     /// Create a new CIDR with the given prefix and mask.
     ///
     /// Examples:
-    /// In 127.0.0.1/8, `127.0.0.0` is the prefix, and `0b11111111(24 zeros)` == `127.0.0.0` is the mask.
+    /// In 92.0.0.0/8, `92.0.0.0` is the prefix, and `0b11111111(24 zeros)` == `127.0.0.0` is the mask.
     /// In 0xFE80::/10, `0xFE80::` is the prefix, and `0b1111111111(118 zeros)` == `0xFFC0::` is the mask.
     ///
     /// - Parameters:
@@ -43,13 +43,13 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     @inlinable
     public init?(
         prefix: IPAddressType,
-        mask: IntegerLiteralType
+        mask: IPAddressType
     ) {
         /// Make sure the mask is "continuous" and has no leading zeros
         /// e.g. 0b11110000 is good, but 0b11110001 is not. 0b00001111 is not good either.
         guard
             Self.makeMaskBasedOn(
-                uncheckedCountOfTrailingZeros: UInt8(mask.trailingZeroBitCount)
+                uncheckedCountOfTrailingZeros: UInt8(mask.address.trailingZeroBitCount)
             ) == mask
         else {
             return nil
@@ -61,7 +61,7 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// Create a new CIDR with the given prefix and mask.
     ///
     /// Examples:
-    /// In 127.0.0.1/8, `127.0.0.0` is the prefix, and `0b11111111(24 zeros)` == `127.0.0.0` is the mask.
+    /// In 92.0.0.0/8, `92.0.0.0` is the prefix, and `0b11111111(24 zeros)` == `127.0.0.0` is the mask.
     /// In 0xFE80::/10, `0xFE80::` is the prefix, and `0b1111111111(118 zeros)` == `0xFFC0::` is the mask.
     ///
     /// - Parameters:
@@ -69,17 +69,18 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     ///     Extra bits that are not needed for the mask, will be truncated.
     ///     Example: 192.168.1.1/24 will be truncated to 192.168.1.0 since the trailing 1 is insignificant.
     ///   - uncheckedMask: The masked part of the address.
-    ///     The mask will not be verified by the initializer but MUST be in a "continuous" form.
+    ///     The mask will not be verified by the initializer in optimized builds, and MUST be
+    ///     in a "continuous" form.
     ///     e.g. 0b11110000 is good, but 0b11110001 is not. 0b00001111 is not good either.
     ///     There must be only 1 group of leading ones and 1 group of trailing zeros.
     @inlinable
     public init(
         prefix: IPAddressType,
-        uncheckedMask mask: IntegerLiteralType
+        uncheckedMask mask: IPAddressType
     ) {
         assert(
             Self.makeMaskBasedOn(
-                uncheckedCountOfTrailingZeros: UInt8(mask.trailingZeroBitCount)
+                uncheckedCountOfTrailingZeros: UInt8(mask.address.trailingZeroBitCount)
             ) == mask
         )
 
@@ -89,8 +90,9 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// Create a new CIDR with the given prefix and count of masked bits.
     ///
     /// Examples:
-    /// In 127.0.0.1/8, `127.0.0.0` is the prefix, and 8 is the count of masked bits.
-    /// In 0xFE80::/10, `0xFE80::` is the prefix, and 10 is the count of masked bits.
+    /// In 92.0.0.0/8, `92.0.0.0` is the prefix, and `0b11111111(24 zeros)` == `127.0.0.0` is the mask.
+    /// In the example above, the prefix and mask are equal, but that's not always the case.
+    /// In 0xFE80::/10, `0xFE80::` is the prefix, and `0b1111111111(118 zeros)` == `0xFFC0::` is the mask.
     ///
     /// - Parameters:
     ///   - prefix: The IP address that is desired after the masking happens.
@@ -113,12 +115,13 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     ///     Ignores amounts that are greater than the bit width of the IP address type,
     ///     which means 32 for IPv4 or 128 for IPv6.
     @inlinable
-    package static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IntegerLiteralType {
+    package static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IPAddressType {
         let bitWidth = UInt8(IntegerLiteralType.bitWidth)
         if countOfMaskedBits >= bitWidth {
-            return IntegerLiteralType.max
+            return IPAddressType(integerLiteral: IntegerLiteralType.max)
         }
-        return ~(IntegerLiteralType.max &>> countOfMaskedBits)
+        let mask = ~(IntegerLiteralType.max &>> countOfMaskedBits)
+        return IPAddressType(integerLiteral: mask)
     }
 
     /// Makes a mask based on the number of trailing zeros.
@@ -129,24 +132,27 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     @inlinable
     package static func makeMaskBasedOn(
         uncheckedCountOfTrailingZeros countOfTrailingZeros: UInt8
-    ) -> IntegerLiteralType {
+    ) -> IPAddressType {
         if countOfTrailingZeros == IntegerLiteralType.bitWidth {
             return 0
         } else {
             /// ~IntegerLiteralType((IntegerLiteralType(1) &<< countOfTrailingZeros) &- 1)
             /// also works. The compiler optimizes these anyway, so doesn't matter which
             /// one to use.
-            return (IntegerLiteralType.max &>> countOfTrailingZeros) &<< countOfTrailingZeros
+            let mask = (IntegerLiteralType.max &>> countOfTrailingZeros) &<< countOfTrailingZeros
+            return IPAddressType(integerLiteral: mask)
         }
     }
 
     /// Whether or not the given IPAddress is within this CIDR.
+    /// Complexity: O(1)
     @inlinable
     public func contains(_ other: IPAddressType) -> Bool {
-        other.address & self.mask == self.prefix.address
+        other.address & self.mask.address == self.prefix.address
     }
 
     /// Whether or not the given IPAddress is within this CIDR.
+    /// Complexity: O(1)
     @inlinable
     public func contains(_ other: IPAddress) -> Bool {
         guard let ip = IPAddressType(exactly: other) else {

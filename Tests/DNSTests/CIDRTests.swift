@@ -132,7 +132,7 @@ struct CIDRTests {
             cidr.contains(containsIP) == result,
             """
             IPv4Address containment check failed. A containment result of '\(result)' was expected.
-            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
             prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
             checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
             """
@@ -141,7 +141,7 @@ struct CIDRTests {
             cidr.contains(IPAddress.v4(containsIP)) == result,
             """
             IPAddress.v4 containment check failed. A containment result of '\(result)' was expected.
-            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
             prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
             checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
             """
@@ -158,7 +158,7 @@ struct CIDRTests {
                 cidr.contains(containsIP) == result,
                 """
                 IPv4Address containment check failed. A containment result of '\(result)' was expected.
-                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
                 prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
                 checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
                 """
@@ -167,7 +167,7 @@ struct CIDRTests {
                 cidr.contains(IPAddress.v4(containsIP)) == result,
                 """
                 IPAddress.v4 containment check failed. A containment result of '\(result)' was expected.
-                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
                 prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
                 checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
                 """
@@ -301,10 +301,10 @@ struct CIDRTests {
             countOfMaskedBits: countOfMaskedBits
         )
         #expect(
-            calculatedMask == expectedMask,
+            calculatedMask.address == expectedMask,
             """
             countOfMaskedBits: \(countOfMaskedBits)
-            calculated: 0b\(String(calculatedMask, radix: 2)); \(calculatedMask.trailingZeroBitCount) trailing zeros
+            calculated: 0b\(String(calculatedMask.address, radix: 2)); \(calculatedMask.address.trailingZeroBitCount) trailing zeros
             expected:   0b\(String(expectedMask, radix: 2)); \(expectedMask.trailingZeroBitCount) trailing zeros
             """
         )
@@ -448,7 +448,7 @@ struct CIDRTests {
             cidr.contains(containsIP) == result,
             """
             IPv6Address containment check failed. A containment result of '\(result)' was expected.
-            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
             prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
             checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
             """
@@ -457,7 +457,7 @@ struct CIDRTests {
             cidr.contains(IPAddress.v6(containsIP)) == result,
             """
             IPAddress.v6 containment check failed. A containment result of '\(result)' was expected.
-            mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+            mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
             prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
             checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
             """
@@ -474,7 +474,7 @@ struct CIDRTests {
                 cidr.contains(containsIP) == result,
                 """
                 IPv6Address containment check failed. A containment result of '\(result)' was expected.
-                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
                 prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
                 checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
                 """
@@ -483,7 +483,7 @@ struct CIDRTests {
                 cidr.contains(IPAddress.v6(containsIP)) == result,
                 """
                 IPAddress.v6 containment check failed. A containment result of '\(result)' was expected.
-                mask:    0b\(String(cidr.mask, radix: 2)); \(cidr.mask.trailingZeroBitCount) trailing zeros
+                mask:    0b\(String(cidr.mask.address, radix: 2)); \(cidr.mask.address.trailingZeroBitCount) trailing zeros
                 prefix:  0b\(String(cidr.prefix.address, radix: 2)); \(cidr.prefix.address.trailingZeroBitCount) trailing zeros
                 checked: 0b\(String(containsIP.address, radix: 2)); \(containsIP.address.trailingZeroBitCount) trailing zeros
                 """
@@ -730,10 +730,10 @@ struct CIDRTests {
             countOfMaskedBits: countOfMaskedBits
         )
         #expect(
-            calculatedMask == expectedMask,
+            calculatedMask.address == expectedMask,
             """
             countOfMaskedBits: \(countOfMaskedBits)
-            calculated: 0b\(String(calculatedMask, radix: 2)); \(calculatedMask.trailingZeroBitCount) trailing zeros
+            calculated: 0b\(String(calculatedMask.address, radix: 2)); \(calculatedMask.address.trailingZeroBitCount) trailing zeros
             expected:   0b\(String(expectedMask, radix: 2)); \(expectedMask.trailingZeroBitCount) trailing zeros
             """
         )
