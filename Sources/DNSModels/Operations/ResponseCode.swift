@@ -1,3 +1,5 @@
+import DNSCore
+
 /// The status code of the response to a query.
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -154,6 +156,6 @@ extension ResponseCode {
     }
 
     package init(high: UInt8, low: UInt8) {
-        self.init((UInt16(high) &<< 4) | (UInt16(low) & 0x000F))
+        self.init((UInt16(high) &<<< 4) | (UInt16(low) & 0x000F))
     }
 }

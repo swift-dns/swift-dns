@@ -1,3 +1,5 @@
+import DNSCore
+
 /// Metadata for the `Message` struct.
 ///
 /// [RFC 1035, DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION, November 1987](https://tools.ietf.org/html/rfc1035)
@@ -55,9 +57,10 @@ public struct Header: Sendable {
             set {
                 /// clear the 15th bit then set it to the new value
                 self.rawValue =
-                    (self.rawValue & 0b01111111_11111111) | UInt16(
+                    (self.rawValue & 0b01111111_11111111)
+                    | UInt16(
                         truncatingIfNeeded: newValue.rawValue
-                    ) &<< 15
+                    ) &<<< 15
             }
         }
         public var opCode: OPCode {
@@ -66,9 +69,10 @@ public struct Header: Sendable {
             }
             set {
                 self.rawValue =
-                    (self.rawValue & 0b10000111_11111111) | UInt16(
+                    (self.rawValue & 0b10000111_11111111)
+                    | UInt16(
                         truncatingIfNeeded: newValue.rawValue
-                    ) &<< 11
+                    ) &<<< 11
             }
         }
         public var authoritative: Bool {

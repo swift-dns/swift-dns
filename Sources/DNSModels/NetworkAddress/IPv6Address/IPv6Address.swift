@@ -1,3 +1,5 @@
+public import DNSCore
+
 /// An IPv6 address.
 ///
 /// IPv6 addresses are defined as 128-bit integers in [IETF RFC 4291].
@@ -112,21 +114,21 @@ public struct IPv6Address: Sendable, Hashable, _IPAddressProtocol {
     ) {
         self.address = 0
         withUnsafeMutableBytes(of: &self.address) { ptr in
-            ptr[15] = UInt8(_1 &>> 8)
+            ptr[15] = UInt8(_1 &>>> 8)
             ptr[14] = UInt8(truncatingIfNeeded: _1)
-            ptr[13] = UInt8(_2 &>> 8)
+            ptr[13] = UInt8(_2 &>>> 8)
             ptr[12] = UInt8(truncatingIfNeeded: _2)
-            ptr[11] = UInt8(_3 &>> 8)
+            ptr[11] = UInt8(_3 &>>> 8)
             ptr[10] = UInt8(truncatingIfNeeded: _3)
-            ptr[9] = UInt8(_4 &>> 8)
+            ptr[9] = UInt8(_4 &>>> 8)
             ptr[8] = UInt8(truncatingIfNeeded: _4)
-            ptr[7] = UInt8(_5 &>> 8)
+            ptr[7] = UInt8(_5 &>>> 8)
             ptr[6] = UInt8(truncatingIfNeeded: _5)
-            ptr[5] = UInt8(_6 &>> 8)
+            ptr[5] = UInt8(_6 &>>> 8)
             ptr[4] = UInt8(truncatingIfNeeded: _6)
-            ptr[3] = UInt8(_7 &>> 8)
+            ptr[3] = UInt8(_7 &>>> 8)
             ptr[2] = UInt8(truncatingIfNeeded: _7)
-            ptr[1] = UInt8(_8 &>> 8)
+            ptr[1] = UInt8(_8 &>>> 8)
             ptr[0] = UInt8(truncatingIfNeeded: _8)
         }
     }
@@ -203,14 +205,14 @@ extension IPv6Address {
     {
         withUnsafeBytes(of: self.address) { ptr in
             (
-                UInt16(ptr[15]) &<< 8 | UInt16(ptr[14]),
-                UInt16(ptr[13]) &<< 8 | UInt16(ptr[12]),
-                UInt16(ptr[11]) &<< 8 | UInt16(ptr[10]),
-                UInt16(ptr[9]) &<< 8 | UInt16(ptr[8]),
-                UInt16(ptr[7]) &<< 8 | UInt16(ptr[6]),
-                UInt16(ptr[5]) &<< 8 | UInt16(ptr[4]),
-                UInt16(ptr[3]) &<< 8 | UInt16(ptr[2]),
-                UInt16(ptr[1]) &<< 8 | UInt16(ptr[0])
+                UInt16(ptr[15]) &<<< 8 | UInt16(ptr[14]),
+                UInt16(ptr[13]) &<<< 8 | UInt16(ptr[12]),
+                UInt16(ptr[11]) &<<< 8 | UInt16(ptr[10]),
+                UInt16(ptr[9]) &<<< 8 | UInt16(ptr[8]),
+                UInt16(ptr[7]) &<<< 8 | UInt16(ptr[6]),
+                UInt16(ptr[5]) &<<< 8 | UInt16(ptr[4]),
+                UInt16(ptr[3]) &<<< 8 | UInt16(ptr[2]),
+                UInt16(ptr[1]) &<<< 8 | UInt16(ptr[0])
             )
         }
     }
@@ -254,8 +256,8 @@ extension IPv6Address {
                 case true:
                     let byte = ptr[idx]
                     /// All these unchecked operations are safe because idx is always in 0..<16
-                    let shift = 8 &* (15 &- idx)
-                    self.address |= UInt128(byte) &<< shift
+                    let shift = 8 &** (15 &-- idx)
+                    self.address |= UInt128(byte) &<<< shift
                 case false:
                     break
                 }
@@ -282,8 +284,8 @@ extension IPv6Address {
 
         for idx in 0..<addressLength {
             /// All these unchecked operations are safe because idx is always in 0..<16
-            let shift = 8 &* (15 &- idx)
-            let shifted = self.address &>> shift
+            let shift = 8 &** (15 &-- idx)
+            let shifted = self.address &>>> shift
             let masked = shifted & 0xFF
             let byte = UInt8(exactly: masked).unsafelyUnwrapped
             buffer.writeInteger(byte)

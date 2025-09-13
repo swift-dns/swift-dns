@@ -1,4 +1,4 @@
-public import func DNSCore.debugOnly
+public import DNSCore
 
 @available(swiftDNSApplePlatforms 15, *)
 extension CIDR: CustomStringConvertible {
@@ -97,10 +97,10 @@ extension CIDR {
 
         let count = span.count
         /// Unchecked because `count` is `span.count`
-        let maxIdx = count &- 1
+        let maxIdx = count &-- 1
         for idx in span.indices {
             /// Unchecked because `idx` comes right from `span.indices`
-            let backwardsIdx = maxIdx &- idx
+            let backwardsIdx = maxIdx &-- idx
             /// Unchecked because `backwardsIdx` is guaranteed to be in range of `0...maxIdx`
             let utf8Byte = span[unchecked: backwardsIdx]
             if utf8Byte == .asciiForwardSlash {
@@ -108,7 +108,7 @@ extension CIDR {
                 let prefixSpan = span.extracting(unchecked: 0..<backwardsIdx)
                 /// Unchecked because `0 <= backwardsIdx <= maxIdx < span.count`
                 let countOfMaskedBitsSpan = span.extracting(
-                    unchecked: (backwardsIdx &+ 1)..<span.count
+                    unchecked: (backwardsIdx &++ 1)..<span.count
                 )
                 guard
                     let prefix = IPAddressType(__uncheckedASCIIspan: prefixSpan),

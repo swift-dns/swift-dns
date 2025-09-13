@@ -1,3 +1,5 @@
+public import DNSCore
+
 public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 26, *)
@@ -16,7 +18,7 @@ extension IPv6Address {
         else {
             return nil
         }
-        let range = position.startIndex..<(position.startIndex &+ position.length)
+        let range = position.startIndex..<(position.startIndex &++ position.length)
         if let ipv6Address = domainName.data.withUnsafeReadableBytes({ ptr -> IPv6Address? in
             let span = ptr.bindMemory(to: UInt8.self).span
             return IPv6Address.init(

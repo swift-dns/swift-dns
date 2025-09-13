@@ -1,3 +1,5 @@
+public import DNSCore
+
 public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 26, *)
@@ -16,7 +18,7 @@ extension IPv4Address {
 
                 var idx = 0
                 while let position = iterator.nextLabelPositionInNameData() {
-                    let range = position.startIndex..<(position.startIndex &+ position.length)
+                    let range = position.startIndex..<(position.startIndex &++ position.length)
                     guard
                         let byte = UInt8(
                             decimalRepresentation: asciiSpan.extracting(unchecked: range)
@@ -26,8 +28,8 @@ extension IPv4Address {
                     }
 
                     /// Unchecked because `idx` can't exceed `3` anyway
-                    let shift = 8 &* (3 &- idx)
-                    ipv4.address |= UInt32(byte) &<< shift
+                    let shift = 8 &** (3 &-- idx)
+                    ipv4.address |= UInt32(byte) &<<< shift
 
                     if idx == 3 {
                         if iterator.reachedEnd() {
@@ -38,7 +40,7 @@ extension IPv4Address {
                         }
                     }
 
-                    idx &+= 1
+                    idx &+== 1
                 }
 
                 /// We had less than 4 labels, so this is an error

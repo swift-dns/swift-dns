@@ -1,3 +1,5 @@
+import DNSCore
+
 public import struct NIOCore.ByteBuffer
 
 /// [RFC 8945, Secret Key Transaction Authentication for DNS](https://tools.ietf.org/html/rfc8945#section-4.2)
@@ -204,7 +206,7 @@ extension TSIG {
         )
         /// `timeHigh` and `timeLow` are `UInt16` and `UInt32` respectively, so it's safe to convert to `UInt64`
         self.time =
-            (UInt64(truncatingIfNeeded: timeHigh) &<< 32) | UInt64(truncatingIfNeeded: timeLow)
+            (UInt64(truncatingIfNeeded: timeHigh) &<<< 32) | UInt64(truncatingIfNeeded: timeLow)
         self.fudge = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("TSIG.fudge", buffer)
         )
