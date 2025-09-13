@@ -255,14 +255,12 @@ jobs:
         if: cancelled()
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
-
           echo '**🔕 Benchmark process was cancelled 🔕**' >> comment.md
 
       - name: Construct result comment if the benchmark process failed
         if: failure()
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
-
           echo '**🛑 Benchmark process failed to complete 🛑**' >> comment.md
 
       - name: Update comment in PR
