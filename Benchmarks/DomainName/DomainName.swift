@@ -12,7 +12,7 @@ let benchmarks: @Sendable () -> Void = {
         "google_dot_com_Binary_Parsing_CPU_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
             setup: {
                 buffer = DNSBuffer(bytes: [
@@ -57,7 +57,7 @@ let benchmarks: @Sendable () -> Void = {
         "app-analytics-services_dot_com_Binary_Parsing_CPU_2M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
             setup: {
                 buffer = DNSBuffer(bytes: [
@@ -111,7 +111,7 @@ let benchmarks: @Sendable () -> Void = {
         "google_dot_com_String_Parsing_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
         )
     ) { benchmark in
@@ -138,7 +138,7 @@ let benchmarks: @Sendable () -> Void = {
         "app-analytics-services_dot_com_String_Parsing_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000,
         )
     ) { benchmark in
@@ -166,7 +166,7 @@ let benchmarks: @Sendable () -> Void = {
         "Equality_Check_CPU_20M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 100_000_000,
         )
     ) { benchmark in

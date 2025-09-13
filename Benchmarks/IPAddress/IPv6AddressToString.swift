@@ -10,7 +10,7 @@ let ipv6AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Encoding_Zero_10M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -27,7 +27,7 @@ let ipv6AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Encoding_Localhost_10M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -44,7 +44,7 @@ let ipv6AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Encoding_Max_4M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -61,7 +61,7 @@ let ipv6AddressToStringBenchmarks: @Sendable () -> Void = {
         "IPv6_String_Encoding_Mixed_4M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in

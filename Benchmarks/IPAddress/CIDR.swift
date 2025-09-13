@@ -10,7 +10,7 @@ let cidrBenchmarks: @Sendable () -> Void = {
         "IPv4_CIDR_Create_Then_Check_Is_Loopback_100M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -28,7 +28,7 @@ let cidrBenchmarks: @Sendable () -> Void = {
         "IPv4_CIDR_Create_Then_Check_Is_Multicast_100M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -58,7 +58,7 @@ let cidrBenchmarks: @Sendable () -> Void = {
         "IPv6_CIDR_Create_Then_Check_Is_Loopback_100M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
@@ -76,7 +76,7 @@ let cidrBenchmarks: @Sendable () -> Void = {
         "IPv6_CIDR_Create_Then_Check_Is_Multicast_100M",
         configuration: .init(
             metrics: [.cpuUser],
-            warmupIterations: 10,
+            warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
