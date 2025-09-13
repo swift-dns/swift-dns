@@ -5,6 +5,8 @@ import NIOCore
 let benchmarks: @Sendable () -> Void = {
     Benchmark.defaultConfiguration.maxDuration = .seconds(5)
 
+    cidrBenchmarks()
+
     ipv4AddressFromStringBenchmarks()
     ipv4AddressToStringBenchmarks()
 

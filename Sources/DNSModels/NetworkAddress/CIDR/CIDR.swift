@@ -15,8 +15,11 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     public let prefix: IPAddressType
     /// The masked part of the address.
     /// Of type `UInt32` for `IPv4Address` or `UInt128` for `IPv6Address`.
-    /// Example: in 127.0.0.1/8, the mask is the first 8 bits / the first segment of the IP
-    /// in 0xFF00::/8, the mask is the first 8 bits / the first 2 letters of the IP
+    /// Example: in 127.0.0.1/8, the mask is the first 8 bits / the first segment of the IP.
+    /// in 0xFF00::/8, the mask is the first 8 bits / the first 2 letters of the IP.
+    /// That means in those 2 cases, the mask is an integer with 8 leading 1s and all the rest bits
+    /// set to zeros. For example for IPv4 that'd be: `0b11111111_00000000_00000000_00000000`,
+    /// which is equal to `4_278_190_080` in decimal.
     public let mask: IntegerLiteralType
 
     @inlinable
