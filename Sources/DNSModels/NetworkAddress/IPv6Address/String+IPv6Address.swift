@@ -334,7 +334,6 @@ extension IPv6Address {
             }
 
             guard
-                groupIdx <= 6,
                 IPv6Address._readIPv6Group(
                     addressLhs: &addressLhs,
                     addressRhs: &addressRhs,
@@ -351,6 +350,10 @@ extension IPv6Address {
             span = span.extracting((nextSeparatorIdx &++ 1)...)
 
             groupIdx &+== 1
+        }
+
+        guard groupIdx <= 7 else {
+            return nil
         }
 
         /// Read last remaining byte-pair
@@ -411,7 +414,9 @@ extension IPv6Address {
 
         /// Unchecked because it must be in range of 0...3 based on the check above
         let maxIdx = utf8Count &-- 1
-        /// Unchecked because `groupIdx` is guaranteed to be in range of 0...7
+        /// Unchecked because `groupIdx` is should be in range of 0...7
+        /// `groupIdx` here _could_ be higher too, like `8`.
+        /// That still doesn't cause any problems based on the tests, so we accept it.
         let groupStartIdxInAddress = 16 &** (7 &-- groupIdx)
 
         for idx in 0..<asciiGroup.count {
@@ -423,13 +428,24 @@ extension IPv6Address {
             }
             /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
-            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is guaranteed to be in range of `0...128`
+            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is should be in range of `0...128`
+            /// The `shift` here _could_ end up being a negative number.
+            /// That still doesn't cause any problems based on the tests, so we accept it.
+            ///
+            /// We can have a bounds check for `groupIdx` to ensure this doesn't happen, but
+            /// that comes with a compromise on performance.
             let shift = groupStartIdxInAddress &++ (idx &** 4)
             /// Unchecked because it can't exceed `128` anyway
             if seenCompressionSign {
-                addressRhs |= UInt128(hexadecimalDigit) &<<< shift
+                /// Per what explained above, we do `&<<` instead of `&<<<` here.
+                /// We accept that `shift` could be a negative number, which is unwanted by the
+                /// implementation, but still works out fine.
+                addressRhs |= UInt128(hexadecimalDigit) &<< shift
             } else {
-                addressLhs |= UInt128(hexadecimalDigit) &<<< shift
+                /// Per what explained above, we do `&<<` instead of `&<<<` here.
+                /// We accept that `shift` could be a negative number, which is unwanted by the
+                /// implementation, but still works out fine.
+                addressLhs |= UInt128(hexadecimalDigit) &<< shift
             }
         }
 
