@@ -104,16 +104,25 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         self.init(prefix: prefix, uncheckedUnsafeMask: mask)
     }
 
-    /// Ignores bits that are greater than the bit width of the IP address type.
     /// Creates a number with `countOfMaskedBits` amount of leading 1s followed by all zeros.
+    /// Parameters:
+    ///   - countOfMaskedBits: The number of leading 1s to have, followed by all zeros.
+    ///     Ignores amounts that are greater than the bit width of the IP address type,
+    ///     which means 32 for IPv4 or 128 for IPv6.
     @inlinable
     package static func makeMaskBasedOn(countOfMaskedBits: UInt8) -> IntegerLiteralType {
         let bitWidth = UInt8(IntegerLiteralType.bitWidth)
-        let countOfMaskedBits = min(countOfMaskedBits, bitWidth)
-        let countOfTrailingZeros = bitWidth &- countOfMaskedBits
-        return makeMaskBasedOn(uncheckedCountOfTrailingZeros: countOfTrailingZeros)
+        if countOfMaskedBits >= bitWidth {
+            return IntegerLiteralType.max
+        }
+        return ~(IntegerLiteralType.max &>> countOfMaskedBits)
     }
 
+    /// Makes a mask based on the number of trailing zeros.
+    /// Parameters:
+    ///   - countOfTrailingZeros: The number of trailing zeros to have.
+    ///     This MUST NOT be greater than the bit width of `IntegerLiteralType`,
+    ///     which means 32 for IPv4 or 128 for IPv6.
     @inlinable
     package static func makeMaskBasedOn(
         uncheckedCountOfTrailingZeros countOfTrailingZeros: UInt8
@@ -121,6 +130,9 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         if countOfTrailingZeros == IntegerLiteralType.bitWidth {
             return 0
         } else {
+            /// ~IntegerLiteralType((IntegerLiteralType(1) &<< countOfTrailingZeros) &- 1)
+            /// also works. The compiler optimizes these anyway, so doesn't matter which
+            /// one to use.
             return (IntegerLiteralType.max &>> countOfTrailingZeros) &<< countOfTrailingZeros
         }
     }

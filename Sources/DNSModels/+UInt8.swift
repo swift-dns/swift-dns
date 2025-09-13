@@ -2,7 +2,7 @@ extension UInt8 {
     @inlinable
     var isASCIIAlphanumeric: Bool {
         /// TODO: make sure `ClosedRange.contains` indeed has a negative performance impact.
-        /// If not, just use that.
+        /// If not, just use that. I've heard recently the performance downgrade has been fixed.
         let latin_0to9_start = 0x30
         let latin_0to9_end = 0x39
         let latin_AtoZ_start = 0x41
