@@ -1,3 +1,5 @@
+public import DNSCore
+
 @available(swiftDNSApplePlatforms 15, *)
 public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
 
@@ -120,7 +122,7 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         if countOfMaskedBits >= bitWidth {
             return IPAddressType(integerLiteral: IntegerLiteralType.max)
         }
-        let mask = ~(IntegerLiteralType.max &>> countOfMaskedBits)
+        let mask = ~(IntegerLiteralType.max &>>> countOfMaskedBits)
         return IPAddressType(integerLiteral: mask)
     }
 
@@ -136,10 +138,10 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
         if countOfTrailingZeros == IntegerLiteralType.bitWidth {
             return 0
         } else {
-            /// ~IntegerLiteralType((IntegerLiteralType(1) &<< countOfTrailingZeros) &- 1)
+            /// ~IntegerLiteralType((IntegerLiteralType(1) &<<< countOfTrailingZeros) &-- 1)
             /// also works. The compiler optimizes these anyway, so doesn't matter which
             /// one to use.
-            let mask = (IntegerLiteralType.max &>> countOfTrailingZeros) &<< countOfTrailingZeros
+            let mask = (IntegerLiteralType.max &>>> countOfTrailingZeros) &<<< countOfTrailingZeros
             return IPAddressType(integerLiteral: mask)
         }
     }

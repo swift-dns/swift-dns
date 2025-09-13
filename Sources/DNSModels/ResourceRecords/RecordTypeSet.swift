@@ -1,3 +1,5 @@
+import DNSCore
+
 public import struct Collections.OrderedSet
 public import struct NIOCore.ByteBuffer
 
@@ -103,12 +105,12 @@ extension RecordTypeSet {
                             throw ProtocolError.failedToRead("RecordTypeSet", buffer)
                         }
                         let rrType =
-                            (UInt16(truncatingIfNeeded: window) &<< 8)
+                            (UInt16(truncatingIfNeeded: window) &<<< 8)
                             | UInt16(truncatingIfNeeded: lowByte)
                         types.append(RecordType(rrType))
                     }
                     // Shift left and look at the next bit
-                    bitMap &<<= 1
+                    bitMap &<<== 1
                 }
 
                 /// Move to the next section of the bitMap

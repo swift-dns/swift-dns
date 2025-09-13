@@ -92,6 +92,20 @@ let client = try DNSClient(
 )
 ```
 
+## Operators
+
+I'm experimenting with using operators that are do checks in debug builds, but are unchecked in optimized builds.
+
+These operators always have 2 of the last character of the normal operator.
+
+These operators should in theory always result in the same value as their std-lib version.
+
+Some examples of these operators:
+
+- `&+` -> `&++`
+- `&+=` -> `&+==`
+- `&>>` -> `&>>>`
+
 ## Checklist
 
 - [x] DNS Parsing

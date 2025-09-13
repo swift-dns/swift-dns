@@ -1,3 +1,5 @@
+import DNSCore
+
 /// Edns implements the higher level concepts for working with extended dns as it is used to create or be
 /// created from OPT record data.
 @available(swiftDNSApplePlatforms 15, *)
@@ -42,8 +44,8 @@ public struct EDNS: Sendable {
     public var options: OPT
 
     var ttl: UInt32 {
-        (UInt32(self.rcodeHigh) &<< 24)
-            | (UInt32(self.version) &<< 16)
+        (UInt32(self.rcodeHigh) &<<< 24)
+            | (UInt32(self.version) &<<< 16)
             | UInt32(self.flags.rawValue)
     }
 

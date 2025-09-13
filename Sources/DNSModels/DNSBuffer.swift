@@ -1,3 +1,5 @@
+public import DNSCore
+
 public import struct NIOCore.ByteBuffer
 public import struct NIOCore.ByteBufferView
 public import enum NIOCore.Endianness
@@ -322,15 +324,15 @@ extension DNSBuffer {
             return nil
         }
 
-        // both these &-s are safe, they can't underflow because both left & right side are >= 0 (and index >= readerIndex)
-        let indexFromReaderIndex = index &- self.readerIndex
+        // both these &--s are safe, they can't underflow because both left & right side are >= 0 (and index >= readerIndex)
+        let indexFromReaderIndex = index &-- self.readerIndex
         assert(indexFromReaderIndex >= 0)
-        guard indexFromReaderIndex <= self.readableBytes &- length else {
+        guard indexFromReaderIndex <= self.readableBytes &-- length else {
             return nil
         }
 
         // safe, can't overflow, we checked it above.
-        let upperBound = indexFromReaderIndex &+ length
+        let upperBound = indexFromReaderIndex &++ length
 
         // uncheckedBounds is safe because `length` is >= 0, so the lower bound will always be lower/equal to upper
         return Range<Int>(uncheckedBounds: (lower: indexFromReaderIndex, upper: upperBound))

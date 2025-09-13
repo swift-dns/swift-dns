@@ -1,3 +1,5 @@
+public import DNSCore
+
 public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 26, *)
@@ -14,7 +16,7 @@ extension IPAddress {
         guard let position = iterator.nextLabelPositionInNameData() else {
             return nil
         }
-        let range = position.startIndex..<(position.startIndex &+ position.length)
+        let range = position.startIndex..<(position.startIndex &++ position.length)
 
         guard
             let result = domainName.data.withUnsafeReadableBytes({ ptr -> IPAddress? in
@@ -36,11 +38,11 @@ extension IPAddress {
                         return nil
                     }
 
-                    ipv4.address |= UInt32(byte) &<< 24
+                    ipv4.address |= UInt32(byte) &<<< 24
 
                     var idx = 1
                     while let position = iterator.nextLabelPositionInNameData() {
-                        let range = position.startIndex..<(position.startIndex &+ position.length)
+                        let range = position.startIndex..<(position.startIndex &++ position.length)
                         guard
                             let byte = UInt8(
                                 decimalRepresentation: asciiSpan.extracting(unchecked: range)
@@ -50,8 +52,8 @@ extension IPAddress {
                         }
 
                         /// Unchecked because `idx` can't exceed `3` anyway
-                        let shift = 8 &* (3 &- idx)
-                        ipv4.address |= UInt32(byte) &<< shift
+                        let shift = 8 &** (3 &-- idx)
+                        ipv4.address |= UInt32(byte) &<<< shift
 
                         if idx == 3 {
                             if iterator.reachedEnd() {
@@ -62,7 +64,7 @@ extension IPAddress {
                             }
                         }
 
-                        idx &+= 1
+                        idx &+== 1
                     }
                 }
 

@@ -1,4 +1,4 @@
-public import func DNSCore.debugOnly
+public import DNSCore
 
 @available(swiftDNSApplePlatforms 13, *)
 extension IPv4Address: CustomStringConvertible {
@@ -24,11 +24,11 @@ extension IPv4Address: CustomStringConvertible {
 
                 while let idx = iterator.next() {
                     buffer[resultIdx] = .asciiDot
-                    resultIdx &+= 1
+                    resultIdx &+== 1
                     IPv4Address._writeUInt8AsDecimalASCII(
                         into: buffer,
                         advancingIdx: &resultIdx,
-                        byte: addressBytes[3 &- idx]
+                        byte: addressBytes[3 &-- idx]
                     )
                 }
             }
@@ -68,8 +68,8 @@ extension IPv4Address: CustomStringConvertible {
         idx: inout Int,
         byte: UInt8
     ) {
-        buffer[idx] = byte &+ UInt8.ascii0
-        idx &+= 1
+        buffer[idx] = byte &++ UInt8.ascii0
+        idx &+== 1
     }
 }
 
@@ -155,15 +155,15 @@ extension IPv4Address {
             }
 
             /// Unchecked because `byteIdx` can't exceed `3` anyway
-            let shift = 8 &* (3 &- byteIdx)
-            address |= UInt32(byte) &<< shift
+            let shift = 8 &** (3 &-- byteIdx)
+            address |= UInt32(byte) &<<< shift
 
             /// This is safe, nothing will crash with this increase in index
             /// Unchecked because it can't exceed `span.count` anyway
-            span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
+            span = span.extracting(unchecked: (nextSeparatorIdx &++ 1)..<span.count)
 
             /// Unchecked because it can't exceed `3` anyway
-            byteIdx &+= 1
+            byteIdx &+== 1
 
             if byteIdx == 3 {
                 guard let byte = UInt8(decimalRepresentation: span) else {

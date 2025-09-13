@@ -1,3 +1,5 @@
+import DNSCore
+
 /// An IPv4 address.
 ///
 /// IPv4 addresses are defined as 32-bit integers in [IETF RFC 791].
@@ -120,8 +122,8 @@ extension IPv4Address {
                 case true:
                     let byte = ptr[idx]
                     /// All these unchecked operations are safe because idx is always in 0..<4
-                    let shift = 8 &* (3 &- idx)
-                    self.address |= UInt32(byte) &<< shift
+                    let shift = 8 &** (3 &-- idx)
+                    self.address |= UInt32(byte) &<<< shift
                 case false:
                     break
                 }
@@ -147,8 +149,8 @@ extension IPv4Address {
 
         for idx in 0..<addressLength {
             /// All these unchecked operations are safe because idx is always in 0..<4
-            let shift = 8 &* (3 &- idx)
-            let shifted = self.address &>> shift
+            let shift = 8 &** (3 &-- idx)
+            let shifted = self.address &>>> shift
             let byte = UInt8(truncatingIfNeeded: shifted)
             buffer.writeInteger(byte)
         }

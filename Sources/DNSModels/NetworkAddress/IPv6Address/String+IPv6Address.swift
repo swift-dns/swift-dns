@@ -1,4 +1,5 @@
-public import func DNSCore.debugOnly
+public import DNSCore
+
 import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 15, *)
@@ -39,8 +40,8 @@ extension IPv6Address: CustomStringConvertible {
 
         return withUnsafeBytes(of: self.address) { ptr in
             func isZero(octalIdx idx: Int) -> Bool {
-                let doubled = idx &* 2
-                return ptr[15 &- doubled] == 0 && ptr[14 &- doubled] == 0
+                let doubled = idx &** 2
+                return ptr[15 &-- doubled] == 0 && ptr[14 &-- doubled] == 0
             }
             var rangeToCompress: Range<Int>? = nil
             var idx = 0
@@ -48,7 +49,7 @@ extension IPv6Address: CustomStringConvertible {
             /// we won't compress it anyway.
             while idx < 7 {
                 guard isZero(octalIdx: idx) else {
-                    idx &+= 1
+                    idx &+== 1
                     continue
                 }
 
@@ -77,7 +78,7 @@ extension IPv6Address: CustomStringConvertible {
                     }
                 }
 
-                idx = endIndex &+ 1
+                idx = endIndex &++ 1
             }
 
             assert(rangeToCompress?.isEmpty != true)
@@ -85,10 +86,10 @@ extension IPv6Address: CustomStringConvertible {
             /// Reserve the max possibly needed capacity.
             let toReserve: Int
             if let rangeToCompress {
-                let segmentsCount = 8 &- rangeToCompress.count
-                let colonsCount = max(segmentsCount &- 1, 2)
+                let segmentsCount = 8 &-- rangeToCompress.count
+                let colonsCount = max(segmentsCount &-- 1, 2)
                 let bracketsCount = 2
-                toReserve = bracketsCount &+ colonsCount &+ (segmentsCount &* 4)
+                toReserve = bracketsCount &++ colonsCount &++ (segmentsCount &** 4)
             } else {
                 toReserve = 41
             }
@@ -97,7 +98,7 @@ extension IPv6Address: CustomStringConvertible {
                 var writeIdx = 0
 
                 buffer[0] = .asciiLeftSquareBracket
-                writeIdx &+= 1
+                writeIdx &+== 1
 
                 /// Reset `idx`. It was used in a loop above.
                 idx = 0
@@ -106,21 +107,21 @@ extension IPv6Address: CustomStringConvertible {
                         idx == rangeToCompress.lowerBound
                     {
                         buffer[writeIdx] = .asciiColon
-                        writeIdx &+= 1
+                        writeIdx &+== 1
 
                         if idx == 0 {
                             /// Need 2 colons in this case, so '::'
                             buffer[writeIdx] = .asciiColon
-                            writeIdx &+= 1
+                            writeIdx &+== 1
                         }
 
-                        idx = rangeToCompress.upperBound &+ 1
+                        idx = rangeToCompress.upperBound &++ 1
                         continue
                     }
 
-                    let doubled = idx &* 2
-                    let left = ptr[15 &- doubled]
-                    let right = ptr[14 &- doubled]
+                    let doubled = idx &** 2
+                    let left = ptr[15 &-- doubled]
+                    let right = ptr[14 &-- doubled]
                     IPv6Address._writeUInt16AsLowercasedASCII(
                         into: buffer,
                         advancingIdx: &writeIdx,
@@ -129,14 +130,14 @@ extension IPv6Address: CustomStringConvertible {
 
                     if idx < 7 {
                         buffer[writeIdx] = .asciiColon
-                        writeIdx &+= 1
+                        writeIdx &+== 1
                     }
 
-                    idx &+= 1
+                    idx &+== 1
                 }
 
                 buffer[writeIdx] = .asciiRightSquareBracket
-                writeIdx &+= 1
+                writeIdx &+== 1
 
                 return writeIdx
             }
@@ -152,9 +153,9 @@ extension IPv6Address: CustomStringConvertible {
     ) {
         var soFarAllZeros = true
 
-        let _1 = bytePair.left &>> 4
+        let _1 = bytePair.left &>>> 4
         let _2 = bytePair.left & 0x0F
-        let _3 = bytePair.right &>> 4
+        let _3 = bytePair.right &>>> 4
         let _4 = bytePair.right & 0x0F
 
         if _1 != 0 {
@@ -179,9 +180,9 @@ extension IPv6Address: CustomStringConvertible {
     ) {
         buffer[idx] =
             byte > 9
-            ? byte &+ UInt8.asciiLowercasedA &- 10
-            : byte &+ UInt8.ascii0
-        idx &+= 1
+            ? byte &++ UInt8.asciiLowercasedA &-- 10
+            : byte &++ UInt8.ascii0
+        idx &+== 1
     }
 }
 
@@ -266,12 +267,12 @@ extension IPv6Address {
         /// Unchecked because we just checked count > 1 above
         let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
         /// Unchecked because we just checked count > 1 above
-        let endsWithBracket = span[unchecked: count &- 1] == .asciiRightSquareBracket
+        let endsWithBracket = span[unchecked: count &-- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
             /// Unchecked because we just checked count > 1 above
-            span = span.extracting(1..<(count &- 1))
-            count &-= 2
+            span = span.extracting(1..<(count &-- 1))
+            count &-== 2
         case (false, false):
             break
         case (true, false), (false, true):
@@ -297,7 +298,7 @@ extension IPv6Address {
                 /// If we're at the first index
                 if groupIdx == 0 {
                     /// Unchecked because it can't exceed `span.count` anyway
-                    let nextIdx = nextSeparatorIdx &+ 1
+                    let nextIdx = nextSeparatorIdx &++ 1
 
                     guard span[unchecked: nextIdx] == .asciiColon else {
                         return nil
@@ -305,8 +306,8 @@ extension IPv6Address {
 
                     seenCompressionSign = true
                     /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+= 2
-                    span = span.extracting(unchecked: (nextIdx &+ 1)..<span.count)
+                    groupIdx &+== 2
+                    span = span.extracting(unchecked: (nextIdx &++ 1)..<span.count)
                     continue
 
                     /// If we're at the last index
@@ -320,14 +321,14 @@ extension IPv6Address {
                 } else {
                     /// Must be a compression sign in the middle of the string
                     /// Unchecked because it can't exceed `span.count` anyway
-                    guard span[unchecked: nextSeparatorIdx &- 1] == .asciiColon else {
+                    guard span[unchecked: nextSeparatorIdx &-- 1] == .asciiColon else {
                         return nil
                     }
 
                     seenCompressionSign = true
                     /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+= 1
-                    span = span.extracting(unchecked: (nextSeparatorIdx &+ 1)..<span.count)
+                    groupIdx &+== 1
+                    span = span.extracting(unchecked: (nextSeparatorIdx &++ 1)..<span.count)
                     continue
                 }
             }
@@ -346,9 +347,9 @@ extension IPv6Address {
 
             /// This is safe, nothing will crash with this increase in index
             /// Unchecked because it can't exceed `span.count` anyway
-            span = span.extracting((nextSeparatorIdx &+ 1)...)
+            span = span.extracting((nextSeparatorIdx &++ 1)...)
 
-            groupIdx &+= 1
+            groupIdx &+== 1
         }
 
         guard groupIdx <= 7 else {
@@ -386,11 +387,11 @@ extension IPv6Address {
 
         /// Unchecked because there is a `groupIdx <= 7` check above
         /// So this number is guaranteed to be in range of `0...7`
-        let compressedGroupsCount = 8 &- groupIdx &- 1
+        let compressedGroupsCount = 8 &-- groupIdx &-- 1
         /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...7`
-        let shift = 16 &* compressedGroupsCount
+        let shift = 16 &** compressedGroupsCount
         /// Unchecked because `shift` is guaranteed to be in range of `0...128`
-        addressLhs |= addressRhs &>> shift
+        addressLhs |= addressRhs &>>> shift
 
         self.init(addressLhs)
     }
@@ -412,25 +413,38 @@ extension IPv6Address {
         }
 
         /// Unchecked because it must be in range of 0...3 based on the check above
-        let maxIdx = utf8Count &- 1
-        /// Unchecked because `groupIdx` is guaranteed to be in range of 0...7
-        let groupStartIdxInAddress = 16 &* (7 &- groupIdx)
+        let maxIdx = utf8Count &-- 1
+        /// Unchecked because `groupIdx` is should be in range of 0...7
+        /// `groupIdx` here _could_ be higher too, like `8`.
+        /// That still doesn't cause any problems based on the tests, so we accept it.
+        let groupStartIdxInAddress = 16 &** (7 &-- groupIdx)
 
         for idx in 0..<asciiGroup.count {
             /// Unchecked because it's less than `asciiGroup.count` anyway
-            let indexInGroup = maxIdx &- idx
+            let indexInGroup = maxIdx &-- idx
             let utf8Byte = asciiGroup[unchecked: indexInGroup]
             guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
                 return false
             }
             /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
-            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is guaranteed to be in range of `0...128`
-            let shift = groupStartIdxInAddress &+ (idx &* 4)
+            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is should be in range of `0...128`
+            /// The `shift` here _could_ end up being a negative number.
+            /// That still doesn't cause any problems based on the tests, so we accept it.
+            ///
+            /// We can have a bounds check for `groupIdx` to ensure this doesn't happen, but
+            /// that comes with a compromise on performance.
+            let shift = groupStartIdxInAddress &++ (idx &** 4)
             /// Unchecked because it can't exceed `128` anyway
             if seenCompressionSign {
+                /// Per what explained above, we do `&<<` instead of `&<<<` here.
+                /// We accept that `shift` could be a negative number, which is unwanted by the
+                /// implementation, but still works out fine.
                 addressRhs |= UInt128(hexadecimalDigit) &<< shift
             } else {
+                /// Per what explained above, we do `&<<` instead of `&<<<` here.
+                /// We accept that `shift` could be a negative number, which is unwanted by the
+                /// implementation, but still works out fine.
                 addressLhs |= UInt128(hexadecimalDigit) &<< shift
             }
         }
@@ -444,17 +458,17 @@ extension IPv6Address {
             guard utf8Byte <= UInt8.asciiLowercasedF else {
                 return nil
             }
-            return utf8Byte &- UInt8.asciiLowercasedA &+ 10
+            return utf8Byte &-- UInt8.asciiLowercasedA &++ 10
         } else if utf8Byte >= UInt8.asciiUppercasedA {
             guard utf8Byte <= UInt8.asciiUppercasedF else {
                 return nil
             }
-            return utf8Byte &- UInt8.asciiUppercasedA &+ 10
+            return utf8Byte &-- UInt8.asciiUppercasedA &++ 10
         } else if utf8Byte >= UInt8.ascii0 {
             guard utf8Byte <= UInt8.ascii9 else {
                 return nil
             }
-            return utf8Byte &- UInt8.ascii0
+            return utf8Byte &-- UInt8.ascii0
         } else {
             return nil
         }
