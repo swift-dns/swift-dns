@@ -37,7 +37,7 @@ extension DNSServerAddress {
         }
     }
 
-    func asSocketAddress() throws -> SocketAddress {
+    package func asSocketAddress() throws -> SocketAddress {
         switch self {
         case .ipAddress(_, let address):
             return address

@@ -105,7 +105,9 @@ extension DNSChannelHandler {
         package mutating func preflightCheck() throws {
             switch consume self._state {
             case .initialized:
-                preconditionFailure("Cannot have intention of sending a query when initialized")
+                preconditionFailure(
+                    "Cannot have intention of sending a query when only initialized"
+                )
             case .processing(let state):
                 if state.isClosing {
                     self = .processing(state)
@@ -341,7 +343,7 @@ extension DNSChannelHandler {
             nextDeadline: NIODeadline?
         ) -> DeadlineCallbackAction {
             if let nextDeadline {
-                /// if there are any remaining deadlines, reschedule the callback.
+                /// If there are any remaining deadlines, reschedule the callback.
                 /// Even if the last query already had a deadline callback scheduled, that's
                 /// no longer accurate so let's just reschedule
                 return .reschedule(nextDeadline)

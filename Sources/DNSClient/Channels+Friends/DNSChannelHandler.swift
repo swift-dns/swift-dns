@@ -1,7 +1,7 @@
 import DNSCore
 public import DNSModels
 import DequeModule
-import Logging
+package import Logging
 public import NIOCore
 
 @available(swiftDNSApplePlatforms 15, *)
@@ -63,7 +63,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     let id: Int
     let logger: Logger
 
-    init(
+    package init(
         eventLoop: any EventLoop,
         configuration: DNSConnectionConfiguration,
         isOverUDP: Bool,
@@ -81,6 +81,9 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.logger = logger
     }
 }
+
+@available(*, unavailable)
+extension DNSChannelHandler: Sendable {}
 
 @available(swiftDNSApplePlatforms 15, *)
 extension DNSChannelHandler {

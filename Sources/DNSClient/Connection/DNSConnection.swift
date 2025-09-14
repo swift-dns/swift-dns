@@ -1,5 +1,5 @@
 public import DNSModels
-import Logging
+package import Logging
 public import NIOCore
 import NIOPosix
 import Synchronization
@@ -34,7 +34,7 @@ public final actor DNSConnection: Sendable {
     }
 
     /// Initialize connection
-    init(
+    package init(
         channel: any Channel,
         connectionID: ID,
         channelHandler: DNSChannelHandler,
@@ -69,7 +69,7 @@ public final actor DNSConnection: Sendable {
     /// - Parameter message: The query DNS message
     /// - Returns: The response DNS message
     @inlinable
-    func send(
+    package func send(
         message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions,
         allocator: ByteBufferAllocator
