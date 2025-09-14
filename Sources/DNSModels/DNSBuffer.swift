@@ -197,6 +197,22 @@ package struct DNSBuffer: Sendable {
 
     @discardableResult
     @inlinable
+    package mutating func setInteger<T: FixedWidthInteger>(
+        _ integer: T,
+        at index: Int,
+        endianness: Endianness = .big,
+        as: T.Type = T.self
+    ) -> Int {
+        self._buffer.setInteger(
+            integer,
+            at: index,
+            endianness: endianness,
+            as: T.self
+        )
+    }
+
+    @discardableResult
+    @inlinable
     package mutating func writeImmutableBuffer(_ buffer: ByteBuffer) -> Int {
         self._buffer.writeImmutableBuffer(buffer)
     }
