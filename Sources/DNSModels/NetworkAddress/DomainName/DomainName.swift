@@ -289,7 +289,7 @@ extension DomainName {
             /// Attempt to repair the domain name if it was not IDNA-compatible.
             /// This is technically not allowed in the DNS wire format, but we tolerate it.
             let description = self.utf8Representation()
-            self = try Self.init(domainName: description)
+            self = try Self.init(string: description)
         }
     }
 

@@ -269,7 +269,7 @@ extension TSIG.Algorithm: RawRepresentable {
         case "hmac-sha512": self = .HMAC_SHA512
         case "hmac-sha512-256": self = .HMAC_SHA512_256
         default:
-            if let name = try? DomainName(domainName: rawValue) {
+            if let name = try? DomainName(string: rawValue) {
                 self = .unknown(name)
             } else {
                 return nil

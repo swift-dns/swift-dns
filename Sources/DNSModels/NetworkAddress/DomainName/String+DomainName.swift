@@ -4,10 +4,13 @@ import struct NIOCore.ByteBuffer
 
 extension DomainName {
     /// Parses and case-folds the name from the string, and ensures the name is valid.
-    /// Example: try DomainName(domainName: "mahdibm.com")
+    /// Example: try DomainName(string: "mahdibm.com")
     /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
     @inlinable
-    public init(domainName: String, idnaConfiguration: IDNA.Configuration = .default) throws {
+    public init(
+        string domainName: String,
+        idnaConfiguration: IDNA.Configuration = .default
+    ) throws {
         self.init()
 
         // short circuit root parse

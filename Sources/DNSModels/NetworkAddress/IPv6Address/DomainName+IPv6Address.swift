@@ -21,7 +21,7 @@ extension IPv6Address {
         let range = position.startIndex..<(position.startIndex &++ position.length)
         if let ipv6Address = domainName.data.withUnsafeReadableBytes({ ptr -> IPv6Address? in
             let span = ptr.bindMemory(to: UInt8.self).span
-            return IPv6Address.init(
+            return IPv6Address(
                 /// `DomainName.data` always only contains ASCII bytes
                 __uncheckedASCIIspan: span.extracting(unchecked: range)
             )

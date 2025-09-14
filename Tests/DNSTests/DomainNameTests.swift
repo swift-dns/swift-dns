@@ -33,7 +33,7 @@ struct DomainNameTests {
         ]
     )
     func initFromString(name: String, isFQDN: Bool, data: ByteBuffer) throws {
-        let domainName = try DomainName(domainName: name)
+        let domainName = try DomainName(string: name)
         #expect(domainName.isFQDN == isFQDN)
         #expect(domainName.data == data)
     }
@@ -43,7 +43,7 @@ struct DomainNameTests {
     )
     func initInvalidFromString(name: String) throws {
         #expect(throws: (any Error).self) {
-            try DomainName(domainName: name)
+            try DomainName(string: name)
         }
     }
 
@@ -81,8 +81,8 @@ struct DomainNameTests {
         asciiNoRootLabel: String,
         unicodeNoRootLabel: String
     ) throws {
-        let name = try DomainName(domainName: unicode)
-        let nameASCII = try DomainName(domainName: ascii)
+        let name = try DomainName(string: unicode)
+        let nameASCII = try DomainName(string: ascii)
 
         /// If the names are the same then we don't need to compare their descriptions
         #expect(name == nameASCII)
@@ -106,15 +106,15 @@ struct DomainNameTests {
     }
 
     @Test func equalityWhichMustBeCaseInsensitive() throws {
-        let name = try DomainName(domainName: "example.com.")
-        let duplicate = try DomainName(domainName: "example.com.")
-        let uppercased = try DomainName(domainName: "EXAMPLE.COM.")
-        let partiallyUppercased = try DomainName(domainName: "exaMple.com.")
-        let notFQDN = try DomainName(domainName: "example.com")
-        let letterMismatch = try DomainName(domainName: "exmmple.com.")
-        let bordersMismatch = try DomainName(domainName: "example.com.com.")
-        let different = try DomainName(domainName: "mahdibm.com.")
-        let differentNotFQDN = try DomainName(domainName: "mahdibm.com")
+        let name = try DomainName(string: "example.com.")
+        let duplicate = try DomainName(string: "example.com.")
+        let uppercased = try DomainName(string: "EXAMPLE.COM.")
+        let partiallyUppercased = try DomainName(string: "exaMple.com.")
+        let notFQDN = try DomainName(string: "example.com")
+        let letterMismatch = try DomainName(string: "exmmple.com.")
+        let bordersMismatch = try DomainName(string: "example.com.com.")
+        let different = try DomainName(string: "mahdibm.com.")
+        let differentNotFQDN = try DomainName(string: "mahdibm.com")
 
         #expect(name == duplicate)
         #expect(name == uppercased)
@@ -125,9 +125,9 @@ struct DomainNameTests {
         #expect(name != different)
         #expect(name != differentNotFQDN)
 
-        let weirdUniccdeLowercaseDomain = try DomainName(domainName: "helloß.co.uk.")
-        let weirdPartiallyUppercaseDomain = try DomainName(domainName: "helloSS.co.uk.")
-        let weirdUppercaseDomain = try DomainName(domainName: "HELLOSS.CO.UK.")
+        let weirdUniccdeLowercaseDomain = try DomainName(string: "helloß.co.uk.")
+        let weirdPartiallyUppercaseDomain = try DomainName(string: "helloSS.co.uk.")
+        let weirdUppercaseDomain = try DomainName(string: "HELLOSS.CO.UK.")
 
         /// The DomainName initializers turn non-ascii domain names to IDNA-encoded domain names.
         /// `ß` and `SS` are case-insensitively equal, so with no IDNA these 2 names would be equal.
@@ -147,7 +147,7 @@ struct DomainNameTests {
         ]
     )
     func `fqdnParsing`(name: String, isFQDN: Bool) throws {
-        try #expect(DomainName(domainName: name).isFQDN == isFQDN)
+        try #expect(DomainName(string: name).isFQDN == isFQDN)
     }
 
     @Test(
@@ -162,7 +162,7 @@ struct DomainNameTests {
     )
     func `parsingThenAsStringWorksAsExpected`(name: String, expected: String) throws {
         #expect(
-            try DomainName(domainName: name).description(
+            try DomainName(string: name).description(
                 format: .unicode,
                 options: .sourceAccurate
             ) == expected
@@ -180,7 +180,7 @@ struct DomainNameTests {
         ]
     )
     func `numberOfLabels`(name: String, expectedLabelsCount: Int) throws {
-        try #expect(DomainName(domainName: name).labelsCount == expectedLabelsCount)
+        try #expect(DomainName(string: name).labelsCount == expectedLabelsCount)
     }
 
     @Test func decodeFromBufferContainingOtherBytesAsWellAsUppercasedThenTurnBackIntoString() throws
@@ -268,7 +268,7 @@ struct DomainNameTests {
         for (index, domainName) in enumeratedTopDomains() {
             let comment: Comment = "index: \(index), domainName: \(domainName)"
             #expect(throws: Never.self, comment) {
-                let name = try DomainName(domainName: domainName)
+                let name = try DomainName(string: domainName)
                 let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
                 #expect(recreatedDomainName == domainName, comment)
             }

@@ -67,7 +67,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) throws -> Self {
-        let name = try DomainName(domainName: name, idnaConfiguration: idnaConfiguration)
+        let name = try DomainName(string: name, idnaConfiguration: idnaConfiguration)
         return Self.forQuery(
             name: name,
             recursionDesired: recursionDesired,
@@ -75,6 +75,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         )
     }
 
+    @inlinable
     public mutating func apply(options: DNSRequestOptions) {
         if options.contains(.edns) {
             self.message.header.additionalCount += 1
@@ -88,6 +89,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         }
     }
 
+    @inlinable
     public mutating func apply(requestID: UInt16) {
         self.message.header.id = requestID
     }

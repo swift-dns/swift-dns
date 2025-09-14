@@ -42,7 +42,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "example.com.")
+            let name = try DomainName(string: "example.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .A)
             #expect(response.queries.first?.queryClass == .IN)
@@ -114,7 +114,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "新华网.中国.")
+            let name = try DomainName(string: "新华网.中国.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .A)
             #expect(response.queries.first?.queryClass == .IN)
@@ -185,7 +185,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "cloudflare.com.")
+            let name = try DomainName(string: "cloudflare.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .AAAA)
             #expect(response.queries.first?.queryClass == .IN)
@@ -257,7 +257,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "cloudflare.com.")
+            let name = try DomainName(string: "cloudflare.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .CAA)
             #expect(response.queries.first?.queryClass == .IN)
@@ -335,7 +335,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "for-dns-cert-testing.mahdibm.com.")
+            let name = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .CERT)
             #expect(response.queries.first?.queryClass == .IN)
@@ -431,7 +431,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "www.github.com.")
+            let name = try DomainName(string: "www.github.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .CNAME)
             #expect(response.queries.first?.queryClass == .IN)
@@ -444,7 +444,7 @@ struct IntegrationTests {
             #expect(answer.recordType == .CNAME)
             #expect(answer.dnsClass == .IN)
             #expect(answer.ttl > 0)
-            let nameNoWWW = try DomainName(domainName: "github.com.")
+            let nameNoWWW = try DomainName(string: "github.com.")
             let cname = try answer.rdata
             #expect(cname.name == nameNoWWW)
 
@@ -496,7 +496,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "raw.githubusercontent.com.")
+            let name = try DomainName(string: "raw.githubusercontent.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .CNAME)
             #expect(response.queries.first?.queryClass == .IN)
@@ -572,7 +572,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "mahdibm.com.")
+            let name = try DomainName(string: "mahdibm.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .MX)
             #expect(response.queries.first?.queryClass == .IN)
@@ -599,11 +599,11 @@ struct IntegrationTests {
             let expectedMXs = [
                 MX(
                     preference: 10,
-                    exchange: try DomainName(domainName: "in1-smtp.messagingengine.com.")
+                    exchange: try DomainName(string: "in1-smtp.messagingengine.com.")
                 ),
                 MX(
                     preference: 20,
-                    exchange: try DomainName(domainName: "in2-smtp.messagingengine.com.")
+                    exchange: try DomainName(string: "in2-smtp.messagingengine.com.")
                 ),
             ]
             #expect(mxs.count == expectedMXs.count)
@@ -662,7 +662,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "apple.com.")
+            let name = try DomainName(string: "apple.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .NS)
             #expect(response.queries.first?.queryClass == .IN)
@@ -687,10 +687,10 @@ struct IntegrationTests {
                 $0.name.description < $1.name.description
             }
             let expectedNSs = [
-                NS(name: try DomainName(domainName: "a.ns.apple.com.")),
-                NS(name: try DomainName(domainName: "b.ns.apple.com.")),
-                NS(name: try DomainName(domainName: "c.ns.apple.com.")),
-                NS(name: try DomainName(domainName: "d.ns.apple.com.")),
+                NS(name: try DomainName(string: "a.ns.apple.com.")),
+                NS(name: try DomainName(string: "b.ns.apple.com.")),
+                NS(name: try DomainName(string: "c.ns.apple.com.")),
+                NS(name: try DomainName(string: "d.ns.apple.com.")),
             ]
             #expect(nss.count == expectedNSs.count)
             for (ns, expectedNS) in zip(nss, expectedNSs) {
@@ -753,7 +753,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "9.9.9.9.in-addr.arpa.")
+            let name = try DomainName(string: "9.9.9.9.in-addr.arpa.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .PTR)
             #expect(response.queries.first?.queryClass == .IN)
@@ -776,7 +776,7 @@ struct IntegrationTests {
                 try $0.rdata
             }
             let expectedPTRs = [
-                PTR(name: try DomainName(domainName: "dns9.quad9.net."))
+                PTR(name: try DomainName(string: "dns9.quad9.net."))
             ]
             #expect(ptrs.count == expectedPTRs.count)
             for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
@@ -843,7 +843,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(domainName: "example.com.")
+            let name = try DomainName(string: "example.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .TXT)
             #expect(response.queries.first?.queryClass == .IN)
@@ -942,7 +942,7 @@ struct IntegrationTests {
                 for domain in self.loadTop100Domains() {
                     group.addTask { @Sendable () -> Void in
                         do {
-                            let name = try DomainName(domainName: domain + ".")
+                            let name = try DomainName(string: domain + ".")
                             let response = try await client.queryNS(
                                 message: .forQuery(name: name),
                                 options: .edns
@@ -1035,7 +1035,7 @@ struct IntegrationTests {
 
             for domain in self.loadTop100Domains() {
                 do {
-                    let name = try DomainName(domainName: domain)
+                    let name = try DomainName(string: domain)
                     let response = try await client.queryNS(
                         message: .forQuery(name: name),
                         options: .edns

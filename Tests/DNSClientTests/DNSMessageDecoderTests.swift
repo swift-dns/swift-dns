@@ -14,7 +14,7 @@ struct DNSMessageDecoderTests {
         let result = try #require(decoder.decode(buffer: &buffer))
         switch result {
         case .message(let message):
-            let name = try DomainName(domainName: "for-dns-cert-testing.mahdibm.com.")
+            let name = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
             #expect(message.queries.first?.name == name)
         case .identifiableError(let id, let error):
             Issue.record("Expected message but got identifiable error. ID: \(id), error: \(error)")

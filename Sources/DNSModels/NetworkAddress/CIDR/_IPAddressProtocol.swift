@@ -21,8 +21,10 @@ where
         & Comparable
 {
     var address: IntegerLiteralType { get }
+
     @available(swiftDNSApplePlatforms 15, *)
     init?(exactly ipAddress: IPAddress)
+
     @available(swiftDNSApplePlatforms 15, *)
     init?(__uncheckedASCIIspan: Span<UInt8>)
 }

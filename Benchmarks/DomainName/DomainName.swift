@@ -160,8 +160,8 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(name)
     }
 
-    let name1 = try! DomainName(domainName: "google.com.")
-    let name2 = try! DomainName(domainName: "google.com.")
+    let name1 = try! DomainName(string: "google.com.")
+    let name2 = try! DomainName(string: "google.com.")
     Benchmark(
         "Equality_Check_CPU_20M",
         configuration: .init(
