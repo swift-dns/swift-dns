@@ -33,7 +33,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check config file
         run: |
