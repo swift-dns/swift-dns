@@ -150,7 +150,8 @@ public struct CIDR<IPAddressType: _IPAddressProtocol>: Sendable, Hashable {
     /// Complexity: O(1)
     @inlinable
     public func contains(_ other: IPAddressType) -> Bool {
-        other.address & self.mask.address == self.prefix.address
+        print(2, other)
+        return other.address & self.mask.address == self.prefix.address
     }
 
     /// Whether or not the given IPAddress is within this CIDR.

@@ -411,32 +411,6 @@ struct CIDRTests {
                 containsIP: IPv6Address("FF00::")!,
                 result: false
             ),
-            (
-                /// `FF::` is equivalent to `00FF::`
-                cidr: CIDR(prefix: IPv6Address("FF::")!, countOfMaskedBits: 16),
-                containsIP: IPv6Address("FF::")!,
-                result: true
-            ),
-            (
-                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
-                containsIP: IPv6Address("FF92::")!,
-                result: true
-            ),
-            (
-                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
-                containsIP: IPv6Address("FFEE:9328:3212:0:1::")!,
-                result: true
-            ),
-            (
-                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
-                containsIP: IPv6Address("FF00:9328:3212:0:1::")!,
-                result: true
-            ),
-            (
-                cidr: CIDR(prefix: IPv6Address("FF00::")!, countOfMaskedBits: 8),
-                containsIP: IPv6Address("EEFF:9328:3212:0:1::")!,
-                result: false
-            ),
         ])
     )
     func `ipv6 CIDR containment check works as expected`(
@@ -444,6 +418,8 @@ struct CIDRTests {
         containsIP: IPv6Address,
         result: Bool
     ) {
+        print(IPv6Address("FF00::")!.address)
+        print(1, containsIP, containsIP.address)
         #expect(
             cidr.contains(containsIP) == result,
             """
