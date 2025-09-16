@@ -61,6 +61,7 @@ public struct DomainName: Sendable {
     ///
     /// The `isFQDN` flag is ignored, and the root label at the end is assumed to always be
     /// present, since it terminates the name in the DNS message format.
+    @inlinable
     var encodedLength: Int {
         self.data.readableBytes + 1
     }
@@ -228,7 +229,6 @@ extension DomainName {
         assert(bytes.allSatisfy(\.isASCII))
 
         /// Reserve enough bytes for the wire format
-        /// Assumes the
         let lengthWithoutRootLabel = bytes.last == 0 ? bytes.count - 1 : bytes.count
 
         if name.encodedLength + lengthWithoutRootLabel > Self.maxLength {
