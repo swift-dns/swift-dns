@@ -67,4 +67,70 @@ enum Resources: String {
 
         return components.joined(separator: "/")
     }
+
+    var domainName: DomainName? {
+        switch self {
+        case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket:
+            return try? DomainName(string: "mahdibm.com.")
+        case .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket:
+            return try? DomainName(string: "cloudflare.com.")
+        case .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket:
+            return try? DomainName(string: "example.com.")
+        case .dnsQueryCNAMERawGithubusercontentComPacket,
+            .dnsResponseCNAMERawGithubusercontentComPacket:
+            return try? DomainName(string: "raw.githubusercontent.com.")
+        case .dnsQueryCNAMEWwwGithubComPacket, .dnsResponseCNAMEWwwGithubComPacket:
+            return try? DomainName(string: "www.github.com.")
+        case .dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket:
+            return try? DomainName(string: "cloudflare.com.")
+        case .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
+            .dnsResponseCERTForDnsCertTestingMahdibmComPacket:
+            return try? DomainName(string: "for-dns-cert-testing.mahdibm.com.")
+        case .dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket:
+            return try? DomainName(string: "mahdibm.com.")
+        case .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket:
+            return try? DomainName(string: "apple.com.")
+        case .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet:
+            return try? DomainName(string: "9dot9dot9dot9.")
+        case .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
+            return try? DomainName(string: "cloudflare.com.")
+        case .topDomains:
+            return nil
+        }
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    static var allSupportedQueryableTypes: [any Queryable.Type] {
+        [A.self, AAAA.self, TXT.self, CNAME.self, CAA.self, CERT.self, MX.self, NS.self, PTR.self, OPT.self]
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    static func forQuery<QueryableType: Queryable>(
+        queryableType: QueryableType.Type = QueryableType.self
+    ) -> (query: Self, response: Self) {
+        switch queryableType {
+        case is A.Type:
+            return (.dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket)
+        case is AAAA.Type:
+            return (.dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket)
+        case is TXT.Type:
+            return (.dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket)
+        case is CNAME.Type:
+            return (.dnsQueryCNAMERawGithubusercontentComPacket, .dnsResponseCNAMERawGithubusercontentComPacket)
+        case is CAA.Type:
+            return (.dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket)
+        case is CERT.Type:
+            return (.dnsQueryCERTForDnsCertTestingMahdibmComPacket, .dnsResponseCERTForDnsCertTestingMahdibmComPacket)
+        case is MX.Type:
+            return (.dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket)
+        case is NS.Type:
+            return (.dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket)
+        case is PTR.Type:
+            return (.dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet)
+        case is OPT.Type:
+            return (.dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket)
+        default:
+            fatalError("Unsupported queryable type: \(queryableType)")
+        }
+    }
 }
