@@ -534,9 +534,8 @@ extension DNSSECRData {
     }
 }
 
-/// No init(from:). Read using `RData`
-
 extension DNSSECRData {
+    @available(swiftDNSApplePlatforms 13, *)
     package func encode(into buffer: inout DNSBuffer) throws {
         switch self {
         case .CDNSKEY(let cdnskey):

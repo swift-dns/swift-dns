@@ -1,11 +1,12 @@
+public import DNSCore
 public import SwiftIDNA
 
-import struct NIOCore.ByteBuffer
+public import struct NIOCore.ByteBuffer
 
 extension DomainName {
     /// Parses and case-folds the name from the string, and ensures the name is valid.
     /// Example: try DomainName(string: "mahdibm.com")
-    /// Converts the domain name to ASCII if it's not already according to the IDNA spec.
+    /// Converts the domain name to ASCII if it's not already, according to the IDNA spec.
     @inlinable
     public init(
         string domainName: String,
@@ -13,7 +14,7 @@ extension DomainName {
     ) throws {
         self.init()
 
-        // short circuit root parse
+        // short-circuit root parse
         if domainName.unicodeScalars.count == 1,
             domainName.unicodeScalars.first?.isIDNALabelSeparator == true
         {
@@ -44,20 +45,25 @@ extension DomainName {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension DomainName: CustomStringConvertible {
     /// Unicode-friendly description of the domain name, excluding the possible root label separator.
+    @inlinable
     public var description: String {
         self.description(format: .unicode)
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension DomainName: CustomDebugStringConvertible {
-    /// Byte-accurate description of the domain name.
+    /// Source-accurate description of the domain name.
+    @inlinable
     public var debugDescription: String {
         self.description(format: .ascii, options: .includeRootLabelIndicator)
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension DomainName {
     /// FIXME: public nonfrozen enum
     public enum DescriptionFormat: Sendable {
@@ -85,44 +91,48 @@ extension DomainName {
         }
     }
 
+    @inlinable
     public func description(
         format: DescriptionFormat,
         options: DescriptionOptions = []
     ) -> String {
-        var scalars: [Unicode.Scalar] = []
-        let neededCapacity =
-            options.contains(.includeRootLabelIndicator)
-            ? self.encodedLength : self.encodedLength - 1
-        scalars.reserveCapacity(neededCapacity)
+        /// The needed capacity without the root label indicator
+        let neededCapacity = self.encodedLength - 1
+        var domainName = String(unsafeUninitializedCapacity: neededCapacity) { stringBuffer in
+            var bufferIdx = 0
 
-        var iterator = self.makeIterator()
-        if let (startIndex, length) = iterator.nextLabelPositionInNameData() {
-            /// These are all ASCII bytes so safe to map directly
-            self.data.withUnsafeReadableBytes { ptr in
-                for idx in startIndex..<(startIndex + length) {
-                    scalars.append(Unicode.Scalar(ptr[idx]))
+            self.data.withUnsafeReadableBytes { domainNamePtr in
+                var iterator = self.makeIterator()
+                if let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+                    /// These are all ASCII bytes so safe to map directly
+                    for idx in startIndex..<(startIndex + length) {
+                        stringBuffer[bufferIdx] = domainNamePtr[idx]
+                        bufferIdx &+== 1
+                    }
+                }
+
+                while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+                    stringBuffer[bufferIdx] = .asciiDot
+                    bufferIdx &+== 1
+                    /// These are all ASCII bytes so safe to map directly
+                    for idx in startIndex..<(startIndex + length) {
+                        stringBuffer[bufferIdx] = domainNamePtr[idx]
+                        bufferIdx &+== 1
+                    }
                 }
             }
-        }
 
-        while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
-            scalars.append(".")
-            /// These are all ASCII bytes so safe to map directly
-            self.data.withUnsafeReadableBytes { ptr in
-                for idx in startIndex..<(startIndex + length) {
-                    scalars.append(Unicode.Scalar(ptr[idx]))
-                }
-            }
+            return bufferIdx
         }
-
-        var domainName = String(String.UnicodeScalarView(scalars))
 
         if format == .unicode {
+            let copy = domainName
+
             do {
                 try IDNA(configuration: .mostLax)
                     .toUnicode(domainName: &domainName)
             } catch {
-                domainName = String(String.UnicodeScalarView(scalars))
+                domainName = copy
             }
         }
 
