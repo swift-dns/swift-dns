@@ -196,6 +196,7 @@ public struct TSIG: Sendable {
 }
 
 extension TSIG {
+    @available(swiftDNSApplePlatforms 13, *)
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try TSIG.Algorithm(from: &buffer)
         let timeHigh = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -228,6 +229,7 @@ extension TSIG {
 }
 
 extension TSIG {
+    @available(swiftDNSApplePlatforms 13, *)
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
         /// FIXME: Is this check needed, with `init(exactly:)`?
@@ -255,6 +257,7 @@ extension TSIG {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm: RawRepresentable {
     public init?(rawValue: String) {
         switch rawValue {
@@ -327,6 +330,7 @@ extension TSIG.Algorithm: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm: Hashable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue == rhs.rawValue
@@ -354,12 +358,14 @@ extension TSIG.Algorithm: CaseIterable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(name: try DomainName(from: &buffer))
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm {
     func encode(into buffer: inout DNSBuffer) throws {
         try self.toName().encode(into: &buffer)
