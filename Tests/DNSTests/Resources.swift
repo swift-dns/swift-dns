@@ -101,7 +101,10 @@ enum Resources: String {
 
     @available(swiftDNSApplePlatforms 15, *)
     static var allSupportedQueryableTypes: [any Queryable.Type] {
-        [A.self, AAAA.self, TXT.self, CNAME.self, CAA.self, CERT.self, MX.self, NS.self, PTR.self, OPT.self]
+        [
+            A.self, AAAA.self, TXT.self, CNAME.self, CAA.self, CERT.self, MX.self, NS.self,
+            PTR.self, OPT.self,
+        ]
     }
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -116,11 +119,17 @@ enum Resources: String {
         case is TXT.Type:
             return (.dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket)
         case is CNAME.Type:
-            return (.dnsQueryCNAMERawGithubusercontentComPacket, .dnsResponseCNAMERawGithubusercontentComPacket)
+            return (
+                .dnsQueryCNAMERawGithubusercontentComPacket,
+                .dnsResponseCNAMERawGithubusercontentComPacket
+            )
         case is CAA.Type:
             return (.dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket)
         case is CERT.Type:
-            return (.dnsQueryCERTForDnsCertTestingMahdibmComPacket, .dnsResponseCERTForDnsCertTestingMahdibmComPacket)
+            return (
+                .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
+                .dnsResponseCERTForDnsCertTestingMahdibmComPacket
+            )
         case is MX.Type:
             return (.dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket)
         case is NS.Type:

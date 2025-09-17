@@ -142,7 +142,7 @@ struct DNSConnectionTests {
         let (connection, channel) = try await self.makeTestConnection()
 
         try await withThrowingTaskGroup(of: Void.self) { taskGroup in
-            for _ in 0..<5 {
+            for _ in 0..<100 {
                 taskGroup.addTask {
                     let (_, responseResource) = Resources.forQuery(
                         queryableType: QueryableType.self
@@ -170,7 +170,10 @@ struct DNSConnectionTests {
 
                     let response = try await asyncResponse
                     /// FIXME: use equatable instead of string comparison
-                    #expect("\(response)" == "\(message)", "\(response.header.id) != \(message.header.id)")
+                    #expect(
+                        "\(response)" == "\(message)",
+                        "\(response.header.id) != \(message.header.id)"
+                    )
                 }
             }
 

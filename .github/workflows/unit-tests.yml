@@ -83,8 +83,9 @@ jobs:
       matrix:
         macos:
           - version: macos-15
+          - version: macos-26
         xcode:
-          - version: 26
+          - version: latest-stable
         swift:
           - version: 6.2
         config:

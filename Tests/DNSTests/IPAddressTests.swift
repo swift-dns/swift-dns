@@ -391,6 +391,8 @@ private let ipv4StringAndAddressTestCases = [(String, IPv4Address?, Bool)]([
     ("9", nil, false),
     ("9.87", nil, false),
     ("", nil, false),
+    ("m.a.h.d", nil, false),
+    ("m:a:h:d::", nil, false),
     ("1111:2222:3333:4444:5555:6666:7777:8888", nil, true),
 ])
 
@@ -470,6 +472,8 @@ private let ipv6StringAndAddressTestCases = [(String, UInt128?, Bool)]([
     ("[0:1:2:3:4:0:5:-6]", nil, false),
     ("[0:1:2:3:4:0:5:g]", nil, false),
     ("[0:11111:2:3:4:0:5:6]", nil, false),
+    ("m.a.h.d", nil, false),
+    ("m:a:h:d::", nil, false),
     ("192.168.1.255", nil, true),
 ])
 
