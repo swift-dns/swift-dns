@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - name: swiftlang/swift:nightly-6.2-noble
+          - name: swift:6.2-noble
         config:
           - mode: "debug"
           - mode: "release"
@@ -83,8 +83,10 @@ jobs:
       matrix:
         macos:
           - version: macos-15
+        xcode:
+          - version: 26
         swift:
-          - version: 6.2-snapshot
+          - version: 6.2
         config:
           - mode: "debug"
           - mode: "release"
@@ -97,7 +99,7 @@ jobs:
       - name: Setup appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ matrix.xcode-version }}
+          xcode-version: ${{ matrix.xcode.version }}
 
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v5
