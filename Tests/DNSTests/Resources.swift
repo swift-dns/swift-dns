@@ -91,7 +91,7 @@ enum Resources: String {
         case .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket:
             return try? DomainName(string: "apple.com.")
         case .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet:
-            return try? DomainName(string: "9dot9dot9dot9.")
+            return try? DomainName(string: "9.9.9.9.")
         case .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
             return try? DomainName(string: "cloudflare.com.")
         case .topDomains:
