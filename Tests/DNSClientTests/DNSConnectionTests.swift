@@ -209,6 +209,7 @@ struct DNSConnectionTests {
                     try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
 
                     let response = try await asyncResponse
+                    /// TODO: use an actual Equality checker here instead of description comparison
                     #expect("\(response)" == "\(message)")
                 }
             }
