@@ -3,7 +3,7 @@ public import DNSCore
 public import struct Collections.BitSet
 
 @usableFromInline
-package struct MessageIDGenerator: ~Copyable {
+package struct MessageIDGenerator: Sendable, ~Copyable {
     @usableFromInline
     package enum Errors: Error {
         case overloaded
@@ -30,7 +30,7 @@ package struct MessageIDGenerator: ~Copyable {
     /// indeed reassigning a proper message id. If we allow `0` here, some tests could
     /// intermittently fail, even though the chance for that would be fairly low.
     @usableFromInline
-    static var randomNumberRange: ClosedRange<UInt16> {
+    package static var randomNumberRange: ClosedRange<UInt16> {
         1...UInt16.max
     }
 
@@ -79,8 +79,9 @@ package struct MessageIDGenerator: ~Copyable {
 
     @usableFromInline
     func firstGreaterThan(_ id: Int) -> Int? {
-        guard id < Int(UInt16.max) else { return nil }
-        for newId in (id &++ 1)...Int(UInt16.max) {
+        let upperBound = Int(MessageIDGenerator.randomNumberRange.upperBound)
+        guard id < upperBound else { return nil }
+        for newId in (id &++ 1)...upperBound {
             if !self.ids.contains(newId) {
                 return newId
             }
@@ -90,8 +91,9 @@ package struct MessageIDGenerator: ~Copyable {
 
     @usableFromInline
     func firstLessThan(_ id: Int) -> Int? {
-        guard id > 0 else { return nil }
-        for newId in 0..<id {
+        let lowerBound = Int(Self.randomNumberRange.lowerBound)
+        guard id > lowerBound else { return nil }
+        for newId in lowerBound..<id {
             if !self.ids.contains(newId) {
                 return newId
             }
@@ -99,9 +101,3 @@ package struct MessageIDGenerator: ~Copyable {
         return nil
     }
 }
-
-/// `MessageIDGenerator` is actually fine being Sendable, just that I don't expect it to
-/// need to be used correctly where it needs to be Sendable as well.
-/// Usually it must only be owned by one channel handler and must not be shared with anyone else.
-@available(*, unavailable)
-extension MessageIDGenerator: Sendable {}

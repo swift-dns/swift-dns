@@ -10,7 +10,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")
@@ -38,7 +38,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")
@@ -48,7 +48,7 @@ struct MessageIDGeneratorTests {
 
         /// Remove 100 IDs
         var removedCount = 0
-        for idx in 0...UInt16.max {
+        for idx in MessageIDGenerator.randomNumberRange {
             if removedCount == 100 {
                 break
             }
@@ -62,7 +62,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")
@@ -90,7 +90,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")
@@ -99,9 +99,9 @@ struct MessageIDGeneratorTests {
         #expect(generated.count == count)
 
         var removedCount = 0
-        for idx in 0...UInt16.max {
-            generator.remove(UInt16(idx))
-            if generated.remove(UInt16(idx)) != nil {
+        for idx in MessageIDGenerator.randomNumberRange {
+            generator.remove(idx)
+            if generated.remove(idx) != nil {
                 removedCount += 1
             }
         }
@@ -110,7 +110,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")
@@ -119,9 +119,9 @@ struct MessageIDGeneratorTests {
         #expect(generated.count == count)
 
         removedCount = 0
-        for idx in 0...UInt16.max {
-            generator.remove(UInt16(idx))
-            if generated.remove(UInt16(idx)) != nil {
+        for idx in MessageIDGenerator.randomNumberRange {
+            generator.remove(idx)
+            if generated.remove(idx) != nil {
                 removedCount += 1
             }
         }
@@ -131,7 +131,7 @@ struct MessageIDGeneratorTests {
         for idx in 0..<count {
             do {
                 let id = try generator.next()
-                #expect(UInt16.min...UInt16.max ~= id)
+                #expect(MessageIDGenerator.randomNumberRange.contains(id))
                 #expect(generated.insert(id).inserted)
             } catch {
                 Issue.record("Failed to generate ID at idx \(idx)")

@@ -9,7 +9,7 @@ public import struct NIOCore.NIODeadline
 
 @available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-package struct QueryProducer: ~Copyable {
+package struct QueryProducer: Sendable, ~Copyable {
     private var messageIDGenerator: MessageIDGenerator
 
     package init() {
@@ -65,7 +65,7 @@ package struct QueryProducer: ~Copyable {
 /// A message with a handle to create a PendingQuery from it.
 @available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-package struct ProducedMessage {
+package struct ProducedMessage: Sendable {
     @usableFromInline
     package let buffer: DNSBuffer
     @usableFromInline
