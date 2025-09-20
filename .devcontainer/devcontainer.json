@@ -1,6 +1,6 @@
 {
-  "name": "6.2-snapshot-2025-05-30",
-  "image": "docker.io/swiftlang/swift@sha256:67efd3f092b810d27ad21d90b9ab32fbbcead75df80dfcfa73bb773c80f104ca",
+  "name": "swift:6.2-noble",
+  "image": "swift:6.2-noble",
   "mounts": [
     "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
   ],

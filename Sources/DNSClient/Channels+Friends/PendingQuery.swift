@@ -4,7 +4,7 @@ public import struct NIOCore.NIODeadline
 
 @available(swiftDNSApplePlatforms 15, *)
 @usableFromInline
-package struct PendingQuery {
+package struct PendingQuery: Sendable {
     @usableFromInline
     package enum DynamicPromise<T: Sendable>: Sendable {
         case nio(EventLoopPromise<T>)

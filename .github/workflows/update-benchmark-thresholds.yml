@@ -39,7 +39,7 @@ jobs:
   update-benchmark-thresholds:
     runs-on: [self-hosted, linux, x64]
 
-    container: swiftlang/swift:nightly-6.2-noble
+    container: swift:6.2-noble
 
     timeout-minutes: 1440
 

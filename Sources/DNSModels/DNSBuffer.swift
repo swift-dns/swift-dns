@@ -85,7 +85,7 @@ package struct DNSBuffer: Sendable {
         self._buffer.writeString(string)
     }
 
-    package mutating func peekInteger<T: FixedWidthInteger>(as: T.Type = T.self) -> T? {
+    package func peekInteger<T: FixedWidthInteger>(as: T.Type = T.self) -> T? {
         self._buffer.peekInteger(as: T.self)
     }
 

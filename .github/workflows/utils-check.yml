@@ -16,7 +16,7 @@ jobs:
   check-utils:
     runs-on: ubuntu-latest
 
-    container: swiftlang/swift:nightly-6.2-noble
+    container: swift:6.2-noble
 
     timeout-minutes: 5
 

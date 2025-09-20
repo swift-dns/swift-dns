@@ -75,12 +75,40 @@ public final actor DNSConnection: Sendable {
         allocator: ByteBufferAllocator
     ) async throws -> Message {
         try self.channelHandler.preflightCheck()
-
-        let producedMessage = try self.channelHandler.queryProducer.produceMessage(
+        let producedMessage = try self.produceMessage(
             message: factory,
             options: options,
             allocator: allocator
         )
+        return try await self.send(producedMessage: producedMessage)
+    }
+
+    @inlinable
+    package func preflightCheck() throws {
+        try self.channelHandler.preflightCheck()
+    }
+
+    /// Send a query to DNS connection
+    /// - Parameter message: The query DNS message
+    /// - Returns: The response DNS message
+    @inlinable
+    package func produceMessage(
+        message factory: consuming MessageFactory<some RDataConvertible>,
+        options: DNSRequestOptions,
+        allocator: ByteBufferAllocator
+    ) throws -> ProducedMessage {
+        try self.channelHandler.queryProducer.produceMessage(
+            message: factory,
+            options: options,
+            allocator: allocator
+        )
+    }
+
+    /// Send a query to DNS connection
+    /// - Parameter message: The query DNS message
+    /// - Returns: The response DNS message
+    @inlinable
+    package func send(producedMessage: ProducedMessage) async throws -> Message {
         let requestID = producedMessage.messageID
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
