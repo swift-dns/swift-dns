@@ -82,7 +82,7 @@ jobs:
         xcode:
           - version: latest-stable
         swift:
-          - version: 6.2
+          - version: 6.2-snapshot
         config:
           - mode: "debug"
           - mode: "release"
