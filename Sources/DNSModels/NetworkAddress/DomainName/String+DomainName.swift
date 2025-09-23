@@ -81,11 +81,6 @@ extension DomainName {
             Self(rawValue: 1 << 0)
         }
 
-        @inlinable
-        public static var sourceAccurate: Self {
-            .includeRootLabelIndicator
-        }
-
         public init(rawValue: Int) {
             self.rawValue = rawValue
         }
@@ -102,8 +97,8 @@ extension DomainName {
             var bufferIdx = 0
 
             self.data.withUnsafeReadableBytes { domainNamePtr in
-                var iterator = self.makeIterator()
-                if let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+                var iterator = self.makePositionIterator()
+                if let (startIndex, length) = iterator.next() {
                     /// These are all ASCII bytes so safe to map directly
                     for idx in startIndex..<(startIndex + length) {
                         stringBuffer[bufferIdx] = domainNamePtr[idx]
@@ -111,7 +106,7 @@ extension DomainName {
                     }
                 }
 
-                while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+                while let (startIndex, length) = iterator.next() {
                     stringBuffer[bufferIdx] = .asciiDot
                     bufferIdx &+== 1
                     /// These are all ASCII bytes so safe to map directly

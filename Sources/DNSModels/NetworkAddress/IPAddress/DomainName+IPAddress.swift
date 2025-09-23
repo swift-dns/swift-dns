@@ -11,9 +11,9 @@ extension IPAddress {
     /// or a domain name like `"2001:db8:1111::"` will parse into the IP address `.v6(2001:DB8:1111:0:0:0:0:0)`.
     @inlinable
     public init?(domainName: DomainName) {
-        var iterator = domainName.makeIterator()
+        var iterator = domainName.makePositionIterator()
 
-        guard let position = iterator.nextLabelPositionInNameData() else {
+        guard let position = iterator.next() else {
             return nil
         }
         let range = position.startIndex..<(position.startIndex &++ position.length)
@@ -41,7 +41,7 @@ extension IPAddress {
                     ipv4.address |= UInt32(byte) &<<< 24
 
                     var idx = 1
-                    while let position = iterator.nextLabelPositionInNameData() {
+                    while let position = iterator.next() {
                         let range = position.startIndex..<(position.startIndex &++ position.length)
                         guard
                             let byte = UInt8(

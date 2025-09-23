@@ -12,12 +12,12 @@ extension IPv4Address {
         guard
             let result = domainName.data.withUnsafeReadableBytes({ ptr -> IPv4Address? in
                 var ipv4 = IPv4Address(0)
-                var iterator = domainName.makeIterator()
+                var iterator = domainName.makePositionIterator()
                 /// `DomainName.data` always only contains ASCII bytes
                 let asciiSpan = ptr.bindMemory(to: UInt8.self).span
 
                 var idx = 0
-                while let position = iterator.nextLabelPositionInNameData() {
+                while let position = iterator.next() {
                     let range = position.startIndex..<(position.startIndex &++ position.length)
                     guard
                         let byte = UInt8(

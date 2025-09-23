@@ -164,7 +164,7 @@ struct DomainNameTests {
         #expect(
             try DomainName(string: name).description(
                 format: .unicode,
-                options: .sourceAccurate
+                options: .includeRootLabelIndicator
             ) == expected
         )
     }
@@ -203,7 +203,7 @@ struct DomainNameTests {
         #expect(buffer.readerIndex == endIndex - 3)
         #expect(buffer.readableBytes == 3)
         #expect(
-            name.description(format: .unicode, options: .sourceAccurate)
+            name.description(format: .unicode, options: .includeRootLabelIndicator)
                 == "example.com."
         )
     }
@@ -226,11 +226,11 @@ struct DomainNameTests {
         #expect(buffer.readableBytes == 0)
         #expect(name.description == "新华网.中国")
         #expect(
-            name.description(format: .unicode, options: .sourceAccurate)
+            name.description(format: .unicode, options: .includeRootLabelIndicator)
                 == "新华网.中国."
         )
         #expect(
-            name.description(format: .ascii, options: .sourceAccurate)
+            name.description(format: .ascii, options: .includeRootLabelIndicator)
                 == "xn--xkrr14bows.xn--fiqs8s."
         )
     }
@@ -269,7 +269,10 @@ struct DomainNameTests {
             let comment: Comment = "index: \(index), domainName: \(domainName)"
             #expect(throws: Never.self, comment) {
                 let name = try DomainName(string: domainName)
-                let recreatedDomainName = name.description(format: .ascii, options: .sourceAccurate)
+                let recreatedDomainName = name.description(
+                    format: .ascii,
+                    options: .includeRootLabelIndicator
+                )
                 #expect(recreatedDomainName == domainName, comment)
             }
         }

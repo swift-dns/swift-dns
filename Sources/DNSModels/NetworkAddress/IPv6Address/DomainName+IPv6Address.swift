@@ -10,9 +10,9 @@ extension IPv6Address {
     /// or a domain name like `"2001:db8:1111::"` will parse into the IPv6 address `2001:DB8:1111:0:0:0:0:0`.
     @inlinable
     public init?(domainName: DomainName) {
-        var iterator = domainName.makeIterator()
+        var iterator = domainName.makePositionIterator()
         guard
-            let position = iterator.nextLabelPositionInNameData(),
+            let position = iterator.next(),
             /// The domain name must contain exactly one label
             iterator.reachedEnd()
         else {

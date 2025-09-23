@@ -71,8 +71,8 @@ public struct DomainName: Sendable {
     public var labelsCount: Int {
         var containsWildcard = false
         var count = 0
-        var iterator = self.makeIterator()
-        while let (startIndex, length) = iterator.nextLabelPositionInNameData() {
+        var iterator = self.makePositionIterator()
+        while let (startIndex, length) = iterator.next() {
             if count == 0,
                 length == 1,
                 self.data.getInteger(at: startIndex, as: UInt8.self) == UInt8.asciiStar
@@ -127,9 +127,8 @@ extension DomainName: Hashable {
 }
 
 extension DomainName: Sequence {
-    public struct Iterator: Sendable, IteratorProtocol {
-        /// TODO: dedicated label type?
-        public typealias Label = ByteBuffer
+    public struct PositionIterator: Sendable, IteratorProtocol {
+        public typealias Element = (startIndex: Int, length: Int)
 
         /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
         @usableFromInline
@@ -149,7 +148,7 @@ extension DomainName: Sequence {
         }
 
         @inlinable
-        public mutating func nextLabelPositionInNameData() -> (startIndex: Int, length: Int)? {
+        public mutating func next() -> (startIndex: Int, length: Int)? {
             if self.reachedEnd() {
                 return nil
             }
@@ -174,15 +173,29 @@ extension DomainName: Sequence {
 
             return (self.startIndex + 1, length)
         }
+    }
+
+    public struct Iterator: Sendable, IteratorProtocol {
+        /// TODO: dedicated label type?
+        public typealias Label = ByteBuffer
+
+        /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
+        @usableFromInline
+        var positionIterator: PositionIterator
+
+        @usableFromInline
+        init(base: DomainName) {
+            self.positionIterator = PositionIterator(base: base)
+        }
 
         @inlinable
         public mutating func next() -> Label? {
-            guard let (startIndex, length) = self.nextLabelPositionInNameData() else {
+            guard let (startIndex, length) = self.positionIterator.next() else {
                 return nil
             }
 
             /// Such invalid data should never get to here so we consider this safe to force-unwrap
-            return self.name.data.getSlice(
+            return self.positionIterator.name.data.getSlice(
                 at: startIndex,
                 length: length
             )!
@@ -192,6 +205,11 @@ extension DomainName: Sequence {
     @inlinable
     public func makeIterator() -> Self.Iterator {
         Iterator(base: self)
+    }
+
+    @inlinable
+    public func makePositionIterator() -> Self.PositionIterator {
+        PositionIterator(base: self)
     }
 }
 
@@ -327,7 +345,6 @@ extension DomainName {
             }
         }
 
-        /// FIXME: use _buffer
         while let byte = buffer.getInteger(at: idx, as: UInt8.self) {
             lastSuccessfulIdx = idx
             switch byte {
