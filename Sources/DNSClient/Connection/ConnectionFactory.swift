@@ -30,7 +30,7 @@ package struct DNSConnectionFactory {
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> DNSConnection {
         let (channelFuture, _channelHandler) = self.makeInitializedUDPChannel(
-            deadline: .now() + .seconds(10),
+            deadline: eventLoop.now + .seconds(10),
             eventLoop: eventLoop,
             logger: logger,
             isolation: isolation

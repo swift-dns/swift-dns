@@ -16,7 +16,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
 
         func handleScheduledCallback(eventLoop: some EventLoop) {
             let channelHandler = self.channelHandler.value
-            switch channelHandler.stateMachine.hitDeadline(now: .now()) {
+            switch channelHandler.stateMachine.hitDeadline(now: eventLoop.now) {
             case .failAndReschedule(let query, let deadlineCallbackAction):
                 channelHandler.queryProducer.fullfilQuery(
                     pendingQuery: query,
@@ -36,6 +36,15 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
             case .deadlineCallbackAction(let deadlineCallbackAction):
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             }
+        }
+
+        func didCancelScheduledCallback(eventLoop: some EventLoop) {
+            self.channelHandler.value.logger.debug(
+                "Deadline callback cancelled",
+                metadata: [
+                    "eventLoop": "\(eventLoop)"
+                ]
+            )
         }
     }
 
@@ -77,7 +86,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.isOverUDP = isOverUDP
         self.id = channelHandlerIDGenerator.next()
         var logger = logger
-        logger[metadataKey: "dns_channel_handler_id"] = "\(self.id)"
+        logger[metadataKey: "dns_chnl_hndlr_id"] = "\(self.id)"
         self.logger = logger
     }
 }
@@ -101,7 +110,7 @@ extension DNSChannelHandler {
 
         let pendingQuery = producedMessage.producePendingQuery(
             promise: promise,
-            deadline: .now() + TimeAmount(self.configuration.queryTimeout)
+            deadline: self.eventLoop.now + TimeAmount(self.configuration.queryTimeout)
         )
 
         switch self.stateMachine.sendQuery(pendingQuery) {
@@ -163,10 +172,22 @@ extension DNSChannelHandler {
             self.deadlineCallback?.cancel()
             self.deadlineCallback = nil
         case .reschedule(let deadline):
-            self.deadlineCallback = try? self.eventLoop.scheduleCallback(
-                at: deadline,
-                handler: DeadlineSchedule(channelHandler: .init(self, eventLoop: self.eventLoop))
-            )
+            do {
+                self.deadlineCallback = try self.eventLoop.scheduleCallback(
+                    at: deadline,
+                    handler: DeadlineSchedule(
+                        channelHandler: .init(self, eventLoop: self.eventLoop)
+                    )
+                )
+            } catch {
+                self.logger.debug(
+                    "Failed to reschedule deadline callback",
+                    metadata: [
+                        "error": "\(String(reflecting: error))",
+                        "deadline": "\(deadline)",
+                    ]
+                )
+            }
         case .doNothing:
             break
         }
@@ -202,7 +223,7 @@ extension DNSChannelHandler {
             }
         } catch let error {
             /// Just log the error.
-            /// The actual corresponding message will be just time out.
+            /// The actual corresponding message will just time out.
             self.logDecodingError(error, isLastMessage: true)
         }
         self.forceClose(context: context, error: .channelInactive)
@@ -221,7 +242,7 @@ extension DNSChannelHandler {
             }
         } catch let error {
             /// Just log the error.
-            /// The actual corresponding message will be just time out.
+            /// The actual corresponding message will just time out.
             self.logDecodingError(error, isLastMessage: false)
         }
     }

@@ -163,7 +163,7 @@ extension DomainName: Sequence {
 
             assert(
                 length != 0,
-                "Label length 0 means the root label has made it into name.data, which is not allowed"
+                "Label length 0 means the root label has made it into name.data, which is not allowed, \(self.name.data.hexDump(format: .detailed))"
             )
 
             defer {
