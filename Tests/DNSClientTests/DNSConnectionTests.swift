@@ -25,22 +25,6 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test func `simple query`() async throws {
-        try await self.runSimpleQueryTests(
-            queryableTypes: A.self,
-            AAAA.self,
-            TXT.self,
-            CNAME.self,
-            CAA.self,
-            CERT.self,
-            MX.self,
-            NS.self,
-            PTR.self,
-            OPT.self,
-        )
-    }
-
-    @available(swiftDNSApplePlatforms 15, *)
     func runSimpleQueryTests<each QueryableType: Queryable>(
         queryableTypes: repeat (each QueryableType).Type
     ) async throws {
