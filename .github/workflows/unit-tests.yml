@@ -96,6 +96,11 @@ jobs:
 
     timeout-minutes: 20
 
+    env:
+      SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
+      SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
+      SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
+
     steps:
       - name: Setup appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
@@ -105,24 +110,65 @@ jobs:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v5
 
+      - name: Restore swiftly home
+        if: ${{ runner.debug != '1' }}
+        id: "restore-home"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_HOME_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
+
+      - name: Restore swiftly bin
+        if: ${{ runner.debug != '1' }}
+        id: "restore-bin"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_BIN_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
+
+      - name: Restore swiftly toolchains
+        if: ${{ runner.debug != '1' }}
+        id: "restore-toolchains"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ runner.os }}"
+
       - name: Update swift via Swiftly
         run: |
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
           installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
-          ~/.swiftly/bin/swiftly init --assume-yes --skip-install --quiet-shell-followup
-          . "${SWIFTLY_HOME_DIR:-$HOME/.swiftly}/env.sh"
-          hash -r
+          "${SWIFTLY_BIN_DIR}/swiftly" init --assume-yes --skip-install --quiet-shell-followup
+          . "${SWIFTLY_HOME_DIR}/env.sh"
 
-          # Update environment variables
-          echo "SWIFTLY_HOME_DIR=${SWIFTLY_HOME_DIR}" >>"${GITHUB_ENV}"
-          echo "SWIFTLY_BIN_DIR=${SWIFTLY_BIN_DIR}" >>"${GITHUB_ENV}"
+          # Update GitHub PATH
           echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
 
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}
           swiftly use --assume-yes ${{ matrix.swift.version }}
-          hash -r
+
+      - name: Cache swiftly home
+        if: steps.restore-home.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: "${{ env.SWIFTLY_HOME_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
+
+      - name: Cache swiftly bin
+        if: steps.restore-bin.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: "${{ env.SWIFTLY_BIN_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
+
+      - name: Cache swiftly toolchains
+        if: steps.restore-toolchains.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
