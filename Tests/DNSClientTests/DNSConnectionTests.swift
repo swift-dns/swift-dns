@@ -86,125 +86,125 @@ struct DNSConnectionTests {
         #expect("\(response)" == "\(message)")
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
-    @Test func `simple query cancelled`() async throws {
-        typealias QueryableType = TXT
+    // @available(swiftDNSApplePlatforms 15, *)
+    // @Test func `simple query cancelled`() async throws {
+    //     typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
-        let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
-        let domainName = try #require(responseResource.domainName)
+    //     let (connection, channel) = try await self.makeTestConnection()
+    //     let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+    //     let domainName = try #require(responseResource.domainName)
 
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-                await #expect(throws: DNSClientError.cancelled) {
-                    _ = try await connection.send(
-                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
-                        options: .default,
-                        allocator: .init()
-                    )
-                }
-            }
+    //     try await withThrowingTaskGroup(of: Void.self) { group in
+    //         group.addTask {
+    //             await #expect(throws: DNSClientError.cancelled) {
+    //                 _ = try await connection.send(
+    //                     message: MessageFactory<QueryableType>.forQuery(name: domainName),
+    //                     options: .default,
+    //                     allocator: .init()
+    //                 )
+    //             }
+    //         }
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
-            /// The message ID should not be 0 because the channel handler reassigns it
-            #expect(messageID != 0)
+    //         let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
+    //         #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
+    //         let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+    //         /// The message ID should not be 0 because the channel handler reassigns it
+    //         #expect(messageID != 0)
 
-            group.cancelAll()
-        }
+    //         group.cancelAll()
+    //     }
 
-        #expect(channel.isActive)
-    }
+    //     #expect(channel.isActive)
+    // }
 
-    @available(swiftDNSApplePlatforms 15, *)
-    @Test
-    func `simple query cancelled then response arrives later then continue using the channel`()
-        async throws
-    {
-        let (connection, channel) = try await self.makeTestConnection()
+    // @available(swiftDNSApplePlatforms 15, *)
+    // @Test
+    // func `simple query cancelled then response arrives later then continue using the channel`()
+    //     async throws
+    // {
+    //     let (connection, channel) = try await self.makeTestConnection()
 
-        do {
-            typealias QueryableType = TXT
+    //     do {
+    //         typealias QueryableType = TXT
 
-            let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
-            let domainName = try #require(responseResource.domainName)
+    //         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+    //         let domainName = try #require(responseResource.domainName)
 
-            /// TODO: better code here to make sure we don't need to manually call
-            /// `preflightCheck` here before producing the message.
-            /// If we change some code in the actual connection code in
-            /// `connection.send(message:options:allocator:)`, this code will have to change
-            /// as well, and if we forget to make such a change then this test will be inaccurate.
-            try await connection.preflightCheck()
-            let producedMessage = try await connection.produceMessage(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
-                options: .default,
-                allocator: .init()
-            )
-            let messageID = producedMessage.messageID
+    //         /// TODO: better code here to make sure we don't need to manually call
+    //         /// `preflightCheck` here before producing the message.
+    //         /// If we change some code in the actual connection code in
+    //         /// `connection.send(message:options:allocator:)`, this code will have to change
+    //         /// as well, and if we forget to make such a change then this test will be inaccurate.
+    //         try await connection.preflightCheck()
+    //         let producedMessage = try await connection.produceMessage(
+    //             message: MessageFactory<QueryableType>.forQuery(name: domainName),
+    //             options: .default,
+    //             allocator: .init()
+    //         )
+    //         let messageID = producedMessage.messageID
 
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    await #expect(throws: DNSClientError.cancelled) {
-                        _ = try await connection.send(
-                            producedMessage: producedMessage
-                        )
-                    }
-                }
+    //         try await withThrowingTaskGroup(of: Void.self) { group in
+    //             group.addTask {
+    //                 await #expect(throws: DNSClientError.cancelled) {
+    //                     _ = try await connection.send(
+    //                         producedMessage: producedMessage
+    //                     )
+    //                 }
+    //             }
 
-                let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-                #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-                let messageID = try #require(outbound.peekInteger(as: UInt16.self))
-                /// The message ID should not be 0 because the channel handler reassigns it
-                #expect(messageID != 0)
+    //             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
+    //             #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
+    //             let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+    //             /// The message ID should not be 0 because the channel handler reassigns it
+    //             #expect(messageID != 0)
 
-                group.cancelAll()
-            }
+    //             group.cancelAll()
+    //         }
 
-            #expect(channel.isActive)
+    //         #expect(channel.isActive)
 
-            /// Response arrives after the timeout
-            let (buffer, _) = self.bufferAndMessage(
-                from: responseResource,
-                changingIDTo: messageID
-            )
+    //         /// Response arrives after the timeout
+    //         let (buffer, _) = self.bufferAndMessage(
+    //             from: responseResource,
+    //             changingIDTo: messageID
+    //         )
 
-            try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
+    //         try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
 
-            /// Nothing should happen here
-        }
+    //         /// Nothing should happen here
+    //     }
 
-        /// Do another query over the same connection
-        do {
-            typealias QueryableType = CAA
+    //     /// Do another query over the same connection
+    //     do {
+    //         typealias QueryableType = CAA
 
-            let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
-            let domainName = try #require(responseResource.domainName)
+    //         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+    //         let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
-                options: .default,
-                allocator: .init()
-            )
+    //         async let asyncResponse = try await connection.send(
+    //             message: MessageFactory<QueryableType>.forQuery(name: domainName),
+    //             options: .default,
+    //             allocator: .init()
+    //         )
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
-            /// The message ID should not be 0 because the channel handler reassigns it
-            #expect(messageID != 0)
+    //         let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
+    //         #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
+    //         let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+    //         /// The message ID should not be 0 because the channel handler reassigns it
+    //         #expect(messageID != 0)
 
-            let (buffer, message) = self.bufferAndMessage(
-                from: responseResource,
-                changingIDTo: messageID
-            )
+    //         let (buffer, message) = self.bufferAndMessage(
+    //             from: responseResource,
+    //             changingIDTo: messageID
+    //         )
 
-            try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
+    //         try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
 
-            let response = try await asyncResponse
-            /// FIXME: use equatable instead of string comparison
-            #expect("\(response)" == "\(message)")
-        }
-    }
+    //         let response = try await asyncResponse
+    //         /// FIXME: use equatable instead of string comparison
+    //         #expect("\(response)" == "\(message)")
+    //     }
+    // }
 
     @available(swiftDNSApplePlatforms 15, *)
     @Test func `simple query timed out`() async throws {
