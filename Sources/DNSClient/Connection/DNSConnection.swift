@@ -127,10 +127,10 @@ public final actor DNSConnection: Sendable {
 
     @usableFromInline
     nonisolated func cancel(requestID: UInt16) {
-        // self.channel.eventLoop.execute {
-        //     self.assumeIsolated {
-        //         $0.channelHandler.cancel(requestID: requestID)
-        //     }
-        // }
+        self.channel.eventLoop.execute {
+            self.assumeIsolated {
+                $0.channelHandler.cancel(requestID: requestID)
+            }
+        }
     }
 }
