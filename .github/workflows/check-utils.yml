@@ -1,4 +1,4 @@
-name: utils-check
+name: check-utils
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
