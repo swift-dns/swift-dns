@@ -86,36 +86,36 @@ struct DNSConnectionTests {
         #expect("\(response)" == "\(message)")
     }
 
-    // @available(swiftDNSApplePlatforms 15, *)
-    // @Test func `simple query cancelled`() async throws {
-    //     typealias QueryableType = TXT
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func `simple query cancelled`() async throws {
+        typealias QueryableType = TXT
 
-    //     let (connection, channel) = try await self.makeTestConnection()
-    //     let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
-    //     let domainName = try #require(responseResource.domainName)
+        let (connection, channel) = try await self.makeTestConnection()
+        let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+        let domainName = try #require(responseResource.domainName)
 
-    //     try await withThrowingTaskGroup(of: Void.self) { group in
-    //         group.addTask {
-    //             await #expect(throws: DNSClientError.cancelled) {
-    //                 _ = try await connection.send(
-    //                     message: MessageFactory<QueryableType>.forQuery(name: domainName),
-    //                     options: .default,
-    //                     allocator: .init()
-    //                 )
-    //             }
-    //         }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                await #expect(throws: DNSClientError.cancelled) {
+                    _ = try await connection.send(
+                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                        options: .default,
+                        allocator: .init()
+                    )
+                }
+            }
 
-    //         let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-    //         #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-    //         let messageID = try #require(outbound.peekInteger(as: UInt16.self))
-    //         /// The message ID should not be 0 because the channel handler reassigns it
-    //         #expect(messageID != 0)
+            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
+            #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
+            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+            /// The message ID should not be 0 because the channel handler reassigns it
+            #expect(messageID != 0)
 
-    //         group.cancelAll()
-    //     }
+            group.cancelAll()
+        }
 
-    //     #expect(channel.isActive)
-    // }
+        #expect(channel.isActive)
+    }
 
     // @available(swiftDNSApplePlatforms 15, *)
     // @Test
