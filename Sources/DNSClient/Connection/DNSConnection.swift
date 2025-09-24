@@ -4,11 +4,6 @@ public import NIOCore
 import NIOPosix
 import Synchronization
 
-#if canImport(Network)
-import Network
-import NIOTransportServices
-#endif
-
 /// Single connection to a DNS server
 @available(swiftDNSApplePlatforms 15, *)
 public final actor DNSConnection: Sendable {
@@ -74,33 +69,35 @@ public final actor DNSConnection: Sendable {
         options: DNSRequestOptions,
         allocator: ByteBufferAllocator
     ) async throws -> Message {
-        try self.channelHandler.preflightCheck()
-        let producedMessage = try self.produceMessage(
+        let preparedQuery = try self.prepareQuery(
             message: factory,
             options: options,
             allocator: allocator
         )
-        return try await self.send(producedMessage: producedMessage)
-    }
-
-    @inlinable
-    package func preflightCheck() throws {
-        try self.channelHandler.preflightCheck()
+        return try await preparedQuery.send()
     }
 
     /// Send a query to DNS connection
-    /// - Parameter message: The query DNS message
+    /// - Parameter
+    ///   - message: The query DNS message
+    ///   - options: The options for producing the query message
+    ///   - allocator: The allocator for producing the query message
     /// - Returns: The response DNS message
     @inlinable
-    package func produceMessage(
+    package func prepareQuery(
         message factory: consuming MessageFactory<some RDataConvertible>,
         options: DNSRequestOptions,
         allocator: ByteBufferAllocator
-    ) throws -> ProducedMessage {
-        try self.channelHandler.queryProducer.produceMessage(
+    ) throws -> PreparedQuery {
+        try self.channelHandler.preflightCheck()
+        let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
             options: options,
             allocator: allocator
+        )
+        return PreparedQuery(
+            connection: self,
+            producedMessage: producedMessage
         )
     }
 
@@ -108,7 +105,7 @@ public final actor DNSConnection: Sendable {
     /// - Parameter message: The query DNS message
     /// - Returns: The response DNS message
     @inlinable
-    package func send(producedMessage: ProducedMessage) async throws -> Message {
+    func send(producedMessage: ProducedMessage) async throws -> Message {
         let requestID = producedMessage.messageID
         /// TODO: use the other cancel function below when compiler bug is resolved
         /// Then we can remove this whole unsafe line
@@ -147,4 +144,26 @@ public final actor DNSConnection: Sendable {
     //         }
     //     }
     // }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+@usableFromInline
+package struct PreparedQuery: Sendable, ~Copyable {
+    @usableFromInline
+    package let connection: DNSConnection
+    @usableFromInline
+    package let producedMessage: ProducedMessage
+
+    @inlinable
+    init(connection: DNSConnection, producedMessage: ProducedMessage) {
+        self.producedMessage = producedMessage
+        self.connection = connection
+    }
+
+    @inlinable
+    package func send() async throws -> Message {
+        try await self.connection.send(
+            producedMessage: self.producedMessage
+        )
+    }
 }

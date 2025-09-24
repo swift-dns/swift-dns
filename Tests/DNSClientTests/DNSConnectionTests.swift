@@ -9,8 +9,8 @@ import Testing
 @Suite
 struct DNSConnectionTests {
     @available(swiftDNSApplePlatforms 15, *)
-    @Test func `simple query tests`() async throws {
-        try await self.runSimpleQueryTests(
+    @Test func `query tests`() async throws {
+        try await self.runQueryTests(
             queryableTypes: A.self,
             AAAA.self,
             TXT.self,
@@ -25,13 +25,13 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    func runSimpleQueryTests<each QueryableType: Queryable>(
+    func runQueryTests<each QueryableType: Queryable>(
         queryableTypes: repeat (each QueryableType).Type
     ) async throws {
         try await withThrowingTaskGroup { taskGroup -> Void in
             for queryableType in repeat each queryableTypes {
                 taskGroup.addTask {
-                    try await self.runSimpleQueryTest(queryableType: queryableType.self)
+                    try await self.runQueryTest(queryableType: queryableType.self)
                 }
             }
             try await taskGroup.waitForAll()
@@ -39,7 +39,7 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    func runSimpleQueryTest<QueryableType: Queryable>(
+    func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
         let (connection, channel) = try await self.makeTestConnection()
@@ -71,7 +71,7 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test func `simple query cancelled`() async throws {
+    @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
         let (connection, channel) = try await self.makeTestConnection()
@@ -103,7 +103,7 @@ struct DNSConnectionTests {
 
     @available(swiftDNSApplePlatforms 15, *)
     @Test
-    func `simple query cancelled then response arrives later then continue using the channel`()
+    func `query cancelled then response arrives later then continue using the channel`()
         async throws
     {
         let (connection, channel) = try await self.makeTestConnection()
@@ -114,33 +114,29 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            /// TODO: better code here to make sure we don't need to manually call
-            /// `preflightCheck` here before producing the message.
-            /// If we change some code in the actual connection code in
-            /// `connection.send(message:options:allocator:)`, this code will have to change
-            /// as well, and if we forget to make such a change then this test will be inaccurate.
-            try await connection.preflightCheck()
-            let producedMessage = try await connection.produceMessage(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
-                options: .default,
-                allocator: .init()
-            )
-            let messageID = producedMessage.messageID
+            nonisolated(unsafe) var sentMessageID: UInt16!
 
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                group.addTask { @Sendable in
                     await #expect(throws: DNSClientError.cancelled) {
-                        _ = try await connection.send(
-                            producedMessage: producedMessage
+                        let preparedQuery = try await connection.prepareQuery(
+                            message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                            options: .default,
+                            allocator: .init()
                         )
+
+                        sentMessageID = preparedQuery.producedMessage.messageID
+
+                        _ = try await preparedQuery.send()
                     }
                 }
 
                 let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
                 #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-                let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+                let receivedMessageID = try #require(outbound.peekInteger(as: UInt16.self))
                 /// The message ID should not be 0 because the channel handler reassigns it
-                #expect(messageID != 0)
+                #expect(receivedMessageID != 0)
+                #expect(receivedMessageID == sentMessageID)
 
                 group.cancelAll()
             }
@@ -150,7 +146,7 @@ struct DNSConnectionTests {
             /// Response arrives after the timeout
             let (buffer, _) = self.bufferAndMessage(
                 from: responseResource,
-                changingIDTo: messageID
+                changingIDTo: sentMessageID
             )
 
             try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
@@ -191,7 +187,32 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test func `simple query timed out`() async throws {
+    @Test func `query does not run when task is already cancelled`() async throws {
+        typealias QueryableType = TXT
+
+        let (connection, channel) = try await self.makeTestConnection()
+        let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+        let domainName = try #require(responseResource.domainName)
+
+        await withThrowingTaskGroup(of: Void.self) { group in
+            group.cancelAll()
+
+            group.addTask {
+                await #expect(throws: DNSClientError.cancelled) {
+                    _ = try await connection.send(
+                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                        options: .default,
+                        allocator: .init()
+                    )
+                }
+            }
+        }
+
+        #expect(channel.isActive)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
         let (connection, channel) = try await self.makeTestConnection()
@@ -226,7 +247,7 @@ struct DNSConnectionTests {
 
     @available(swiftDNSApplePlatforms 15, *)
     @Test
-    func `simple query timed out then response arrives later then continue using the channel`()
+    func `query timed out then response arrives later then continue using the channel`()
         async throws
     {
         typealias QueryableType = TXT
@@ -306,32 +327,61 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
+    @Test func `query does not run when connection is closed`() async throws {
+        typealias QueryableType = TXT
+
+        let (connection, channel) = try await self.makeTestConnection()
+        let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
+        let domainName = try #require(responseResource.domainName)
+
+        connection.close()
+
+        await #expect(throws: DNSClientError.connectionClosed) {
+            _ = try await connection.send(
+                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                options: .default,
+                allocator: .init()
+            )
+        }
+
+        #expect(!channel.isActive)
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
         let (connection, channel) = try await self.makeTestConnection()
 
-        for _ in 0..<1_000 {
+        try await self.runSequentialTestQueries(
+            connection: connection,
+            channel: channel,
+            count: 1_000,
+            queryableType: QueryableType.self
+        )
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    func runSequentialTestQueries<QueryableType: Queryable>(
+        connection: DNSConnection,
+        channel: NIOAsyncTestingChannel,
+        count: Int,
+        queryableType: QueryableType.Type
+    ) async throws {
+        for _ in 0..<count {
             let (_, responseResource) = Resources.forQuery(
                 queryableType: QueryableType.self
             )
             let domainName = try #require(responseResource.domainName)
 
-            /// TODO: better code here to make sure we don't need to manually call
-            /// `preflightCheck` here before producing the message.
-            /// If we change some code in the actual connection code in
-            /// `connection.send(message:options:allocator:)`, this code will have to change
-            /// as well, and if we forget to make such a change then this test will be inaccurate.
-            try await connection.preflightCheck()
-            let producedMessage = try await connection.produceMessage(
+            let preparedQuery = try await connection.prepareQuery(
                 message: MessageFactory<QueryableType>.forQuery(name: domainName),
                 options: .default,
                 allocator: .init()
             )
+            let producedMessage = preparedQuery.producedMessage
             let messageID = producedMessage.messageID
-            async let asyncResponse = try await connection.send(
-                producedMessage: producedMessage
-            )
+            async let asyncResponse = try await preparedQuery.send()
 
             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
             let receivedMessageID = try #require(
@@ -359,75 +409,83 @@ struct DNSConnectionTests {
         try await withThrowingTaskGroup { taskGroup -> Void in
             let (connection, channel) = try await self.makeTestConnection()
 
-            let messageSuccessfullySentOverChannel: Mutex<[UInt16: ByteBuffer]> = Mutex([:])
-            let messageSuccessfullySentOverChannelCount: Atomic<Int> = Atomic(0)
-            let count = MessageIDGenerator.capacity
-
-            for _ in 0..<count {
-                taskGroup.addTask { @Sendable in
-                    let (_, responseResource) = Resources.forQuery(
-                        queryableType: QueryableType.self
-                    )
-                    let domainName = try #require(responseResource.domainName)
-
-                    /// TODO: better code here to make sure we don't need to manually call
-                    /// `preflightCheck` here before producing the message.
-                    /// If we change some code in the actual connection code in
-                    /// `connection.send(message:options:allocator:)`, this code will have to change
-                    /// as well, and if we forget to make such a change then this test will be inaccurate.
-                    try await connection.preflightCheck()
-                    let producedMessage = try await connection.produceMessage(
-                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
-                        options: .default,
-                        allocator: .init()
-                    )
-                    let messageID = producedMessage.messageID
-                    async let asyncResponse = try await connection.send(
-                        producedMessage: producedMessage
-                    )
-
-                    /// We're sending queries concurrently so this is not necessarily the
-                    /// message that we just sent. We just wait for one message to be written and
-                    /// save it for now.
-                    let oneOutbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-                    let oneReceivedMessageID = try #require(
-                        oneOutbound.peekInteger(as: UInt16.self)
-                    )
-                    messageSuccessfullySentOverChannelCount.add(1, ordering: .relaxed)
-                    messageSuccessfullySentOverChannel.withLock {
-                        $0[oneReceivedMessageID] = oneOutbound
-                    }
-                    /// The message ID should not be 0 because the channel handler reassigns it
-                    #expect(oneReceivedMessageID != 0)
-
-                    try await self.simpleWait(until: {
-                        messageSuccessfullySentOverChannel.withLock({ $0[messageID] != nil })
-                    })
-
-                    let _outbound = messageSuccessfullySentOverChannel.withLock({ $0[messageID] })
-                    let outbound = try #require(_outbound)
-                    #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
-                    #expect(outbound.peekInteger(as: UInt16.self) == messageID)
-
-                    let (buffer, message) = self.bufferAndMessage(
-                        from: responseResource,
-                        changingIDTo: messageID
-                    )
-                    try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
-
-                    let response = try await asyncResponse
-                    /// TODO: use an actual Equality checker here instead of description comparison
-                    #expect("\(response)" == "\(message)")
-                }
-            }
-
-            try await taskGroup.waitForAll()
-
-            /// There is a chance that message IDs were reused and a value replaced another value
-            /// in the dictionary.
-            #expect(messageSuccessfullySentOverChannel.withLock({ $0.count }) <= count)
-            #expect(messageSuccessfullySentOverChannelCount.load(ordering: .relaxed) == count)
+            try await self.runConcurrentTestQueries(
+                connection: connection,
+                channel: channel,
+                taskGroup: &taskGroup,
+                count: MessageIDGenerator.capacity,
+                queryableType: QueryableType.self
+            )
         }
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
+    func runConcurrentTestQueries<QueryableType: Queryable>(
+        connection: DNSConnection,
+        channel: NIOAsyncTestingChannel,
+        taskGroup: inout ThrowingTaskGroup<Void, any Error>,
+        count: Int,
+        queryableType: QueryableType.Type
+    ) async throws {
+        let messageSuccessfullySentOverChannel: Mutex<[UInt16: ByteBuffer]> = Mutex([:])
+        let messageSuccessfullySentOverChannelCount: Atomic<Int> = Atomic(0)
+
+        for _ in 0..<count {
+            taskGroup.addTask { @Sendable in
+                let (_, responseResource) = Resources.forQuery(
+                    queryableType: QueryableType.self
+                )
+                let domainName = try #require(responseResource.domainName)
+
+                let preparedQuery = try await connection.prepareQuery(
+                    message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                    options: .default,
+                    allocator: .init()
+                )
+                let messageID = preparedQuery.producedMessage.messageID
+                async let asyncResponse = try await preparedQuery.send()
+
+                /// We're sending queries concurrently so this is not necessarily the
+                /// message that we just sent. We just wait for one message to be written and
+                /// save it for now.
+                let oneOutbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
+                let oneReceivedMessageID = try #require(
+                    oneOutbound.peekInteger(as: UInt16.self)
+                )
+                messageSuccessfullySentOverChannelCount.add(1, ordering: .relaxed)
+                messageSuccessfullySentOverChannel.withLock {
+                    $0[oneReceivedMessageID] = oneOutbound
+                }
+                /// The message ID should not be 0 because the channel handler reassigns it
+                #expect(oneReceivedMessageID != 0)
+
+                try await self.simpleWait(until: {
+                    messageSuccessfullySentOverChannel.withLock({ $0[messageID] != nil })
+                })
+
+                let _outbound = messageSuccessfullySentOverChannel.withLock({ $0[messageID] })
+                let outbound = try #require(_outbound)
+                #expect(outbound.readableBytesView.contains(domainName.data.readableBytesView))
+                #expect(outbound.peekInteger(as: UInt16.self) == messageID)
+
+                let (buffer, message) = self.bufferAndMessage(
+                    from: responseResource,
+                    changingIDTo: messageID
+                )
+                try await channel.writeInbound(ByteBuffer(dnsBuffer: buffer))
+
+                let response = try await asyncResponse
+                /// TODO: use an actual Equality checker here instead of description comparison
+                #expect("\(response)" == "\(message)")
+            }
+        }
+
+        try await taskGroup.waitForAll()
+
+        /// There is a chance that message IDs were reused and a value replaced another value
+        /// in the dictionary.
+        #expect(messageSuccessfullySentOverChannel.withLock({ $0.count }) <= count)
+        #expect(messageSuccessfullySentOverChannelCount.load(ordering: .relaxed) == count)
     }
 
     /// Don't want to make the tests complicated.
