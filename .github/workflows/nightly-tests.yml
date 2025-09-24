@@ -105,13 +105,16 @@ jobs:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v5
 
+      - name: Set today's date
+        run: echo "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+
       - name: Restore swiftly home
         if: ${{ runner.debug != '1' }}
         id: "restore-home"
         uses: actions/cache/restore@v4
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
         if: ${{ runner.debug != '1' }}
@@ -119,7 +122,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
         if: ${{ runner.debug != '1' }}
@@ -127,7 +130,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
         run: |
@@ -149,21 +152,21 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Cache swiftly bin
         if: steps.restore-bin.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Cache swiftly toolchains
         if: steps.restore-toolchains.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
