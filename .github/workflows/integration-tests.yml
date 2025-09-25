@@ -168,8 +168,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .build
-          key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
-          restore-keys: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-"
+          key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-"
 
       - name: Build ${{ github.event.repository.name }}
         run: |
@@ -184,7 +184,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .build
-          key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
         run: |
