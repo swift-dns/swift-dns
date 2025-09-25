@@ -9,8 +9,14 @@ func withRunningDNSClient(
     function: (DNSClient) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
-        taskGroup.addTask {
-            try await client.run()
+        if #available(swiftDNSApplePlatforms 26, *) {
+            taskGroup.addImmediateTask {
+                try await client.run()
+            }
+        } else {
+            taskGroup.addTask {
+                try await client.run()
+            }
         }
         try await function(client)
         taskGroup.cancelAll()
