@@ -77,10 +77,10 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: - IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle
+    // MARK: - IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets
 
     Benchmark(
-        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 5,
@@ -88,20 +88,20 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         for _ in 0..<2_000_000 {
-            let ip = IPv6Address("[2001:0db8:85a3::8a2e:0370:7334]").unsafelyUnwrapped
+            let ip = IPv6Address("2001:0db8:85a3::8a2e:0370:7334").unsafelyUnwrapped
             blackHole(ip)
         }
     }
 
     Benchmark(
-        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_Malloc",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
             maxIterations: 10
         )
     ) { benchmark in
-        let ip = IPv6Address("[2001:0db8:85a3::8a2e:0370:7334]").unsafelyUnwrapped
+        let ip = IPv6Address("2001:0db8:85a3::8a2e:0370:7334").unsafelyUnwrapped
         blackHole(ip)
     }
 
@@ -137,11 +137,11 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
     }
 
-    // MARK: IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_inet_pton
+    // MARK: IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_inet_pton
 
     #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
     Benchmark(
-        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_inet_pton_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_inet_pton_2M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 5,
@@ -150,7 +150,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
     ) { benchmark in
         for _ in 0..<2_000_000 {
             var ipv6SocketAddress = sockaddr_in6()
-            _ = "[2001:0db8:85a3::8a2e:0370:7334]".withCString { p in
+            _ = "2001:0db8:85a3::8a2e:0370:7334".withCString { p in
                 inet_pton(AF_INET6, p, &ipv6SocketAddress.sin6_addr)
             }
             blackHole(ipv6SocketAddress)
@@ -158,7 +158,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
-        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_inet_pton_Malloc",
+        "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_inet_pton_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
             warmupIterations: 1,
@@ -166,7 +166,7 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         var ipv6SocketAddress = sockaddr_in6()
-        _ = "[2001:0db8:85a3::8a2e:0370:7334]".withCString { p in
+        _ = "2001:0db8:85a3::8a2e:0370:7334".withCString { p in
             inet_pton(AF_INET6, p, &ipv6SocketAddress.sin6_addr)
         }
         blackHole(ipv6SocketAddress)
