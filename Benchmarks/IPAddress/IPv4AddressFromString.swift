@@ -77,7 +77,7 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
 
     #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
     Benchmark(
-        "IPv4_inet_pton_String_Decoding_Local_Broadcast_inet_pton_10M",
+        "IPv4_String_Decoding_Local_Broadcast_inet_pton_10M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 5,
