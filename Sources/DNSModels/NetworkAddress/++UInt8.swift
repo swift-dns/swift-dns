@@ -59,3 +59,26 @@ extension UInt8 {
         return utf8Byte &-- UInt8.ascii0
     }
 }
+
+extension UInt8 {
+    @inlinable
+    package func asDecimal(writeUTF8Byte: (UInt8) -> Void) {
+        /// The compiler is smart enough to not actually do division by 10, but instead use the
+        /// multiply-by-205-then-bitshift-by-11 trick.
+        /// See it for yourself: https://godbolt.org/z/vYxTj78qd
+        let (q, r1) = self.quotientAndRemainder(dividingBy: 10)
+        let (q2, r2) = q.quotientAndRemainder(dividingBy: 10)
+        let r3 = q2 % 10
+
+        var soFarAllZeros = true
+
+        if r3 != 0 {
+            soFarAllZeros = false
+            writeUTF8Byte(r3 &++ UInt8.ascii0)
+        }
+        if !(r2 == 0 && soFarAllZeros) {
+            writeUTF8Byte(r2 &++ UInt8.ascii0)
+        }
+        writeUTF8Byte(r1 &++ UInt8.ascii0)
+    }
+}

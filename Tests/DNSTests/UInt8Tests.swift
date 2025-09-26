@@ -3,6 +3,18 @@ import Testing
 
 @Suite
 struct UInt8Tests {
+    @Test func `UInt8 asDecimal works correctly`() {
+        for number in (UInt8(0)...UInt8(255)) {
+            var string = String()
+            number.asDecimal(
+                writeUTF8Byte: {
+                    string.append(Character(UnicodeScalar($0)))
+                }
+            )
+            #expect(string == String(number))
+        }
+    }
+
     @available(swiftDNSApplePlatforms 26, *)
     @Test func `UInt8 from-decimal-span initializer works for numbers 0...255`() {
         for number in (UInt8(0)...UInt8(255)) {

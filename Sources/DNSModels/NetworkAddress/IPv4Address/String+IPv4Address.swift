@@ -16,60 +16,30 @@ extension IPv4Address: CustomStringConvertible {
                 let range = 1..<4
                 var iterator = range.makeIterator()
 
-                IPv4Address._writeUInt8AsDecimalASCII(
-                    into: buffer,
-                    advancingIdx: &resultIdx,
-                    byte: addressBytes[3]
+                let byte = addressBytes[3]
+                byte.asDecimal(
+                    writeUTF8Byte: {
+                        buffer[resultIdx] = $0
+                        resultIdx &+== 1
+                    }
                 )
 
                 while let idx = iterator.next() {
                     buffer[resultIdx] = .asciiDot
                     resultIdx &+== 1
-                    IPv4Address._writeUInt8AsDecimalASCII(
-                        into: buffer,
-                        advancingIdx: &resultIdx,
-                        byte: addressBytes[3 &-- idx]
+
+                    let byte = addressBytes[3 &-- idx]
+                    byte.asDecimal(
+                        writeUTF8Byte: {
+                            buffer[resultIdx] = $0
+                            resultIdx &+== 1
+                        }
                     )
                 }
             }
 
             return resultIdx
         }
-    }
-
-    @inlinable
-    static func _writeUInt8AsDecimalASCII(
-        into buffer: UnsafeMutableBufferPointer<UInt8>,
-        advancingIdx idx: inout Int,
-        byte: UInt8
-    ) {
-        /// The compiler is smart enough to not actually do division by 10, but instead use the
-        /// multiply-by-205-then-bitshift-by-11 trick.
-        /// See it for yourself: https://godbolt.org/z/vYxTj78qd
-        let (q, r1) = byte.quotientAndRemainder(dividingBy: 10)
-        let (q2, r2) = q.quotientAndRemainder(dividingBy: 10)
-        let r3 = q2 % 10
-
-        var soFarAllZeros = true
-
-        if r3 != 0 {
-            soFarAllZeros = false
-            _writeASCII(into: buffer, idx: &idx, byte: r3)
-        }
-        if !(r2 == 0 && soFarAllZeros) {
-            _writeASCII(into: buffer, idx: &idx, byte: r2)
-        }
-        _writeASCII(into: buffer, idx: &idx, byte: r1)
-    }
-
-    @inlinable
-    static func _writeASCII(
-        into buffer: UnsafeMutableBufferPointer<UInt8>,
-        idx: inout Int,
-        byte: UInt8
-    ) {
-        buffer[idx] = byte &++ UInt8.ascii0
-        idx &+== 1
     }
 }
 

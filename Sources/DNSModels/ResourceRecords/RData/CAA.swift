@@ -109,8 +109,7 @@ extension CAA {
 extension CAA {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
-        var tagBuffer = DNSBuffer()
-        self.tag.encode(into: &tagBuffer)
+        try self.tag.encode(into: &buffer)
         buffer.writeBuffer(self.rawValue)
     }
 }
@@ -168,12 +167,10 @@ extension CAA.Property {
 }
 
 extension CAA.Property {
-    package func encode(into buffer: inout DNSBuffer) {
-        var temp = DNSBuffer()
-        /// TODO: write a test to make sure `self.rawValue.count` is never bigger than UInt8.max
-        temp.writeString(self.rawValue)
-        buffer.writeInteger(UInt8(temp.readableBytes))
-        buffer.writeBuffer(&temp)
+    package func encode(into buffer: inout DNSBuffer) throws {
+        try buffer.writeLengthPrefixed(as: UInt8.self) {
+            $0.writeString(self.rawValue)
+        }
     }
 }
 

@@ -21,16 +21,33 @@ extension DomainName {
 
         let startWriterIndex = buffer.writerIndex
 
-        /// TODO: Optimize writing the integers as strings, should not need to allocate a
-        /// whole string. Can do manual decimal conversions.
         let bytes = ipv4.bytes
-        buffer.writeString(String(bytes.0))
+        bytes.0.asDecimal(
+            writeUTF8Byte: {
+                buffer.writeInteger($0)
+            }
+        )
         buffer.writeInteger(UInt8.asciiDot)
-        buffer.writeString(String(bytes.1))
+
+        bytes.1.asDecimal(
+            writeUTF8Byte: {
+                buffer.writeInteger($0)
+            }
+        )
         buffer.writeInteger(UInt8.asciiDot)
-        buffer.writeString(String(bytes.2))
+
+        bytes.2.asDecimal(
+            writeUTF8Byte: {
+                buffer.writeInteger($0)
+            }
+        )
         buffer.writeInteger(UInt8.asciiDot)
-        buffer.writeString(String(bytes.3))
+
+        bytes.3.asDecimal(
+            writeUTF8Byte: {
+                buffer.writeInteger($0)
+            }
+        )
 
         let endWriterIndex = buffer.writerIndex
         let bytesWritten = endWriterIndex - startWriterIndex

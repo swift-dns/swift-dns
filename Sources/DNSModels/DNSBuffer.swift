@@ -81,10 +81,6 @@ package struct DNSBuffer: Sendable {
         self._buffer.writeInteger(value)
     }
 
-    package mutating func writeString(_ string: String) {
-        self._buffer.writeString(string)
-    }
-
     package func peekInteger<T: FixedWidthInteger>(as: T.Type = T.self) -> T? {
         self._buffer.peekInteger(as: T.self)
     }
@@ -226,6 +222,7 @@ package struct DNSBuffer: Sendable {
         self._buffer.writeImmutableBuffer(buffer)
     }
 
+    /// TODO: use ByteBuffer spans when available, so Span<UInt8>
     package mutating func writeBytes(_ bytes: some Collection<UInt8>) {
         self._buffer.writeBytes(bytes)
     }
@@ -286,6 +283,7 @@ package struct DNSBuffer: Sendable {
     /// The length of the string MUST fit into the provided integer type.
     package mutating func writeLengthPrefixedString<IntegerType: FixedWidthInteger & Comparable>(
         name: StaticString,
+        /// TODO: use ByteBuffer spans when available, so Span<UInt8>
         bytes: some Collection<UInt8>,
         maxLength: IntegerType,
         fitLengthInto: IntegerType.Type
@@ -323,6 +321,20 @@ package struct DNSBuffer: Sendable {
             bytes: bytes.readableBytesView,
             maxLength: maxLength,
             fitLengthInto: fitLengthInto
+        )
+    }
+
+    @discardableResult
+    @inlinable
+    package mutating func writeLengthPrefixed<IntegerType: FixedWidthInteger>(
+        endianness: Endianness = .big,
+        as integer: IntegerType.Type,
+        writeMessage: (inout ByteBuffer) throws -> Int
+    ) throws -> Int {
+        try self._buffer.writeLengthPrefixed(
+            endianness: endianness,
+            as: integer,
+            writeMessage: writeMessage
         )
     }
 
