@@ -1,3 +1,6 @@
 {
-  "cpuUser": 0
+  "cpuUser": {
+    "max": 60030975,
+    "min": 0
+  }
 }
