@@ -2,6 +2,16 @@ import Benchmark
 import DNSModels
 import NIOCore
 
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+@preconcurrency import Glibc
+#elseif canImport(Musl)
+@preconcurrency import Musl
+#elseif canImport(Android)
+@preconcurrency import Android
+#endif
+
 let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
     // MARK: - IPv4_String_Decoding_Zero
 
@@ -62,4 +72,40 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
         let ip = IPv4Address("255.255.255.255").unsafelyUnwrapped
         blackHole(ip)
     }
+
+    // MARK: IPv4_String_Decoding_Broadcast_inet_pton
+
+    #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
+    Benchmark(
+        "IPv4_inet_pton_String_Decoding_Local_Broadcast_inet_pton_10M",
+        configuration: .init(
+            metrics: [.cpuUser],
+            warmupIterations: 5,
+            maxIterations: 1000
+        )
+    ) { benchmark in
+        for _ in 0..<10_000_000 {
+            var ipv4SocketAddress = sockaddr_in()
+            _ = "255.255.255.255".withCString { p in
+                inet_pton(AF_INET, p, &ipv4SocketAddress.sin_addr)
+            }
+            blackHole(ipv4SocketAddress)
+        }
+    }
+
+    Benchmark(
+        "IPv4_String_Decoding_Local_Broadcast_inet_pton_Malloc",
+        configuration: .init(
+            metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        var ipv4SocketAddress = sockaddr_in()
+        _ = "255.255.255.255".withCString { p in
+            inet_pton(AF_INET, p, &ipv4SocketAddress.sin_addr)
+        }
+        blackHole(ipv4SocketAddress)
+    }
+    #endif
 }
