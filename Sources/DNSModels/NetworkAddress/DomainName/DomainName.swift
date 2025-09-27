@@ -223,8 +223,10 @@ extension DomainName {
     }
 
     @usableFromInline
-    init(expectingASCIIBytes bytes: some BidirectionalCollection<UInt8>, name: StaticString) throws
-    {
+    init(
+        expectingASCIIBytes bytes: some BidirectionalCollection<UInt8>,
+        name: StaticString
+    ) throws {
         guard bytes.allSatisfy(\.isASCII) else {
             /// FIXME: throw a better error
             throw ProtocolError.failedToValidate(name, DNSBuffer(bytes: bytes))

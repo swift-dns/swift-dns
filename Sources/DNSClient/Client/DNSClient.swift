@@ -6,7 +6,7 @@ public import ServiceLifecycle
 
 /// FIXME: The module and the type are both named `DNSClient`.
 @available(swiftDNSApplePlatforms 15, *)
-public struct DNSClient {
+public struct DNSClient: Sendable {
     @usableFromInline
     enum Transport: Sendable {
         case preferUDPOrUseTCP(PreferUDPOrUseTCPDNSClientTransport)

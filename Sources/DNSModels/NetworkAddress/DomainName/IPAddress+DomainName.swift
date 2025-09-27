@@ -13,7 +13,8 @@ extension DomainName {
 
     public init(ipv4: IPv4Address) {
         var buffer = ByteBuffer()
-        buffer.reserveCapacity(8)
+        /// 16 is the maximum number of bytes required to represent an IPv4 address here
+        buffer.reserveCapacity(16)
 
         let lengthPrefixIndex = buffer.writerIndex
         // Write a zero as a placeholder which will later be overwritten by the actual number of bytes written
@@ -22,6 +23,7 @@ extension DomainName {
         let startWriterIndex = buffer.writerIndex
 
         let bytes = ipv4.bytes
+
         bytes.0.asDecimal(
             writeUTF8Byte: {
                 buffer.writeInteger($0)
@@ -52,7 +54,8 @@ extension DomainName {
         let endWriterIndex = buffer.writerIndex
         let bytesWritten = endWriterIndex - startWriterIndex
 
-        /// This is safe to unwrap. The implementation above cannot write more bytes than a UInt8 can represent.
+        /// This is safe to unwrap.
+        /// The implementation above cannot write more bytes than a UInt8 can represent.
         let lengthPrefix = UInt8(exactly: bytesWritten).unsafelyUnwrapped
 
         buffer.setInteger(
