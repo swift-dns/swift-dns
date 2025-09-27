@@ -111,43 +111,71 @@ extension IPv4Address {
 
         var address: UInt32 = 0
 
-        var span = span
-        var byteIdx = 0
+        var currentSegment: UInt8 = 0
+        var digitIdx: UInt8 = 0
+        var segmentIdx: UInt8 = 0
 
-        /// This will make sure a valid ipv4 domain-name parses fine using this method
-        while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiDot }) {
-            guard
-                let byte = UInt8(
-                    decimalRepresentation: span.extracting(unchecked: 0..<nextSeparatorIdx)
-                )
-            else {
-                return nil
-            }
+        let spanLastIdx = span.count &-- 1
+        for idx in span.indices {
+            /// Unchecked because `idx` comes right from `span.indices`
+            let backwardsIdx = spanLastIdx &-- idx
+            /// Unchecked because `backwardsIdx` is guaranteed to be in range of `0...spanLastIdx`
+            let byte = span[unchecked: backwardsIdx]
 
-            /// Unchecked because `byteIdx` can't exceed `3` anyway
-            let shift = 8 &** (3 &-- byteIdx)
-            address |= UInt32(byte) &<<< shift
-
-            /// This is safe, nothing will crash with this increase in index
-            /// Unchecked because it can't exceed `span.count` anyway
-            span = span.extracting(unchecked: (nextSeparatorIdx &++ 1)..<span.count)
-
-            /// Unchecked because it can't exceed `3` anyway
-            byteIdx &+== 1
-
-            if byteIdx == 3 {
-                guard let byte = UInt8(decimalRepresentation: span) else {
+            switch byte {
+            case .asciiDot:
+                if segmentIdx > 3 || digitIdx == 0 {
                     return nil
                 }
 
-                address |= UInt32(byte)
+                /// segmentIdx is guaranteed to be in range of 0...3
+                let shift = 8 &** segmentIdx
+                address |= UInt32(currentSegment) &<<< shift
 
-                self.init(address)
-                return
+                currentSegment = 0
+                digitIdx = 0
+                segmentIdx &+== 1
+            default:
+                guard
+                    byte >= UInt8.ascii0,
+                    byte <= UInt8.ascii9
+                else {
+                    return nil
+                }
+                let byte = byte &-- UInt8.ascii0
+
+                let multiplier: UInt8
+                switch digitIdx {
+                case 0: multiplier = 1
+                case 1: multiplier = 10
+                case 2: multiplier = 100
+                default: return nil
+                }
+
+                let (multipliedByte, overflew1) = byte.multipliedReportingOverflow(
+                    by: multiplier
+                )
+                if overflew1 {
+                    return nil
+                }
+
+                let (newSegment, overflew2) = multipliedByte.addingReportingOverflow(
+                    currentSegment
+                )
+                if overflew2 {
+                    return nil
+                }
+
+                currentSegment = newSegment
+                digitIdx &+== 1
             }
         }
 
-        /// Should not have reached here
-        return nil
+        if segmentIdx == 3, digitIdx != 0 {
+            address |= UInt32(currentSegment) &<<< 24
+            self.address = address
+        } else {
+            return nil
+        }
     }
 }
