@@ -191,6 +191,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(_ description: String) {
         self.init(textualRepresentation: description.utf8Span)
@@ -199,6 +200,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(_ description: Substring) {
         self.init(textualRepresentation: description.utf8Span)
@@ -207,6 +209,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from a `UTF8Span` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(textualRepresentation utf8Span: UTF8Span) {
         var utf8Span = utf8Span
@@ -223,6 +226,7 @@ extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(textualRepresentation span: Span<UInt8>) {
         for idx in span.indices {
@@ -239,6 +243,7 @@ extension IPv6Address {
     /// The provided **span is required to be ASCII**.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(__uncheckedASCIIspan span: Span<UInt8>) {
         debugOnly {
@@ -339,7 +344,8 @@ extension IPv6Address {
                     addressRhs: &addressRhs,
                     textualRepresentation: asciiGroup,
                     seenCompressionSign: seenCompressionSign,
-                    groupIdx: groupIdx
+                    groupIdx: &groupIdx,
+                    isDefinitelyLastParsingAttempt: false
                 )
             else {
                 return nil
@@ -374,7 +380,8 @@ extension IPv6Address {
                 addressRhs: &addressRhs,
                 textualRepresentation: span,
                 seenCompressionSign: seenCompressionSign,
-                groupIdx: groupIdx
+                groupIdx: &groupIdx,
+                isDefinitelyLastParsingAttempt: true
             )
         else {
             return nil
@@ -404,12 +411,32 @@ extension IPv6Address {
         addressRhs: inout UInt128,
         textualRepresentation asciiGroup: Span<UInt8>,
         seenCompressionSign: Bool,
-        groupIdx: Int
+        groupIdx: inout Int,
+        isDefinitelyLastParsingAttempt: Bool
     ) -> Bool {
         let utf8Count = asciiGroup.count
 
-        if utf8Count == 0 || utf8Count > 4 {
+        if utf8Count == 0 {
             return false
+        }
+
+        if utf8Count > 4 {
+            if isDefinitelyLastParsingAttempt,
+                utf8Count >= 7,
+                groupIdx <= 6,
+                let ipv4 = IPv4Address(__uncheckedASCIIspan: asciiGroup)
+            {
+                /// Everything just works out without accounting for the compression sign,
+                /// and just writing to `addressLhs`.
+                /// So we skip the overhead of trying to use `addressRhs`.
+                addressLhs |= UInt128(ipv4.address)
+                /// IPv4 takes 2 groups, so we go forward by 1 group here and the other
+                /// 1 group should be accounted for by the caller.
+                groupIdx &+== 1
+                return true
+            } else {
+                return false
+            }
         }
 
         /// Unchecked because it must be in range of 0...3 based on the check above
