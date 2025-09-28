@@ -271,8 +271,7 @@ extension IPv6Address {
             }
         }
 
-        var addressLhs: UInt128 = 0
-        var addressRhs: UInt128 = 0
+        var address: UInt128 = 0
 
         var span = span
         var count = span.count
@@ -434,6 +433,10 @@ extension IPv6Address {
         else {
             return nil
         }
+        /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
+        /// ipv4-mapped ipv6 address.
+        /// So this number is guaranteed to be in range of `0...7`
+        let compressedGroupsCount = 7 &-- colonsIndicesCount &-- ipv4MappedFactor
 
         /// Have seen '::' or not
         var seenCompressionSign = false
@@ -451,10 +454,10 @@ extension IPv6Address {
                 let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
                 guard
                     IPv6Address._readIPv6Group(
-                        addressLhs: &addressLhs,
-                        addressRhs: &addressRhs,
+                        address: &address,
                         textualRepresentation: asciiGroup,
                         seenCompressionSign: seenCompressionSign,
+                        compressedGroupsCount: compressedGroupsCount,
                         groupIdx: groupIdx
                     )
                 else {
@@ -470,17 +473,10 @@ extension IPv6Address {
         }
 
         if let ipv4MappedSegment {
-            /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
-            /// ipv4-mapped ipv6 address.
-            /// So this number is guaranteed to be in range of `0...6`
-            let compressedGroupsCount = 8 &-- groupIdx &-- 2
-            /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...6`
-            let shift = 16 &** compressedGroupsCount
             /// Unchecked because `shift` is guaranteed to be in range of `0...96`
-            addressLhs |= addressRhs &>>> shift
-            addressLhs |= UInt128(ipv4MappedSegment.address)
+            address |= UInt128(ipv4MappedSegment.address)
 
-            self.init(addressLhs)
+            self.init(address)
             guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
                 return nil
             }
@@ -489,7 +485,7 @@ extension IPv6Address {
             /// Read last remaining byte-pair
             if seenCompressionSign {
                 /// Must have reached end with no rhs
-                self.init(addressLhs)
+                self.init(address)
                 return
             } else {
                 /// No compression sign and no ipv4-mapped segment, but still have an empty group?!
@@ -499,35 +495,27 @@ extension IPv6Address {
 
         guard
             IPv6Address._readIPv6Group(
-                addressLhs: &addressLhs,
-                addressRhs: &addressRhs,
+                address: &address,
                 textualRepresentation: span.extracting(unchecked: segmentStartIdx..<count),
                 seenCompressionSign: seenCompressionSign,
+                compressedGroupsCount: compressedGroupsCount,
                 groupIdx: colonsIndicesCount
             )
         else {
             return nil
         }
 
-        /// Unchecked because there is a `groupIdx <= 7` check above
-        /// So this number is guaranteed to be in range of `0...7`
-        let compressedGroupsCount = 8 &-- groupIdx &-- 1
-        /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...7`
-        let shift = 16 &** compressedGroupsCount
-        /// Unchecked because `shift` is guaranteed to be in range of `0...128`
-        addressLhs |= addressRhs &>>> shift
-
-        self.init(addressLhs)
+        self.init(address)
     }
 
     /// Reads the `asciiGroup` integers into `addressLhs` or `addressRhs`.
     /// Returns false if the `asciiGroup` is invalid, in which case we should return `nil`.
     @inlinable
     static func _readIPv6Group(
-        addressLhs: inout UInt128,
-        addressRhs: inout UInt128,
+        address: inout UInt128,
         textualRepresentation asciiGroup: Span<UInt8>,
         seenCompressionSign: Bool,
+        compressedGroupsCount: Int,
         groupIdx: Int
     ) -> Bool {
         let utf8Count = asciiGroup.count
@@ -539,10 +527,6 @@ extension IPv6Address {
 
         /// Unchecked because it must be in range of 0...3 based on the check above
         let maxIdx = utf8Count &-- 1
-        /// Unchecked because `groupIdx` is should be in range of 0...7
-        /// `groupIdx` here _could_ be higher too, like `8`.
-        /// That still doesn't cause any problems based on the tests, so we accept it.
-        let groupStartIdxInAddress = 16 &** (7 &-- groupIdx)
 
         for idx in 0..<asciiGroup.count {
             /// Unchecked because it's less than `asciiGroup.count` anyway
@@ -553,25 +537,25 @@ extension IPv6Address {
             }
             /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
+            let compressionSignShiftFactor = seenCompressionSign ? compressedGroupsCount : 0
+
+            /// Unchecked because `groupIdx` is should be in range of 0...7
+            /// `groupIdx` here _could_ be higher too, like `8`.
+            /// That still doesn't cause any problems based on the tests, so we accept it.
+            let groupIdxShiftFactor = 16 &** (7 &-- groupIdx &-- compressionSignShiftFactor)
+
             /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is should be in range of `0...128`
             /// The `shift` here _could_ end up being a negative number.
             /// That still doesn't cause any problems based on the tests, so we accept it.
             ///
             /// We can have a bounds check for `groupIdx` to ensure this doesn't happen, but
             /// that comes with a compromise on performance.
-            let shift = groupStartIdxInAddress &++ (idx &** 4)
-            /// Unchecked because it can't exceed `128` anyway
-            if seenCompressionSign {
-                /// Per what explained above, we do `&<<` instead of `&<<<` here.
-                /// We accept that `shift` could be a negative number, which is unwanted by the
-                /// implementation, but still works out fine.
-                addressRhs |= UInt128(hexadecimalDigit) &<< shift
-            } else {
-                /// Per what explained above, we do `&<<` instead of `&<<<` here.
-                /// We accept that `shift` could be a negative number, which is unwanted by the
-                /// implementation, but still works out fine.
-                addressLhs |= UInt128(hexadecimalDigit) &<< shift
-            }
+            let shift = groupIdxShiftFactor &++ (idx &** 4)
+
+            /// Per what explained above, we do `&<<` instead of `&<<<` here.
+            /// We accept that `shift` could be a negative number, which is unwanted by the
+            /// implementation, but still works out fine.
+            address |= UInt128(hexadecimalDigit) &<< shift
         }
 
         return true
