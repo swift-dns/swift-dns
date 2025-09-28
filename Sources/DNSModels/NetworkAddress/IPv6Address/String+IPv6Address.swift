@@ -332,7 +332,7 @@ extension IPv6Address {
                 let lastColonIdx =
                     colonsIndicesCount == 0
                     ? nil
-                    : colonsIndicesPointer[colonsIndicesCount &-- 1]
+                    : colonsIndicesPointer[unchecked: colonsIndicesCount &-- 1]
                 if let lastColonIdx {
                     let isCompressionSign = lastColonIdx &++ 1 == idx
                     switch (isCompressionSign, compressionSignLeadingIdx) {
@@ -349,7 +349,7 @@ extension IPv6Address {
 
                 /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
                 /// And we checked above that span is less than 50 elements long.
-                colonsIndicesPointer[colonsIndicesCount] = UInt8(exactly: idx).unsafelyUnwrapped
+                colonsIndicesPointer[unchecked: colonsIndicesCount] = UInt8(exactly: idx).unsafelyUnwrapped
                 colonsIndicesCount &+== 1
 
             case .asciiDot:
@@ -386,7 +386,7 @@ extension IPv6Address {
             guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
                 return nil
             }
-            let rightmostColonIdx = colonsIndicesPointer[colonsIndicesCount &-- 1]
+            let rightmostColonIdx = colonsIndicesPointer[unchecked: colonsIndicesCount &-- 1]
             /// We already know we have 3 dots
             let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
             /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
