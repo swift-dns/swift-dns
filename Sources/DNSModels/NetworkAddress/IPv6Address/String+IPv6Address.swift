@@ -314,12 +314,12 @@ extension IPv6Address {
         /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
         /// we have 7 colons. This is the maximum amount of colons we can have.
         /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var colonsIndicesPointer: UInt64 = 0
+        var colonsIndicesStorage: UInt64 = 0
         var colonsIndicesCount = 0
         @inline(__always)
         func colonIndex(at idx: Int) -> UInt8 {
             UInt8(
-                exactly: (colonsIndicesPointer &>> (idx &** 8)) & 0xFF
+                exactly: (colonsIndicesStorage &>> (idx &** 8)) & 0xFF
             ).unsafelyUnwrapped
         }
 
@@ -355,7 +355,7 @@ extension IPv6Address {
 
                 /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
                 /// And we checked above that span is less than 50 elements long.
-                colonsIndicesPointer |= UInt64(idx) &<< (colonsIndicesCount &** 8)
+                colonsIndicesStorage |= UInt64(idx) &<< (colonsIndicesCount &** 8)
                 colonsIndicesCount &+== 1
 
             case .asciiDot:
@@ -529,9 +529,7 @@ extension IPv6Address {
             /// Unchecked because it's less than `asciiGroup.count` anyway
             let indexInGroup = maxIdx &-- idx
             let utf8Byte = asciiGroup[unchecked: indexInGroup]
-            guard
-                let hexadecimalDigit = IPv6Address.hexadecimalASCIIToUInt8LookupTable[utf8Byte]
-            else {
+            guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
                 return false
             }
 
@@ -546,30 +544,22 @@ extension IPv6Address {
         return true
     }
 
-    /// A-Z -> 0-25; a-z -> 0-25; 0-9 -> 26-35
-    @usableFromInline
-    static let hexadecimalASCIIToUInt8LookupTable: [UInt8: UInt8] = [
-        0x41: 10,
-        0x42: 11,
-        0x43: 12,
-        0x44: 13,
-        0x45: 14,
-        0x46: 15,
-        0x61: 10,
-        0x62: 11,
-        0x63: 12,
-        0x64: 13,
-        0x65: 14,
-        0x66: 15,
-        0x30: 0,
-        0x31: 1,
-        0x32: 2,
-        0x33: 3,
-        0x34: 4,
-        0x35: 5,
-        0x36: 6,
-        0x37: 7,
-        0x38: 8,
-        0x39: 9,
-    ]
+    @inlinable
+    static func mapHexadecimalASCIIToUInt8(_ utf8Byte: UInt8) -> UInt8? {
+        /// Normalizes uppercase ASCII to lowercase ASCII
+        let normalizedByte = utf8Byte | 0b00100000
+        if normalizedByte >= UInt8.asciiLowercasedA {
+            guard normalizedByte <= UInt8.asciiLowercasedF else {
+                return nil
+            }
+            return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
+        } else if utf8Byte >= UInt8.ascii0 {
+            guard utf8Byte <= UInt8.ascii9 else {
+                return nil
+            }
+            return utf8Byte &-- UInt8.ascii0
+        } else {
+            return nil
+        }
+    }
 }
