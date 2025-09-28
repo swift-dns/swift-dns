@@ -11,25 +11,74 @@ extension IPv6Address {
     @inlinable
     public init?(domainName: DomainName) {
         var iterator = domainName.makePositionIterator()
-        guard
-            let position = iterator.next(),
-            /// The domain name must contain exactly one label
-            iterator.reachedEnd()
-        else {
+        guard let position = iterator.next() else {
             return nil
         }
-        let range = position.startIndex..<(position.startIndex &++ position.length)
+
         if let ipv6Address = domainName.data.withUnsafeReadableBytes({ ptr -> IPv6Address? in
-            let span = ptr.bindMemory(to: UInt8.self).span
-            return IPv6Address(
-                /// `DomainName.data` always only contains ASCII bytes
-                __uncheckedASCIIspan: span.extracting(unchecked: range)
-            )
+            /// `DomainName.data` always only contains ASCII bytes
+            let asciiSpan = ptr.bindMemory(to: UInt8.self).span
+
+            if iterator.reachedEnd() {
+                let range = position.startIndex..<(position.startIndex &++ position.length)
+                return IPv6Address(
+                    __uncheckedASCIIspan: asciiSpan.extracting(unchecked: range)
+                )
+            } else {
+                /// Maybe it's an ipv4-mapped ipv6 address
+                /// like `::FFFF:1.1.1.1`
+                return IPv6Address.ipv4Mapped(
+                    asciiSpan: asciiSpan,
+                    iterator: &iterator,
+                    position: position
+                )
+            }
         }) {
             self = ipv6Address
             return
         }
 
         return nil
+    }
+
+    @inlinable
+    package static func ipv4Mapped(
+        asciiSpan: Span<UInt8>,
+        iterator: inout DomainName.PositionIterator,
+        position: (startIndex: Int, length: Int)
+    ) -> IPv6Address? {
+        guard let lastColonIdx = asciiSpan.lastIndex(where: { $0 == .asciiColon }) else {
+            return nil
+        }
+        let afterLastColonIdx = lastColonIdx &++ 1
+        let upperbound = position.startIndex &++ position.length
+        guard afterLastColonIdx < upperbound else {
+            return nil
+        }
+        /// Need to trim the square brackets here and notify the ipv4 parsing logic
+        /// Otherwise in an ipv4-mapped ipv6 address like `[::FFFF:1.1.1.1]`,
+        /// we'll be asking the ipv4-parsing logic to parse `1.1.1.1]` and the ipv6 parsing logic to
+        /// parse `[::FFFF`, and both of these are invalid.
+        let expectingRightSquareBracketAtTheEnd =
+            asciiSpan[unchecked: position.startIndex] == UInt8.asciiLeftSquareBracket
+        var ipv6StartIndex = position.startIndex
+        if expectingRightSquareBracketAtTheEnd {
+            ipv6StartIndex &+== 1
+        }
+        guard
+            let ipv4MappedSegment = IPv4Address(
+                __domainNameSpan: asciiSpan,
+                iterator: &iterator,
+                firstRange: afterLastColonIdx..<upperbound,
+                expectingRightSquareBracketAtTheEnd: expectingRightSquareBracketAtTheEnd
+            )
+        else {
+            return nil
+        }
+        let range = ipv6StartIndex..<afterLastColonIdx
+        return IPv6Address(
+            __uncheckedASCIIspan: asciiSpan.extracting(unchecked: range),
+            preParsedIPv4MappedSegment: ipv4MappedSegment
+        )
     }
 }

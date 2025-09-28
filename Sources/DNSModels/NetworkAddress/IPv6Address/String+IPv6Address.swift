@@ -246,6 +246,19 @@ extension IPv6Address {
     /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(__uncheckedASCIIspan span: Span<UInt8>) {
+        self.init(__uncheckedASCIIspan: span, preParsedIPv4MappedSegment: nil)
+    }
+
+    /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
+    /// The provided **span is required to be ASCII**.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
+    @inlinable
+    init?(
+        __uncheckedASCIIspan span: Span<UInt8>,
+        preParsedIPv4MappedSegment: IPv4Address?
+    ) {
         debugOnly {
             for idx in span.indices {
                 /// Unchecked because `idx` comes right from `span.indices`
@@ -372,6 +385,18 @@ extension IPv6Address {
             return nil
         }
 
+        if let preParsedIPv4MappedSegment {
+            /// Can't have both a pre-parsed segment and also a not-parsed one.
+            guard ipv4MappedSegment == nil else {
+                return nil
+            }
+            guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
+                return nil
+            }
+
+            ipv4MappedSegment = preParsedIPv4MappedSegment
+        }
+
         /// If we have an ipv4MappedSegment, we don't need to check the colons count.
         /// Because the ipv4 decoding process already has done it.
         if ipv4MappedSegment == nil {
@@ -451,40 +476,38 @@ extension IPv6Address {
         /// Read last remaining byte-pair
         if segmentStartIdx >= count {
             if seenCompressionSign {
-                if let ipv4MappedSegment {
-                    /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
-                    /// ipv4-mapped ipv6 address.
-                    /// So this number is guaranteed to be in range of `0...6`
-                    let compressedGroupsCount = 8 &-- groupIdx &-- 2
-                    /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...7`
-                    let shift = 16 &** compressedGroupsCount
-                    /// Unchecked because `shift` is guaranteed to be in range of `0...128`
-                    addressLhs |= addressRhs &>>> shift
-                    addressLhs |= UInt128(ipv4MappedSegment.address)
-
-                    self.init(addressLhs)
-                    guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
-                        return nil
-                    }
-                    return
-                } else {
+                guard let ipv4MappedSegment else {
                     /// Must have reached end with no rhs
                     self.init(addressLhs)
                     return
                 }
-            } else {
-                if groupIdx == 6,
-                    let ipv4MappedSegment
-                {
-                    self.init(addressLhs | UInt128(ipv4MappedSegment.address))
-                    guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
-                        return nil
-                    }
-                    return
-                } else {
-                    /// No compression sign, but still have an empty group?!
+                /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
+                /// ipv4-mapped ipv6 address.
+                /// So this number is guaranteed to be in range of `0...6`
+                let compressedGroupsCount = 8 &-- groupIdx &-- 2
+                /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...6`
+                let shift = 16 &** compressedGroupsCount
+                /// Unchecked because `shift` is guaranteed to be in range of `0...96`
+                addressLhs |= addressRhs &>>> shift
+                addressLhs |= UInt128(ipv4MappedSegment.address)
+
+                self.init(addressLhs)
+                guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
                     return nil
                 }
+                return
+            } else {
+                guard groupIdx == 6,
+                    let ipv4MappedSegment
+                else {
+                    /// No compression sign and no ipv4-mapped segment, but still have an empty group?!
+                    return nil
+                }
+                self.init(addressLhs | UInt128(ipv4MappedSegment.address))
+                guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
+                    return nil
+                }
+                return
             }
         }
 
