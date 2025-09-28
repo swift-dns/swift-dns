@@ -318,7 +318,7 @@ extension IPv6Address {
         var colonsIndicesCount = 0
 
         /// The index of the leading colon in a compression sign (`::`)
-        var compressionSignLeadingIdx: Int? = nil
+        var compressionSignLeadingIdx: UInt8? = nil
         var startsWithCompressionSign = false
 
         for idx in span.indices {
@@ -337,7 +337,7 @@ extension IPv6Address {
                     let isCompressionSign = lastColonIdx &++ 1 == idx
                     switch (isCompressionSign, compressionSignLeadingIdx) {
                     case (true, nil):
-                        compressionSignLeadingIdx = Int(lastColonIdx)
+                        compressionSignLeadingIdx = lastColonIdx
                         startsWithCompressionSign = lastColonIdx == 0
                     case (true, .some):
                         // More than 1 compression signs
@@ -446,23 +446,21 @@ extension IPv6Address {
         /// Have seen '::' or not
         var seenCompressionSign = false
 
-        var segmentStartIdx = 0
+        var segmentStartIdx: UInt8 = 0
 
         var groupIdx = 0
         while groupIdx < colonsIndicesCount {
             /// These are safe to unwrap, we're keeping track of them using the array's idx
-            let nextSeparatorIdx = Int(colonsIndicesPointer[groupIdx])
+            let nextSeparatorIdx = colonsIndicesPointer[groupIdx]
 
             let isTheLeadingCompressionSign = nextSeparatorIdx == compressionSignLeadingIdx
 
             if !(isTheLeadingCompressionSign && startsWithCompressionSign) {
-                let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
+                let asciiGroup = span.extracting(unchecked: Int(segmentStartIdx)..<Int(nextSeparatorIdx))
                 guard
                     self._readIPv6Group(
                         textualRepresentation: asciiGroup,
-                        seenCompressionSign: seenCompressionSign,
-                        compressedGroupsCount: compressedGroupsCount,
-                        groupIdx: groupIdx
+                        octalIdxInAddress: groupIdx &++ (seenCompressionSign ? compressedGroupsCount : 0)
                     )
                 else {
                     return nil
@@ -471,9 +469,8 @@ extension IPv6Address {
 
             seenCompressionSign = seenCompressionSign || isTheLeadingCompressionSign
 
-            let moveForwardBy = isTheLeadingCompressionSign ? 2 : 1
-            groupIdx &+== moveForwardBy
-            segmentStartIdx = nextSeparatorIdx &++ moveForwardBy
+            groupIdx &+== (isTheLeadingCompressionSign ? 2 : 1)
+            segmentStartIdx = nextSeparatorIdx &++ (isTheLeadingCompressionSign ? 2 : 1)
         }
 
         if hasIPv4MappedSegment {
@@ -494,10 +491,8 @@ extension IPv6Address {
 
         guard
             self._readIPv6Group(
-                textualRepresentation: span.extracting(unchecked: segmentStartIdx..<count),
-                seenCompressionSign: seenCompressionSign,
-                compressedGroupsCount: compressedGroupsCount,
-                groupIdx: colonsIndicesCount
+                textualRepresentation: span.extracting(unchecked: Int(segmentStartIdx)..<count),
+                octalIdxInAddress: groupIdx &++ (seenCompressionSign ? compressedGroupsCount : 0)
             )
         else {
             return nil
@@ -509,9 +504,7 @@ extension IPv6Address {
     @inlinable
     mutating func _readIPv6Group(
         textualRepresentation asciiGroup: Span<UInt8>,
-        seenCompressionSign: Bool,
-        compressedGroupsCount: Int,
-        groupIdx: Int
+        octalIdxInAddress: Int
     ) -> Bool {
         let utf8Count = asciiGroup.count
 
@@ -530,22 +523,8 @@ extension IPv6Address {
             guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
                 return false
             }
-            /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
 
-            let compressionSignShiftFactor = seenCompressionSign ? compressedGroupsCount : 0
-
-            /// Unchecked because `groupIdx` is should be in range of 0...7
-            /// `groupIdx` here _could_ be higher too, like `8`.
-            /// That still doesn't cause any problems based on the tests, so we accept it.
-            let groupIdxShiftFactor = 16 &** (7 &-- groupIdx &-- compressionSignShiftFactor)
-
-            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is should be in range of `0...128`
-            /// The `shift` here _could_ end up being a negative number.
-            /// That still doesn't cause any problems based on the tests, so we accept it.
-            ///
-            /// We can have a bounds check for `groupIdx` to ensure this doesn't happen, but
-            /// that comes with a compromise on performance.
-            let shift = groupIdxShiftFactor &++ (idx &** 4)
+            let shift = (16 &** (7 &-- octalIdxInAddress)) &++ (idx &** 4)
 
             /// Per what explained above, we do `&<<` instead of `&<<<` here.
             /// We accept that `shift` could be a negative number, which is unwanted by the
