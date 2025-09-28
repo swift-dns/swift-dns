@@ -276,9 +276,7 @@ extension IPv6Address {
         var span = span
         var count = span.count
 
-        /// Longest possible ipv6 address is something like
-        /// [0000:0000:0000:0000:0000:ffff:111.111.111.111] which is only 47 bytes long.
-        guard count >= 2, count <= 47 else {
+        guard count >= 2 else {
             return nil
         }
 
@@ -299,7 +297,9 @@ extension IPv6Address {
             return nil
         }
 
-        guard count > 1 else {
+        /// Longest possible ipv6 address is something like
+        /// `0000:0000:0000:0000:0000:ffff:111.111.111.111` which is only 45 bytes long.
+        guard count >= 2, count <= 45 else {
             return nil
         }
 
@@ -314,9 +314,14 @@ extension IPv6Address {
         /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
         /// we have 7 colons. This is the maximum amount of colons we can have.
         /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var colonsIndicesPointer: [UInt8] = []
-        colonsIndicesPointer.reserveCapacity(7)
+        var colonsIndicesPointer: UInt64 = 0
         var colonsIndicesCount = 0
+        @inline(__always)
+        func colonIndex(at idx: Int) -> UInt8 {
+            UInt8(
+                exactly: (colonsIndicesPointer &>> (idx &** 8)) & 0xFF
+            ).unsafelyUnwrapped
+        }
 
         /// The index of the leading colon in a compression sign (`::`)
         var compressionSignLeadingIdx: UInt8? = nil
@@ -333,7 +338,7 @@ extension IPv6Address {
                 let lastColonIdx =
                     colonsIndicesCount == 0
                     ? nil
-                    : colonsIndicesPointer[colonsIndicesCount &-- 1]
+                    : colonIndex(at: colonsIndicesCount &-- 1)
                 if let lastColonIdx {
                     let isCompressionSign = lastColonIdx &++ 1 == idx
                     switch (isCompressionSign, compressionSignLeadingIdx) {
@@ -350,7 +355,7 @@ extension IPv6Address {
 
                 /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
                 /// And we checked above that span is less than 50 elements long.
-                colonsIndicesPointer.append(UInt8(exactly: idx).unsafelyUnwrapped)
+                colonsIndicesPointer |= UInt64(idx) &<< (colonsIndicesCount &** 8)
                 colonsIndicesCount &+== 1
 
             case .asciiDot:
@@ -387,7 +392,7 @@ extension IPv6Address {
             guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
                 return nil
             }
-            let rightmostColonIdx = colonsIndicesPointer[colonsIndicesCount &-- 1]
+            let rightmostColonIdx = colonIndex(at: colonsIndicesCount &-- 1)
             /// We already know we have 3 dots
             let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
             /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
@@ -452,16 +457,19 @@ extension IPv6Address {
         var groupIdx = 0
         while groupIdx < colonsIndicesCount {
             /// These are safe to unwrap, we're keeping track of them using the array's idx
-            let nextSeparatorIdx = colonsIndicesPointer[groupIdx]
+            let nextSeparatorIdx = colonIndex(at: groupIdx)
 
             let isTheLeadingCompressionSign = nextSeparatorIdx == compressionSignLeadingIdx
 
             if !(isTheLeadingCompressionSign && startsWithCompressionSign) {
-                let asciiGroup = span.extracting(unchecked: Int(segmentStartIdx)..<Int(nextSeparatorIdx))
+                let asciiGroup = span.extracting(
+                    unchecked: Int(segmentStartIdx)..<Int(nextSeparatorIdx)
+                )
                 guard
                     self._readIPv6Group(
                         textualRepresentation: asciiGroup,
-                        octalIdxInAddress: groupIdx &++ (seenCompressionSign ? compressedGroupsCount : 0)
+                        octalIdxInAddress: groupIdx
+                            &++ (seenCompressionSign ? compressedGroupsCount : 0)
                     )
                 else {
                     return nil
