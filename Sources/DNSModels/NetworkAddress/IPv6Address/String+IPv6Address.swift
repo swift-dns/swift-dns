@@ -314,7 +314,8 @@ extension IPv6Address {
         /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
         /// we have 7 colons. This is the maximum amount of colons we can have.
         /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var colonsIndicesPointer: [7 of UInt8] = .init(repeating: 255)
+        var colonsIndicesPointer: [UInt8] = []
+        colonsIndicesPointer.reserveCapacity(7)
         var colonsIndicesCount = 0
 
         /// The index of the leading colon in a compression sign (`::`)
@@ -332,7 +333,7 @@ extension IPv6Address {
                 let lastColonIdx =
                     colonsIndicesCount == 0
                     ? nil
-                    : colonsIndicesPointer[unchecked: colonsIndicesCount &-- 1]
+                    : colonsIndicesPointer[colonsIndicesCount &-- 1]
                 if let lastColonIdx {
                     let isCompressionSign = lastColonIdx &++ 1 == idx
                     switch (isCompressionSign, compressionSignLeadingIdx) {
@@ -349,7 +350,7 @@ extension IPv6Address {
 
                 /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
                 /// And we checked above that span is less than 50 elements long.
-                colonsIndicesPointer[unchecked: colonsIndicesCount] = UInt8(exactly: idx).unsafelyUnwrapped
+                colonsIndicesPointer.append(UInt8(exactly: idx).unsafelyUnwrapped)
                 colonsIndicesCount &+== 1
 
             case .asciiDot:
@@ -386,7 +387,7 @@ extension IPv6Address {
             guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
                 return nil
             }
-            let rightmostColonIdx = colonsIndicesPointer[unchecked: colonsIndicesCount &-- 1]
+            let rightmostColonIdx = colonsIndicesPointer[colonsIndicesCount &-- 1]
             /// We already know we have 3 dots
             let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
             /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
