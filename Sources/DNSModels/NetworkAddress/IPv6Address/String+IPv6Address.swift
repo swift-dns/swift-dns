@@ -529,7 +529,9 @@ extension IPv6Address {
             /// Unchecked because it's less than `asciiGroup.count` anyway
             let indexInGroup = maxIdx &-- idx
             let utf8Byte = asciiGroup[unchecked: indexInGroup]
-            guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
+            guard
+                let hexadecimalDigit = IPv6Address.hexadecimalASCIIToUInt8LookupTable[utf8Byte]
+            else {
                 return false
             }
 
@@ -544,25 +546,30 @@ extension IPv6Address {
         return true
     }
 
-    @inlinable
-    static func mapHexadecimalASCIIToUInt8(_ utf8Byte: UInt8) -> UInt8? {
-        if utf8Byte >= UInt8.asciiLowercasedA {
-            guard utf8Byte <= UInt8.asciiLowercasedF else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.asciiLowercasedA &++ 10
-        } else if utf8Byte >= UInt8.asciiUppercasedA {
-            guard utf8Byte <= UInt8.asciiUppercasedF else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.asciiUppercasedA &++ 10
-        } else if utf8Byte >= UInt8.ascii0 {
-            guard utf8Byte <= UInt8.ascii9 else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.ascii0
-        } else {
-            return nil
-        }
-    }
+    /// A-Z -> 0-25; a-z -> 0-25; 0-9 -> 26-35
+    @usableFromInline
+    static let hexadecimalASCIIToUInt8LookupTable: [UInt8: UInt8] = [
+        0x41: 10,
+        0x42: 11,
+        0x43: 12,
+        0x44: 13,
+        0x45: 14,
+        0x46: 15,
+        0x61: 10,
+        0x62: 11,
+        0x63: 12,
+        0x64: 13,
+        0x65: 14,
+        0x66: 15,
+        0x30: 0,
+        0x31: 1,
+        0x32: 2,
+        0x33: 3,
+        0x34: 4,
+        0x35: 5,
+        0x36: 6,
+        0x37: 7,
+        0x38: 8,
+        0x39: 9,
+    ]
 }
