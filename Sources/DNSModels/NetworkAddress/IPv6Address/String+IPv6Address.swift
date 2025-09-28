@@ -369,7 +369,8 @@ extension IPv6Address {
         guard colonsIndicesCount >= 2 else {
             return nil
         }
-        var ipv4MappedSegment: IPv4Address?
+
+        var hasIPv4MappedSegment = false
 
         /// Make sure dots are either 0, or 3.
         /// If 3, then make sure they are all on the left side of all colons.
@@ -393,50 +394,54 @@ extension IPv6Address {
                 return nil
             }
             let intRightmostColonIdx = Int(rightmostColonIdx)
-            ipv4MappedSegment = IPv4Address(
-                __uncheckedASCIIspan: span.extracting(
-                    unchecked: intRightmostColonIdx &++ 1..<count
+            guard
+                let ipv4MappedSegment = IPv4Address(
+                    __uncheckedASCIIspan: span.extracting(
+                        unchecked: (intRightmostColonIdx &++ 1)..<count
+                    )
                 )
-            )
-            /// We must have a valid ipv4 mapped segment by now.
-            if ipv4MappedSegment == nil {
+            else {
                 return nil
             }
+            address |= UInt128(ipv4MappedSegment.address)
             /// Set the span to only the left side of the ipv4 mapped segment.
             /// This'll extract `::FFFF` from `::FFFF:1.1.1.1`.
             span = span.extracting(unchecked: 0..<intRightmostColonIdx)
             count = intRightmostColonIdx
+            hasIPv4MappedSegment = true
         default:
             return nil
         }
 
         if let preParsedIPv4MappedSegment {
             /// Can't have both a pre-parsed segment and also a not-parsed one.
-            guard ipv4MappedSegment == nil else {
+            if hasIPv4MappedSegment {
                 return nil
             }
             guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
                 return nil
             }
 
-            ipv4MappedSegment = preParsedIPv4MappedSegment
+            address |= UInt128(preParsedIPv4MappedSegment.address)
+            hasIPv4MappedSegment = true
         }
 
         /// If we have an ipv4MappedSegment, we don't need to check the colons count.
         /// Because the ipv4 decoding process already has done it.{
-        guard ipv4MappedSegment != nil || colonsIndicesCount >= 2 else {
+        guard hasIPv4MappedSegment || colonsIndicesCount >= 2 else {
             return nil
         }
-        let ipv4MappedFactor = ipv4MappedSegment == nil ? 0 : 1
+        let ipv4MappedSegmentFactor = hasIPv4MappedSegment ? 1 : 0
         guard
-            colonsIndicesCount == (7 &-- ipv4MappedFactor) || compressionSignLeadingIdx != nil
+            colonsIndicesCount == (7 &-- ipv4MappedSegmentFactor)
+                || compressionSignLeadingIdx != nil
         else {
             return nil
         }
         /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
         /// ipv4-mapped ipv6 address.
         /// So this number is guaranteed to be in range of `0...7`
-        let compressedGroupsCount = 7 &-- colonsIndicesCount &-- ipv4MappedFactor
+        let compressedGroupsCount = 7 &-- colonsIndicesCount &-- ipv4MappedSegmentFactor
 
         /// Have seen '::' or not
         var seenCompressionSign = false
@@ -472,10 +477,7 @@ extension IPv6Address {
             segmentStartIdx = nextSeparatorIdx &++ moveForwardBy
         }
 
-        if let ipv4MappedSegment {
-            /// Unchecked because `shift` is guaranteed to be in range of `0...96`
-            address |= UInt128(ipv4MappedSegment.address)
-
+        if hasIPv4MappedSegment {
             self.init(address)
             guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
                 return nil
