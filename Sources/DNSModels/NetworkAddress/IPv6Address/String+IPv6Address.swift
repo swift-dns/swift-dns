@@ -273,9 +273,8 @@ extension IPv6Address {
         self.init(0)
 
         var span = span
-        var count = span.count
 
-        guard count >= 2 else {
+        guard span.count >= 2 else {
             return nil
         }
 
@@ -284,12 +283,11 @@ extension IPv6Address {
         /// Unchecked because we just checked count > 1 above
         let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
         /// Unchecked because we just checked count > 1 above
-        let endsWithBracket = span[unchecked: count &-- 1] == .asciiRightSquareBracket
+        let endsWithBracket = span[unchecked: span.count &-- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
         case (true, true):
             /// Unchecked because we just checked count > 1 above
-            span = span.extracting(1..<(count &-- 1))
-            count &-== 2
+            span = span.extracting(1..<(span.count &-- 1))
         case (false, false):
             break
         case (true, false), (false, true):
@@ -298,7 +296,7 @@ extension IPv6Address {
 
         /// Longest possible ipv6 address is something like
         /// `0000:0000:0000:0000:0000:ffff:111.111.111.111` which is only 45 bytes long.
-        guard count >= 2, count <= 45 else {
+        guard span.count >= 2, span.count <= 45 else {
             return nil
         }
 
@@ -395,7 +393,7 @@ extension IPv6Address {
             guard
                 let ipv4MappedSegment = IPv4Address(
                     __uncheckedASCIIspan: span.extracting(
-                        unchecked: (intRightmostColonIdx &++ 1)..<count
+                        unchecked: (intRightmostColonIdx &++ 1)..<span.count
                     )
                 )
             else {
@@ -405,7 +403,6 @@ extension IPv6Address {
             /// Set the span to only the left side of the ipv4 mapped segment.
             /// This'll extract `::FFFF` from `::FFFF:1.1.1.1`.
             span = span.extracting(unchecked: 0..<intRightmostColonIdx)
-            count = intRightmostColonIdx
             hasIPv4MappedSegment = true
         default:
             return nil
@@ -479,7 +476,7 @@ extension IPv6Address {
                 return nil
             }
             return
-        } else if segmentStartIdx >= count {
+        } else if segmentStartIdx >= span.count {
             /// Read last remaining byte-pair
             if seenCompressionSign {
                 /// Must have reached end with no rhs
@@ -492,7 +489,9 @@ extension IPv6Address {
 
         guard
             self._readIPv6Group(
-                textualRepresentation: span.extracting(unchecked: Int(segmentStartIdx)..<count),
+                textualRepresentation: span.extracting(
+                    unchecked: Int(segmentStartIdx)..<span.count
+                ),
                 octalIdxInAddress: groupIdx &++ (seenCompressionSign ? compressedGroupsCount : 0)
             )
         else {
@@ -550,8 +549,7 @@ extension IPv6Address {
                 return nil
             }
             return utf8Byte &-- UInt8.ascii0
-        } else {
-            return nil
         }
+        return nil
     }
 }
