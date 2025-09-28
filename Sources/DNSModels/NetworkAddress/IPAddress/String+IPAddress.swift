@@ -47,7 +47,8 @@ extension IPAddress: LosslessStringConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+// @available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension IPAddress {
     /// Initialize an IP address from a `Span<UInt8>` of its textual representation.
     /// For example `"192.168.1.98"` will parse into `.v4(192.168.1.98)`.

@@ -25,6 +25,6 @@ where
     @available(swiftDNSApplePlatforms 15, *)
     init?(exactly ipAddress: IPAddress)
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 26, *)
     init?(__uncheckedASCIIspan: Span<UInt8>)
 }

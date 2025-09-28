@@ -222,6 +222,7 @@ extension IPv6Address: LosslessStringConvertible {
 }
 
 @available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
@@ -306,15 +307,15 @@ extension IPv6Address {
         /// `UInt8` is fine, up there we made sure there are less than 50 elements in the span.
         /// In an IPv6 address like `[0000:0000:0000:0000:0000:ffff:1.1.1.1]`,
         /// we have 3 dots. This is the maximum amount of dots we can have.
-        let dotsIndicesPointer: UnsafeMutablePointer<UInt8> = .allocate(capacity: 3)
-        defer { dotsIndicesPointer.deallocate() }
+        /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
+        var dotsIndicesPointer: [3 of UInt8] = .init(repeating: 255)
         var dotsIndicesCount = 0
 
         /// `UInt8` is fine, up there we made sure there are less than 50 elements in the span.
         /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
         /// we have 7 colons. This is the maximum amount of colons we can have.
-        let colonsIndicesPointer: UnsafeMutablePointer<UInt8> = .allocate(capacity: 7)
-        defer { colonsIndicesPointer.deallocate() }
+        /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
+        var colonsIndicesPointer: [7 of UInt8] = .init(repeating: 255)
         var colonsIndicesCount = 0
 
         for idx in span.indices {
@@ -362,7 +363,8 @@ extension IPv6Address {
                 return nil
             }
             let rightmostColonIdx = colonsIndicesPointer[colonsIndicesCount &-- 1]
-            let leftmostDotIdx = dotsIndicesPointer[0]
+            /// We already know we have 3 dots
+            let leftmostDotIdx = dotsIndicesPointer[unchecked: 0]
             /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
             guard leftmostDotIdx > rightmostColonIdx else {
                 return nil
@@ -412,6 +414,7 @@ extension IPv6Address {
 
         var groupIdx = 0
         while groupIdx < colonsIndicesCount {
+            /// These are safe to unwrap, we're keeping track of them using the array's idx
             let nextSeparatorIdx = Int(colonsIndicesPointer[groupIdx])
 
             let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
