@@ -222,7 +222,6 @@ extension IPv6Address: LosslessStringConvertible {
 }
 
 @available(swiftDNSApplePlatforms 15, *)
-@available(swiftDNSApplePlatforms 26, *)
 extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
@@ -385,13 +384,6 @@ extension IPv6Address {
         case 0:
             break
         case 3:
-            /// We need at least 3 colons in a valid ipv4-mapped ipv6 address.
-            /// Like in `::FFFF:1.1.1.1`.
-            /// In `0:0:0:0:0:FFFF:1.1.1.1` we have 6 colons, which is max amount for
-            /// a valid ipv4-mapped ipv6 address.
-            guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
-                return nil
-            }
             let rightmostColonIdx = colonIndex(at: colonsIndicesCount &-- 1)
             /// We already know we have 3 dots
             let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
@@ -424,9 +416,6 @@ extension IPv6Address {
             if hasIPv4MappedSegment {
                 return nil
             }
-            guard colonsIndicesCount >= 3, colonsIndicesCount <= 6 else {
-                return nil
-            }
 
             address |= UInt128(preParsedIPv4MappedSegment.address)
             hasIPv4MappedSegment = true
@@ -437,6 +426,9 @@ extension IPv6Address {
         guard hasIPv4MappedSegment || colonsIndicesCount >= 2 else {
             return nil
         }
+
+        /// In `0:0:0:0:0:FFFF:1.1.1.1` we have 6 colons, which is max amount for
+        /// a valid ipv4-mapped ipv6 address.
         let ipv4MappedSegmentFactor = hasIPv4MappedSegment ? 1 : 0
         guard
             colonsIndicesCount == (7 &-- ipv4MappedSegmentFactor)

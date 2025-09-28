@@ -53,8 +53,7 @@ extension CIDR: LosslessStringConvertible {
     }
 }
 
-// @available(swiftDNSApplePlatforms 15, *)
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension CIDR {
     /// Initialize an CIDR from a `Span<UInt8>` of its textual representation.
     /// For example `"192.168.1.98/24"`, or `"2001:db8:1111::/64"`.
