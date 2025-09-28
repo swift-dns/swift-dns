@@ -443,30 +443,11 @@ extension IPv6Address {
         while groupIdx < colonsIndicesCount {
             /// These are safe to unwrap, we're keeping track of them using the array's idx
             let nextSeparatorIdx = Int(colonsIndicesPointer[groupIdx])
-            let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
 
             let isTheLeadingCompressionSign = nextSeparatorIdx == compressionSignLeadingIdx
-            if isTheLeadingCompressionSign {
-                if !startsWithCompressionSign {
-                    guard
-                        IPv6Address._readIPv6Group(
-                            addressLhs: &addressLhs,
-                            addressRhs: &addressRhs,
-                            textualRepresentation: asciiGroup,
-                            seenCompressionSign: seenCompressionSign,
-                            groupIdx: groupIdx
-                        )
-                    else {
-                        return nil
-                    }
-                }
 
-                seenCompressionSign = true
-                /// Unchecked because it can't exceed `span.count` anyway
-                groupIdx &+== 2
-                segmentStartIdx = nextSeparatorIdx &++ 2
-                continue
-            } else {
+            if !(isTheLeadingCompressionSign && startsWithCompressionSign) {
+                let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
                 guard
                     IPv6Address._readIPv6Group(
                         addressLhs: &addressLhs,
@@ -478,10 +459,13 @@ extension IPv6Address {
                 else {
                     return nil
                 }
-
-                groupIdx &+== 1
-                segmentStartIdx = nextSeparatorIdx &++ 1
             }
+
+            seenCompressionSign = seenCompressionSign || isTheLeadingCompressionSign
+
+            let moveForwardBy = isTheLeadingCompressionSign ? 2 : 1
+            groupIdx &+== moveForwardBy
+            segmentStartIdx = nextSeparatorIdx &++ moveForwardBy
         }
 
         /// Read last remaining byte-pair
