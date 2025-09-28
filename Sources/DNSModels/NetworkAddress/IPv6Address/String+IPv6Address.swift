@@ -271,7 +271,7 @@ extension IPv6Address {
             }
         }
 
-        var address: UInt128 = 0
+        self.init(0)
 
         var span = span
         var count = span.count
@@ -458,8 +458,7 @@ extension IPv6Address {
             if !(isTheLeadingCompressionSign && startsWithCompressionSign) {
                 let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
                 guard
-                    IPv6Address._readIPv6Group(
-                        address: &address,
+                    self._readIPv6Group(
                         textualRepresentation: asciiGroup,
                         seenCompressionSign: seenCompressionSign,
                         compressedGroupsCount: compressedGroupsCount,
@@ -478,7 +477,6 @@ extension IPv6Address {
         }
 
         if hasIPv4MappedSegment {
-            self.init(address)
             guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
                 return nil
             }
@@ -487,7 +485,6 @@ extension IPv6Address {
             /// Read last remaining byte-pair
             if seenCompressionSign {
                 /// Must have reached end with no rhs
-                self.init(address)
                 return
             } else {
                 /// No compression sign and no ipv4-mapped segment, but still have an empty group?!
@@ -496,8 +493,7 @@ extension IPv6Address {
         }
 
         guard
-            IPv6Address._readIPv6Group(
-                address: &address,
+            self._readIPv6Group(
                 textualRepresentation: span.extracting(unchecked: segmentStartIdx..<count),
                 seenCompressionSign: seenCompressionSign,
                 compressedGroupsCount: compressedGroupsCount,
@@ -506,15 +502,12 @@ extension IPv6Address {
         else {
             return nil
         }
-
-        self.init(address)
     }
 
     /// Reads the `asciiGroup` integers into `addressLhs` or `addressRhs`.
     /// Returns false if the `asciiGroup` is invalid, in which case we should return `nil`.
     @inlinable
-    static func _readIPv6Group(
-        address: inout UInt128,
+    mutating func _readIPv6Group(
         textualRepresentation asciiGroup: Span<UInt8>,
         seenCompressionSign: Bool,
         compressedGroupsCount: Int,
