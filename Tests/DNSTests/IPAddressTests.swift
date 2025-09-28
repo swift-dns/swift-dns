@@ -241,14 +241,14 @@ struct IPAddressTests {
     )
     func ipv6AddressFromString(
         string: String,
-        expectedAddress: UInt128?,
+        expectedAddress: IPv6Address?,
         isValidIPv4: Bool
     ) {
-        #expect(IPv6Address(string)?.address == expectedAddress)
-        #expect(IPv6Address(Substring(string))?.address == expectedAddress)
-        #expect(IPv6Address(textualRepresentation: string.utf8Span)?.address == expectedAddress)
+        #expect(IPv6Address(string) == expectedAddress)
+        #expect(IPv6Address(Substring(string)) == expectedAddress)
+        #expect(IPv6Address(textualRepresentation: string.utf8Span) == expectedAddress)
         #expect(
-            IPv6Address(textualRepresentation: string.utf8Span.span)?.address == expectedAddress
+            IPv6Address(textualRepresentation: string.utf8Span.span) == expectedAddress
         )
 
         if isValidIPv4 {
@@ -257,7 +257,7 @@ struct IPAddressTests {
             #expect(IPAddress(textualRepresentation: string.utf8Span)?.isIPv4 == true)
             #expect(IPAddress(textualRepresentation: string.utf8Span.span)?.isIPv4 == true)
         } else {
-            let expectedIPv6: IPAddress? = expectedAddress.map { .v6(IPv6Address($0)) }
+            let expectedIPv6: IPAddress? = expectedAddress.map { .v6($0) }
             #expect(IPAddress(string) == expectedIPv6)
             #expect(IPAddress(Substring(string)) == expectedIPv6)
             #expect(IPAddress(textualRepresentation: string.utf8Span) == expectedIPv6)
@@ -272,7 +272,7 @@ struct IPAddressTests {
     )
     func ipv6AddressFromStringThroughDomainName(
         string: String,
-        expectedAddress: UInt128?,
+        expectedAddress: IPv6Address?,
         isValidIPv4: Bool
     ) {
         if string == "::FFFF:204.152.189.116." {
@@ -283,12 +283,12 @@ struct IPAddressTests {
         let domainName = try? DomainName(string: string)
 
         let ipv6Address = domainName.flatMap { IPv6Address(domainName: $0) }
-        #expect(ipv6Address?.address == expectedAddress)
+        #expect(ipv6Address == expectedAddress)
 
         let ipAddress = domainName.flatMap { IPAddress(domainName: $0) }
         switch ipAddress {
         case .v6(let ipv6):
-            #expect(ipv6.address == expectedAddress)
+            #expect(ipv6 == expectedAddress)
         case .none:
             #expect(expectedAddress == nil)
         case .v4:
@@ -426,7 +426,7 @@ private let ipv4IDNAStringAndAddressTestCases: [(String, IPv4Address?, Bool)] = 
 
 /// (IPv6String, IPv6Address, isValidIPv4)
 @available(swiftDNSApplePlatforms 15, *)
-private let ipv6StringAndAddressTestCases: [(String, UInt128?, Bool)] = [
+private let ipv6StringAndAddressTestCases: [(String, IPv6Address?, Bool)] = [
     ("1111:2222:3333:4444:5555:6666:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888, false),
     ("[FF::]", 0x00FF_0000_0000_0000_0000_0000_0000_0000, false),
     ("[0:FF::]", 0x0000_00FF_0000_0000_0000_0000_0000_0000, false),
@@ -490,6 +490,7 @@ private let ipv6StringAndAddressTestCases: [(String, UInt128?, Bool)] = [
     ("[2001:0:0:1::2", nil, false),
     ("2001:0:0:1::2]", nil, false),
     ("[1::2::]", nil, false),
+    ("[1::2::3]", nil, false),
     ("[:0:1:2:3:4:0:5:6]", nil, false),
     ("[0:1:2:3:4:0:5:6:]", nil, false),
     ("[::0:1:2:3:4:5:6:7]", nil, false),
@@ -511,7 +512,7 @@ private let ipv6StringAndAddressTestCases: [(String, UInt128?, Bool)] = [
 
 /// (IPv6String, IPv6Address, isValidIPv4)
 @available(swiftDNSApplePlatforms 15, *)
-private let ipv6IDNAStringAndAddressTestCases: [(String, UInt128?, Bool)] = [
+private let ipv6IDNAStringAndAddressTestCases: [(String, IPv6Address?, Bool)] = [
     /// Contains weird characters that are mapped to the correct characters in IDNA
     /// These all should work based on IDNA.
     /// For example, the weird `1`s in the ip address below is:

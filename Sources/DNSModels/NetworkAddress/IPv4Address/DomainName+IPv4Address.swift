@@ -113,7 +113,7 @@ extension IPv4Address {
         }
         var endIndex = position4.startIndex &++ position4.length
         if expectingRightSquareBracketAtTheEnd {
-            /// Domain name parts can't be empty based on contract, so this &--1 is safe
+            /// Domain name labels can't be empty based on contract, so this &--1 is safe
             guard asciiSpan[unchecked: endIndex &-- 1] == UInt8.asciiRightSquareBracket else {
                 return nil
             }

@@ -308,8 +308,8 @@ extension IPv6Address {
         /// In an IPv6 address like `[0000:0000:0000:0000:0000:ffff:1.1.1.1]`,
         /// we have 3 dots. This is the maximum amount of dots we can have.
         /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var dotsIndicesPointer: [3 of UInt8] = .init(repeating: 255)
-        var dotsIndicesCount = 0
+        var firstDotIdx: UInt8? = nil
+        var dotsCount = 0
 
         /// `UInt8` is fine, up there we made sure there are less than 50 elements in the span.
         /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
@@ -318,6 +318,10 @@ extension IPv6Address {
         var colonsIndicesPointer: [7 of UInt8] = .init(repeating: 255)
         var colonsIndicesCount = 0
 
+        /// The index of the leading colon in a compression sign (`::`)
+        var compressionSignLeadingIdx: Int? = nil
+        var startsWithCompressionSign = false
+
         for idx in span.indices {
             switch span[unchecked: idx] {
             case .asciiColon:
@@ -325,19 +329,39 @@ extension IPv6Address {
                     /// Cannot have any more colons
                     return nil
                 }
+
+                let lastColonIdx =
+                    colonsIndicesCount == 0
+                    ? nil
+                    : colonsIndicesPointer[colonsIndicesCount &-- 1]
+                if let lastColonIdx {
+                    let isCompressionSign = lastColonIdx &++ 1 == idx
+                    switch (isCompressionSign, compressionSignLeadingIdx) {
+                    case (true, nil):
+                        compressionSignLeadingIdx = Int(lastColonIdx)
+                        startsWithCompressionSign = lastColonIdx == 0
+                    case (true, .some):
+                        // More than 1 compression signs
+                        return nil
+                    case (false, _):
+                        break
+                    }
+                }
+
                 /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
                 /// And we checked above that span is less than 50 elements long.
                 colonsIndicesPointer[colonsIndicesCount] = UInt8(exactly: idx).unsafelyUnwrapped
                 colonsIndicesCount &+== 1
+
             case .asciiDot:
-                if dotsIndicesCount == 3 {
+                if dotsCount == 3 {
                     /// Cannot have any more dots
                     return nil
                 }
-                /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
-                /// And we checked above that span is less than 50 elements long.
-                dotsIndicesPointer[dotsIndicesCount] = UInt8(exactly: idx).unsafelyUnwrapped
-                dotsIndicesCount &+== 1
+                if firstDotIdx == nil {
+                    firstDotIdx = UInt8(exactly: idx).unsafelyUnwrapped
+                }
+                dotsCount &+== 1
             default:
                 continue
             }
@@ -351,7 +375,7 @@ extension IPv6Address {
         /// Make sure dots are either 0, or 3.
         /// If 3, then make sure they are all on the left side of all colons.
         /// Can happen in an IPv6 address like `[0000:0000:0000:0000:0000:ffff:1.1.1.1]`,
-        switch dotsIndicesCount {
+        switch dotsCount {
         case 0:
             break
         case 3:
@@ -364,7 +388,7 @@ extension IPv6Address {
             }
             let rightmostColonIdx = colonsIndicesPointer[colonsIndicesCount &-- 1]
             /// We already know we have 3 dots
-            let leftmostDotIdx = dotsIndicesPointer[unchecked: 0]
+            let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
             /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
             guard leftmostDotIdx > rightmostColonIdx else {
                 return nil
@@ -405,6 +429,9 @@ extension IPv6Address {
             guard colonsIndicesCount >= 2 else {
                 return nil
             }
+            guard colonsIndicesCount == 7 || compressionSignLeadingIdx != nil else {
+                return nil
+            }
         }
 
         /// Have seen '::' or not
@@ -416,64 +443,45 @@ extension IPv6Address {
         while groupIdx < colonsIndicesCount {
             /// These are safe to unwrap, we're keeping track of them using the array's idx
             let nextSeparatorIdx = Int(colonsIndicesPointer[groupIdx])
-
             let asciiGroup = span.extracting(unchecked: segmentStartIdx..<nextSeparatorIdx)
 
-            if asciiGroup.isEmpty {
-                if seenCompressionSign {
-                    /// We've already seen a compression sign, so this is invalid
+            let isTheLeadingCompressionSign = nextSeparatorIdx == compressionSignLeadingIdx
+            if isTheLeadingCompressionSign {
+                if !startsWithCompressionSign {
+                    guard
+                        IPv6Address._readIPv6Group(
+                            addressLhs: &addressLhs,
+                            addressRhs: &addressRhs,
+                            textualRepresentation: asciiGroup,
+                            seenCompressionSign: seenCompressionSign,
+                            groupIdx: groupIdx
+                        )
+                    else {
+                        return nil
+                    }
+                }
+
+                seenCompressionSign = true
+                /// Unchecked because it can't exceed `span.count` anyway
+                groupIdx &+== 2
+                segmentStartIdx = nextSeparatorIdx &++ 2
+                continue
+            } else {
+                guard
+                    IPv6Address._readIPv6Group(
+                        addressLhs: &addressLhs,
+                        addressRhs: &addressRhs,
+                        textualRepresentation: asciiGroup,
+                        seenCompressionSign: seenCompressionSign,
+                        groupIdx: groupIdx
+                    )
+                else {
                     return nil
                 }
 
-                /// If we're at the first index
-                if groupIdx == 0 {
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    let nextIdx = nextSeparatorIdx &++ 1
-
-                    guard span[unchecked: nextIdx] == .asciiColon else {
-                        return nil
-                    }
-
-                    seenCompressionSign = true
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+== 2
-                    segmentStartIdx = nextSeparatorIdx &++ 2
-                    continue
-
-                    /// If we're at the last index
-                } else if (segmentStartIdx &++ 1) == count {
-                    /// Must have reached end with no rhs
-                    self.init(addressLhs)
-                    return
-                } else {
-                    /// Must be a compression sign in the middle of the string
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    guard span[unchecked: nextSeparatorIdx &-- 1] == .asciiColon else {
-                        return nil
-                    }
-
-                    seenCompressionSign = true
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+== 1
-                    segmentStartIdx = nextSeparatorIdx &++ 1
-                    continue
-                }
+                groupIdx &+== 1
+                segmentStartIdx = nextSeparatorIdx &++ 1
             }
-
-            guard
-                IPv6Address._readIPv6Group(
-                    addressLhs: &addressLhs,
-                    addressRhs: &addressRhs,
-                    textualRepresentation: asciiGroup,
-                    seenCompressionSign: seenCompressionSign,
-                    groupIdx: groupIdx
-                )
-            else {
-                return nil
-            }
-
-            groupIdx &+== 1
-            segmentStartIdx = nextSeparatorIdx &++ 1
         }
 
         /// Read last remaining byte-pair
@@ -526,11 +534,6 @@ extension IPv6Address {
             return nil
         }
 
-        /// We've reached the end of the string
-        guard colonsIndicesCount == 7 || seenCompressionSign else {
-            return nil
-        }
-
         /// Unchecked because there is a `groupIdx <= 7` check above
         /// So this number is guaranteed to be in range of `0...7`
         let compressedGroupsCount = 8 &-- groupIdx &-- 1
@@ -554,7 +557,8 @@ extension IPv6Address {
     ) -> Bool {
         let utf8Count = asciiGroup.count
 
-        if utf8Count == 0 || utf8Count > 4 {
+        /// We already know utf8Count > 0 based on the preprocessing of colon indices outside this func.
+        if utf8Count > 4 {
             return false
         }
 
