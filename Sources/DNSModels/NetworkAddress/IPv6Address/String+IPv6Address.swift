@@ -255,7 +255,7 @@ extension IPv6Address {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
-    init?(
+    package init?(
         __uncheckedASCIIspan span: Span<UInt8>,
         preParsedIPv4MappedSegment: IPv4Address?
     ) {
@@ -294,261 +294,161 @@ extension IPv6Address {
             return nil
         }
 
-        /// Longest possible ipv6 address is something like
-        /// `0000:0000:0000:0000:0000:ffff:111.111.111.111` which is only 45 bytes long.
-        guard span.count >= 2, span.count <= 45 else {
-            return nil
-        }
-
-        /// `UInt8` is fine, up there we made sure there are less than 50 elements in the span.
-        /// In an IPv6 address like `[0000:0000:0000:0000:0000:ffff:1.1.1.1]`,
-        /// we have 3 dots. This is the maximum amount of dots we can have.
-        /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var firstDotIdx: UInt8? = nil
-        var dotsCount = 0
-
-        /// `UInt8` is fine, up there we made sure there are less than 50 elements in the span.
-        /// In an IPv6 address like `[0:0:0:0:0:0:0:0]`,
-        /// we have 7 colons. This is the maximum amount of colons we can have.
-        /// Use 255 as placeholder. We won't have more than 50 elements anyway based on a check above.
-        var colonsIndicesStorage: UInt64 = 0
-        var colonsIndicesCount = 0
-        @inline(__always)
-        func colonIndex(at idx: Int) -> UInt8 {
-            UInt8(
-                exactly: (colonsIndicesStorage &>> (idx &** 8)) & 0xFF
-            ).unsafelyUnwrapped
-        }
-
-        /// The index of the leading colon in a compression sign (`::`)
-        var compressionSignLeadingIdx: UInt8? = nil
-        var startsWithCompressionSign = false
-
-        for idx in span.indices {
-            switch span[unchecked: idx] {
-            case .asciiColon:
-                if colonsIndicesCount == 7 {
-                    /// Cannot have any more colons
-                    return nil
-                }
-
-                let lastColonIdx =
-                    colonsIndicesCount == 0
-                    ? nil
-                    : colonIndex(at: colonsIndicesCount &-- 1)
-                if let lastColonIdx {
-                    let isCompressionSign = lastColonIdx &++ 1 == idx
-                    switch (isCompressionSign, compressionSignLeadingIdx) {
-                    case (true, nil):
-                        compressionSignLeadingIdx = lastColonIdx
-                        startsWithCompressionSign = lastColonIdx == 0
-                    case (true, .some):
-                        // More than 1 compression signs
-                        return nil
-                    case (false, _):
-                        break
-                    }
-                }
-
-                /// Unchecked because `idx` is guaranteed to be in range of `0...span.count`
-                /// And we checked above that span is less than 50 elements long.
-                colonsIndicesStorage |= UInt64(idx) &<< (colonsIndicesCount &** 8)
-                colonsIndicesCount &+== 1
-
-            case .asciiDot:
-                if dotsCount == 3 {
-                    /// Cannot have any more dots
-                    return nil
-                }
-                if firstDotIdx == nil {
-                    firstDotIdx = UInt8(exactly: idx).unsafelyUnwrapped
-                }
-                dotsCount &+== 1
-            default:
-                continue
-            }
-        }
-
-        guard colonsIndicesCount >= 2 else {
-            return nil
-        }
-
-        var hasIPv4MappedSegment = false
-
-        /// Make sure dots are either 0, or 3.
-        /// If 3, then make sure they are all on the left side of all colons.
-        /// Can happen in an IPv6 address like `[0000:0000:0000:0000:0000:ffff:1.1.1.1]`,
-        switch dotsCount {
-        case 0:
-            break
-        case 3:
-            let rightmostColonIdx = colonIndex(at: colonsIndicesCount &-- 1)
-            /// We already know we have 3 dots
-            let leftmostDotIdx = firstDotIdx.unsafelyUnwrapped
-            /// In `::FFFF:1.1.1.1` for example, first dot index is bigger than the last colon index.
-            guard leftmostDotIdx > rightmostColonIdx else {
-                return nil
-            }
-            let intRightmostColonIdx = Int(rightmostColonIdx)
-            guard
-                let ipv4MappedSegment = IPv4Address(
-                    __uncheckedASCIIspan: span.extracting(
-                        unchecked: (intRightmostColonIdx &++ 1)..<span.count
-                    )
-                )
-            else {
-                return nil
-            }
-            address |= UInt128(ipv4MappedSegment.address)
-            /// Set the span to only the left side of the ipv4 mapped segment.
-            /// This'll extract `::FFFF` from `::FFFF:1.1.1.1`.
-            span = span.extracting(unchecked: 0..<intRightmostColonIdx)
-            hasIPv4MappedSegment = true
-        default:
-            return nil
-        }
-
-        if let preParsedIPv4MappedSegment {
-            /// Can't have both a pre-parsed segment and also a not-parsed one.
-            if hasIPv4MappedSegment {
-                return nil
-            }
-
-            address |= UInt128(preParsedIPv4MappedSegment.address)
-            hasIPv4MappedSegment = true
-        }
-
-        /// If we have an ipv4MappedSegment, we don't need to check the colons count.
-        /// Because the ipv4 decoding process already has done it.{
-        guard hasIPv4MappedSegment || colonsIndicesCount >= 2 else {
-            return nil
-        }
-
-        /// In `0:0:0:0:0:FFFF:1.1.1.1` we have 6 colons, which is max amount for
-        /// a valid ipv4-mapped ipv6 address.
-        let ipv4MappedSegmentFactor = hasIPv4MappedSegment ? 1 : 0
         guard
-            colonsIndicesCount == (7 &-- ipv4MappedSegmentFactor)
-                || compressionSignLeadingIdx != nil
+            span.count >= "::".count,
+            span.count <= "0000:0000:0000:0000:0000:ffff:111.111.111.111".count
         else {
             return nil
         }
-        /// Unchecked because `3 <= groupIdx <= 6` based on the check for a valid
-        /// ipv4-mapped ipv6 address.
-        /// So this number is guaranteed to be in range of `0...7`
-        let compressedGroupsCount = 7 &-- colonsIndicesCount &-- ipv4MappedSegmentFactor
 
-        /// Have seen '::' or not
-        var seenCompressionSign = false
+        if span[unchecked: 0] == .asciiColon {
+            span = span.extracting(1..<span.count)
+            if span[unchecked: 0] != .asciiColon {
+                return nil
+            }
+        }
 
-        var segmentStartIdx: UInt8 = 0
+        let endIdx = span.count &-- 1
+        var segmentDigitIdx = 0
+        var latestColonIdx: Int? = nil
+        var currentSegmentValue: UInt16 = 0
+        var writtenSegmentsCount = 0
+        var segmentIdxOfCompressionSign: Int? = nil
+        var noIPv4MappedSegments = true
+        for idx in span.indices {
+            let byte = span[unchecked: idx]
 
-        var groupIdx = 0
-        while groupIdx < colonsIndicesCount {
-            /// These are safe to unwrap, we're keeping track of them using the array's idx
-            let nextSeparatorIdx = colonIndex(at: groupIdx)
+            if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
+                if segmentDigitIdx == 4 {
+                    return nil
+                }
 
-            let isTheLeadingCompressionSign = nextSeparatorIdx == compressionSignLeadingIdx
+                currentSegmentValue &<<== 4
+                currentSegmentValue |= UInt16(digit)
+                segmentDigitIdx &+== 1
 
-            if !(isTheLeadingCompressionSign && startsWithCompressionSign) {
-                let asciiGroup = span.extracting(
-                    unchecked: Int(segmentStartIdx)..<Int(nextSeparatorIdx)
-                )
+                continue
+            }
+
+            if byte == .asciiColon {
+                latestColonIdx = idx
+                if segmentDigitIdx == 0 {
+                    if segmentIdxOfCompressionSign != nil {
+                        return nil
+                    }
+                    segmentIdxOfCompressionSign = writtenSegmentsCount
+                    continue
+                } else if idx == endIdx {
+                    return nil
+                }
+
+                if writtenSegmentsCount == 8 {
+                    return nil
+                }
+
+                let shift = 16 &** (7 &-- writtenSegmentsCount)
+                self.address |= UInt128(currentSegmentValue) &<< shift
+
+                writtenSegmentsCount &+== 1
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                continue
+            }
+
+            if byte == .asciiDot, let latestColonIdx {
                 guard
-                    self._readIPv6Group(
-                        textualRepresentation: asciiGroup,
-                        octalIdxInAddress: groupIdx
-                            &++ (seenCompressionSign ? compressedGroupsCount : 0)
+                    writtenSegmentsCount <= 6,
+                    preParsedIPv4MappedSegment == nil,
+                    let ipv4 = IPv4Address(
+                        __uncheckedASCIIspan: span.extracting(
+                            unchecked: (latestColonIdx &++ 1)..<span.count
+                        )
                     )
                 else {
                     return nil
                 }
+                let shift = 16 &** (6 &-- writtenSegmentsCount)
+                self.address |= UInt128(ipv4.address) &<< shift
+
+                noIPv4MappedSegments = false
+                writtenSegmentsCount &+== 2
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                break
             }
 
-            seenCompressionSign = seenCompressionSign || isTheLeadingCompressionSign
-
-            groupIdx &+== (isTheLeadingCompressionSign ? 2 : 1)
-            segmentStartIdx = nextSeparatorIdx &++ (isTheLeadingCompressionSign ? 2 : 1)
+            /// Bad character
+            return nil
         }
 
-        if hasIPv4MappedSegment {
-            guard CIDR<IPv6Address>.ipv4Mapped.contains(self) else {
+        if segmentDigitIdx > 0 {
+            if writtenSegmentsCount == 8 {
                 return nil
             }
-            return
-        } else if segmentStartIdx >= span.count {
-            /// Read last remaining byte-pair
-            if seenCompressionSign {
-                /// Must have reached end with no rhs
-                return
-            } else {
-                /// No compression sign and no ipv4-mapped segment, but still have an empty group?!
+
+            let shift = 16 &** (7 &-- writtenSegmentsCount)
+            self.address |= UInt128(currentSegmentValue) &<< shift
+            writtenSegmentsCount &+== 1
+        }
+
+        if let ipv4 = preParsedIPv4MappedSegment {
+            guard writtenSegmentsCount <= 6 else {
+                return nil
+            }
+            let shift = 16 &** (6 &-- writtenSegmentsCount)
+            self.address |= UInt128(ipv4.address) &<< shift
+
+            noIPv4MappedSegments = false
+            writtenSegmentsCount &+== 2
+            segmentDigitIdx = 0
+            currentSegmentValue = 0
+        }
+
+        if let segmentIdxOfCompressionSign {
+            guard writtenSegmentsCount <= 6 else {
+                return nil
+            }
+            /// "cs" means "compressed segments"
+            let csCount = writtenSegmentsCount &-- segmentIdxOfCompressionSign
+            let csMask =
+                csCount == 0
+                ? UInt128.zero
+                : UInt128.max &>>> ((8 &-- csCount) &** 16)
+            let csShift = UInt128(8 &-- segmentIdxOfCompressionSign &-- csCount) &** 16
+            let rhs = (self.address &>>> csShift) & csMask
+            let lhsMask = ~(UInt128.max &>>> (segmentIdxOfCompressionSign &** 16))
+            self.address &= lhsMask
+            self.address |= rhs
+        } else {
+            guard writtenSegmentsCount == 8 else {
                 return nil
             }
         }
 
         guard
-            self._readIPv6Group(
-                textualRepresentation: span.extracting(
-                    unchecked: Int(segmentStartIdx)..<span.count
-                ),
-                octalIdxInAddress: groupIdx &++ (seenCompressionSign ? compressedGroupsCount : 0)
-            )
+            noIPv4MappedSegments
+                || CIDR<IPv6Address>.ipv4Mapped.contains(self)
         else {
             return nil
         }
     }
 
-    /// Reads the `asciiGroup` integers into `addressLhs` or `addressRhs`.
-    /// Returns false if the `asciiGroup` is invalid, in which case we should return `nil`.
     @inlinable
-    mutating func _readIPv6Group(
-        textualRepresentation asciiGroup: Span<UInt8>,
-        octalIdxInAddress: Int
-    ) -> Bool {
-        let utf8Count = asciiGroup.count
-
-        /// We already know utf8Count > 0 based on the preprocessing of colon indices outside this func.
-        if utf8Count > 4 {
-            return false
-        }
-
-        /// Unchecked because it must be in range of 0...3 based on the check above
-        let maxIdx = utf8Count &-- 1
-
-        for idx in 0..<asciiGroup.count {
-            /// Unchecked because it's less than `asciiGroup.count` anyway
-            let indexInGroup = maxIdx &-- idx
-            let utf8Byte = asciiGroup[unchecked: indexInGroup]
-            guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
-                return false
-            }
-
-            let shift = (16 &** (7 &-- octalIdxInAddress)) &++ (idx &** 4)
-
-            /// Per what explained above, we do `&<<` instead of `&<<<` here.
-            /// We accept that `shift` could be a negative number, which is unwanted by the
-            /// implementation, but still works out fine.
-            address |= UInt128(hexadecimalDigit) &<< shift
-        }
-
-        return true
-    }
-
-    @inlinable
-    static func mapHexadecimalASCIIToUInt8(_ utf8Byte: UInt8) -> UInt8? {
+    static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
         /// Normalizes uppercase ASCII to lowercase ASCII
-        let normalizedByte = utf8Byte | 0b00100000
+        let normalizedByte = asciiByte | 0b00100000
         if normalizedByte >= UInt8.asciiLowercasedA {
             guard normalizedByte <= UInt8.asciiLowercasedF else {
                 return nil
             }
             return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
-        } else if utf8Byte >= UInt8.ascii0 {
-            guard utf8Byte <= UInt8.ascii9 else {
+        } else if asciiByte >= UInt8.ascii0 {
+            guard asciiByte <= UInt8.ascii9 else {
                 return nil
             }
-            return utf8Byte &-- UInt8.ascii0
+            return asciiByte &-- UInt8.ascii0
         }
         return nil
     }

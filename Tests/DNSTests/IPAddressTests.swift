@@ -236,8 +236,8 @@ struct IPAddressTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
-        arguments: ipv6StringAndAddressTestCases
-            + ipv6IDNAStringAndAddressTestCases.map { ($0.0, nil, $0.2) }
+        arguments: (ipv6StringAndAddressTestCases
+            + ipv6IDNAStringAndAddressTestCases.map { ($0.0, nil, $0.2) })[0...]
     )
     func ipv6AddressFromString(
         string: String,
@@ -267,22 +267,27 @@ struct IPAddressTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
-        arguments: ipv6StringAndAddressTestCases
-            + ipv6IDNAStringAndAddressTestCases
+        arguments: (ipv6StringAndAddressTestCases
+            + ipv6IDNAStringAndAddressTestCases)[...]
     )
     func ipv6AddressFromStringThroughDomainName(
         string: String,
         expectedAddress: IPv6Address?,
         isValidIPv4: Bool
     ) {
-        if string == "::FFFF:204.152.189.116." {
-            /// Manually skip this specific case for now
-            /// This is a valid domain name, but an invalid ipv6 since it ends in a dot
-            return
-        }
         let domainName = try? DomainName(string: string)
 
         let ipv6Address = domainName.flatMap { IPv6Address(domainName: $0) }
+
+        if string == "::FFFF:204.152.189.116."
+            || string == "::FFFF:1."
+        {
+            /// Manually skip these specific cases for now
+            /// These are valid domain names, but invalid ipv6 addresses since they end in a dot
+            #expect(ipv6Address != nil)
+            return
+        }
+
         #expect(ipv6Address == expectedAddress)
 
         let ipAddress = domainName.flatMap { IPAddress(domainName: $0) }
@@ -429,6 +434,7 @@ private let ipv4IDNAStringAndAddressTestCases: [(String, IPv4Address?, Bool)] = 
 private let ipv6StringAndAddressTestCases: [(String, IPv6Address?, Bool)] = [
     ("1111:2222:3333:4444:5555:6666:7777:8888", 0x1111_2222_3333_4444_5555_6666_7777_8888, false),
     ("[FF::]", 0x00FF_0000_0000_0000_0000_0000_0000_0000, false),
+    ("[::FF]", 0x0000_0000_0000_0000_0000_0000_0000_00FF, false),
     ("[0:FF::]", 0x0000_00FF_0000_0000_0000_0000_0000_0000, false),
     ("[2001:db8:85a3::100]", 0x2001_0DB8_85A3_0000_0000_0000_0000_0100, false),
     ("2001:db8:85a3::100", 0x2001_0DB8_85A3_0000_0000_0000_0000_0100, false),
@@ -473,6 +479,11 @@ private let ipv6StringAndAddressTestCases: [(String, IPv6Address?, Bool)] = [
     ("::FFFF:1.1.1.1:FFFF", nil, false),
     ("::1.1.1.1:FFFF", nil, false),
     (":FFFF:1.1.1.1", nil, false),
+    ("::FFFF:1.", nil, false),
+    ("::FFFF:1.1", nil, false),
+    ("::FFFF:1.1.", nil, false),
+    ("::FFFF:1.1.1", nil, false),
+    ("::FFFF:1.1.1.", nil, false),
     ("::1.1.1.1", nil, false),
     ("::FFFF:256.152.189.116", nil, false),
     ("[0000:0000:0000:0000:0000:FFFF:255.255.255.1111]", nil, false),

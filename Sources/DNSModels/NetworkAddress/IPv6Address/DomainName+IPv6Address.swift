@@ -75,7 +75,7 @@ extension IPv6Address {
         else {
             return nil
         }
-        let range = ipv6StartIndex..<afterLastColonIdx
+        let range = ipv6StartIndex..<lastColonIdx
         return IPv6Address(
             __uncheckedASCIIspan: asciiSpan.extracting(unchecked: range),
             preParsedIPv4MappedSegment: ipv4MappedSegment

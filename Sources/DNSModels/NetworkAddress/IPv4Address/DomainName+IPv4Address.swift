@@ -16,52 +16,35 @@ extension IPv4Address {
                 /// `DomainName.data` always only contains ASCII bytes
                 let asciiSpan = ptr.bindMemory(to: UInt8.self).span
 
-                guard let position1 = iterator.next() else {
-                    return nil
-                }
-                let range1 = position1.startIndex..<(position1.startIndex &++ position1.length)
-                let byteSpan1 = asciiSpan.extracting(unchecked: range1)
-                guard let byte1 = UInt8(decimalRepresentation: byteSpan1) else {
-                    return nil
-                }
-                ipv4.address |= UInt32(byte1) &<<< 24
+                var idx = 0
+                while let position = iterator.next() {
+                    let range = position.startIndex..<(position.startIndex &++ position.length)
+                    guard
+                        let byte = UInt8(
+                            decimalRepresentation: asciiSpan.extracting(unchecked: range)
+                        )
+                    else {
+                        return nil
+                    }
 
-                guard let position2 = iterator.next() else {
-                    return nil
-                }
-                let range2 = position2.startIndex..<(position2.startIndex &++ position2.length)
-                let byteSpan2 = asciiSpan.extracting(unchecked: range2)
-                guard let byte2 = UInt8(decimalRepresentation: byteSpan2) else {
-                    return nil
-                }
-                ipv4.address |= UInt32(byte2) &<<< 16
+                    /// Unchecked because `idx` can't exceed `3` anyway
+                    let shift = 8 &** (3 &-- idx)
+                    ipv4.address |= UInt32(byte) &<<< shift
 
-                guard let position3 = iterator.next() else {
-                    return nil
-                }
-                let range3 = position3.startIndex..<(position3.startIndex &++ position3.length)
-                let byteSpan3 = asciiSpan.extracting(unchecked: range3)
-                guard let byte3 = UInt8(decimalRepresentation: byteSpan3) else {
-                    return nil
-                }
-                ipv4.address |= UInt32(byte3) &<<< 8
+                    if idx == 3 {
+                        if iterator.reachedEnd() {
+                            /// We've had exactly enough labels, let's return
+                            return ipv4
+                        } else {
+                            return nil
+                        }
+                    }
 
-                guard let position4 = iterator.next() else {
-                    return nil
+                    idx &+== 1
                 }
-                let range4 = position4.startIndex..<(position4.startIndex &++ position4.length)
-                let byteSpan4 = asciiSpan.extracting(unchecked: range4)
-                guard let byte4 = UInt8(decimalRepresentation: byteSpan4) else {
-                    return nil
-                }
-                ipv4.address |= UInt32(byte4)
 
-                if iterator.reachedEnd() {
-                    /// We've had exactly enough labels, let's return
-                    return ipv4
-                } else {
-                    return nil
-                }
+                /// We had less than 4 labels, so this is an error
+                return nil
             })
         else {
             return nil
