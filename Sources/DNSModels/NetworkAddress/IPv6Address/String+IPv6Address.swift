@@ -270,7 +270,8 @@ extension IPv6Address {
             }
         }
 
-        self.init(0)
+        var addressLhs: UInt128 = .zero
+        var addressRhs: UInt128 = .zero
 
         var span = span
 
@@ -313,8 +314,9 @@ extension IPv6Address {
         var latestColonIdx: Int? = nil
         var currentSegmentValue: UInt16 = 0
         var writtenSegmentsCount = 0
-        var segmentIdxOfCompressionSign: Int? = nil
+        var seenCompressionSign = false
         var noIPv4MappedSegments = true
+
         for idx in span.indices {
             let byte = span[unchecked: idx]
 
@@ -333,10 +335,10 @@ extension IPv6Address {
             if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
-                    if segmentIdxOfCompressionSign != nil {
+                    if seenCompressionSign {
                         return nil
                     }
-                    segmentIdxOfCompressionSign = writtenSegmentsCount
+                    seenCompressionSign = true
                     continue
                 } else if idx == endIdx {
                     return nil
@@ -347,7 +349,11 @@ extension IPv6Address {
                 }
 
                 let shift = 16 &** (7 &-- writtenSegmentsCount)
-                self.address |= UInt128(currentSegmentValue) &<< shift
+                if seenCompressionSign {
+                    addressRhs |= UInt128(currentSegmentValue) &<< shift
+                } else {
+                    addressLhs |= UInt128(currentSegmentValue) &<< shift
+                }
 
                 writtenSegmentsCount &+== 1
                 segmentDigitIdx = 0
@@ -369,7 +375,11 @@ extension IPv6Address {
                     return nil
                 }
                 let shift = 16 &** (6 &-- writtenSegmentsCount)
-                self.address |= UInt128(ipv4.address) &<< shift
+                if seenCompressionSign {
+                    addressRhs |= UInt128(ipv4.address) &<< shift
+                } else {
+                    addressLhs |= UInt128(ipv4.address) &<< shift
+                }
 
                 noIPv4MappedSegments = false
                 writtenSegmentsCount &+== 2
@@ -389,7 +399,11 @@ extension IPv6Address {
             }
 
             let shift = 16 &** (7 &-- writtenSegmentsCount)
-            self.address |= UInt128(currentSegmentValue) &<< shift
+            if seenCompressionSign {
+                addressRhs |= UInt128(currentSegmentValue) &<< shift
+            } else {
+                addressLhs |= UInt128(currentSegmentValue) &<< shift
+            }
             writtenSegmentsCount &+== 1
         }
 
@@ -398,7 +412,11 @@ extension IPv6Address {
                 return nil
             }
             let shift = 16 &** (6 &-- writtenSegmentsCount)
-            self.address |= UInt128(ipv4.address) &<< shift
+            if seenCompressionSign {
+                addressRhs |= UInt128(ipv4.address) &<< shift
+            } else {
+                addressLhs |= UInt128(ipv4.address) &<< shift
+            }
 
             noIPv4MappedSegments = false
             writtenSegmentsCount &+== 2
@@ -406,25 +424,18 @@ extension IPv6Address {
             currentSegmentValue = 0
         }
 
-        if let segmentIdxOfCompressionSign {
+        if seenCompressionSign {
             guard writtenSegmentsCount <= 6 else {
                 return nil
             }
             /// "cs" means "compressed segments"
-            let csCount = writtenSegmentsCount &-- segmentIdxOfCompressionSign
-            let csMask =
-                csCount == 0
-                ? UInt128.zero
-                : UInt128.max &>>> ((8 &-- csCount) &** 16)
-            let csShift = UInt128(8 &-- segmentIdxOfCompressionSign &-- csCount) &** 16
-            let rhs = (self.address &>>> csShift) & csMask
-            let lhsMask = ~(UInt128.max &>>> (segmentIdxOfCompressionSign &** 16))
-            self.address &= lhsMask
-            self.address |= rhs
+            let csCount = 8 &-- writtenSegmentsCount
+            self.address = addressLhs | (addressRhs &>>> (csCount &** 16))
         } else {
             guard writtenSegmentsCount == 8 else {
                 return nil
             }
+            self.address = addressLhs
         }
 
         guard
