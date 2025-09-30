@@ -236,8 +236,8 @@ struct IPAddressTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
-        arguments: (ipv6StringAndAddressTestCases
-            + ipv6IDNAStringAndAddressTestCases.map { ($0.0, nil, $0.2) })[0...]
+        arguments: ipv6StringAndAddressTestCases
+            + ipv6IDNAStringAndAddressTestCases.map { ($0.0, nil, $0.2) }
     )
     func ipv6AddressFromString(
         string: String,
@@ -267,8 +267,8 @@ struct IPAddressTests {
 
     @available(swiftDNSApplePlatforms 26, *)
     @Test(
-        arguments: (ipv6StringAndAddressTestCases
-            + ipv6IDNAStringAndAddressTestCases)[...]
+        arguments: ipv6StringAndAddressTestCases
+            + ipv6IDNAStringAndAddressTestCases
     )
     func ipv6AddressFromStringThroughDomainName(
         string: String,

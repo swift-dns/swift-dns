@@ -2,6 +2,22 @@ public import DNSCore
 
 import struct NIOCore.ByteBuffer
 
+#if canImport(Darwin)
+public import Darwin
+#elseif canImport(Glibc)
+@preconcurrency public import Glibc
+#elseif canImport(Musl)
+@preconcurrency public import Musl
+#elseif canImport(Android)
+@preconcurrency public import Android
+#elseif canImport(WASILibc)
+@preconcurrency public import WASILibc
+#elseif os(Windows)
+@preconcurrency public import ucrt
+#else
+#error("The String+IPv6Address module was unable to identify your C library.")
+#endif
+
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: CustomStringConvertible {
     /// The textual representation of an IPv6 address.
@@ -310,10 +326,12 @@ extension IPv6Address {
 
         let endIdx = span.count &-- 1
         var segmentDigitIdx = 0
-        var latestColonIdx: Int? = nil
+        /// Doesn't matter if it's zero, so we skip using optionals to set this to nil
+        var latestColonIdx = 0
         var currentSegmentValue: UInt16 = 0
         var writtenSegmentsCount = 0
-        var segmentIdxOfCompressionSign: Int? = nil
+        /// cs == compression sign
+        var beforeCsSegmentsCount: Int? = nil
         var noIPv4MappedSegments = true
         for idx in span.indices {
             let byte = span[unchecked: idx]
@@ -333,10 +351,10 @@ extension IPv6Address {
             if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
-                    if segmentIdxOfCompressionSign != nil {
+                    if beforeCsSegmentsCount != nil {
                         return nil
                     }
-                    segmentIdxOfCompressionSign = writtenSegmentsCount
+                    beforeCsSegmentsCount = writtenSegmentsCount
                     continue
                 } else if idx == endIdx {
                     return nil
@@ -356,7 +374,7 @@ extension IPv6Address {
                 continue
             }
 
-            if byte == .asciiDot, let latestColonIdx {
+            if byte == .asciiDot {
                 guard
                     writtenSegmentsCount <= 6,
                     preParsedIPv4MappedSegment == nil,
@@ -406,21 +424,26 @@ extension IPv6Address {
             currentSegmentValue = 0
         }
 
-        if let segmentIdxOfCompressionSign {
+        if let beforeCsSegmentsCount {
             guard writtenSegmentsCount <= 6 else {
                 return nil
             }
-            /// "cs" means "compressed segments"
-            let csCount = writtenSegmentsCount &-- segmentIdxOfCompressionSign
-            let csMask =
-                csCount == 0
-                ? UInt128.zero
-                : UInt128.max &>>> ((8 &-- csCount) &** 16)
-            let csShift = UInt128(8 &-- segmentIdxOfCompressionSign &-- csCount) &** 16
-            let rhs = (self.address &>>> csShift) & csMask
-            let lhsMask = ~(UInt128.max &>>> (segmentIdxOfCompressionSign &** 16))
-            self.address &= lhsMask
-            self.address |= rhs
+            let compressedSegmentsCount = 8 &-- writtenSegmentsCount
+            /// cs == compression sign
+            let afterCsSegmentsCount = writtenSegmentsCount &-- beforeCsSegmentsCount
+            withUnsafeMutableBytes(of: &self.address) { ptr in
+                let ptr = ptr.baseAddress.unsafelyUnwrapped
+                memmove(
+                    ptr,
+                    ptr.advanced(by: (8 - beforeCsSegmentsCount - afterCsSegmentsCount) &** 2),
+                    afterCsSegmentsCount &** 2
+                )
+                memset(
+                    ptr.advanced(by: (8 - beforeCsSegmentsCount - compressedSegmentsCount) &** 2),
+                    0,
+                    compressedSegmentsCount &** 2
+                )
+            }
         } else {
             guard writtenSegmentsCount == 8 else {
                 return nil
