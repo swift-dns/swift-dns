@@ -340,17 +340,7 @@ extension IPv6Address {
         for idx in span.indices {
             let byte = span[unchecked: idx]
 
-            if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
-                if segmentDigitIdx == 4 {
-                    return nil
-                }
-
-                currentSegmentValue &<<== 4
-                currentSegmentValue |= UInt16(digit)
-                segmentDigitIdx &+== 1
-
-                continue
-            } else if byte == .asciiColon {
+            if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
                     if beforeCsBytesCount != nil {
@@ -395,13 +385,24 @@ extension IPv6Address {
                 currentSegmentValue = 0
 
                 break
+            } else if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
+                if segmentDigitIdx == 4 {
+                    return nil
+                }
+
+                currentSegmentValue &<<== 4
+                currentSegmentValue |= UInt16(digit)
+                segmentDigitIdx &+== 1
+
+                continue
             }
 
             /// Bad character
             return nil
         }
 
-        let approximateIPv6BytesInString = writtenBytesCount
+        let approximateIPv6BytesInString =
+            writtenBytesCount
             + (segmentDigitIdx == 0 ? 0 : 2)
             + (preParsedIPv4MappedSegment != nil ? 4 : 0)
             + (beforeCsBytesCount != nil ? 4 : 0)
