@@ -405,20 +405,22 @@ extension IPv6Address {
             return nil
         }
 
-        if segmentDigitIdx > 0 {
-            if writtenBytesCount == 16 {
-                return nil
-            }
+        let approximateIPv6BytesInString = writtenBytesCount
+            + (segmentDigitIdx == 0 ? 0 : 2)
+            + (preParsedIPv4MappedSegment != nil ? 4 : 0)
+            + (beforeCsBytesCount != nil ? 4 : 0)
 
+        guard approximateIPv6BytesInString <= 16 else {
+            return nil
+        }
+
+        if segmentDigitIdx > 0 {
             let shift = 8 &** (14 &-- writtenBytesCount)
             self.address |= UInt128(currentSegmentValue) &<< shift
             writtenBytesCount &+== 2
         }
 
         if let ipv4 = preParsedIPv4MappedSegment {
-            guard writtenBytesCount <= 12 else {
-                return nil
-            }
             let shift = 8 &** (12 &-- writtenBytesCount)
             self.address |= UInt128(ipv4.address) &<< shift
 
@@ -429,9 +431,6 @@ extension IPv6Address {
         }
 
         if let beforeCsBytesCount {
-            guard writtenBytesCount <= 12 else {
-                return nil
-            }
             let compressedBytesCount = 16 &-- writtenBytesCount
             /// cs == compression sign
             let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
