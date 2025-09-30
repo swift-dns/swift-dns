@@ -2,14 +2,24 @@ import Benchmark
 import DNSModels
 import NIOCore
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
+#if os(Linux) || os(FreeBSD) || os(Android)
+
+#if canImport(Glibc)
 @preconcurrency import Glibc
 #elseif canImport(Musl)
 @preconcurrency import Musl
 #elseif canImport(Android)
 @preconcurrency import Android
+#endif
+
+#elseif os(Windows)
+import ucrt
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(WASILibc)
+@preconcurrency import WASILibc
+#else
+#error("The IPv6AddressFromString benchmarks module was unable to identify your C library.")
 #endif
 
 let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
@@ -139,7 +149,6 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
 
     // MARK: IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_inet_pton
 
-    #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
     Benchmark(
         "IPv6_String_Decoding_2_Groups_Compressed_In_The_Middle_No_Brackets_inet_pton_2M",
         configuration: .init(
@@ -171,5 +180,4 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
         blackHole(ipv6SocketAddress)
     }
-    #endif
 }

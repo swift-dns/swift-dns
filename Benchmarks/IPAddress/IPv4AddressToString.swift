@@ -2,14 +2,24 @@ import Benchmark
 import DNSModels
 import NIOCore
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
+#if os(Linux) || os(FreeBSD) || os(Android)
+
+#if canImport(Glibc)
 @preconcurrency import Glibc
 #elseif canImport(Musl)
 @preconcurrency import Musl
 #elseif canImport(Android)
 @preconcurrency import Android
+#endif
+
+#elseif os(Windows)
+import ucrt
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(WASILibc)
+@preconcurrency import WASILibc
+#else
+#error("The IPv4AddressToString benchmarks module was unable to identify your C library.")
 #endif
 
 let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
@@ -95,7 +105,6 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
 
     // MARK: IPv4_String_Encoding_Mixed_inet_ntop
 
-    #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
     var ipv4MixedInetNtop = ipv4Mixed.address
 
     /// inet_ntop expects the reverse byte-order but we don't account for that here so
@@ -154,5 +163,4 @@ let ipv4AddressToStringBenchmarks: @Sendable () -> Void = {
         }
         blackHole(description)
     }
-    #endif
 }

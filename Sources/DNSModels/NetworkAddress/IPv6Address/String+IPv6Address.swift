@@ -2,18 +2,22 @@ public import DNSCore
 
 import struct NIOCore.ByteBuffer
 
-#if canImport(Darwin)
-public import Darwin
-#elseif canImport(Glibc)
+#if os(Linux) || os(FreeBSD) || os(Android)
+
+#if canImport(Glibc)
 @preconcurrency public import Glibc
 #elseif canImport(Musl)
 @preconcurrency public import Musl
 #elseif canImport(Android)
 @preconcurrency public import Android
+#endif
+
+#elseif os(Windows)
+public import ucrt
+#elseif canImport(Darwin)
+public import Darwin
 #elseif canImport(WASILibc)
 @preconcurrency public import WASILibc
-#elseif os(Windows)
-@preconcurrency public import ucrt
 #else
 #error("The String+IPv6Address module was unable to identify your C library.")
 #endif
@@ -329,9 +333,9 @@ extension IPv6Address {
         /// Doesn't matter if it's zero, so we skip using optionals to set this to nil
         var latestColonIdx = 0
         var currentSegmentValue: UInt16 = 0
-        var writtenSegmentsCount = 0
+        var writtenBytesCount = 0
         /// cs == compression sign
-        var beforeCsSegmentsCount: Int? = nil
+        var beforeCsBytesCount: Int? = nil
         var noIPv4MappedSegments = true
         for idx in span.indices {
             let byte = span[unchecked: idx]
@@ -351,23 +355,23 @@ extension IPv6Address {
             if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
-                    if beforeCsSegmentsCount != nil {
+                    if beforeCsBytesCount != nil {
                         return nil
                     }
-                    beforeCsSegmentsCount = writtenSegmentsCount
+                    beforeCsBytesCount = writtenBytesCount
                     continue
                 } else if idx == endIdx {
                     return nil
                 }
 
-                if writtenSegmentsCount == 8 {
+                if writtenBytesCount == 16 {
                     return nil
                 }
 
-                let shift = 16 &** (7 &-- writtenSegmentsCount)
+                let shift = 8 &** (14 &-- writtenBytesCount)
                 self.address |= UInt128(currentSegmentValue) &<< shift
 
-                writtenSegmentsCount &+== 1
+                writtenBytesCount &+== 2
                 segmentDigitIdx = 0
                 currentSegmentValue = 0
 
@@ -376,7 +380,7 @@ extension IPv6Address {
 
             if byte == .asciiDot {
                 guard
-                    writtenSegmentsCount <= 6,
+                    writtenBytesCount <= 12,
                     preParsedIPv4MappedSegment == nil,
                     let ipv4 = IPv4Address(
                         __uncheckedASCIIspan: span.extracting(
@@ -386,11 +390,11 @@ extension IPv6Address {
                 else {
                     return nil
                 }
-                let shift = 16 &** (6 &-- writtenSegmentsCount)
+                let shift = 8 &** (12 &-- writtenBytesCount)
                 self.address |= UInt128(ipv4.address) &<< shift
 
                 noIPv4MappedSegments = false
-                writtenSegmentsCount &+== 2
+                writtenBytesCount &+== 4
                 segmentDigitIdx = 0
                 currentSegmentValue = 0
 
@@ -402,50 +406,86 @@ extension IPv6Address {
         }
 
         if segmentDigitIdx > 0 {
-            if writtenSegmentsCount == 8 {
+            if writtenBytesCount == 16 {
                 return nil
             }
 
-            let shift = 16 &** (7 &-- writtenSegmentsCount)
+            let shift = 8 &** (14 &-- writtenBytesCount)
             self.address |= UInt128(currentSegmentValue) &<< shift
-            writtenSegmentsCount &+== 1
+            writtenBytesCount &+== 2
         }
 
         if let ipv4 = preParsedIPv4MappedSegment {
-            guard writtenSegmentsCount <= 6 else {
+            guard writtenBytesCount <= 12 else {
                 return nil
             }
-            let shift = 16 &** (6 &-- writtenSegmentsCount)
+            let shift = 8 &** (12 &-- writtenBytesCount)
             self.address |= UInt128(ipv4.address) &<< shift
 
             noIPv4MappedSegments = false
-            writtenSegmentsCount &+== 2
+            writtenBytesCount &+== 4
             segmentDigitIdx = 0
             currentSegmentValue = 0
         }
 
-        if let beforeCsSegmentsCount {
-            guard writtenSegmentsCount <= 6 else {
+        if let beforeCsBytesCount {
+            guard writtenBytesCount <= 12 else {
                 return nil
             }
-            let compressedSegmentsCount = 8 &-- writtenSegmentsCount
+            let compressedBytesCount = 16 &-- writtenBytesCount
             /// cs == compression sign
-            let afterCsSegmentsCount = writtenSegmentsCount &-- beforeCsSegmentsCount
+            let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
             withUnsafeMutableBytes(of: &self.address) { ptr in
                 let ptr = ptr.baseAddress.unsafelyUnwrapped
+                /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics.
+                ///
+                /// Example:
+                /// Assume at the end of this parsing process we need to have:
+                /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+                ///
+                /// For that, at this point in the process, the `self.address` looks like this:
+                /// 0x2001 0db8 85a3 0100 0020 0000 0000 0000
+                ///
+                /// We need to move the bytes so it becomes like the first one.
+                ///
+                /// In little endian the integer we have right here looks like:
+                /// 0x0000 0000 0000 0200 0010 3a58 08bd 1002
+                ///
+                /// For clearer demonstration, i'll use the big-endian representation in each segment.
+                /// So we assume in little-endian the integer looks like this:
+                /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+
+                /// In this example, it'll turn this:
+                /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+                /// into this:
+                /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+                ///   ~~^  ~~^
+                let afterLhsBytes = 16 &-- beforeCsBytesCount
                 memmove(
                     ptr,
-                    ptr.advanced(by: (8 - beforeCsSegmentsCount - afterCsSegmentsCount) &** 2),
-                    afterCsSegmentsCount &** 2
+                    ptr.advanced(by: afterLhsBytes &-- afterCsBytesCount),
+                    afterCsBytesCount
                 )
+
+                /// Now that we have:
+                /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+                ///
+                /// We set the middle 0020 0100 to zeros:
+                /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
+                ///                  ~~^  ~~^
+                ///
+                /// Hurray! Now we have the correct ipv6 address!
+                /// Swift will read this as:
+                /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+                /// which is what we aimed for.
                 memset(
-                    ptr.advanced(by: (8 - beforeCsSegmentsCount - compressedSegmentsCount) &** 2),
+                    ptr.advanced(by: afterLhsBytes &-- compressedBytesCount),
                     0,
-                    compressedSegmentsCount &** 2
+                    compressedBytesCount
                 )
             }
         } else {
-            guard writtenSegmentsCount == 8 else {
+            guard writtenBytesCount == 16 else {
                 return nil
             }
         }
