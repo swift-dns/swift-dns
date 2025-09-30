@@ -350,9 +350,7 @@ extension IPv6Address {
                 segmentDigitIdx &+== 1
 
                 continue
-            }
-
-            if byte == .asciiColon {
+            } else if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
                     if beforeCsBytesCount != nil {
@@ -376,9 +374,7 @@ extension IPv6Address {
                 currentSegmentValue = 0
 
                 continue
-            }
-
-            if byte == .asciiDot {
+            } else if byte == .asciiDot {
                 guard
                     writtenBytesCount <= 12,
                     preParsedIPv4MappedSegment == nil,
