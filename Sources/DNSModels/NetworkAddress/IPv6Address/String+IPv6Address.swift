@@ -311,11 +311,11 @@ extension IPv6Address {
             /// Unchecked because we just checked count > 1 above
             let endsWithBracket = span[unchecked: span.count &-- 1] == .asciiRightSquareBracket
             switch (startsWithBracket, endsWithBracket) {
+            case (false, false):
+                break
             case (true, true):
                 /// Unchecked because we just checked count > 1 above
                 span = span.extracting(1..<(span.count &-- 1))
-            case (false, false):
-                break
             case (true, false), (false, true):
                 return false
             }
@@ -342,14 +342,14 @@ extension IPv6Address {
             var currentSegmentValue: UInt16 = 0
             var unwrittenBytesCount = 16
             /// cs == compression sign
-            var beforeCsBytesCount: Int? = nil
+            var beforeCsBytesCount = -1
             for idx in span.indices {
                 let byte = span[unchecked: idx]
 
                 if byte == .asciiColon {
                     latestColonIdx = idx
                     if segmentDigitIdx == 0 {
-                        if beforeCsBytesCount != nil {
+                        if beforeCsBytesCount != -1 {
                             return false
                         }
                         beforeCsBytesCount = 16 &-- unwrittenBytesCount
@@ -358,19 +358,18 @@ extension IPv6Address {
                         return false
                     }
 
-                    /// We only do increments of 2, to unwrittenBytesCount, so it can't be 1.
+                    /// We only do decrements of 2 to unwrittenBytesCount so it can't be 1.
                     if unwrittenBytesCount == 0 {
                         return false
                     }
 
-                    let byteOffset = unwrittenBytesCount &-- 2
+                    unwrittenBytesCount &-== 2
                     addressPtr.storeBytes(
                         of: currentSegmentValue,
-                        toByteOffset: byteOffset,
+                        toByteOffset: unwrittenBytesCount,
                         as: UInt16.self
                     )
 
-                    unwrittenBytesCount &-== 2
                     segmentDigitIdx = 0
                     currentSegmentValue = 0
 
@@ -387,14 +386,15 @@ extension IPv6Address {
                     else {
                         return false
                     }
+
+                    unwrittenBytesCount &-== 4
                     addressPtr.storeBytes(
                         of: ipv4.address,
-                        toByteOffset: unwrittenBytesCount &-- 4,
+                        toByteOffset: unwrittenBytesCount,
                         as: UInt32.self
                     )
 
                     noIPv4MappedSegments = false
-                    unwrittenBytesCount &-== 4
                     segmentDigitIdx = 0
                     currentSegmentValue = 0
 
@@ -419,35 +419,35 @@ extension IPv6Address {
                 (16 &-- unwrittenBytesCount)
                 + (segmentDigitIdx == 0 ? 0 : 2)
                 + (preParsedIPv4MappedSegment != nil ? 4 : 0)
-                + (beforeCsBytesCount != nil ? 4 : 0)
+                + (beforeCsBytesCount == -1 ? 0 : 4)
 
             guard upperboundIPv6BytesInString <= 16 else {
                 return false
             }
 
             if segmentDigitIdx > 0 {
+                unwrittenBytesCount &-== 2
                 addressPtr.storeBytes(
                     of: currentSegmentValue,
-                    toByteOffset: unwrittenBytesCount &-- 2,
+                    toByteOffset: unwrittenBytesCount,
                     as: UInt16.self
                 )
-                unwrittenBytesCount &-== 2
             }
 
             if let ipv4 = preParsedIPv4MappedSegment {
+                unwrittenBytesCount &-== 4
                 addressPtr.storeBytes(
                     of: ipv4.address,
-                    toByteOffset: unwrittenBytesCount &-- 4,
+                    toByteOffset: unwrittenBytesCount,
                     as: UInt32.self
                 )
 
                 noIPv4MappedSegments = false
-                unwrittenBytesCount &-== 4
                 segmentDigitIdx = 0
                 currentSegmentValue = 0
             }
 
-            if let beforeCsBytesCount {
+            if beforeCsBytesCount != -1 {
                 /// cs == compression sign
                 let writtenBytesCount = 16 &-- unwrittenBytesCount
                 let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
