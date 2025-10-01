@@ -275,7 +275,6 @@ extension IPv6Address {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
-    @_optimize(speed)
     package init?(
         __uncheckedASCIIspan span: Span<UInt8>,
         preParsedIPv4MappedSegment: IPv4Address?
@@ -299,7 +298,7 @@ extension IPv6Address {
         let success = withUnsafeMutableBytes(of: &self.address) { addressPtr -> Bool in
             IPv6Address.parseIPv6(
                 span: span,
-                addressPtr: addressPtr.baseAddress.unsafelyUnwrapped,
+                addressBufferPtr: addressPtr,
                 noIPv4MappedSegments: &noIPv4MappedSegments,
                 preParsedIPv4MappedSegment: preParsedIPv4MappedSegment
             )
@@ -313,13 +312,13 @@ extension IPv6Address {
     }
 
     @inlinable
-    @_optimize(speed)
     static func parseIPv6(
         span: Span<UInt8>,
-        addressPtr: UnsafeMutableRawPointer,
+        addressBufferPtr: UnsafeMutableRawBufferPointer,
         noIPv4MappedSegments: inout Bool,
         preParsedIPv4MappedSegment: IPv4Address?
     ) -> Bool {
+        let addressPtr = addressBufferPtr.baseAddress.unsafelyUnwrapped
         var span = span
 
         guard span.count >= "::".count else {
@@ -392,11 +391,12 @@ extension IPv6Address {
                 }
 
                 remainingBytesCount &-== 2
-                addressPtr.storeBytes(
-                    of: Int16(truncatingIfNeeded: currentSegmentValue),
-                    toByteOffset: remainingBytesCount,
-                    as: Int16.self
-                )
+                withUnsafeBytes(of: &currentSegmentValue) {
+                    addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                        from: $0.baseAddress.unsafelyUnwrapped,
+                        byteCount: 2
+                    )
+                }
 
                 segmentDigitIdx = 0
                 currentSegmentValue = 0
@@ -406,7 +406,7 @@ extension IPv6Address {
                 guard
                     remainingBytesCount >= 4,
                     preParsedIPv4MappedSegment == nil,
-                    let ipv4 = IPv4Address(
+                    var ipv4 = IPv4Address(
                         __uncheckedASCIIspan: span.extracting(
                             unchecked: (latestColonIdx &++ 1)..<span.count
                         )
@@ -416,11 +416,12 @@ extension IPv6Address {
                 }
 
                 remainingBytesCount &-== 4
-                addressPtr.storeBytes(
-                    of: ipv4.address,
-                    toByteOffset: remainingBytesCount,
-                    as: UInt32.self
-                )
+                withUnsafeBytes(of: &ipv4.address) {
+                    addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                        from: $0.baseAddress.unsafelyUnwrapped,
+                        byteCount: 4
+                    )
+                }
 
                 noIPv4MappedSegments = false
                 segmentDigitIdx = 0
@@ -445,20 +446,22 @@ extension IPv6Address {
 
         if segmentDigitIdx > 0 {
             remainingBytesCount &-== 2
-            addressPtr.storeBytes(
-                of: Int16(truncatingIfNeeded: currentSegmentValue),
-                toByteOffset: remainingBytesCount,
-                as: Int16.self
-            )
+            withUnsafeBytes(of: &currentSegmentValue) {
+                addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                    from: $0.baseAddress.unsafelyUnwrapped,
+                    byteCount: 2
+                )
+            }
         }
 
-        if let ipv4 = preParsedIPv4MappedSegment {
+        if var ipv4 = preParsedIPv4MappedSegment {
             remainingBytesCount &-== 4
-            addressPtr.storeBytes(
-                of: ipv4.address,
-                toByteOffset: remainingBytesCount,
-                as: UInt32.self
-            )
+            withUnsafeBytes(of: &ipv4.address) {
+                addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                    from: $0.baseAddress.unsafelyUnwrapped,
+                    byteCount: 4
+                )
+            }
 
             noIPv4MappedSegments = false
         }
@@ -520,7 +523,6 @@ extension IPv6Address {
     }
 
     @inlinable
-    @_optimize(speed)
     static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
         /// Normalizes uppercase ASCII to lowercase ASCII
         let normalizedByte = asciiByte | 0b00100000
