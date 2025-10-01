@@ -118,14 +118,14 @@ let ipv6AddressFromStringBenchmarks: @Sendable () -> Void = {
     // MARK: - IPv6_String_Decoding_2_Groups_Compressed_At_The_End
 
     Benchmark(
-        "IPv6_String_Decoding_2_Groups_Compressed_At_The_End_2M",
+        "IPv6_String_Decoding_2_Groups_Compressed_At_The_End_3M",
         configuration: .init(
             metrics: [.cpuUser],
             warmupIterations: 5,
             maxIterations: 1000
         )
     ) { benchmark in
-        for _ in 0..<2_000_000 {
+        for _ in 0..<3_000_000 {
             let ip = IPv6Address("[2001:0db8:85a3:8a2e:0370:7334::]").unsafelyUnwrapped
             blackHole(ip)
         }
