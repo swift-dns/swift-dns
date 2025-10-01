@@ -539,15 +539,20 @@ extension IPv6Address {
             asciiByte <= UInt8.ascii9
         {
             return asciiByte &-- UInt8.ascii0
-        } else {
-            /// Normalizes uppercase ASCII to lowercase ASCII
-            let normalizedByte = asciiByte | 0b00100000
-            if normalizedByte >= UInt8.asciiLowercasedA,
-                normalizedByte <= UInt8.asciiLowercasedF
-            {
-                return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
-            }
         }
+
+        if asciiByte >= UInt8.asciiLowercasedA,
+            asciiByte <= UInt8.asciiLowercasedF
+        {
+            return asciiByte &-- UInt8.asciiLowercasedA &++ 10
+        }
+
+        if asciiByte >= UInt8.asciiUppercasedA,
+            asciiByte <= UInt8.asciiUppercasedF
+        {
+            return asciiByte &-- UInt8.asciiUppercasedA &++ 10
+        }
+
         return nil
     }
 }
