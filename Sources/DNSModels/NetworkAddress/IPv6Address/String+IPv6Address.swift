@@ -482,11 +482,11 @@ extension IPv6Address {
             /// In little endian the integer we have right here looks like:
             /// 0x0000 0000 0000 0200 0010 3a58 08bd 1002
             ///
-            /// For clearer demonstration, i'll use the big-endian representation in each segment.
+            /// For clearer demonstration, i'll use the big-endian representation in each ipv6 segment.
             /// So we assume in little-endian the integer looks like this:
             /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
 
-            /// In this example, it'll turn this:
+            /// In this example, the memmove below will turn this:
             /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
             /// into this:
             /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
@@ -524,15 +524,13 @@ extension IPv6Address {
     static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
         /// Normalizes uppercase ASCII to lowercase ASCII
         let normalizedByte = asciiByte | 0b00100000
-        if normalizedByte >= UInt8.asciiLowercasedA {
-            guard normalizedByte <= UInt8.asciiLowercasedF else {
-                return nil
-            }
+        if normalizedByte >= UInt8.asciiLowercasedA,
+            normalizedByte <= UInt8.asciiLowercasedF
+        {
             return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
-        } else if asciiByte >= UInt8.ascii0 {
-            guard asciiByte <= UInt8.ascii9 else {
-                return nil
-            }
+        } else if asciiByte >= UInt8.ascii0,
+            asciiByte <= UInt8.ascii9
+        {
             return asciiByte &-- UInt8.ascii0
         }
         return nil
