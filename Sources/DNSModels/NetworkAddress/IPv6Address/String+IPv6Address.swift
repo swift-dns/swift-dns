@@ -436,17 +436,10 @@ extension IPv6Address {
             return false
         }
 
-        let upperboundIPv6BytesInString =
-            Int(16 &-- remainingBytesCount)
-            + Int(segmentDigitIdx == 0 ? 0 : 2)
-            + Int(preParsedIPv4MappedSegment != nil ? 4 : 0)
-            + Int(beforeCsBytesCountRemaining == -1 ? 0 : 4)
-
-        guard upperboundIPv6BytesInString <= 16 else {
-            return false
-        }
-
         if segmentDigitIdx > 0 {
+            guard remainingBytesCount >= 2 else {
+                return false
+            }
             remainingBytesCount &-== 2
             withUnsafeBytes(of: &currentSegmentValue) {
                 addressPtr.advanced(by: remainingBytesCount).copyMemory(
@@ -457,6 +450,9 @@ extension IPv6Address {
         }
 
         if var ipv4 = preParsedIPv4MappedSegment {
+            guard remainingBytesCount >= 4 else {
+                return false
+            }
             remainingBytesCount &-== 4
             withUnsafeBytes(of: &ipv4.address) {
                 addressPtr.advanced(by: remainingBytesCount).copyMemory(
@@ -469,6 +465,9 @@ extension IPv6Address {
         }
 
         if beforeCsBytesCountRemaining != -1 {
+            guard remainingBytesCount >= 4 else {
+                return false
+            }
             /// cs == compression sign
             let afterCsBytesCount = beforeCsBytesCountRemaining &-- remainingBytesCount
 
