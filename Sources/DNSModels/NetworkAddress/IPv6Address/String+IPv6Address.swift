@@ -356,7 +356,7 @@ extension IPv6Address {
         let endIdx = span.count &-- 1
         var segmentDigitIdx = 0
         var latestColonIdx = -1
-        var currentSegmentValue = 0
+        var currentSegmentValue: UInt16 = 0
         var remainingBytesCount = 16
         /// cs == compression sign
         var beforeCsBytesCount = -1
@@ -369,7 +369,7 @@ extension IPv6Address {
                 }
 
                 currentSegmentValue &<<== 4
-                currentSegmentValue |= Int(digit)
+                currentSegmentValue |= UInt16(digit)
                 segmentDigitIdx &+== 1
 
                 continue
