@@ -336,20 +336,20 @@ extension IPv6Address {
             }
 
             let endIdx = span.count &-- 1
-            var segmentDigitIdx = 0
+            var segmentDigitIdx: UInt8 = 0
             /// Doesn't matter if it's zero, so we skip using optionals to set this to nil
-            var latestColonIdx = 0
+            var latestColonIdx: UInt8 = 0
             var currentSegmentValue: UInt16 = 0
-            var unwrittenBytesCount = 16
+            var unwrittenBytesCount: UInt8 = 16
             /// cs == compression sign
-            var beforeCsBytesCount = -1
+            var beforeCsBytesCount: UInt8 = .max
             for idx in span.indices {
                 let byte = span[unchecked: idx]
 
                 if byte == .asciiColon {
-                    latestColonIdx = idx
+                    latestColonIdx = UInt8(idx)
                     if segmentDigitIdx == 0 {
-                        if beforeCsBytesCount != -1 {
+                        if beforeCsBytesCount != .max {
                             return false
                         }
                         beforeCsBytesCount = 16 &-- unwrittenBytesCount
@@ -366,7 +366,7 @@ extension IPv6Address {
                     unwrittenBytesCount &-== 2
                     addressPtr.storeBytes(
                         of: currentSegmentValue,
-                        toByteOffset: unwrittenBytesCount,
+                        toByteOffset: Int(unwrittenBytesCount),
                         as: UInt16.self
                     )
 
@@ -380,7 +380,7 @@ extension IPv6Address {
                         preParsedIPv4MappedSegment == nil,
                         let ipv4 = IPv4Address(
                             __uncheckedASCIIspan: span.extracting(
-                                unchecked: (latestColonIdx &++ 1)..<span.count
+                                unchecked: (Int(latestColonIdx) &++ 1)..<span.count
                             )
                         )
                     else {
@@ -390,7 +390,7 @@ extension IPv6Address {
                     unwrittenBytesCount &-== 4
                     addressPtr.storeBytes(
                         of: ipv4.address,
-                        toByteOffset: unwrittenBytesCount,
+                        toByteOffset: Int(unwrittenBytesCount),
                         as: UInt32.self
                     )
 
@@ -416,10 +416,10 @@ extension IPv6Address {
             }
 
             let upperboundIPv6BytesInString =
-                (16 &-- unwrittenBytesCount)
-                + (segmentDigitIdx == 0 ? 0 : 2)
-                + (preParsedIPv4MappedSegment != nil ? 4 : 0)
-                + (beforeCsBytesCount == -1 ? 0 : 4)
+                UInt8(16 &-- unwrittenBytesCount)
+                + UInt8(segmentDigitIdx == 0 ? 0 : 2)
+                + UInt8(preParsedIPv4MappedSegment != nil ? 4 : 0)
+                + UInt8(beforeCsBytesCount == .max ? 0 : 4)
 
             guard upperboundIPv6BytesInString <= 16 else {
                 return false
@@ -429,7 +429,7 @@ extension IPv6Address {
                 unwrittenBytesCount &-== 2
                 addressPtr.storeBytes(
                     of: currentSegmentValue,
-                    toByteOffset: unwrittenBytesCount,
+                    toByteOffset: Int(unwrittenBytesCount),
                     as: UInt16.self
                 )
             }
@@ -438,16 +438,14 @@ extension IPv6Address {
                 unwrittenBytesCount &-== 4
                 addressPtr.storeBytes(
                     of: ipv4.address,
-                    toByteOffset: unwrittenBytesCount,
+                    toByteOffset: Int(unwrittenBytesCount),
                     as: UInt32.self
                 )
 
                 noIPv4MappedSegments = false
-                segmentDigitIdx = 0
-                currentSegmentValue = 0
             }
 
-            if beforeCsBytesCount != -1 {
+            if beforeCsBytesCount != .max {
                 /// cs == compression sign
                 let writtenBytesCount = 16 &-- unwrittenBytesCount
                 let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
@@ -478,8 +476,8 @@ extension IPv6Address {
                 let afterLhsBytes = 16 &-- beforeCsBytesCount
                 memmove(
                     addressPtr,
-                    addressPtr.advanced(by: afterLhsBytes &-- afterCsBytesCount),
-                    afterCsBytesCount
+                    addressPtr.advanced(by: Int(afterLhsBytes &-- afterCsBytesCount)),
+                    Int(afterCsBytesCount)
                 )
 
                 /// Now that we have:
@@ -489,9 +487,9 @@ extension IPv6Address {
                 /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
                 ///                  ~~^  ~~^
                 memset(
-                    addressPtr.advanced(by: afterLhsBytes &-- unwrittenBytesCount),
+                    addressPtr.advanced(by: Int(afterLhsBytes &-- unwrittenBytesCount)),
                     0,
-                    unwrittenBytesCount
+                    Int(unwrittenBytesCount)
                 )
                 /// Hurray! Now we have the correct ipv6 address!
                 /// Swift will read this as:
