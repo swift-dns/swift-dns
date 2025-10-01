@@ -63,7 +63,7 @@ extension IPv6Address: CustomStringConvertible {
                 let doubled = idx &** 2
                 return ptr[15 &-- doubled] == 0 && ptr[14 &-- doubled] == 0
             }
-            var rangeToCompress: Range? = nil
+            var rangeToCompress: Range<Int>? = nil
             var idx = 0
             /// idx < `7` instead of `8` because even if 7 is a zero it'll be a lone zero and
             /// we won't compress it anyway.
@@ -274,6 +274,14 @@ extension IPv6Address {
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
+    ///
+    /// `preParsedIPv4MappedSegment` is helpful when redirecting a domain name parsing to this
+    /// initializer. Because a `.` is a label separator in domain names, and because this library's
+    /// `DomainName` type stores wire-format character-strings in its storage, the efficient way
+    /// to parse an IPv4-mapped IPv6 address is to first parse the IPv4 address using ipv4
+    /// initializers, then pass that ipv4 to this initializer.
+    /// This helps us avoid reallocating memory, which would happen if we wanted to convert the
+    /// domain name to a proper ipv6 address.
     @inlinable
     package init?(
         __uncheckedASCIIspan span: Span<UInt8>,
@@ -363,6 +371,18 @@ extension IPv6Address {
         for idx in span.indices {
             let byte = span[unchecked: idx]
 
+            if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
+                if segmentDigitIdx == 4 {
+                    return false
+                }
+
+                currentSegmentValue &<<== 4
+                currentSegmentValue |= UInt16(digit)
+                segmentDigitIdx &+== 1
+
+                continue
+            }
+
             if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
@@ -392,17 +412,9 @@ extension IPv6Address {
                 currentSegmentValue = 0
 
                 continue
-            } else if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
-                if segmentDigitIdx == 4 {
-                    return false
-                }
+            }
 
-                currentSegmentValue &<<== 4
-                currentSegmentValue |= UInt16(digit)
-                segmentDigitIdx &+== 1
-
-                continue
-            } else if byte == .asciiDot {
+            if byte == .asciiDot {
                 guard
                     remainingBytesCount >= 4,
                     preParsedIPv4MappedSegment == nil,
