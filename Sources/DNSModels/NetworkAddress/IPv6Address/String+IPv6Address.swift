@@ -526,14 +526,14 @@ extension IPv6Address {
     static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
         /// Normalizes uppercase ASCII to lowercase ASCII
         let normalizedByte = asciiByte | 0b00100000
-        if normalizedByte >= UInt8.asciiLowercasedA,
-            normalizedByte <= UInt8.asciiLowercasedF
-        {
-            return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
-        } else if asciiByte >= UInt8.ascii0,
+        if asciiByte >= UInt8.ascii0,
             asciiByte <= UInt8.ascii9
         {
             return asciiByte &-- UInt8.ascii0
+        } else if normalizedByte >= UInt8.asciiLowercasedA,
+            normalizedByte <= UInt8.asciiLowercasedF
+        {
+            return normalizedByte &-- UInt8.asciiLowercasedA &++ 10
         }
         return nil
     }
