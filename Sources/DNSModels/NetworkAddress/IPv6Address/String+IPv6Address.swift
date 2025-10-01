@@ -359,7 +359,7 @@ extension IPv6Address {
         var currentSegmentValue: UInt16 = 0
         var remainingBytesCount = 16
         /// cs == compression sign
-        var beforeCsBytesCount = -1
+        var beforeCsBytesCountRemaining = -1
         for idx in span.indices {
             let byte = span[unchecked: idx]
 
@@ -376,10 +376,10 @@ extension IPv6Address {
             } else if byte == .asciiColon {
                 latestColonIdx = idx
                 if segmentDigitIdx == 0 {
-                    if beforeCsBytesCount != -1 {
+                    if beforeCsBytesCountRemaining != -1 {
                         return false
                     }
-                    beforeCsBytesCount = 16 &-- remainingBytesCount
+                    beforeCsBytesCountRemaining = remainingBytesCount
                     continue
                 } else if idx == endIdx {
                     return false
@@ -440,7 +440,7 @@ extension IPv6Address {
             Int(16 &-- remainingBytesCount)
             + Int(segmentDigitIdx == 0 ? 0 : 2)
             + Int(preParsedIPv4MappedSegment != nil ? 4 : 0)
-            + Int(beforeCsBytesCount == -1 ? 0 : 4)
+            + Int(beforeCsBytesCountRemaining == -1 ? 0 : 4)
 
         guard upperboundIPv6BytesInString <= 16 else {
             return false
@@ -468,10 +468,9 @@ extension IPv6Address {
             noIPv4MappedSegments = false
         }
 
-        if beforeCsBytesCount != -1 {
+        if beforeCsBytesCountRemaining != -1 {
             /// cs == compression sign
-            let writtenBytesCount = 16 &-- remainingBytesCount
-            let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
+            let afterCsBytesCount = beforeCsBytesCountRemaining &-- remainingBytesCount
 
             /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics.
             ///
@@ -496,10 +495,9 @@ extension IPv6Address {
             /// into this:
             /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
             ///   ~~^  ~~^
-            let afterLhsBytes = 16 &-- beforeCsBytesCount
             memmove(
                 addressPtr,
-                addressPtr.advanced(by: afterLhsBytes &-- afterCsBytesCount),
+                addressPtr.advanced(by: beforeCsBytesCountRemaining &-- afterCsBytesCount),
                 afterCsBytesCount
             )
 
@@ -510,7 +508,7 @@ extension IPv6Address {
             /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
             ///                  ~~^  ~~^
             memset(
-                addressPtr.advanced(by: afterLhsBytes &-- remainingBytesCount),
+                addressPtr.advanced(by: beforeCsBytesCountRemaining &-- remainingBytesCount),
                 0,
                 remainingBytesCount
             )
