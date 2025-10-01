@@ -296,215 +296,224 @@ extension IPv6Address {
         /// and write backwards.
         var noIPv4MappedSegments = true
         let success = withUnsafeMutableBytes(of: &self.address) { addressPtr -> Bool in
-            let addressPtr = addressPtr.baseAddress.unsafelyUnwrapped
-
-            var span = span
-
-            guard span.count >= 2 else {
-                return false
-            }
-
-            /// Trim the left and right square brackets if they both exist
-
-            /// Unchecked because we just checked count > 1 above
-            let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
-            /// Unchecked because we just checked count > 1 above
-            let endsWithBracket = span[unchecked: span.count &-- 1] == .asciiRightSquareBracket
-            switch (startsWithBracket, endsWithBracket) {
-            case (false, false):
-                break
-            case (true, true):
-                /// Unchecked because we just checked count > 1 above
-                span = span.extracting(1..<(span.count &-- 1))
-            case (true, false), (false, true):
-                return false
-            }
-
-            guard
-                span.count >= "::".count,
-                span.count <= "0000:0000:0000:0000:0000:ffff:111.111.111.111".count
-            else {
-                return false
-            }
-
-            /// Special-case handling for when there is a compression sign at the beginning
-            if span[unchecked: 0] == .asciiColon {
-                span = span.extracting(1..<span.count)
-                if span[unchecked: 0] != .asciiColon {
-                    return false
-                }
-            }
-
-            let endIdx = span.count &-- 1
-            var segmentDigitIdx = 0
-            /// Doesn't matter if it's zero, so we skip using optionals to set this to nil
-            var latestColonIdx = 0
-            var currentSegmentValue: UInt16 = 0
-            var unwrittenBytesCount = 16
-            /// cs == compression sign
-            var beforeCsBytesCount = -1
-            for idx in span.indices {
-                let byte = span[unchecked: idx]
-
-                if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
-                    if segmentDigitIdx == 4 {
-                        return false
-                    }
-
-                    currentSegmentValue &<<== 4
-                    currentSegmentValue |= UInt16(digit)
-                    segmentDigitIdx &+== 1
-
-                    continue
-                } else if byte == .asciiColon {
-                    latestColonIdx = idx
-                    if segmentDigitIdx == 0 {
-                        if beforeCsBytesCount != -1 {
-                            return false
-                        }
-                        beforeCsBytesCount = 16 &-- unwrittenBytesCount
-                        continue
-                    } else if idx == endIdx {
-                        return false
-                    }
-
-                    /// We only do decrements of 2 to unwrittenBytesCount so it can't be 1.
-                    if unwrittenBytesCount == 0 {
-                        return false
-                    }
-
-                    unwrittenBytesCount &-== 2
-                    addressPtr.storeBytes(
-                        of: currentSegmentValue,
-                        toByteOffset: unwrittenBytesCount,
-                        as: UInt16.self
-                    )
-
-                    segmentDigitIdx = 0
-                    currentSegmentValue = 0
-
-                    continue
-                } else if byte == .asciiDot {
-                    guard
-                        unwrittenBytesCount >= 4,
-                        preParsedIPv4MappedSegment == nil,
-                        let ipv4 = IPv4Address(
-                            __uncheckedASCIIspan: span.extracting(
-                                unchecked: (latestColonIdx &++ 1)..<span.count
-                            )
-                        )
-                    else {
-                        return false
-                    }
-
-                    unwrittenBytesCount &-== 4
-                    addressPtr.storeBytes(
-                        of: ipv4.address,
-                        toByteOffset: unwrittenBytesCount,
-                        as: UInt32.self
-                    )
-
-                    noIPv4MappedSegments = false
-                    segmentDigitIdx = 0
-                    currentSegmentValue = 0
-
-                    break
-                }
-
-                /// Bad character
-                return false
-            }
-
-            let upperboundIPv6BytesInString =
-                Int(16 &-- unwrittenBytesCount)
-                + Int(segmentDigitIdx == 0 ? 0 : 2)
-                + Int(preParsedIPv4MappedSegment != nil ? 4 : 0)
-                + Int(beforeCsBytesCount == -1 ? 0 : 4)
-
-            guard upperboundIPv6BytesInString <= 16 else {
-                return false
-            }
-
-            if segmentDigitIdx > 0 {
-                unwrittenBytesCount &-== 2
-                addressPtr.storeBytes(
-                    of: currentSegmentValue,
-                    toByteOffset: unwrittenBytesCount,
-                    as: UInt16.self
-                )
-            }
-
-            if let ipv4 = preParsedIPv4MappedSegment {
-                unwrittenBytesCount &-== 4
-                addressPtr.storeBytes(
-                    of: ipv4.address,
-                    toByteOffset: unwrittenBytesCount,
-                    as: UInt32.self
-                )
-
-                noIPv4MappedSegments = false
-            }
-
-            if beforeCsBytesCount != -1 {
-                /// cs == compression sign
-                let writtenBytesCount = 16 &-- unwrittenBytesCount
-                let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
-
-                /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics.
-                ///
-                /// Example:
-                /// Assume at the end of this parsing process we need to have:
-                /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
-                ///
-                /// For that, at this point in the process, the `self.address` looks like this:
-                /// 0x2001 0db8 85a3 0100 0020 0000 0000 0000
-                ///
-                /// We need to move the bytes so it becomes like the first one.
-                ///
-                /// In little endian the integer we have right here looks like:
-                /// 0x0000 0000 0000 0200 0010 3a58 08bd 1002
-                ///
-                /// For clearer demonstration, i'll use the big-endian representation in each segment.
-                /// So we assume in little-endian the integer looks like this:
-                /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
-
-                /// In this example, it'll turn this:
-                /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
-                /// into this:
-                /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
-                ///   ~~^  ~~^
-                let afterLhsBytes = 16 &-- beforeCsBytesCount
-                memmove(
-                    addressPtr,
-                    addressPtr.advanced(by: afterLhsBytes &-- afterCsBytesCount),
-                    afterCsBytesCount
-                )
-
-                /// Now that we have:
-                /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
-                ///
-                /// We set the middle 0020 0100 to zeros:
-                /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
-                ///                  ~~^  ~~^
-                memset(
-                    addressPtr.advanced(by: afterLhsBytes &-- unwrittenBytesCount),
-                    0,
-                    unwrittenBytesCount
-                )
-                /// Hurray! Now we have the correct ipv6 address!
-                /// Swift will read this as:
-                /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
-                /// which is what we aimed for.
-                return true
-            } else {
-                return unwrittenBytesCount == 0
-            }
+            IPv6Address.parseIPv6(
+                span: span,
+                addressPtr: addressPtr.baseAddress.unsafelyUnwrapped,
+                noIPv4MappedSegments: &noIPv4MappedSegments,
+                preParsedIPv4MappedSegment: preParsedIPv4MappedSegment
+            )
         }
 
         guard success,
             noIPv4MappedSegments || CIDR<IPv6Address>.ipv4Mapped.contains(self)
         else {
             return nil
+        }
+    }
+
+    @inlinable
+    static func parseIPv6(
+        span: Span<UInt8>,
+        addressPtr: UnsafeMutableRawPointer,
+        noIPv4MappedSegments: inout Bool,
+        preParsedIPv4MappedSegment: IPv4Address?
+    ) -> Bool {
+        var span = span
+
+        guard span.count >= "::".count else {
+            return false
+        }
+
+        /// Trim the left and right square brackets if they both exist
+
+        /// Unchecked because we just checked count > 1 above
+        let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
+        /// Unchecked because we just checked count > 1 above
+        let endsWithBracket = span[unchecked: span.count &-- 1] == .asciiRightSquareBracket
+        switch (startsWithBracket, endsWithBracket) {
+        case (false, false):
+            break
+        case (true, true):
+            /// Unchecked because we just checked count > 1 above
+            span = span.extracting(1..<(span.count &-- 1))
+        case (true, false), (false, true):
+            return false
+        }
+
+        guard span.count >= "::".count else {
+            return false
+        }
+
+        /// Special-case handling for when there is a compression sign at the beginning
+        if span[unchecked: 0] == .asciiColon {
+            span = span.extracting(1..<span.count)
+            if span[unchecked: 0] != .asciiColon {
+                return false
+            }
+        }
+
+        let endIdx = span.count &-- 1
+        var segmentDigitIdx = 0
+        var latestColonIdx = -1
+        var currentSegmentValue = 0
+        var remainingBytesCount = 16
+        /// cs == compression sign
+        var beforeCsBytesCount = -1
+        for idx in span.indices {
+            let byte = span[unchecked: idx]
+
+            if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
+                if segmentDigitIdx == 4 {
+                    return false
+                }
+
+                currentSegmentValue &<<== 4
+                currentSegmentValue |= Int(digit)
+                segmentDigitIdx &+== 1
+
+                continue
+            } else if byte == .asciiColon {
+                latestColonIdx = idx
+                if segmentDigitIdx == 0 {
+                    if beforeCsBytesCount != -1 {
+                        return false
+                    }
+                    beforeCsBytesCount = 16 &-- remainingBytesCount
+                    continue
+                } else if idx == endIdx {
+                    return false
+                }
+
+                /// We only do decrements of 2x to remainingBytesCount so it can't be 1.
+                if remainingBytesCount == 0 {
+                    return false
+                }
+
+                remainingBytesCount &-== 2
+                addressPtr.storeBytes(
+                    of: Int16(truncatingIfNeeded: currentSegmentValue),
+                    toByteOffset: remainingBytesCount,
+                    as: Int16.self
+                )
+
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                continue
+            } else if byte == .asciiDot {
+                guard
+                    remainingBytesCount >= 4,
+                    preParsedIPv4MappedSegment == nil,
+                    let ipv4 = IPv4Address(
+                        __uncheckedASCIIspan: span.extracting(
+                            unchecked: (latestColonIdx &++ 1)..<span.count
+                        )
+                    )
+                else {
+                    return false
+                }
+
+                remainingBytesCount &-== 4
+                addressPtr.storeBytes(
+                    of: ipv4.address,
+                    toByteOffset: remainingBytesCount,
+                    as: UInt32.self
+                )
+
+                noIPv4MappedSegments = false
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                break
+            }
+
+            /// Bad character
+            return false
+        }
+
+        let upperboundIPv6BytesInString =
+            Int(16 &-- remainingBytesCount)
+            + Int(segmentDigitIdx == 0 ? 0 : 2)
+            + Int(preParsedIPv4MappedSegment != nil ? 4 : 0)
+            + Int(beforeCsBytesCount == -1 ? 0 : 4)
+
+        guard upperboundIPv6BytesInString <= 16 else {
+            return false
+        }
+
+        if segmentDigitIdx > 0 {
+            remainingBytesCount &-== 2
+            addressPtr.storeBytes(
+                of: Int16(truncatingIfNeeded: currentSegmentValue),
+                toByteOffset: remainingBytesCount,
+                as: Int16.self
+            )
+        }
+
+        if let ipv4 = preParsedIPv4MappedSegment {
+            remainingBytesCount &-== 4
+            addressPtr.storeBytes(
+                of: ipv4.address,
+                toByteOffset: remainingBytesCount,
+                as: UInt32.self
+            )
+
+            noIPv4MappedSegments = false
+        }
+
+        if beforeCsBytesCount != -1 {
+            /// cs == compression sign
+            let writtenBytesCount = 16 &-- remainingBytesCount
+            let afterCsBytesCount = writtenBytesCount &-- beforeCsBytesCount
+
+            /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics.
+            ///
+            /// Example:
+            /// Assume at the end of this parsing process we need to have:
+            /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+            ///
+            /// For that, at this point in the process, the `self.address` looks like this:
+            /// 0x2001 0db8 85a3 0100 0020 0000 0000 0000
+            ///
+            /// We need to move the bytes so it becomes like the first one.
+            ///
+            /// In little endian the integer we have right here looks like:
+            /// 0x0000 0000 0000 0200 0010 3a58 08bd 1002
+            ///
+            /// For clearer demonstration, i'll use the big-endian representation in each segment.
+            /// So we assume in little-endian the integer looks like this:
+            /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+
+            /// In this example, it'll turn this:
+            /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+            /// into this:
+            /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+            ///   ~~^  ~~^
+            let afterLhsBytes = 16 &-- beforeCsBytesCount
+            memmove(
+                addressPtr,
+                addressPtr.advanced(by: afterLhsBytes &-- afterCsBytesCount),
+                afterCsBytesCount
+            )
+
+            /// Now that we have:
+            /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+            ///
+            /// We set the middle 0020 0100 to zeros:
+            /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
+            ///                  ~~^  ~~^
+            memset(
+                addressPtr.advanced(by: afterLhsBytes &-- remainingBytesCount),
+                0,
+                remainingBytesCount
+            )
+            /// Hurray! Now we have the correct ipv6 address!
+            /// Swift will read this as:
+            /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+            /// which is what we aimed for.
+            return true
+        } else {
+            return remainingBytesCount == 0
         }
     }
 

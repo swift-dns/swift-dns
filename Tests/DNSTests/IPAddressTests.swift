@@ -485,6 +485,7 @@ private let ipv6StringAndAddressTestCases: [(String, IPv6Address?, Bool)] = [
     ("::FFFF:1.1.1", nil, false),
     ("::FFFF:1.1.1.", nil, false),
     ("::1.1.1.1", nil, false),
+    (".1.1.1.1", nil, false),
     ("::FFFF:256.152.189.116", nil, false),
     ("[0000:0000:0000:0000:0000:FFFF:255.255.255.1111]", nil, false),
     ("::FFFF:204.152.189.116.", nil, false),
