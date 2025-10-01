@@ -336,7 +336,7 @@ extension IPv6Address {
             break
         case (true, true):
             /// Unchecked because we just checked count > 1 above
-            span = span.extracting(1..<(span.count &-- 1))
+            span = span.extracting(Range<Int>(uncheckedBounds: (1, span.count &-- 1)))
         case (true, false), (false, true):
             return false
         }
@@ -347,7 +347,7 @@ extension IPv6Address {
 
         /// Special-case handling for when there is a compression sign at the beginning
         if span[unchecked: 0] == .asciiColon {
-            span = span.extracting(1..<span.count)
+            span = span.extracting(Range<Int>(uncheckedBounds: (1, span.count)))
             if span[unchecked: 0] != .asciiColon {
                 return false
             }
@@ -408,7 +408,9 @@ extension IPv6Address {
                     preParsedIPv4MappedSegment == nil,
                     var ipv4 = IPv4Address(
                         __uncheckedASCIIspan: span.extracting(
-                            unchecked: (latestColonIdx &++ 1)..<span.count
+                            unchecked: Range<Int>(
+                                uncheckedBounds: (latestColonIdx &++ 1, span.count)
+                            )
                         )
                     )
                 else {
