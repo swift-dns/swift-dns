@@ -275,6 +275,7 @@ extension IPv6Address {
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
     /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
+    @_optimize(speed)
     package init?(
         __uncheckedASCIIspan span: Span<UInt8>,
         preParsedIPv4MappedSegment: IPv4Address?
@@ -312,6 +313,7 @@ extension IPv6Address {
     }
 
     @inlinable
+    @_optimize(speed)
     static func parseIPv6(
         span: Span<UInt8>,
         addressPtr: UnsafeMutableRawPointer,
@@ -518,6 +520,7 @@ extension IPv6Address {
     }
 
     @inlinable
+    @_optimize(speed)
     static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
         /// Normalizes uppercase ASCII to lowercase ASCII
         let normalizedByte = asciiByte | 0b00100000
