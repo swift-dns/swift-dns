@@ -52,6 +52,7 @@ jobs:
           swift build \
             --build-tests \
             --enable-code-coverage \
+            --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -184,6 +185,7 @@ jobs:
           swift build \
             --build-tests \
             --enable-code-coverage \
+            --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
