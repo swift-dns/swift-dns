@@ -84,8 +84,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
-          restore-keys: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
+          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Update benchmark thresholds
         run: |
@@ -118,7 +118,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
 
       - name: Format threshold files with jq
         if: always()

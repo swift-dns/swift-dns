@@ -6,15 +6,6 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
-      run_count:
-        description: "Number of times to run each benchmark and update the thresholds."
-        required: true
-        type: number
-        default: 500
-      pr_number:
-        description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
-        required: false
-        type: number
       target:
         description: "Regex filter for benchmark target names that contains the benchmarks to run. If not provided, all targets will be run."
         required: false
@@ -32,8 +23,6 @@ defaults:
   run:
     shell: bash --noprofile --norc -e -u -o pipefail {0}
 
-env:
-  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 jobs:
   export-benchmark-results:
     runs-on: [self-hosted, linux, x64]
@@ -41,10 +30,6 @@ jobs:
     container: swift:6.2-noble
 
     timeout-minutes: 1440
-
-    permissions:
-      pull-requests: write # For the comment action
-      contents: write # For the committing the changes
 
     steps:
       - name: Install dependencies
@@ -66,8 +51,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
-          restore-keys: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
+          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Run benchmarks
         run: |
@@ -75,7 +60,7 @@ jobs:
             --package-path Benchmarks \
             --allow-writing-to-directory="$PWD" \
             benchmark run \
-            --format jmh"
+            --format histogram"
 
           if [[ -n '${{ inputs.target }}' ]]; then
             COMMAND="$COMMAND --target '${{ inputs.target }}'"
@@ -89,8 +74,6 @@ jobs:
             COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
           fi
 
-          COMMAND="$COMMAND 2>&1 | grep 'Running the command multiple times'"
-
           eval "$COMMAND"
 
       - name: Cache .build
@@ -98,12 +81,12 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
 
       - name: Calculate archive file name
         id: calculate-archive-file-name
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%d-%H-%M-%S UTC")
+          TIMESTAMP=$(date -u +"%Y-%m-%d-%H-%M-%S")
           FILE_NAME="swift-dns_benchmark_results_${TIMESTAMP}"
 
           if [[ -n '${{ inputs.target }}' ]]; then
