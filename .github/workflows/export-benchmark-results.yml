@@ -100,11 +100,11 @@ jobs:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
 
-      - name: Rename benchmark results
-        id: rename-benchmark-results
+      - name: Calculate archive file name
+        id: calculate-archive-file-name
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d-%H-%M-%S UTC")
-          FILE_NAME="benchmark_results_${TIMESTAMP}"
+          FILE_NAME="swift-dns_benchmark_results_${TIMESTAMP}"
 
           if [[ -n '${{ inputs.target }}' ]]; then
             TARGET="$(echo '${{ inputs.target }}' | tr ' ' '_')"
@@ -121,15 +121,10 @@ jobs:
             FILE_NAME="${FILE_NAME}_skip_${SKIP}"
           fi
 
-          echo "file_name_no_ext=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
-
-          FILE_NAME="${FILE_NAME}.jmh.json"
-
           echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
-          mv Current_run.jmh.json "${FILE_NAME}"
 
       - name: Archive benchmark results
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ steps.rename-benchmark-results.outputs.file_name_no_ext }}"
-          path: "${{ steps.rename-benchmark-results.outputs.file_name }}"
+          name: "${{ steps.calculate-archive-file-name.outputs.file_name }}"
+          path: "*.histogram.txt"
