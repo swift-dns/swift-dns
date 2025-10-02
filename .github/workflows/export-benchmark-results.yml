@@ -1,0 +1,135 @@
+name: export-benchmark-results
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_count:
+        description: "Number of times to run each benchmark and update the thresholds."
+        required: true
+        type: number
+        default: 500
+      pr_number:
+        description: "Pull Request number to comment on. If not provided, the workflow will not comment any PRs."
+        required: false
+        type: number
+      target:
+        description: "Regex filter for benchmark target names that contains the benchmarks to run. If not provided, all targets will be run."
+        required: false
+        type: string
+      filter:
+        description: "Regex filter for benchmark names. If not provided, all benchmarks will be run."
+        required: false
+        type: string
+      skip:
+        description: "Regex filter for benchmark names to skip. If not provided, no benchmarks will be skipped."
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -e -u -o pipefail {0}
+
+env:
+  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+jobs:
+  export-benchmark-results:
+    runs-on: [self-hosted, linux, x64]
+
+    container: swift:6.2-noble
+
+    timeout-minutes: 1440
+
+    permissions:
+      pull-requests: write # For the comment action
+      contents: write # For the committing the changes
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update -q && apt install -yq libjemalloc-dev zstd
+
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: Benchmarks/.build
+          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+          restore-keys: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-"
+
+      - name: Run benchmarks
+        run: |
+          COMMAND="swift package -c release \
+            --package-path Benchmarks \
+            --allow-writing-to-directory="$PWD" \
+            benchmark run \
+            --format jmh"
+
+          if [[ -n '${{ inputs.target }}' ]]; then
+            COMMAND="$COMMAND --target '${{ inputs.target }}'"
+          fi
+
+          if [[ -n '${{ inputs.filter }}' ]]; then
+            COMMAND="$COMMAND --filter '${{ inputs.filter }}'"
+          fi
+
+          if [[ -n '${{ inputs.skip }}' ]]; then
+            COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
+          fi
+
+          COMMAND="$COMMAND 2>&1 | grep 'Running the command multiple times'"
+
+          eval "$COMMAND"
+
+      - name: Cache .build
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: Benchmarks/.build
+          key: "swiftpm-benchmark-update-thresholds-build-${{ runner.os }}-${{ github.sha }}"
+
+      - name: Rename benchmark results
+        id: rename-benchmark-results
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%d-%H-%M-%S UTC")
+          FILE_NAME="benchmark_results_${TIMESTAMP}"
+
+          if [[ -n '${{ inputs.target }}' ]]; then
+            TARGET="$(echo '${{ inputs.target }}' | tr ' ' '_')"
+            FILE_NAME="${FILE_NAME}_target_${TARGET}"
+          fi
+
+          if [[ -n '${{ inputs.filter }}' ]]; then
+            FILTER="$(echo '${{ inputs.filter }}' | tr ' ' '_')"
+            FILE_NAME="${FILE_NAME}_filter_${FILTER}"
+          fi
+
+          if [[ -n '${{ inputs.skip }}' ]]; then
+            SKIP="$(echo '${{ inputs.skip }}' | tr ' ' '_')"
+            FILE_NAME="${FILE_NAME}_skip_${SKIP}"
+          fi
+
+          echo "file_name_no_ext=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+
+          FILE_NAME="${FILE_NAME}.jmh.json"
+
+          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+          mv Current_run.jmh.json "${FILE_NAME}"
+
+      - name: Archive benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ steps.rename-benchmark-results.outputs.file_name_no_ext }}"
+          path: "${{ steps.rename-benchmark-results.outputs.file_name }}"
