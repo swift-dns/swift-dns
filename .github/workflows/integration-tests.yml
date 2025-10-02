@@ -61,6 +61,16 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
+      - name: Debug through SSH
+        if: matrix.config.mode == 'debug'
+        uses: edipizarro/runner-open-ssh@main
+        with:
+          sshPublicKey: ${{ secrets.GHA_DEBUG_SSH_PUBLIC_KEY }}
+          gatewayPrivateKey: ${{ secrets.GHA_DEBUG_SSH_GATEWAY_PRIV_KEY }}
+          gatewayIP: ${{ secrets.GHA_DEBUG_SSH_GATEWAY_IP }}
+          maxLifeTime: ${{ secrets.GHA_DEBUG_SSH_MAX_LIFETIME }}
+          port: ${{ secrets.GHA_DEBUG_SSH_PORT }}
+
       - name: Run tests
         run: |
           swift test \
@@ -185,15 +195,6 @@ jobs:
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
-
-      - name: Debug through SSH
-        uses: edipizarro/runner-open-ssh@main
-        with:
-          sshPublicKey: ${{ secrets.GHA_DEBUG_SSH_PUBLIC_KEY }}
-          gatewayPrivateKey: ${{ secrets.GHA_DEBUG_SSH_GATEWAY_PRIV_KEY }}
-          gatewayIP: ${{ secrets.GHA_DEBUG_SSH_GATEWAY_IP }}
-          maxLifeTime: ${{ secrets.GHA_DEBUG_SSH_MAX_LIFETIME }}
-          port: ${{ secrets.GHA_DEBUG_SSH_PORT }}
 
       - name: Run tests
         run: |
