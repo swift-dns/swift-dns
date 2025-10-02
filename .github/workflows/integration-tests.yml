@@ -36,7 +36,7 @@ jobs:
       - name: Install zstd for faster caching, and curl for codecov action
         run: |
           apt-get update -y
-          apt-get install -y zstd curl
+          apt-get install -y zstd curl sudo
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
