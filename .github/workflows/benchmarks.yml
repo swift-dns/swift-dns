@@ -210,16 +210,16 @@ jobs:
 
           case "${EXIT_CODE}" in
               0)
-                  echo '**✅ Pull request has no significant performance differences ✅**' >> comment.md
+                  echo '**✅ Benchmark results are within the specified thresholds ✅**' >> comment.md
                   ;;
               1)
-                  echo '**❌ Pull request has significant performance differences 📊**' >> comment.md
+                  echo '**❌ Benchmark results are outside the specified thresholds 📊**' >> comment.md
                   ;;
               2)
-                  echo '**❌ Pull request has significant performance regressions 📉**' >> comment.md
+                  echo '**❌ Benchmark results are worse than the specified thresholds 📉**' >> comment.md
                   ;;
               4)
-                  echo '**❌ Pull request has significant performance improvements 📈**' >> comment.md
+                  echo '**❌ Benchmark results are better than the specified thresholds 📈**' >> comment.md
                   ;;
               *)
                   echo '**❌ Benchmark comparison failed to complete properly with exit code $EXIT_CODE ❌**' >> comment.md
