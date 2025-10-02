@@ -33,10 +33,10 @@ jobs:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v5
 
-      - name: Install zstd for faster caching, and curl for codecov action
+      - name: Install zstd for caching, curl for codecov, and tcpdump for packet capture
         run: |
           apt-get update -y
-          apt-get install -y zstd curl
+          apt-get install -y zstd curl tcpdump
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -62,13 +62,45 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests
+      - name: Run tests and capture packets
+        id: tests-run
         run: |
+          tcpdump -w dns.pcap port 53 and host 8.8.4.4 &
+          TCPDUMP_PID=$!
+
+          # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
+          set +e
           swift test \
             --filter "IntegrationTests." \
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
+          echo "exit-status=$?" >> $GITHUB_OUTPUT
+          set -e
+
+          kill $TCPDUMP_PID
+
+      - name: Calculate capture file name
+        id: calculate-capture-file-name
+        run: |
+          RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
+          TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
+          SHORT_SHA="$(echo '${{ github.sha }}' | cut -c 1-7)"
+          FILE_NAME="swift-dns_dns_capture_${TIMESTAMP}_${RESULT}_Linux_${{ matrix.swift-image.name }}_${{ matrix.config.mode }}_${SHORT_SHA}"
+          FILE_NAME="${FILE_NAME//:/_}"
+
+          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+
+          mv dns.pcap "${FILE_NAME}.pcap"
+
+      - name: Archive packet capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
+          path: "${{ steps.calculate-capture-file-name.outputs.file_name }}.pcap"
+
+      - name: Exit with correct status
+        run: exit ${{ steps.tests-run.outputs.exit-status }}
 
   macos-integration-tests:
     strategy:
@@ -99,6 +131,9 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode.version }}
+
+      - name: Install tcpdump for packet capture
+        run: brew install tcpdump
 
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v5
@@ -188,10 +223,42 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests
+      - name: Run tests and capture packets
+        id: tests-run
         run: |
+          sudo tcpdump -w dns.pcap port 53 and host 8.8.4.4 &
+          TCPDUMP_PID=$!
+
+          # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
+          set +e
           swift test \
             --filter "IntegrationTests." \
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
+          echo "exit-status=$?" >> $GITHUB_OUTPUT
+          set -e
+
+          kill $TCPDUMP_PID
+
+      - name: Calculate capture file name
+        id: calculate-capture-file-name
+        run: |
+          RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
+          TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
+          SHORT_SHA="$(echo '${{ github.sha }}' | cut -c 1-7)"
+          FILE_NAME="swift-dns_dns_capture_${TIMESTAMP}_${RESULT}_${{ matrix.macos.version }}_${{ matrix.swift.version }}_${{ matrix.config.mode }}_${{ matrix.xcode.version }}_${SHORT_SHA}"
+          FILE_NAME="${FILE_NAME//:/_}"
+
+          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+
+          mv dns.pcap "${FILE_NAME}.pcap"
+
+      - name: Archive packet capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
+          path: "${{ steps.calculate-capture-file-name.outputs.file_name }}.pcap"
+
+      - name: Exit with correct status
+        run: exit ${{ steps.tests-run.outputs.exit-status }}

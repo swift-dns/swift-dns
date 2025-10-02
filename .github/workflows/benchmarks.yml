@@ -123,8 +123,8 @@ jobs:
       - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          ENCODED_TIMESTAMP=$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")
+          TIMESTAMP="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          ENCODED_TIMESTAMP="$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")"
           TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=$ENCODED_TIMESTAMP"
           echo "## Benchmark check running at [$TIMESTAMP]($TIMESTAMP_LINK)" >> comparison.md
 

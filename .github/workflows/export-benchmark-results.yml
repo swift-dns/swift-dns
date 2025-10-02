@@ -86,7 +86,7 @@ jobs:
       - name: Calculate archive file name
         id: calculate-archive-file-name
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%d-%H-%M-%S")
+          TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
           FILE_NAME="swift-dns_benchmark_results_${TIMESTAMP}"
 
           if [[ -n '${{ inputs.target }}' ]]; then
@@ -103,6 +103,8 @@ jobs:
             SKIP="$(echo '${{ inputs.skip }}' | tr ' ' '_')"
             FILE_NAME="${FILE_NAME}_skip_${SKIP}"
           fi
+
+          FILE_NAME="${FILE_NAME}_${{ github.sha }}"
 
           echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
 
