@@ -48,31 +48,24 @@ let client = try DNSClient(
     )
 )
 
-try await withThrowingTaskGroup(of: Void.self) { taskGroup in
-    /// Use `addImmediateTask` instead of `addTask` on macOS 26 or Linux.
-    taskGroup.addTask {
-        try await client.run()  /// !important
-    }
+/// Run the client in the background.
+/// When you exit this function, the in-progress requests will be cancelled,
+/// and the client will be shut down.
+async let _ = try await client.run()
 
-    /// You can use the client while the `client.run()` method is not cancelled.
+/// Send the query
+/// `response` will be of type `Message`
+let response = try await client.queryA(
+    message: .forQuery(name: "mahdibm.com")
+)
 
-    /// Send the query
-    /// `response` will be of type `Message`
-    let response = try await client.queryA(
-        message: .forQuery(name: "mahdibm.com")
-    )
-
-    /// Read the answers
-    for answer in response.answers {
-        /// `a` will be of type `A`
-        let a = try answer.rdata
-        /// `ipv4` will be of type `IPv4Address`
-        let ipv4 = a.value
-        print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
-    }
-
-    /// To shutdown the client, cancel its run method, by cancelling the taskGroup.
-    taskGroup.cancelAll()
+/// Read the answers
+for answer in response.answers {
+    /// `a` will be of type `A`
+    let a = try answer.rdata
+    /// `ipv4` will be of type `IPv4Address`
+    let ipv4 = a.value
+    print("Got", ipv4, "for domain", response.queries.first?.name ?? "n/a")
 }
 ```
 
