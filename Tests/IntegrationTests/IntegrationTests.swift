@@ -531,13 +531,10 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryCSYNC() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryHINFO() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryHTTPS() async throws {
         /// TODO: try `education.github.com`
     }
@@ -715,15 +712,12 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryNULL() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryOPENPGPKEY() async throws {}
 
     /// You can't query OPT directly.
     /// OPT is used in every other query, so it's already well-tested.
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryOPT() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -804,21 +798,16 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func querySOA() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func querySRV() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func querySSHFP() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func querySVCB() async throws {
         /// TODO: try `_dns.resolver.arpa`
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryTLSA() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -893,10 +882,8 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryUnknown() async throws {}
 
-    @available(swiftDNSApplePlatforms 15, *)
     @Test func queryUpdate0() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
