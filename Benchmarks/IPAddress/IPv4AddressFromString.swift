@@ -2,14 +2,24 @@ import Benchmark
 import DNSModels
 import NIOCore
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
+#if os(Linux) || os(FreeBSD) || os(Android)
+
+#if canImport(Glibc)
 @preconcurrency import Glibc
 #elseif canImport(Musl)
 @preconcurrency import Musl
 #elseif canImport(Android)
 @preconcurrency import Android
+#endif
+
+#elseif os(Windows)
+import ucrt
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(WASILibc)
+@preconcurrency import WASILibc
+#else
+#error("The IPv4AddressFromString benchmarks module was unable to identify your C library.")
 #endif
 
 let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
@@ -75,7 +85,6 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
 
     // MARK: IPv4_String_Decoding_Broadcast_inet_pton
 
-    #if canImport(Darwin) || canImport(Glibc) || canImport(Musl) || canImport(Android)
     Benchmark(
         "IPv4_String_Decoding_Local_Broadcast_inet_pton_10M",
         configuration: .init(
@@ -107,5 +116,4 @@ let ipv4AddressFromStringBenchmarks: @Sendable () -> Void = {
         }
         blackHole(ipv4SocketAddress)
     }
-    #endif
 }

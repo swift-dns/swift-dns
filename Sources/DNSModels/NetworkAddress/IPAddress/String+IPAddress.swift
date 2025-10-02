@@ -84,10 +84,10 @@ extension IPAddress {
         }
 
         /// Finds the first either "." or ":" and based on that decide what IP version this could be.
+        /// This works even for ipv4-mapped ipv6 addresses like `"::FFFF:204.152.189.116"`.
         for idx in span.indices {
             /// Unchecked because `idx` comes right from `span.indices`
-            let utf8Byte = span[unchecked: idx]
-            switch utf8Byte {
+            switch span[unchecked: idx] {
             case .asciiDot:
                 guard let ipv4 = IPv4Address(__uncheckedASCIIspan: span) else {
                     return nil

@@ -2,6 +2,26 @@ public import DNSCore
 
 import struct NIOCore.ByteBuffer
 
+#if os(Linux) || os(FreeBSD) || os(Android)
+
+#if canImport(Glibc)
+@preconcurrency public import Glibc
+#elseif canImport(Musl)
+@preconcurrency public import Musl
+#elseif canImport(Android)
+@preconcurrency public import Android
+#endif
+
+#elseif os(Windows)
+public import ucrt
+#elseif canImport(Darwin)
+public import Darwin
+#elseif canImport(WASILibc)
+@preconcurrency public import WASILibc
+#else
+#error("The String+IPv6Address module was unable to identify your C library.")
+#endif
+
 @available(swiftDNSApplePlatforms 15, *)
 extension IPv6Address: CustomStringConvertible {
     /// The textual representation of an IPv6 address.
@@ -191,6 +211,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(_ description: String) {
         self.init(textualRepresentation: description.utf8Span)
@@ -199,6 +220,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(_ description: Substring) {
         self.init(textualRepresentation: description.utf8Span)
@@ -207,6 +229,7 @@ extension IPv6Address: LosslessStringConvertible {
     /// Initialize an IPv6 address from a `UTF8Span` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(textualRepresentation utf8Span: UTF8Span) {
         var utf8Span = utf8Span
@@ -223,6 +246,7 @@ extension IPv6Address {
     /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(textualRepresentation span: Span<UInt8>) {
         for idx in span.indices {
@@ -239,8 +263,30 @@ extension IPv6Address {
     /// The provided **span is required to be ASCII**.
     /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
     /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
     @inlinable
     public init?(__uncheckedASCIIspan span: Span<UInt8>) {
+        self.init(__uncheckedASCIIspan: span, preParsedIPv4MappedSegment: nil)
+    }
+
+    /// Initialize an IPv6 address from a `Span<UInt8>` of its textual representation.
+    /// The provided **span is required to be ASCII**.
+    /// For example `"[2001:db8:1111::]"` will parse into `2001:DB8:1111:0:0:0:0:0`,
+    /// or in other words `0x2001_0DB8_1111_0000_0000_0000_0000_0000`.
+    /// Can also parse IPv4-mapped IPv6 addresses in format `"::FFFF:204.152.189.116"`.
+    ///
+    /// `preParsedIPv4MappedSegment` is helpful when redirecting a domain name parsing to this
+    /// initializer. Because a `.` is a label separator in domain names, and because this library's
+    /// `DomainName` type stores wire-format character-strings in its storage, the efficient way
+    /// to parse an IPv4-mapped IPv6 address is to first parse the IPv4 address using ipv4
+    /// initializers, then pass that ipv4 to this initializer.
+    /// This helps us avoid reallocating memory, which would happen if we wanted to convert the
+    /// domain name to a proper ipv6 address.
+    @inlinable
+    package init?(
+        __uncheckedASCIIspan span: Span<UInt8>,
+        preParsedIPv4MappedSegment: IPv4Address?
+    ) {
         debugOnly {
             for idx in span.indices {
                 /// Unchecked because `idx` comes right from `span.indices`
@@ -252,14 +298,39 @@ extension IPv6Address {
             }
         }
 
-        var addressLhs: UInt128 = 0
-        var addressRhs: UInt128 = 0
+        self.init(0)
 
-        var span = span
-        var count = span.count
+        /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics here
+        /// and write backwards.
+        var noIPv4MappedSegments = true
+        let success = withUnsafeMutableBytes(of: &self.address) { addressPtr -> Bool in
+            IPv6Address.parseIPv6(
+                span: span,
+                addressBufferPtr: addressPtr,
+                noIPv4MappedSegments: &noIPv4MappedSegments,
+                preParsedIPv4MappedSegment: preParsedIPv4MappedSegment
+            )
+        }
 
-        guard count > 1 else {
+        guard success,
+            noIPv4MappedSegments || CIDR<IPv6Address>.ipv4Mapped.contains(self)
+        else {
             return nil
+        }
+    }
+
+    @inlinable
+    static func parseIPv6(
+        span: Span<UInt8>,
+        addressBufferPtr: UnsafeMutableRawBufferPointer,
+        noIPv4MappedSegments: inout Bool,
+        preParsedIPv4MappedSegment: IPv4Address?
+    ) -> Bool {
+        let addressPtr = addressBufferPtr.baseAddress.unsafelyUnwrapped
+        var span = span
+
+        guard span.count >= "::".count else {
+            return false
         }
 
         /// Trim the left and right square brackets if they both exist
@@ -267,210 +338,232 @@ extension IPv6Address {
         /// Unchecked because we just checked count > 1 above
         let startsWithBracket = span[unchecked: 0] == .asciiLeftSquareBracket
         /// Unchecked because we just checked count > 1 above
-        let endsWithBracket = span[unchecked: count &-- 1] == .asciiRightSquareBracket
+        let endsWithBracket = span[unchecked: span.count &-- 1] == .asciiRightSquareBracket
         switch (startsWithBracket, endsWithBracket) {
-        case (true, true):
-            /// Unchecked because we just checked count > 1 above
-            span = span.extracting(1..<(count &-- 1))
-            count &-== 2
         case (false, false):
             break
+        case (true, true):
+            /// Unchecked because we just checked count > 1 above
+            span = span.extracting(Range(uncheckedBounds: (1, span.count &-- 1)))
         case (true, false), (false, true):
-            return nil
-        }
-
-        guard count > 1 else {
-            return nil
-        }
-
-        var groupIdx = 0
-        /// Have seen '::' or not
-        var seenCompressionSign = false
-
-        while let nextSeparatorIdx = span.firstIndex(where: { $0 == .asciiColon }) {
-            let asciiGroup = span.extracting(unchecked: 0..<nextSeparatorIdx)
-            if asciiGroup.isEmpty {
-                if seenCompressionSign {
-                    /// We've already seen a compression sign, so this is invalid
-                    return nil
-                }
-
-                /// If we're at the first index
-                if groupIdx == 0 {
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    let nextIdx = nextSeparatorIdx &++ 1
-
-                    guard span[unchecked: nextIdx] == .asciiColon else {
-                        return nil
-                    }
-
-                    seenCompressionSign = true
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+== 2
-                    span = span.extracting(unchecked: (nextIdx &++ 1)..<span.count)
-                    continue
-
-                    /// If we're at the last index
-                } else if span.count == 1 {
-                    guard groupIdx <= 7 else {
-                        return nil
-                    }
-                    /// Must have reached end with no rhs
-                    self.init(addressLhs)
-                    return
-                } else {
-                    /// Must be a compression sign in the middle of the string
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    guard span[unchecked: nextSeparatorIdx &-- 1] == .asciiColon else {
-                        return nil
-                    }
-
-                    seenCompressionSign = true
-                    /// Unchecked because it can't exceed `span.count` anyway
-                    groupIdx &+== 1
-                    span = span.extracting(unchecked: (nextSeparatorIdx &++ 1)..<span.count)
-                    continue
-                }
-            }
-
-            guard
-                IPv6Address._readIPv6Group(
-                    addressLhs: &addressLhs,
-                    addressRhs: &addressRhs,
-                    textualRepresentation: asciiGroup,
-                    seenCompressionSign: seenCompressionSign,
-                    groupIdx: groupIdx
-                )
-            else {
-                return nil
-            }
-
-            /// This is safe, nothing will crash with this increase in index
-            /// Unchecked because it can't exceed `span.count` anyway
-            span = span.extracting((nextSeparatorIdx &++ 1)...)
-
-            groupIdx &+== 1
-        }
-
-        guard groupIdx <= 7 else {
-            return nil
-        }
-
-        /// Read last remaining byte-pair
-        if span.isEmpty {
-            if seenCompressionSign {
-                /// Must have reached end with no rhs
-                self.init(addressLhs)
-                return
-            } else {
-                /// No compression sign, but still have an empty group?!
-                return nil
-            }
-        }
-
-        guard
-            IPv6Address._readIPv6Group(
-                addressLhs: &addressLhs,
-                addressRhs: &addressRhs,
-                textualRepresentation: span,
-                seenCompressionSign: seenCompressionSign,
-                groupIdx: groupIdx
-            )
-        else {
-            return nil
-        }
-
-        /// We've reached the end of the string
-        guard groupIdx == 7 || seenCompressionSign else {
-            return nil
-        }
-
-        /// Unchecked because there is a `groupIdx <= 7` check above
-        /// So this number is guaranteed to be in range of `0...7`
-        let compressedGroupsCount = 8 &-- groupIdx &-- 1
-        /// Unchecked because `compressedGroupsCount` is guaranteed to be in range of `0...7`
-        let shift = 16 &** compressedGroupsCount
-        /// Unchecked because `shift` is guaranteed to be in range of `0...128`
-        addressLhs |= addressRhs &>>> shift
-
-        self.init(addressLhs)
-    }
-
-    /// Reads the `asciiGroup` integers into `addressLhs` or `addressRhs`.
-    /// Returns false if the `asciiGroup` is invalid, in which case we should return `nil`.
-    @inlinable
-    static func _readIPv6Group(
-        addressLhs: inout UInt128,
-        addressRhs: inout UInt128,
-        textualRepresentation asciiGroup: Span<UInt8>,
-        seenCompressionSign: Bool,
-        groupIdx: Int
-    ) -> Bool {
-        let utf8Count = asciiGroup.count
-
-        if utf8Count == 0 || utf8Count > 4 {
             return false
         }
 
-        /// Unchecked because it must be in range of 0...3 based on the check above
-        let maxIdx = utf8Count &-- 1
-        /// Unchecked because `groupIdx` is should be in range of 0...7
-        /// `groupIdx` here _could_ be higher too, like `8`.
-        /// That still doesn't cause any problems based on the tests, so we accept it.
-        let groupStartIdxInAddress = 16 &** (7 &-- groupIdx)
+        guard span.count >= "::".count else {
+            return false
+        }
 
-        for idx in 0..<asciiGroup.count {
-            /// Unchecked because it's less than `asciiGroup.count` anyway
-            let indexInGroup = maxIdx &-- idx
-            let utf8Byte = asciiGroup[unchecked: indexInGroup]
-            guard let hexadecimalDigit = IPv6Address.mapHexadecimalASCIIToUInt8(utf8Byte) else {
+        /// Special-case handling for when there is a compression sign at the beginning
+        if span[unchecked: 0] == .asciiColon {
+            span = span.extracting(Range(uncheckedBounds: (1, span.count)))
+            if span[unchecked: 0] != .asciiColon {
                 return false
-            }
-            /// `idx` is guaranteed to be in range of 0...3 because of the `utf8Count > 4` check above
-
-            /// Unchecked because `0 <= idx <= 3`, `groupStartIdxInAddress` is should be in range of `0...128`
-            /// The `shift` here _could_ end up being a negative number.
-            /// That still doesn't cause any problems based on the tests, so we accept it.
-            ///
-            /// We can have a bounds check for `groupIdx` to ensure this doesn't happen, but
-            /// that comes with a compromise on performance.
-            let shift = groupStartIdxInAddress &++ (idx &** 4)
-            /// Unchecked because it can't exceed `128` anyway
-            if seenCompressionSign {
-                /// Per what explained above, we do `&<<` instead of `&<<<` here.
-                /// We accept that `shift` could be a negative number, which is unwanted by the
-                /// implementation, but still works out fine.
-                addressRhs |= UInt128(hexadecimalDigit) &<< shift
-            } else {
-                /// Per what explained above, we do `&<<` instead of `&<<<` here.
-                /// We accept that `shift` could be a negative number, which is unwanted by the
-                /// implementation, but still works out fine.
-                addressLhs |= UInt128(hexadecimalDigit) &<< shift
             }
         }
 
-        return true
+        let endIdx = span.count &-- 1
+        var segmentDigitIdx = 0
+        var latestColonIdx = -1
+        var currentSegmentValue: UInt16 = 0
+        var remainingBytesCount = 16
+        /// cs == compression sign
+        var beforeCsBytesCountRemaining = -1
+        for idx in span.indices {
+            let byte = span[unchecked: idx]
+
+            if let digit = IPv6Address.mapHexadecimalASCIIToUInt8(byte) {
+                if segmentDigitIdx == 4 {
+                    return false
+                }
+
+                currentSegmentValue &<<== 4
+                currentSegmentValue |= UInt16(digit)
+                segmentDigitIdx &+== 1
+
+                continue
+            }
+
+            if byte == .asciiColon {
+                latestColonIdx = idx
+                if segmentDigitIdx == 0 {
+                    if beforeCsBytesCountRemaining != -1 {
+                        return false
+                    }
+                    beforeCsBytesCountRemaining = remainingBytesCount
+                    continue
+                } else if idx == endIdx {
+                    return false
+                }
+
+                /// We only do decrements of 2x to remainingBytesCount so it can't be 1.
+                if remainingBytesCount == 0 {
+                    return false
+                }
+
+                remainingBytesCount &-== 2
+                withUnsafeBytes(of: &currentSegmentValue) {
+                    addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                        from: $0.baseAddress.unsafelyUnwrapped,
+                        byteCount: 2
+                    )
+                }
+
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                continue
+            }
+
+            if byte == .asciiDot {
+                guard
+                    remainingBytesCount >= 4,
+                    preParsedIPv4MappedSegment == nil,
+                    var ipv4 = IPv4Address(
+                        __uncheckedASCIIspan: span.extracting(
+                            unchecked: Range(
+                                uncheckedBounds: (latestColonIdx &++ 1, span.count)
+                            )
+                        )
+                    )
+                else {
+                    return false
+                }
+
+                remainingBytesCount &-== 4
+                withUnsafeBytes(of: &ipv4.address) {
+                    addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                        from: $0.baseAddress.unsafelyUnwrapped,
+                        byteCount: 4
+                    )
+                }
+
+                noIPv4MappedSegments = false
+                segmentDigitIdx = 0
+                currentSegmentValue = 0
+
+                break
+            }
+
+            /// Bad character
+            return false
+        }
+
+        if segmentDigitIdx > 0 {
+            guard remainingBytesCount >= 2 else {
+                return false
+            }
+            remainingBytesCount &-== 2
+            withUnsafeBytes(of: &currentSegmentValue) {
+                addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                    from: $0.baseAddress.unsafelyUnwrapped,
+                    byteCount: 2
+                )
+            }
+        }
+
+        if var ipv4 = preParsedIPv4MappedSegment {
+            guard remainingBytesCount >= 4 else {
+                return false
+            }
+            remainingBytesCount &-== 4
+            withUnsafeBytes(of: &ipv4.address) {
+                addressPtr.advanced(by: remainingBytesCount).copyMemory(
+                    from: $0.baseAddress.unsafelyUnwrapped,
+                    byteCount: 4
+                )
+            }
+
+            noIPv4MappedSegments = false
+        }
+
+        if beforeCsBytesCountRemaining != -1 {
+            guard remainingBytesCount >= 4 else {
+                return false
+            }
+            /// cs == compression sign
+            let afterCsBytesCount = beforeCsBytesCountRemaining &-- remainingBytesCount
+
+            /// Swift stores integers in little-endian, so we need to do a little bit of gymnastics.
+            ///
+            /// Example:
+            /// Assume at the end of this parsing process we need to have:
+            /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+            ///
+            /// For that, at this point in the process, the `self.address` looks like this:
+            /// 0x2001 0db8 85a3 0100 0020 0000 0000 0000
+            ///
+            /// We need to move the bytes so it becomes like the first one.
+            ///
+            /// In little endian the integer we have right here looks like:
+            /// 0x0000 0000 0000 0200 0010 3a58 08bd 1002
+            ///
+            /// For clearer demonstration, i'll use the big-endian representation in each ipv6 segment.
+            /// So we assume in little-endian the integer looks like this:
+            /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+
+            /// In this example, the memmove below will turn this:
+            /// 0x0000 0000 0000 0020 0100 85a3 0db8 2001
+            /// into this:
+            /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+            ///   ~~^  ~~^
+            memmove(
+                addressPtr,
+                addressPtr.advanced(by: beforeCsBytesCountRemaining &-- afterCsBytesCount),
+                afterCsBytesCount
+            )
+
+            /// Now that we have:
+            /// 0x0020 0100 0000 0020 0100 85a3 0db8 2001
+            ///
+            /// We set the middle 0020 0100 to zeros:
+            /// 0x0020 0100 0000 0000 0000 85a3 0db8 2001
+            ///                  ~~^  ~~^
+            memset(
+                addressPtr.advanced(by: beforeCsBytesCountRemaining &-- remainingBytesCount),
+                0,
+                remainingBytesCount
+            )
+            /// Hurray! Now we have the correct ipv6 address!
+            /// Swift will read this as:
+            /// 0x2001 0db8 85a3 0000 0000 0000 0100 0020
+            /// which is what we aimed for.
+            return true
+        } else {
+            return remainingBytesCount == 0
+        }
     }
 
     @inlinable
-    static func mapHexadecimalASCIIToUInt8(_ utf8Byte: UInt8) -> UInt8? {
-        if utf8Byte >= UInt8.asciiLowercasedA {
-            guard utf8Byte <= UInt8.asciiLowercasedF else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.asciiLowercasedA &++ 10
-        } else if utf8Byte >= UInt8.asciiUppercasedA {
-            guard utf8Byte <= UInt8.asciiUppercasedF else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.asciiUppercasedA &++ 10
-        } else if utf8Byte >= UInt8.ascii0 {
-            guard utf8Byte <= UInt8.ascii9 else {
-                return nil
-            }
-            return utf8Byte &-- UInt8.ascii0
-        } else {
-            return nil
+    static func mapHexadecimalASCIIToUInt8(_ asciiByte: UInt8) -> UInt8? {
+        /// The order here is intentional.
+        /// First check for lower-or-equal to 9, then higher-or-equal to 0.
+        ///
+        /// In a correct IPv6 string, if this byte is not 0-9, then we skip
+        /// an unnecessary check for high-or-equal to 0.
+        if asciiByte <= UInt8.ascii9,
+            asciiByte >= UInt8.ascii0
+        {
+            return asciiByte &-- UInt8.ascii0
         }
+
+        /// The order here is intentional.
+        /// First check for higher-or-equal to a, then lower-or-equal to f.
+        ///
+        /// In a correct IPv6 string, if this byte is not a-f, then we skip
+        /// an unnecessary check for lower-or-equal to f.
+        if asciiByte >= UInt8.asciiLowercasedA,
+            asciiByte <= UInt8.asciiLowercasedF
+        {
+            return asciiByte &-- UInt8.asciiLowercasedA &++ 10
+        }
+
+        /// The order here ... doesn't really matter at this point in this function.
+        if asciiByte >= UInt8.asciiUppercasedA,
+            asciiByte <= UInt8.asciiUppercasedF
+        {
+            return asciiByte &-- UInt8.asciiUppercasedA &++ 10
+        }
+
+        return nil
     }
 }
