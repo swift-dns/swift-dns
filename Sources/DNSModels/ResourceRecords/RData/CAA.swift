@@ -178,8 +178,8 @@ extension CAA.Value {
     package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {
         case .issue, .issueWildcard:
-            let (name, pairs) = try Self.readIssuer(from: &buffer)
-            self = .issuer(name, pairs)
+            let (domainName, pairs) = try Self.readIssuer(from: &buffer)
+            self = .issuer(domainName, pairs)
         case .iodef:
             self = .url(buffer.readToEndAsString())
         case .unknown:
@@ -221,7 +221,7 @@ extension CAA.Value {
     static func readIssuer(
         from buffer: inout DNSBuffer
     ) throws -> (DomainName?, [(key: String, value: String)]) {
-        let name: DomainName?
+        let domainName: DomainName?
         if let semicolonIdx = buffer.readableBytesView
             .firstIndex(where: { $0 == UInt8.asciiSemicolon })
         {
@@ -229,24 +229,24 @@ extension CAA.Value {
             /// FIXME: do "read-while char is not a semicolon"
             let nameBytes = buffer.peekBytes(length: semicolonIdx - buffer.readerIndex) ?? []
             if nameBytes.isEmpty {
-                name = nil
+                domainName = nil
             } else {
-                name = try DomainName(
+                domainName = try DomainName(
                     expectingASCIIBytes: nameBytes,
-                    name: "CAA.issuer.name"
+                    name: "CAA.issuer.domainName"
                 )
                 buffer.moveReaderIndex(forwardBy: nameBytes.count)
             }
         } else {
             if buffer.readableBytes > 0 {
-                name = try DomainName(
+                domainName = try DomainName(
                     expectingASCIIBytes: buffer.readableBytesView,
-                    name: "CAA.issuer.name"
+                    name: "CAA.issuer.domainName"
                 )
                 buffer.moveReaderIndex(to: buffer.writerIndex)
-                /// There was no semicolon in the buffer so the whole of it was the name.
+                /// There was no semicolon in the buffer so the whole of it was the domainName.
                 /// Therefore, we can return immediately.
-                return (name, [])
+                return (domainName, [])
             } else {
                 return (nil, [])
             }
@@ -258,7 +258,7 @@ extension CAA.Value {
         // run the state machine through all remaining data, collecting all parameter tag/value pairs.
         while let char = buffer.readInteger(as: UInt8.self) {
             switch consume state {
-            // name was already successfully parsed, otherwise we couldn't get here.
+            // domainName was already successfully parsed, otherwise we couldn't get here.
             case let .beforeKey(keyValues):
                 switch char {
                 case UInt8.asciiSemicolon, UInt8.asciiSpace, UInt8.asciiTab:
@@ -335,7 +335,7 @@ extension CAA.Value {
             }
         }
 
-        return (name, try state.keyValues)
+        return (domainName, try state.keyValues)
     }
 }
 

@@ -148,61 +148,61 @@ struct IPAddressTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func ipv6Address() {
         let ipWithUInt16 = IPv6Address(
-            0x2001,
-            0x0DB8,
-            0x85A3,
-            0x0000,
-            0x0000,
-            0x0000,
-            0x0000,
-            0x0100
+            0x0102,
+            0xF3F4,
+            0x1516,
+            0x7080,
+            0x90A0,
+            0xCBBC,
+            0x0D0E,
+            0x0F11,
         )
         let ip = IPv6Address(
-            0x20,
             0x01,
+            0x02,
+            0xF3,
+            0xF4,
+            0x15,
+            0x16,
+            0x70,
+            0x80,
+            0x90,
+            0xA0,
+            0xCB,
+            0xBC,
             0x0D,
-            0xB8,
-            0x85,
-            0xA3,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x01,
-            0x00
+            0x0E,
+            0x0F,
+            0x11,
         )
         #expect(ip.address == ipWithUInt16.address)
-        #expect(ip.address == 0x2001_0DB8_85A3_0000_0000_0000_0000_0100)
+        #expect(ip.address == 0x0102_F3F4_1516_7080_90A0_CBBC_0D0E_0F11)
 
-        #expect(ip.bytes.0 == 0x20)
-        #expect(ip.bytes.1 == 0x01)
-        #expect(ip.bytes.2 == 0x0D)
-        #expect(ip.bytes.3 == 0xB8)
-        #expect(ip.bytes.4 == 0x85)
-        #expect(ip.bytes.5 == 0xA3)
-        #expect(ip.bytes.6 == 0x00)
-        #expect(ip.bytes.7 == 0x00)
-        #expect(ip.bytes.8 == 0x00)
-        #expect(ip.bytes.9 == 0x00)
-        #expect(ip.bytes.10 == 0x00)
-        #expect(ip.bytes.11 == 0x00)
-        #expect(ip.bytes.12 == 0x00)
-        #expect(ip.bytes.13 == 0x00)
-        #expect(ip.bytes.14 == 0x01)
-        #expect(ip.bytes.15 == 0x00)
+        #expect(ip.bytes.0 == 0x01)
+        #expect(ip.bytes.1 == 0x02)
+        #expect(ip.bytes.2 == 0xF3)
+        #expect(ip.bytes.3 == 0xF4)
+        #expect(ip.bytes.4 == 0x15)
+        #expect(ip.bytes.5 == 0x16)
+        #expect(ip.bytes.6 == 0x70)
+        #expect(ip.bytes.7 == 0x80)
+        #expect(ip.bytes.8 == 0x90)
+        #expect(ip.bytes.9 == 0xA0)
+        #expect(ip.bytes.10 == 0xCB)
+        #expect(ip.bytes.11 == 0xBC)
+        #expect(ip.bytes.12 == 0x0D)
+        #expect(ip.bytes.13 == 0x0E)
+        #expect(ip.bytes.14 == 0x0F)
+        #expect(ip.bytes.15 == 0x11)
 
-        #expect(ip.bytePairs.0 == 0x2001)
-        #expect(ip.bytePairs.1 == 0x0DB8)
-        #expect(ip.bytePairs.2 == 0x85A3)
-        #expect(ip.bytePairs.3 == 0x0000)
-        #expect(ip.bytePairs.4 == 0x0000)
-        #expect(ip.bytePairs.5 == 0x0000)
-        #expect(ip.bytePairs.6 == 0x0000)
-        #expect(ip.bytePairs.7 == 0x0100)
+        #expect(ip.bytePairs.0 == 0x0102)
+        #expect(ip.bytePairs.1 == 0xF3F4)
+        #expect(ip.bytePairs.2 == 0x1516)
+        #expect(ip.bytePairs.3 == 0x7080)
+        #expect(ip.bytePairs.4 == 0x90A0)
+        #expect(ip.bytePairs.5 == 0xCBBC)
+        #expect(ip.bytePairs.6 == 0x0D0E)
+        #expect(ip.bytePairs.7 == 0x0F11)
     }
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -404,6 +404,7 @@ private let ipv4StringAndAddressTestCases: [(String, IPv4Address?, Bool)] = [
     ("m.a.h.d", nil, false),
     ("m:a:h:d::", nil, false),
     ("1111:2222:3333:4444:5555:6666:7777:8888", nil, true),
+    ("::1", nil, true),
 ]
 
 /// (IPv4String, IPv4Address, isValidIPv6)

@@ -17,6 +17,20 @@ public enum DNSClass: Sendable, Hashable {
     case unknown(UInt16)
 }
 
+extension DNSClass: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .IN: return "IN"
+        case .CH: return "CH"
+        case .HS: return "HS"
+        case .NONE: return "NONE"
+        case .ANY: return "ANY"
+        case .OPT(let value): return "OPT(\(value))"
+        case .unknown(let value): return "unknown(\(value))"
+        }
+    }
+}
+
 extension DNSClass: RawRepresentable {
     public init(_ rawValue: UInt16) {
         switch rawValue {

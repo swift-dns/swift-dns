@@ -4,7 +4,7 @@ public import SwiftIDNA
 public import struct NIOCore.ByteBuffer
 
 extension DomainName {
-    /// Parses and case-folds the name from the string, and ensures the name is valid.
+    /// Parses and case-folds the domainName from the string, and ensures the domainName is valid.
     /// Example: try DomainName(string: "mahdibm.com")
     /// Converts the domain name to ASCII if it's not already, according to the IDNA spec.
     @inlinable

@@ -42,7 +42,7 @@ let client = try DNSClient(
     transport: .default(
         serverAddress: .domain(
             /// Connect to Cloudflare's DNS primary server @ 1.1.1.1
-            name: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
+            domainName: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
             port: 53
         )
     )
@@ -59,7 +59,7 @@ try await withThrowingTaskGroup(of: Void.self) { taskGroup in
     /// Send the query
     /// `response` will be of type `Message`
     let response = try await client.queryA(
-        message: .forQuery(name: "mahdibm.com")
+        message: .forQuery(domainName: "mahdibm.com")
     )
 
     /// Read the answers
@@ -68,7 +68,7 @@ try await withThrowingTaskGroup(of: Void.self) { taskGroup in
         let a = try answer.rdata
         /// `ipv4` will be of type `IPv4Address`
         let ipv4 = a.value
-        print("Got ipv4 \(ipv4) for domain \(response.queries.first?.name.description ?? "n/a")")
+        print("Got ipv4 \(ipv4) for domain \(response.queries.first?.domainName.description ?? "n/a")")
     }
 
     /// To shutdown the client, cancel its run method, by cancelling the taskGroup.
@@ -85,7 +85,7 @@ Currently a TCP-only transport is also supported:
 let client = try DNSClient(
     transport: .tcp(
         serverAddress: .domain(
-            name: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
+            domainName: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
             port: 53
         )
     )

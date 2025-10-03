@@ -188,8 +188,8 @@ public struct Header: Sendable {
 
     /// Whether the responding name server is an authority for the domain name in question.
     /// Note that the contents of the answer section may have multiple owner names because of
-    /// aliases. `authoritative` corresponds to the name which matches the query name, or
-    /// the first owner name in the answer section.
+    /// aliases. `authoritative` corresponds to the domainName which matches the query domainName, or
+    /// the first owner domainName in the answer section.
     public var authoritative: Bool {
         get {
             bytes16To31.authoritative

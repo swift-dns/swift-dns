@@ -7,7 +7,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     var message: Message
 
     /// Directly initializes the factory.
-    /// Use convenience methods such as `forQuery(name:recursionDesired:checkingDisabled:)` instead.
+    /// Use convenience methods such as `forQuery(domainName:recursionDesired:checkingDisabled:)` instead.
     @inlinable
     init(message: consuming Message) {
         self.message = message
@@ -20,7 +20,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// Creates a message for a query.
     @inlinable
     public static func forQuery(
-        name: DomainName,
+        domainName: DomainName,
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) -> Self {
@@ -45,7 +45,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
                 ),
                 queries: [
                     Query(
-                        name: name,
+                        domainName: domainName,
                         queryType: QueryType.recordType,
                         queryClass: QueryType.dnsClass
                     )
@@ -62,14 +62,14 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// Creates a message for a query.
     @inlinable
     public static func forQuery(
-        name: String,
+        domainName: String,
         idnaConfiguration: IDNA.Configuration = .default,
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) throws -> Self {
-        let name = try DomainName(string: name, idnaConfiguration: idnaConfiguration)
+        let domainName = try DomainName(string: domainName, idnaConfiguration: idnaConfiguration)
         return Self.forQuery(
-            name: name,
+            domainName: domainName,
             recursionDesired: recursionDesired,
             checkingDisabled: checkingDisabled
         )

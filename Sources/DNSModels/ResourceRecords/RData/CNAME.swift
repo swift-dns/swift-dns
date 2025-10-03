@@ -12,26 +12,26 @@
 ///
 /// where:
 ///
-/// CNAME           A <domain-name> which specifies the canonical or primary
-///                 name for the owner.  The owner name is an alias.
+/// CNAME           A <domain-domainName> which specifies the canonical or primary
+///                 domainName for the owner.  The owner domainName is an alias.
 /// ```
 public struct CNAME: Sendable {
-    public var name: DomainName
+    public var domainName: DomainName
 
-    public init(name: DomainName) {
-        self.name = name
+    public init(domainName: DomainName) {
+        self.domainName = domainName
     }
 }
 
 extension CNAME {
     package init(from buffer: inout DNSBuffer) throws {
-        self.name = try DomainName(from: &buffer)
+        self.domainName = try DomainName(from: &buffer)
     }
 }
 
 extension CNAME {
     package func encode(into buffer: inout DNSBuffer) throws {
-        try self.name.encode(into: &buffer)
+        try self.domainName.encode(into: &buffer)
     }
 }
 

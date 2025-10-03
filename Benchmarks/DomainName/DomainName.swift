@@ -26,8 +26,8 @@ let benchmarks: @Sendable () -> Void = {
     ) { benchmark in
         for _ in 0..<2_000_000 {
             buffer.moveReaderIndex(to: startIndex)
-            let name = try DomainName(from: &buffer)
-            blackHole(name)
+            let domainName = try DomainName(from: &buffer)
+            blackHole(domainName)
         }
     }
 
@@ -49,8 +49,8 @@ let benchmarks: @Sendable () -> Void = {
     ) { benchmark in
         buffer.moveReaderIndex(to: startIndex)
         benchmark.startMeasurement()
-        let name = try DomainName(from: &buffer)
-        blackHole(name)
+        let domainName = try DomainName(from: &buffer)
+        blackHole(domainName)
     }
 
     Benchmark(
@@ -75,8 +75,8 @@ let benchmarks: @Sendable () -> Void = {
     ) { benchmark in
         for _ in 0..<2_000_000 {
             buffer.moveReaderIndex(to: startIndex)
-            let name = try DomainName(from: &buffer)
-            blackHole(name)
+            let domainName = try DomainName(from: &buffer)
+            blackHole(domainName)
         }
     }
 
@@ -102,8 +102,8 @@ let benchmarks: @Sendable () -> Void = {
     ) { benchmark in
         buffer.moveReaderIndex(to: startIndex)
         benchmark.startMeasurement()
-        let name = try DomainName(from: &buffer)
-        blackHole(name)
+        let domainName = try DomainName(from: &buffer)
+        blackHole(domainName)
     }
 
     let google = "google.com"
@@ -116,8 +116,8 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         for _ in 0..<200_000 {
-            let name = try! DomainName(string: google)
-            blackHole(name)
+            let domainName = try! DomainName(string: google)
+            blackHole(domainName)
         }
     }
 
@@ -129,8 +129,8 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
         )
     ) { benchmark in
-        let name = try! DomainName(string: google)
-        blackHole(name)
+        let domainName = try! DomainName(string: google)
+        blackHole(domainName)
     }
 
     let appAnalyticsServices = "app-analytics-services.com"
@@ -143,8 +143,8 @@ let benchmarks: @Sendable () -> Void = {
         )
     ) { benchmark in
         for _ in 0..<200_000 {
-            let name = try! DomainName(string: appAnalyticsServices)
-            blackHole(name)
+            let domainName = try! DomainName(string: appAnalyticsServices)
+            blackHole(domainName)
         }
     }
 
@@ -156,8 +156,8 @@ let benchmarks: @Sendable () -> Void = {
             maxIterations: 10,
         )
     ) { benchmark in
-        let name = try! DomainName(string: appAnalyticsServices)
-        blackHole(name)
+        let domainName = try! DomainName(string: appAnalyticsServices)
+        blackHole(domainName)
     }
 
     let name1 = try! DomainName(string: "google.com.")
