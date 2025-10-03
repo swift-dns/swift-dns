@@ -56,7 +56,7 @@ public enum DNSSECRData: Sendable {
     ///
     ///    Bit 7 of the Flags field is the Zone Key flag.  If bit 7 has value 1,
     ///    then the DNSKEY record holds a DNS zone key, and the DNSKEY RR's
-    ///    owner name MUST be the name of a zone.  If bit 7 has value 0, then
+    ///    owner domainName MUST be the domainName of a zone.  If bit 7 has value 0, then
     ///    the DNSKEY record holds some other type of DNS public key and MUST
     ///    NOT be used to verify RRSIGs that cover RRsets.
     ///
@@ -129,10 +129,10 @@ public enum DNSSECRData: Sendable {
     ///    DNSKEY RR.
     ///
     ///    The digest is calculated by concatenating the canonical form of the
-    ///    fully qualified owner name of the DNSKEY RR with the DNSKEY RDATA,
+    ///    fully qualified owner domainName of the DNSKEY RR with the DNSKEY RDATA,
     ///    and then applying the digest algorithm.
     ///
-    ///      digest = digest_algorithm( DNSKEY owner name | DNSKEY RDATA);
+    ///      digest = digest_algorithm( DNSKEY owner domainName | DNSKEY RDATA);
     ///
     ///       "|" denotes concatenation
     ///
@@ -167,7 +167,7 @@ public enum DNSSECRData: Sendable {
     ///  certificate RR has been developed for that purpose, defined in [RFC
     ///  2538].
     ///
-    ///  The meaning of the KEY RR owner name, flags, and protocol octet are
+    ///  The meaning of the KEY RR owner domainName, flags, and protocol octet are
     ///  described in Sections 3.1.1 through 3.1.5 below.  The flags and
     ///  algorithm must be examined before any data following the algorithm
     ///  octet as they control the existence and format of any following data.
@@ -239,9 +239,9 @@ public enum DNSSECRData: Sendable {
     ///  Hash Length is represented as an unsigned octet.  Hash Length
     ///  represents the length of the Next Hashed Owner DomainName field in octets.
     ///
-    ///  The next hashed owner name is not base32 encoded, unlike the owner
-    ///  name of the NSEC3 RR.  It is the unmodified binary hash value.  It
-    ///  does not include the name of the containing zone.  The length of this
+    ///  The next hashed owner domainName is not base32 encoded, unlike the owner
+    ///  domainName of the NSEC3 RR.  It is the unmodified binary hash value.  It
+    ///  does not include the domainName of the containing zone.  The length of this
     ///  field is determined by the preceding Hash Length field.
     ///
     /// 3.2.1.  Type Bit Maps Encoding
@@ -270,9 +270,9 @@ public enum DNSSECRData: Sendable {
     ///  to RR type 2 (NS), and so forth.  For window block 1, bit 1
     ///  corresponds to RR type 257, bit 2 to RR type 258.  If a bit is set to
     ///  1, it indicates that an RRSet of that type is present for the
-    ///  original owner name of the NSEC3 RR.  If a bit is set to 0, it
+    ///  original owner domainName of the NSEC3 RR.  If a bit is set to 0, it
     ///  indicates that no RRSet of that type is present for the original
-    ///  owner name of the NSEC3 RR.
+    ///  owner domainName of the NSEC3 RR.
     ///
     ///  Since bit 0 in window block 0 refers to the non-existing RR type 0,
     ///  it MUST be set to 0.  After verification, the validator MUST ignore
@@ -287,7 +287,7 @@ public enum DNSSECRData: Sendable {
     ///  octets in the bitmap MUST be omitted.  The length of the bitmap of
     ///  each block is determined by the type code with the largest numerical
     ///  value, within that block, among the set of RR types present at the
-    ///  original owner name of the NSEC3 RR.  Trailing octets not specified
+    ///  original owner domainName of the NSEC3 RR.  Trailing octets not specified
     ///  MUST be interpreted as zero octets.
     /// ```
     case NSEC3(NSEC3)
@@ -401,11 +401,11 @@ public enum DNSSECRData: Sendable {
     ///   integers in the record are sent in network byte order (see
     ///   Section 2.3.2 of [RFC1035]).
     ///
-    ///   NAME:  The name of the key used, in domain name syntax.  The name
+    ///   NAME:  The domainName of the key used, in domain name syntax.  The domainName
     ///      should reflect the names of the hosts and uniquely identify the
     ///      key among a set of keys these two hosts may share at any given
     ///      time.  For example, if hosts A.site.example and B.example.net
-    ///      share a key, possibilities for the key name include
+    ///      share a key, possibilities for the key domainName include
     ///      <id>.A.site.example, <id>.B.example.net, and
     ///      <id>.A.site.example.B.example.net.  It should be possible for more
     ///      than one key to be in simultaneous use among a set of interacting
@@ -413,10 +413,10 @@ public enum DNSSECRData: Sendable {
     ///      operational practices, as well as algorithm agility as indicated
     ///      by [RFC7696].
     ///
-    ///      The name may be used as a local index to the key involved, but it
+    ///      The domainName may be used as a local index to the key involved, but it
     ///      is recommended that it be globally unique.  Where a key is just
-    ///      shared between two hosts, its name actually need only be
-    ///      meaningful to them, but it is recommended that the key name be
+    ///      shared between two hosts, its domainName actually need only be
+    ///      meaningful to them, but it is recommended that the key domainName be
     ///      mnemonic and incorporate the names of participating agents or
     ///      resources as suggested above.
     ///
@@ -455,9 +455,9 @@ public enum DNSSECRData: Sendable {
     ///
     ///   Algorithm DomainName:
     ///      an octet sequence identifying the TSIG algorithm in the domain
-    ///      name syntax.  (Allowed names are listed in Table 3.)  The name is
-    ///      stored in the DNS name wire format as described in [RFC1034].  As
-    ///      per [RFC3597], this name MUST NOT be compressed.
+    ///      domainName syntax.  (Allowed names are listed in Table 3.)  The domainName is
+    ///      stored in the DNS domainName wire format as described in [RFC1034].  As
+    ///      per [RFC3597], this domainName MUST NOT be compressed.
     ///
     ///   Time Signed:
     ///      an unsigned 48-bit integer containing the time the message was

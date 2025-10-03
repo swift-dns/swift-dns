@@ -47,7 +47,7 @@ struct DNSConnectionTests {
         let domainName = try #require(responseResource.domainName)
 
         async let asyncResponse = try await connection.send(
-            message: MessageFactory<QueryableType>.forQuery(name: domainName),
+            message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
             options: .default,
             allocator: .init()
         )
@@ -82,7 +82,7 @@ struct DNSConnectionTests {
             group.addTask {
                 await #expect(throws: DNSClientError.cancelled) {
                     _ = try await connection.send(
-                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                        message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                         options: .default,
                         allocator: .init()
                     )
@@ -120,7 +120,7 @@ struct DNSConnectionTests {
                 group.addTask { @Sendable in
                     await #expect(throws: DNSClientError.cancelled) {
                         let preparedQuery = try await connection.prepareQuery(
-                            message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                            message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                             options: .default,
                             allocator: .init()
                         )
@@ -162,7 +162,7 @@ struct DNSConnectionTests {
             let domainName = try #require(responseResource.domainName)
 
             async let asyncResponse = try await connection.send(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 options: .default,
                 allocator: .init()
             )
@@ -200,7 +200,7 @@ struct DNSConnectionTests {
             group.addTask {
                 await #expect(throws: DNSClientError.cancelled) {
                     _ = try await connection.send(
-                        message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                        message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                         options: .default,
                         allocator: .init()
                     )
@@ -220,7 +220,7 @@ struct DNSConnectionTests {
         let domainName = try #require(responseResource.domainName)
 
         async let asyncResponse = try await connection.send(
-            message: MessageFactory<QueryableType>.forQuery(name: domainName),
+            message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
             options: .default,
             allocator: .init()
         )
@@ -258,7 +258,7 @@ struct DNSConnectionTests {
             let domainName = try #require(responseResource.domainName)
 
             async let asyncResponse = try await connection.send(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 options: .default,
                 allocator: .init()
             )
@@ -302,7 +302,7 @@ struct DNSConnectionTests {
             let domainName = try #require(responseResource.domainName)
 
             async let asyncResponse = try await connection.send(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 options: .default,
                 allocator: .init()
             )
@@ -338,7 +338,7 @@ struct DNSConnectionTests {
 
         await #expect(throws: DNSClientError.connectionClosed) {
             _ = try await connection.send(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 options: .default,
                 allocator: .init()
             )
@@ -375,7 +375,7 @@ struct DNSConnectionTests {
             let domainName = try #require(responseResource.domainName)
 
             let preparedQuery = try await connection.prepareQuery(
-                message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 options: .default,
                 allocator: .init()
             )
@@ -438,7 +438,7 @@ struct DNSConnectionTests {
                 let domainName = try #require(responseResource.domainName)
 
                 let preparedQuery = try await connection.prepareQuery(
-                    message: MessageFactory<QueryableType>.forQuery(name: domainName),
+                    message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                     options: .default,
                     allocator: .init()
                 )
@@ -523,7 +523,7 @@ struct DNSConnectionTests {
     func makeTestConnection(
         configuration: DNSConnectionConfiguration = .init(),
         address: DNSServerAddress = .domain(
-            name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+            domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
             port: 53
         ),
         isOverUDP: Bool = true

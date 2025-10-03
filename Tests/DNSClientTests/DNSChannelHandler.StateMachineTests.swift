@@ -1565,7 +1565,7 @@ extension DNSClientError: Equatable {
 @available(swiftDNSApplePlatforms 15, *)
 extension QueryProducer {
     mutating func produceFakeMessageAndPendingQuery() -> (Message, PendingQuery) {
-        let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
+        let factory = try! MessageFactory<A>.forQuery(domainName: "mahdibm.com")
         let message = try! self.produceDNSMessage(
             message: factory,
             options: []
@@ -1582,7 +1582,7 @@ extension QueryProducer {
     }
 
     mutating func getNewRequestID() -> UInt16 {
-        let factory = try! MessageFactory<A>.forQuery(name: "mahdibm.com")
+        let factory = try! MessageFactory<A>.forQuery(domainName: "mahdibm.com")
         let producedMessage = try! self.produceMessage(
             message: factory,
             options: [],

@@ -43,7 +43,7 @@ public struct DomainName: Sendable {
     /// must/will never make it to the stored properties of `DomainName` such as `data`.
     /// Non-lowercased ASCII names are converted to lowercased ASCII in the initializers.
     /// Based on the DNS specs, all names are case-insensitive, and the bytes must be valid ASCII.
-    /// This package goes further and normalizes every name to lowercase to avoid inconsistencies.
+    /// This package goes further and normalizes every domainName to lowercase to avoid inconsistencies.
     ///
     /// [RFC 9499, DNS Terminology, March 2024](https://tools.ietf.org/html/rfc9499)
     ///
@@ -57,16 +57,16 @@ public struct DomainName: Sendable {
     @usableFromInline
     package var data: ByteBuffer
 
-    /// Returns the encoded length of this name, ignoring compression.
+    /// Returns the encoded length of this domainName, ignoring compression.
     ///
     /// The `isFQDN` flag is ignored, and the root label at the end is assumed to always be
-    /// present, since it terminates the name in the DNS message format.
+    /// present, since it terminates the domainName in the DNS message format.
     @inlinable
     var encodedLength: Int {
         self.data.readableBytes + 1
     }
 
-    /// The number of labels in the name, excluding `*`.
+    /// The number of labels in the domainName, excluding `*`.
     @inlinable
     public var labelsCount: Int {
         var containsWildcard = false
@@ -84,7 +84,7 @@ public struct DomainName: Sendable {
         return containsWildcard ? (count - 1) : count
     }
 
-    /// Whether the name is the DNS root name, aka `.`.
+    /// Whether the domainName is the DNS root domainName, aka `.`.
     @inlinable
     public var isRoot: Bool {
         self.isFQDN && self.data.readableBytes == 0
@@ -98,7 +98,7 @@ public struct DomainName: Sendable {
         self.isFQDN = isFQDN
         self.data = data
 
-        /// Make sure the name is valid
+        /// Make sure the domainName is valid
         /// No empty labels
         assert(self.data.readableBytes <= Self.maxLength)
         assert(self.allSatisfy({ !($0.readableBytes == 0) }))
@@ -132,19 +132,19 @@ extension DomainName: Sequence {
 
         /// TODO: will using Span help here? might skip some bounds checks or ref-count checks of ByteBuffer?
         @usableFromInline
-        let name: DomainName
+        let domainName: DomainName
         @usableFromInline
         var startIndex: Int
 
         @usableFromInline
         init(base: DomainName) {
-            self.name = base
-            self.startIndex = self.name.data.readerIndex
+            self.domainName = base
+            self.startIndex = self.domainName.data.readerIndex
         }
 
         @inlinable
         public func reachedEnd() -> Bool {
-            self.startIndex == self.name.data.writerIndex
+            self.startIndex == self.domainName.data.writerIndex
         }
 
         @inlinable
@@ -155,7 +155,7 @@ extension DomainName: Sequence {
 
             /// Such invalid data should never get to here so we consider this safe to force-unwrap
             let length = Int(
-                self.name.data.getInteger(
+                self.domainName.data.getInteger(
                     at: self.startIndex,
                     as: UInt8.self
                 )!
@@ -163,7 +163,7 @@ extension DomainName: Sequence {
 
             assert(
                 length != 0,
-                "Label length 0 means the root label has made it into name.data, which is not allowed, \(self.name.data.hexDump(format: .detailed))"
+                "Label length 0 means the root label has made it into domainName.data, which is not allowed, \(self.domainName.data.hexDump(format: .detailed))"
             )
 
             defer {
@@ -195,7 +195,7 @@ extension DomainName: Sequence {
             }
 
             /// Such invalid data should never get to here so we consider this safe to force-unwrap
-            return self.positionIterator.name.data.getSlice(
+            return self.positionIterator.domainName.data.getSlice(
                 at: startIndex,
                 length: length
             )!
@@ -244,14 +244,14 @@ extension DomainName {
     @usableFromInline
     static func from(
         guaranteedASCIIBytes bytes: some BidirectionalCollection<UInt8>,
-        into name: inout DomainName
+        into domainName: inout DomainName
     ) throws {
         assert(bytes.allSatisfy(\.isASCII))
 
         /// Reserve enough bytes for the wire format
         let lengthWithoutRootLabel = bytes.last == 0 ? bytes.count - 1 : bytes.count
 
-        if name.encodedLength + lengthWithoutRootLabel > Self.maxLength {
+        if domainName.encodedLength + lengthWithoutRootLabel > Self.maxLength {
             throw ProtocolError.lengthLimitExceeded(
                 "DomainName",
                 actual: lengthWithoutRootLabel + 1,
@@ -260,7 +260,7 @@ extension DomainName {
             )
         }
 
-        name.data.reserveCapacity(lengthWithoutRootLabel)
+        domainName.data.reserveCapacity(lengthWithoutRootLabel)
         for label in bytes.split(separator: .asciiDot, omittingEmptySubsequences: false) {
             guard !label.isEmpty else {
                 /// FIXME: throw a better error
@@ -277,8 +277,8 @@ extension DomainName {
                 )
             }
 
-            name.data.writeInteger(UInt8(label.count))
-            name.data.writeBytes(label)
+            domainName.data.writeInteger(UInt8(label.count))
+            domainName.data.writeBytes(label)
         }
     }
 }
@@ -313,7 +313,7 @@ extension DomainName {
         }
     }
 
-    /// Reads the domain name from the buffer, appending it to the current name.
+    /// Reads the domain name from the buffer, appending it to the current domainName.
     package mutating func read(from buffer: inout DNSBuffer) throws {
         let startIndex = buffer.readerIndex
 
@@ -370,7 +370,7 @@ extension DomainName {
                 /// Pointer
                 case 0b1100_0000:
                     let originalReaderIndex = buffer.readerIndex
-                    /// The name processing is going to end after we're done with the pointer
+                    /// The domainName processing is going to end after we're done with the pointer
                     try flushIntoData()
 
                     buffer.moveReaderIndex(to: originalReaderIndex)
@@ -380,7 +380,7 @@ extension DomainName {
                     )
                     let offset = pointer & 0b0011_1111_1111_1111
 
-                    /// TODO: use a cache of some sort to avoid re-parsing the same name multiple times
+                    /// TODO: use a cache of some sort to avoid re-parsing the same domainName multiple times
                     guard buffer.moveReaderIndex(toOffsetInDNSPortion: offset) else {
                         throw ProtocolError.failedToValidate("DomainName.label.offset", buffer)
                     }
@@ -389,7 +389,7 @@ extension DomainName {
                     /// There is no null byte at the end, for pointers
                     buffer.moveReaderIndex(to: idx + 2)
 
-                    // Pointer always finishes the name
+                    // Pointer always finishes the domainName
                     return
                 /// Normal character-string length
                 case 0b0000_0000:
@@ -414,13 +414,13 @@ extension DomainName {
     }
 
     private func utf8Representation() -> String {
-        var name = self.map {
+        var domainName = self.map {
             String(buffer: $0)
         }.joined(separator: ".")
         if self.isFQDN {
-            name.append(".")
+            domainName.append(".")
         }
-        return name
+        return domainName
     }
 }
 

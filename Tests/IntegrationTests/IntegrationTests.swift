@@ -13,7 +13,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<A>.forQuery(name: "example.com.")
+            let factory = try MessageFactory<A>.forQuery(domainName: "example.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryA(
                 message: factory,
@@ -42,8 +42,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "example.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "example.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .A)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -55,7 +55,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
@@ -85,7 +85,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<A>.forQuery(name: "新华网.中国.")
+            let factory = try MessageFactory<A>.forQuery(domainName: "新华网.中国.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryA(
                 message: factory,
@@ -114,8 +114,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "新华网.中国.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "新华网.中国.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .A)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -127,7 +127,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
@@ -156,7 +156,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<AAAA>.forQuery(name: "cloudflare.com.")
+            let factory = try MessageFactory<AAAA>.forQuery(domainName: "cloudflare.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryAAAA(
                 message: factory,
@@ -185,8 +185,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "cloudflare.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "cloudflare.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .AAAA)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -198,7 +198,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
@@ -228,7 +228,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<CAA>.forQuery(name: "apple.com.")
+            let factory = try MessageFactory<CAA>.forQuery(domainName: "apple.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCAA(
                 message: factory,
@@ -257,8 +257,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "apple.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "apple.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .CAA)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -270,7 +270,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers).")
@@ -305,7 +305,7 @@ struct IntegrationTests {
     func queryCERT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CERT>.forQuery(
-                name: "for-dns-cert-testing.mahdibm.com."
+                domainName: "for-dns-cert-testing.mahdibm.com."
             )
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCERT(
@@ -335,8 +335,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .CERT)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -348,7 +348,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers).")
@@ -402,7 +402,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<CNAME>.forQuery(name: "www.github.com.")
+            let factory = try MessageFactory<CNAME>.forQuery(domainName: "www.github.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCNAME(
                 message: factory,
@@ -431,8 +431,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "www.github.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "www.github.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .CNAME)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -440,13 +440,13 @@ struct IntegrationTests {
 
             #expect(response.answers.count == 1)
             let answer = try #require(response.answers.first)
-            #expect(answer.nameLabels == name)
+            #expect(answer.nameLabels == domainName)
             #expect(answer.recordType == .CNAME)
             #expect(answer.dnsClass == .IN)
             #expect(answer.ttl > 0)
             let nameNoWWW = try DomainName(string: "github.com.")
             let cname = try answer.rdata
-            #expect(cname.name == nameNoWWW)
+            #expect(cname.domainName == nameNoWWW)
 
             /// The 'additional' was an EDNS
             #expect(response.additionals.count == 0)
@@ -467,7 +467,9 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<CNAME>.forQuery(name: "raw.githubusercontent.com.")
+            let factory = try MessageFactory<CNAME>.forQuery(
+                domainName: "raw.githubusercontent.com."
+            )
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCNAME(
                 message: factory,
@@ -496,8 +498,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "raw.githubusercontent.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "raw.githubusercontent.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .CNAME)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -543,7 +545,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<MX>.forQuery(name: "mahdibm.com.")
+            let factory = try MessageFactory<MX>.forQuery(domainName: "mahdibm.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryMX(
                 message: factory,
@@ -572,8 +574,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "mahdibm.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "mahdibm.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .MX)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -585,7 +587,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers).")
@@ -633,7 +635,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<NS>.forQuery(name: "apple.com.")
+            let factory = try MessageFactory<NS>.forQuery(domainName: "apple.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryNS(
                 message: factory,
@@ -662,8 +664,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "apple.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "apple.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .NS)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -675,7 +677,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers).")
@@ -684,17 +686,17 @@ struct IntegrationTests {
             let nss = try response.answers.map {
                 try $0.rdata
             }.sorted {
-                $0.name.description < $1.name.description
+                $0.domainName.description < $1.domainName.description
             }
             let expectedNSs = [
-                NS(name: try DomainName(string: "a.ns.apple.com.")),
-                NS(name: try DomainName(string: "b.ns.apple.com.")),
-                NS(name: try DomainName(string: "c.ns.apple.com.")),
-                NS(name: try DomainName(string: "d.ns.apple.com.")),
+                NS(domainName: try DomainName(string: "a.ns.apple.com.")),
+                NS(domainName: try DomainName(string: "b.ns.apple.com.")),
+                NS(domainName: try DomainName(string: "c.ns.apple.com.")),
+                NS(domainName: try DomainName(string: "d.ns.apple.com.")),
             ]
             #expect(nss.count == expectedNSs.count)
             for (ns, expectedNS) in zip(nss, expectedNSs) {
-                #expect(ns.name == expectedNS.name)
+                #expect(ns.domainName == expectedNS.domainName)
             }
 
             /// The 'additional' was an EDNS
@@ -724,7 +726,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<PTR>.forQuery(name: "9.9.9.9.in-addr.arpa.")
+            let factory = try MessageFactory<PTR>.forQuery(domainName: "9.9.9.9.in-addr.arpa.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryPTR(
                 message: factory,
@@ -753,8 +755,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "9.9.9.9.in-addr.arpa.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "9.9.9.9.in-addr.arpa.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .PTR)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -766,7 +768,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers).")
@@ -776,11 +778,11 @@ struct IntegrationTests {
                 try $0.rdata
             }
             let expectedPTRs = [
-                PTR(name: try DomainName(string: "dns9.quad9.net."))
+                PTR(domainName: try DomainName(string: "dns9.quad9.net."))
             ]
             #expect(ptrs.count == expectedPTRs.count)
             for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
-                #expect(ptr.name == expectedPTR.name)
+                #expect(ptr.domainName == expectedPTR.domainName)
             }
 
             /// The 'additional' was an EDNS
@@ -814,7 +816,7 @@ struct IntegrationTests {
     @Test(arguments: makeTestingDNSClients())
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<TXT>.forQuery(name: "example.com.")
+            let factory = try MessageFactory<TXT>.forQuery(domainName: "example.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryTXT(
                 message: factory,
@@ -843,8 +845,8 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "example.com.")
-            #expect(response.queries.first?.name == name)
+            let domainName = try DomainName(string: "example.com.")
+            #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .TXT)
             #expect(response.queries.first?.queryClass == .IN)
 
@@ -856,7 +858,7 @@ struct IntegrationTests {
                 "\(response.answers)"
             )
             #expect(
-                response.answers.allSatisfy { $0.nameLabels == name },
+                response.answers.allSatisfy { $0.nameLabels == domainName },
                 "\(response.answers)"
             )
             #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers).")
@@ -892,7 +894,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -912,7 +914,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -942,15 +944,15 @@ struct IntegrationTests {
                 for domain in self.loadTop100Domains() {
                     group.addTask { @Sendable () -> Void in
                         do {
-                            let name = try DomainName(string: domain + ".")
+                            let domainName = try DomainName(string: domain + ".")
                             let response = try await client.queryNS(
-                                message: .forQuery(name: name),
+                                message: .forQuery(domainName: domainName),
                                 options: .edns
                             )
                             #expect(response.header.responseCode == .NoError, "\(domain)")
                             #expect(response.header.messageType == .Response, "\(domain)")
                             #expect(response.header.opCode == .Query, "\(domain)")
-                            #expect(response.queries.first?.name == name, "\(domain)")
+                            #expect(response.queries.first?.domainName == domainName, "\(domain)")
                             if response.header.answerCount > 0 {
                                 #expect(response.answers.count > 0, "\(domain)")
                                 withAnswers.add(1, ordering: .relaxed)
@@ -975,7 +977,7 @@ struct IntegrationTests {
                     }
                 }
 
-                #expect(withAnswers.load(ordering: .relaxed) >= 90)
+                #expect(withAnswers.load(ordering: .relaxed) >= 95)
             }
         }
     }
@@ -986,7 +988,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
@@ -1005,7 +1007,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(
@@ -1035,16 +1037,17 @@ struct IntegrationTests {
 
             for domain in self.loadTop100Domains() {
                 do {
-                    let name = try DomainName(string: domain)
+                    let domainName = try DomainName(string: domain)
                     let response = try await client.queryNS(
-                        message: .forQuery(name: name),
+                        message: .forQuery(domainName: domainName),
                         options: .edns
                     )
                     #expect(response.header.responseCode == .NoError, "\(domain)")
                     #expect(response.header.messageType == .Response, "\(domain)")
                     #expect(response.header.opCode == .Query, "\(domain)")
                     #expect(
-                        response.queries.first?.name.isEssentiallyEqual(to: name) == true,
+                        response.queries.first?.domainName.isEssentiallyEqual(to: domainName)
+                            == true,
                         "\(domain)"
                     )
                     if response.header.answerCount > 0 {
@@ -1056,7 +1059,7 @@ struct IntegrationTests {
                 }
             }
 
-            /// Keep track of the errors for debugging, even if they less than the test-failure amount below.
+            /// Keep track of the errors for debugging, even if they are less than the test-failure amount below.
             if !errors.isEmpty {
                 print(
                     "\(#function) encountered these errors:\n\(errors)"
@@ -1066,11 +1069,11 @@ struct IntegrationTests {
                 Issue.record("Too many errors: \(errors)")
             }
 
-            #expect(withAnswers >= 90)
+            #expect(withAnswers >= 95)
         }
     }
 
-    /// A bunch don't even have A records. Most have NS records.
+    /// A bunch don't even have A records. All have NS records.
     func loadTop100Domains() -> [String] {
         String(
             decoding: Resources.topDomains.data(),
@@ -1088,7 +1091,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -1103,7 +1106,7 @@ struct IntegrationTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        name: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
                         port: 53
                     ),
                     configuration: .init(

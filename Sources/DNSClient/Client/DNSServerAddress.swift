@@ -11,7 +11,7 @@ public enum DNSServerAddress: Hashable, Sendable {
     // This serialization includes square brackets, so it is safe to write next to a port number.
     // Note: `address` must have an explicit port.
     case ipAddress(serialization: IPAddress, address: SocketAddress)
-    case domain(name: DomainName, port: UInt16)
+    case domain(domainName: DomainName, port: UInt16)
     case unixSocket(path: String)
 }
 
@@ -22,7 +22,7 @@ extension DNSServerAddress {
     var host: String? {
         switch self {
         case .ipAddress(let serialization, _): return serialization.description
-        case .domain(let name, _): return name.description(format: .ascii)
+        case .domain(let domainName, _): return domainName.description(format: .ascii)
         case .unixSocket: return nil
         }
     }

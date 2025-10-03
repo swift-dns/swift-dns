@@ -14,8 +14,8 @@ struct DNSMessageDecoderTests {
         let result = try #require(decoder.decode(buffer: &buffer))
         switch result {
         case .message(let message):
-            let name = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
-            #expect(message.queries.first?.name == name)
+            let domainName = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
+            #expect(message.queries.first?.domainName == domainName)
         case .identifiableError(let id, let error):
             Issue.record("Expected message but got identifiable error. ID: \(id), error: \(error)")
         }
@@ -44,8 +44,8 @@ struct DNSMessageDecoderTests {
         case .identifiableError(let id, let error):
             #expect(id == 8204)
             switch error as? ProtocolError {
-            case .failedToValidate(let name, var buffer):
-                #expect(String(describing: name) == "DomainName")
+            case .failedToValidate(let domainName, var buffer):
+                #expect(String(describing: domainName) == "DomainName")
                 /// Preferably whenever possible when decoding fails, the bytes that failed to decode
                 /// should be marked as read already.
                 ///

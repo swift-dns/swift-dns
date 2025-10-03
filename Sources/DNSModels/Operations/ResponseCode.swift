@@ -19,7 +19,7 @@ import DNSCore
 ///                                 problem with the name server.
 ///
 ///                 3               DomainName Error - Meaningful only for
-///                                 responses from an authoritative name
+///                                 responses from an authoritative domainName
 ///                                 server, this code signifies that the
 ///                                 domain name referenced in the query does
 ///                                 not exist.
@@ -29,7 +29,7 @@ import DNSCore
 ///
 ///                 5               Refused - The name server refuses to
 ///                                 perform the specified operation for
-///                                 policy reasons.  For example, a name
+///                                 policy reasons.  For example, a domainName
 ///                                 server may not wish to provide the
 ///                                 information to the particular requester,
 ///                                 or a name server may not wish to perform
@@ -72,7 +72,7 @@ public enum ResponseCode: Sendable {
     case BADTIME
     /// Bad TKEY Mode [RFC 2930](https://tools.ietf.org/html/rfc2930#section-2.6)
     case BADMODE
-    /// Duplicate key name [RFC 2930](https://tools.ietf.org/html/rfc2930#section-2.6)
+    /// Duplicate key domainName [RFC 2930](https://tools.ietf.org/html/rfc2930#section-2.6)
     case BADNAME
     /// Algorithm not supported [RFC 2930](https://tools.ietf.org/html/rfc2930#section-2.6)
     case BADALG

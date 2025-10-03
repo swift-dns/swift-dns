@@ -272,8 +272,8 @@ extension TSIG.Algorithm: RawRepresentable {
         case "hmac-sha512": self = .HMAC_SHA512
         case "hmac-sha512-256": self = .HMAC_SHA512_256
         default:
-            if let name = try? DomainName(string: rawValue) {
-                self = .unknown(name)
+            if let domainName = try? DomainName(string: rawValue) {
+                self = .unknown(domainName)
             } else {
                 return nil
             }
@@ -292,13 +292,13 @@ extension TSIG.Algorithm: RawRepresentable {
         case .HMAC_SHA384_192: return "hmac-sha384-192"
         case .HMAC_SHA512: return "hmac-sha512"
         case .HMAC_SHA512_256: return "hmac-sha512-256"
-        case .unknown(let name): return name.description
+        case .unknown(let domainName): return domainName.description
         }
     }
 
-    package init(name: DomainName) {
+    package init(domainName: DomainName) {
         self =
-            switch name.description {
+            switch domainName.description {
             case "hmac-md5.sig-alg.reg.int": .HMAC_MD5
             case "gss-tsig": .GSS
             case "hmac-sha1": .HMAC_SHA1
@@ -309,11 +309,11 @@ extension TSIG.Algorithm: RawRepresentable {
             case "hmac-sha384-192": .HMAC_SHA384_192
             case "hmac-sha512": .HMAC_SHA512
             case "hmac-sha512-256": .HMAC_SHA512_256
-            default: .unknown(name)
+            default: .unknown(domainName)
             }
     }
 
-    package func toName() throws -> DomainName {
+    package func toDomainName() throws -> DomainName {
         switch self {
         case .HMAC_MD5: return try DomainName(guaranteedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
         case .GSS: return try DomainName(guaranteedASCIIBytes: "gss-tsig".utf8)
@@ -325,7 +325,7 @@ extension TSIG.Algorithm: RawRepresentable {
         case .HMAC_SHA384_192: return try DomainName(guaranteedASCIIBytes: "hmac-sha384-192".utf8)
         case .HMAC_SHA512: return try DomainName(guaranteedASCIIBytes: "hmac-sha512".utf8)
         case .HMAC_SHA512_256: return try DomainName(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
-        case .unknown(let name): return name
+        case .unknown(let domainName): return domainName
         }
     }
 }
@@ -361,14 +361,14 @@ extension TSIG.Algorithm: CaseIterable {
 @available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
-        self.init(name: try DomainName(from: &buffer))
+        self.init(domainName: try DomainName(from: &buffer))
     }
 }
 
 @available(swiftDNSApplePlatforms 13, *)
 extension TSIG.Algorithm {
     func encode(into buffer: inout DNSBuffer) throws {
-        try self.toName().encode(into: &buffer)
+        try self.toDomainName().encode(into: &buffer)
     }
 }
 
