@@ -225,10 +225,10 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients()[0...0])
+    @Test(arguments: makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let factory = try MessageFactory<CAA>.forQuery(name: "cloudflare.com.")
+            let factory = try MessageFactory<CAA>.forQuery(name: "apple.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCAA(
                 message: factory,
@@ -257,7 +257,7 @@ struct IntegrationTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let name = try DomainName(string: "cloudflare.com.")
+            let name = try DomainName(string: "apple.com.")
             #expect(response.queries.first?.name == name)
             #expect(response.queries.first?.queryType == .CAA)
             #expect(response.queries.first?.queryClass == .IN)
