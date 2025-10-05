@@ -73,22 +73,14 @@ jobs:
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
-  macos-nightly-tests:
+  cache-swiftly-toolchain-for-macos:
     strategy:
       fail-fast: false
       matrix:
-        macos:
-          - version: macos-15
-          - version: macos-26
-        xcode:
-          - version: latest-stable
         swift:
           - version: 6.2-snapshot
-        config:
-          - mode: "debug"
-          - mode: "release"
 
-    runs-on: ${{ matrix.macos.version }}
+    runs-on: macos-26
 
     timeout-minutes: 20
 
@@ -98,14 +90,6 @@ jobs:
       SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
 
     steps:
-      - name: Setup appropriate Xcode version
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ matrix.xcode.version }}
-
-      - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
-
       - name: Set today's date
         run: echo "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
 
@@ -131,10 +115,19 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
         run: |
+          # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
+          BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
+          if [[ "${BLOCK_SIZE}" -lt 1024 ]]; then
+            echo "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
+            rm -rf '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' '${{ env.SWIFTLY_BIN_DIR }}' '${{ env.SWIFTLY_HOME_DIR }}'
+          else
+            echo "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
+          fi
+
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
           installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
@@ -167,7 +160,81 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
-          key: "${{ github.event.repository.name }}-swiftly-toolchains-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+
+  macos-nightly-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        macos:
+          - version: macos-15
+          - version: macos-26
+        xcode:
+          - version: latest-stable
+        swift:
+          - version: 6.2-snapshot
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ${{ matrix.macos.version }}
+
+    timeout-minutes: 20
+
+    needs: cache-swiftly-toolchain-for-macos
+
+    env:
+      SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
+      SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
+      SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
+
+    steps:
+      - name: Setup appropriate Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode.version }}
+
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v5
+
+      - name: Set today's date
+        run: echo "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+
+      - name: Restore swiftly home
+        id: "restore-home"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_HOME_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+
+      - name: Restore swiftly bin
+        id: "restore-bin"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_BIN_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+
+      - name: Restore swiftly toolchains
+        id: "restore-toolchains"
+        uses: actions/cache/restore@v4
+        with:
+          path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
+          key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
+
+      - name: Update swift via Swiftly
+        run: |
+          # Installation commands from https://www.swift.org/install/macos
+          curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
+          installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
+          "${SWIFTLY_BIN_DIR}/swiftly" init --assume-yes --skip-install --quiet-shell-followup
+          . "${SWIFTLY_HOME_DIR}/env.sh"
+
+          # Update GitHub PATH
+          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+
+          # Update swift
+          swiftly install --assume-yes ${{ matrix.swift.version }}
+          swiftly use --assume-yes ${{ matrix.swift.version }}
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
