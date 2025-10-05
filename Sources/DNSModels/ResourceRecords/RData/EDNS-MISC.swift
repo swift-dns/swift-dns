@@ -145,11 +145,11 @@ public enum EDNSOption: Sendable, Hashable {
     ///    their implementation.
     /// ```
     public struct ClientSubnet: Sendable, Hashable {
-        public var address: IPAddress
+        public var address: AnyIPAddress
         public var sourcePrefix: UInt8
         public var scopePrefix: UInt8
 
-        public init(address: IPAddress, sourcePrefix: UInt8, scopePrefix: UInt8) {
+        public init(address: AnyIPAddress, sourcePrefix: UInt8, scopePrefix: UInt8) {
             self.address = address
             self.sourcePrefix = sourcePrefix
             self.scopePrefix = scopePrefix

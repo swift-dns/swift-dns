@@ -8,6 +8,6 @@ BASE_DIR=$(dirname "$SCRIPT_PATH")/..
 
 swift package -c release \
   --package-path "$BASE_DIR/Benchmarks" \
-  benchmark thresholds check \
+  benchmark run \
   --path "$BASE_DIR/Benchmarks/Thresholds" \
   "$@"

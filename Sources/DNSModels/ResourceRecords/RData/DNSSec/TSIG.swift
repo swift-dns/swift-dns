@@ -315,16 +315,16 @@ extension TSIG.Algorithm: RawRepresentable {
 
     package func toDomainName() throws -> DomainName {
         switch self {
-        case .HMAC_MD5: return try DomainName(guaranteedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
-        case .GSS: return try DomainName(guaranteedASCIIBytes: "gss-tsig".utf8)
-        case .HMAC_SHA1: return try DomainName(guaranteedASCIIBytes: "hmac-sha1".utf8)
-        case .HMAC_SHA224: return try DomainName(guaranteedASCIIBytes: "hmac-sha224".utf8)
-        case .HMAC_SHA256: return try DomainName(guaranteedASCIIBytes: "hmac-sha256".utf8)
-        case .HMAC_SHA256_128: return try DomainName(guaranteedASCIIBytes: "hmac-sha256-128".utf8)
-        case .HMAC_SHA384: return try DomainName(guaranteedASCIIBytes: "hmac-sha384".utf8)
-        case .HMAC_SHA384_192: return try DomainName(guaranteedASCIIBytes: "hmac-sha384-192".utf8)
-        case .HMAC_SHA512: return try DomainName(guaranteedASCIIBytes: "hmac-sha512".utf8)
-        case .HMAC_SHA512_256: return try DomainName(guaranteedASCIIBytes: "hmac-sha512-256".utf8)
+        case .HMAC_MD5: return try DomainName(uncheckedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
+        case .GSS: return try DomainName(uncheckedASCIIBytes: "gss-tsig".utf8)
+        case .HMAC_SHA1: return try DomainName(uncheckedASCIIBytes: "hmac-sha1".utf8)
+        case .HMAC_SHA224: return try DomainName(uncheckedASCIIBytes: "hmac-sha224".utf8)
+        case .HMAC_SHA256: return try DomainName(uncheckedASCIIBytes: "hmac-sha256".utf8)
+        case .HMAC_SHA256_128: return try DomainName(uncheckedASCIIBytes: "hmac-sha256-128".utf8)
+        case .HMAC_SHA384: return try DomainName(uncheckedASCIIBytes: "hmac-sha384".utf8)
+        case .HMAC_SHA384_192: return try DomainName(uncheckedASCIIBytes: "hmac-sha384-192".utf8)
+        case .HMAC_SHA512: return try DomainName(uncheckedASCIIBytes: "hmac-sha512".utf8)
+        case .HMAC_SHA512_256: return try DomainName(uncheckedASCIIBytes: "hmac-sha512-256".utf8)
         case .unknown(let domainName): return domainName
         }
     }

@@ -1,5 +1,5 @@
 public import struct DNSModels.DomainName
-public import enum DNSModels.IPAddress
+public import enum DNSModels.AnyIPAddress
 public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
@@ -10,7 +10,7 @@ public enum DNSServerAddress: Hashable, Sendable {
     // writing IPv6 addresses as having embedded IPv4 sections (e.g. [::192.168.0.1] vs [::c0a8:1]).
     // This serialization includes square brackets, so it is safe to write next to a port number.
     // Note: `address` must have an explicit port.
-    case ipAddress(serialization: IPAddress, address: SocketAddress)
+    case ipAddress(serialization: AnyIPAddress, address: SocketAddress)
     case domain(domainName: DomainName, port: UInt16)
     case unixSocket(path: String)
 }

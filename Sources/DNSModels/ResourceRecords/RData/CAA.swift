@@ -231,18 +231,12 @@ extension CAA.Value {
             if nameBytes.isEmpty {
                 domainName = nil
             } else {
-                domainName = try DomainName(
-                    expectingASCIIBytes: nameBytes,
-                    name: "CAA.issuer.domainName"
-                )
+                domainName = try DomainName(expectingASCIIBytes: nameBytes)
                 buffer.moveReaderIndex(forwardBy: nameBytes.count)
             }
         } else {
             if buffer.readableBytes > 0 {
-                domainName = try DomainName(
-                    expectingASCIIBytes: buffer.readableBytesView,
-                    name: "CAA.issuer.domainName"
-                )
+                domainName = try DomainName(expectingASCIIBytes: buffer.readableBytesView)
                 buffer.moveReaderIndex(to: buffer.writerIndex)
                 /// There was no semicolon in the buffer so the whole of it was the domainName.
                 /// Therefore, we can return immediately.

@@ -211,7 +211,7 @@ struct QueryResponseTests {
         )
         #expect(
             response.answers.allSatisfy { $0.nameLabels == domainName },
-            "\(domainName.data); \(response.answers)"
+            "\(domainName._data); \(response.answers)"
         )
         #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
         #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
@@ -385,7 +385,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
+                            uncheckedData: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
                         )
                     ),
                     [
@@ -412,7 +412,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 8, 99, 111, 109, 111, 100, 111, 99, 97, 3, 99, 111, 109,
                             ])
                         )
@@ -439,7 +439,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
+                            uncheckedData: ByteBuffer([3, 112, 107, 105, 4, 103, 111, 111, 103])
                         )
                     ),
                     [
@@ -463,7 +463,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 8, 99, 111, 109, 111, 100, 111, 99, 97, 3, 99, 111, 109,
                             ])
                         )
@@ -480,7 +480,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
+                            uncheckedData: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
                         )
                     ),
                     []
@@ -495,7 +495,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 8, 100, 105, 103, 105, 99, 101, 114, 116, 3, 99, 111, 109,
                             ])
                         )
@@ -521,7 +521,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
+                            uncheckedData: ByteBuffer([3, 115, 115, 108, 3, 99, 111, 109])
                         )
                     ),
                     []
@@ -536,7 +536,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 11, 108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 3, 111,
                                 114, 103,
                             ])
@@ -556,7 +556,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 8, 100, 105, 103, 105, 99, 101, 114, 116, 3, 99, 111, 109,
                             ])
                         )
@@ -582,7 +582,7 @@ struct QueryResponseTests {
                     Optional(
                         DomainName(
                             isFQDN: false,
-                            data: ByteBuffer([
+                            uncheckedData: ByteBuffer([
                                 11, 108, 101, 116, 115, 101, 110, 99, 114, 121, 112, 116, 3, 111,
                                 114, 103,
                             ])
