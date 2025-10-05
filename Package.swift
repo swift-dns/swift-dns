@@ -44,10 +44,12 @@ let package = Package(
                 "DNSModels",
                 "_DNSConnectionPool",
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "Endpoint", package: "swift-endpoint"),
                 .product(
                     name: "ServiceLifecycle",
                     package: "swift-service-lifecycle",
