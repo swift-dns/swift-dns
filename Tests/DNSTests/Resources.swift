@@ -44,6 +44,12 @@ enum Resources: String {
     case dnsQueryOPTCloudflareComPacket = "cloudflare.com-opt-query-packet"
     case dnsResponseOPTCloudflareComPacket = "cloudflare.com-opt-response-packet"
 
+    case hosts = "hosts"
+    case hostsIPv4 = "hosts-ipv4"
+    case hostsIPv6 = "hosts-ipv6"
+    case hostsSingleLine = "hosts-single-line"
+    case hostsCase = "hosts-case"
+
     case topDomains = "top-domains.csv"
 
     func buffer() -> DNSBuffer {
@@ -56,16 +62,43 @@ enum Resources: String {
         )!
     }
 
-    private func qualifiedPath() -> String {
+    func qualifiedPath() -> String {
         var components = URL(fileURLWithPath: #filePath).pathComponents
 
         while components.last != "swift-dns" {
             components.removeLast()
         }
 
-        components.append(contentsOf: ["Tests", "Resources", self.rawValue])
+        components.append(contentsOf: ["Tests", "Resources"])
+
+        if let subDirectory = self.subDirectory {
+            components.append(subDirectory)
+        }
+
+        components.append(self.rawValue)
 
         return components.joined(separator: "/")
+    }
+
+    var subDirectory: String? {
+        switch self {
+        case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket,
+            .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket,
+            .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket,
+            .dnsQueryCNAMERawGithubusercontentComPacket,
+            .dnsResponseCNAMERawGithubusercontentComPacket, .dnsQueryCNAMEWwwGithubComPacket,
+            .dnsResponseCNAMEWwwGithubComPacket, .dnsQueryCAACloudflareComPacket,
+            .dnsResponseCAACloudflareComPacket, .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
+            .dnsResponseCERTForDnsCertTestingMahdibmComPacket, .dnsQueryMXMahdibmComPacket,
+            .dnsResponseMXMahdibmComPacket, .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket,
+            .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet,
+            .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
+            return "dns-packets"
+        case .hosts, .hostsIPv4, .hostsIPv6, .hostsSingleLine, .hostsCase:
+            return "hosts"
+        case .topDomains:
+            return nil
+        }
     }
 
     var domainName: DomainName? {
@@ -94,17 +127,9 @@ enum Resources: String {
             return try? DomainName(string: "9.9.9.9.")
         case .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
             return try? DomainName(string: "cloudflare.com.")
-        case .topDomains:
+        case .hosts, .hostsIPv4, .hostsIPv6, .hostsSingleLine, .hostsCase, .topDomains:
             return nil
         }
-    }
-
-    @available(swiftDNSApplePlatforms 15, *)
-    static var allSupportedQueryableTypes: [any Queryable.Type] {
-        [
-            A.self, AAAA.self, TXT.self, CNAME.self, CAA.self, CERT.self, MX.self, NS.self,
-            PTR.self, OPT.self,
-        ]
     }
 
     @available(swiftDNSApplePlatforms 15, *)

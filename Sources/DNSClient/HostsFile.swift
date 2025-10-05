@@ -1,7 +1,6 @@
 import DNSCore
 package import Endpoint
 
-package import struct DNSModels.TinyFastSequence
 import struct NIOCore.ByteBuffer
 package import struct NIOFileSystem.ByteCount
 package import struct NIOFileSystem.FilePath
@@ -9,33 +8,41 @@ package import struct NIOFileSystem.FileSystem
 
 @available(swiftDNSApplePlatforms 15, *)
 package struct HostsFile: Sendable, Hashable {
-    package struct Entry: Sendable, Hashable {
+    package struct Target: Sendable, Hashable {
         package var address: AnyIPAddress
         package var zoneID: String?
-        package var host: DomainName
-        package var aliases: TinyFastSequence<DomainName>
 
         package init(
             address: AnyIPAddress,
-            zoneID: String?,
-            host: DomainName,
-            aliases: TinyFastSequence<DomainName>
+            zoneID: String?
         ) {
             self.address = address
             self.zoneID = zoneID
-            self.host = host
-            self.aliases = aliases
         }
     }
 
-    package var entries: [Entry]
+    /// A lookup table from domain name to target.
+    /// All domain names have FQDN set to false.
+    package var _entries: [DomainName: Target]
 
-    package init(entries: [Entry]) {
-        self.entries = entries
+    package init(_entries: [DomainName: Target]) {
+        self._entries = _entries
+    }
+
+    package func target(for domainName: DomainName) -> Target? {
+        if let target = self._entries[domainName] {
+            return target
+        }
+        if domainName.isFQDN {
+            var domainName = domainName
+            domainName.isFQDN = false
+            return self._entries[domainName]
+        }
+        return nil
     }
 
     package init(
-        withFileAt path: FilePath,
+        readingFileAt path: FilePath,
         fileSystem: FileSystem,
         maximumSizeAllowed: ByteCount,
     ) async throws {
@@ -52,8 +59,8 @@ package struct HostsFile: Sendable, Hashable {
         }
     }
 
-    package init(span: Span<UInt8>) {
-        self.entries = []
+    init(span: Span<UInt8>) {
+        self._entries = [:]
 
         guard span.count > 0 else {
             return
@@ -66,13 +73,12 @@ package struct HostsFile: Sendable, Hashable {
             /// Unchecked because idx is always in 0..<span.count
             switch span[unchecked: idx] {
             case UInt8.asciiCarriageReturn:
-                if let entry = Self.parseLine(
+                Self.parseLine(
                     startIndex: chunkStartIndex,
                     endIndex: idx,
-                    from: span
-                ) {
-                    entries.append(entry)
-                }
+                    from: span,
+                    into: &self._entries
+                )
 
                 let nextIdx = idx &+ 1
                 if count > nextIdx,
@@ -85,13 +91,13 @@ package struct HostsFile: Sendable, Hashable {
                 chunkStartIndex = idx &+ 1
                 idx &+== 1
             case UInt8.asciiLineFeed:
-                if let entry = Self.parseLine(
+                Self.parseLine(
                     startIndex: chunkStartIndex,
                     endIndex: idx,
-                    from: span
-                ) {
-                    entries.append(entry)
-                }
+                    from: span,
+                    into: &self._entries
+                )
+
                 chunkStartIndex = idx &+ 1
                 idx &+== 1
             default:
@@ -100,72 +106,68 @@ package struct HostsFile: Sendable, Hashable {
             }
         }
 
-        if let entry = Self.parseLine(
+        Self.parseLine(
             startIndex: chunkStartIndex,
             endIndex: idx,
-            from: span
-        ) {
-            entries.append(entry)
-        }
+            from: span,
+            into: &self._entries
+        )
     }
 
-    @usableFromInline
+    @inlinable
     static func parseLine(
         startIndex: Int,
         endIndex: Int,
-        from span: Span<UInt8>
-    ) -> Entry? {
+        from span: Span<UInt8>,
+        into entries: inout [DomainName: Target]
+    ) {
         let range = Range(uncheckedBounds: (startIndex, endIndex))
         let span = span.extracting(unchecked: range)
         /// Short-circuit comment parsing
         /// No need to try to parse if the line starts with a hashtag
         if span[unchecked: 0] == .asciiHashtag {
-            return nil
+            return
         }
-        let entry = Entry(lineBytes: span)
-        return entry
+        Self.parseLine(
+            lineBytes: span,
+            into: &entries
+        )
     }
-}
 
-@available(swiftDNSApplePlatforms 15, *)
-extension HostsFile.Entry {
-    init?(lineBytes span: Span<UInt8>) {
-        var address: AnyIPAddress? = nil
-        var zoneID: String? = nil
-        var host: DomainName? = nil
-        var aliases: TinyFastSequence<DomainName> = .init()
+    @inlinable
+    static func parseLine(
+        lineBytes span: Span<UInt8>,
+        into entries: inout [DomainName: Target]
+    ) {
+        var target: Target? = nil
 
         var idx = 0
         var chunkStartIndex: Int? = nil
-        var previousWasWhitespace = false
-        while idx < span.count {
+        var previousWasSpace = false
+        loop: while idx < span.count {
             /// Unchecked because idx is always in 0..<span.count
             switch span[unchecked: idx] {
-            case UInt8.asciiWhitespace:
-                switch previousWasWhitespace {
+            case UInt8.asciiWhitespace, UInt8.asciiTab:
+                switch previousWasSpace {
                 case true:
                     idx &+== 1
+                    chunkStartIndex = chunkStartIndex.map { $0 &+ 1 } ?? idx
                     continue
                 case false:
                     guard
                         let chunkStartIndex,
-                        chunkStartIndex > idx
+                        chunkStartIndex < idx
                     else {
-                        previousWasWhitespace = true
                         idx &+== 1
+                        chunkStartIndex = idx
+                        previousWasSpace = true
                         continue
                     }
 
                     let chunkRange = Range(uncheckedBounds: (chunkStartIndex, idx))
                     let chunk = span.extracting(unchecked: chunkRange)
 
-                    if address == nil {
-                        guard let new = Self.parseAddressAndZoneID(from: chunk) else {
-                            return nil
-                        }
-                        address = new.0
-                        zoneID = new.1
-                    } else {
+                    if let target {
                         /// FIXME: remove usage of array, use span directly
                         let array = [UInt8](unsafeUninitializedCapacity: chunk.count) {
                             (arrayBuffer, arrayCount) in
@@ -178,29 +180,35 @@ extension HostsFile.Entry {
                         guard
                             let domainName = try? DomainName(expectingASCIIBytes: array)
                         else {
-                            return nil
+                            /// Don't halt
+                            /// TODO: maybe report the failure somehow?
+                            continue
                         }
-                        if host == nil {
-                            host = domainName
-                        } else {
-                            aliases.append(domainName)
+                        entries[domainName] = target
+                    } else {
+                        target = Target(from: chunk)
+                        guard
+                            /// Target must have been successfully parsed
+                            let target,
+                            /// Skip broadcast addresses (255.255.255.255)
+                            target.address.ipv4Value?.address != .max
+                        else {
+                            return
                         }
                     }
-
-                    previousWasWhitespace = true
                 }
 
                 chunkStartIndex = idx &+ 1
                 idx &+== 1
-                previousWasWhitespace = true
+                previousWasSpace = true
             case UInt8.asciiHashtag:
-                break
+                break loop
             default:
                 if chunkStartIndex == nil {
                     chunkStartIndex = idx
                 }
                 idx &+== 1
-                previousWasWhitespace = false
+                previousWasSpace = false
             }
         }
 
@@ -210,13 +218,7 @@ extension HostsFile.Entry {
             let chunkRange = Range(uncheckedBounds: (chunkStartIndex, idx))
             let chunk = span.extracting(unchecked: chunkRange)
 
-            if address == nil {
-                guard let new = Self.parseAddressAndZoneID(from: chunk) else {
-                    return nil
-                }
-                address = new.0
-                zoneID = new.1
-            } else {
+            if let target {
                 /// FIXME: remove usage of array, use span directly
                 let array = [UInt8](unsafeUninitializedCapacity: chunk.count) {
                     (arrayBuffer, arrayCount) in
@@ -229,29 +231,21 @@ extension HostsFile.Entry {
                 guard
                     let domainName = try? DomainName(expectingASCIIBytes: array)
                 else {
-                    return nil
+                    return
                 }
-                if host == nil {
-                    host = domainName
-                } else {
-                    aliases.append(domainName)
-                }
+                entries[domainName] = target
+            } else {
+                /// Parsing the target here isn't of any use
+                return
             }
         }
-
-        guard let address, let host else {
-            return nil
-        }
-
-        self.address = address
-        self.zoneID = zoneID
-        self.host = host
-        self.aliases = aliases
     }
+}
 
-    static func parseAddressAndZoneID(
-        from span: Span<UInt8>
-    ) -> (AnyIPAddress, String?)? {
+@available(swiftDNSApplePlatforms 15, *)
+extension HostsFile.Target {
+    @inlinable
+    package init?(from span: Span<UInt8>) {
         var percentSignIndex: Int? = nil
         let endIndex = span.count &-- 1
         for idx in span.indices {
@@ -276,7 +270,8 @@ extension HostsFile.Entry {
 
             let zoneIDStartIndex = percentSignIndex + 1
             guard zoneIDStartIndex <= endIndex else {
-                return (ipAddress, nil)
+                self.init(address: ipAddress, zoneID: nil)
+                return
             }
             let zoneIDRange = Range<Int>(
                 uncheckedBounds: (
@@ -298,12 +293,32 @@ extension HostsFile.Entry {
                 }
             )
 
-            return (ipAddress, zoneID)
+            self.init(address: ipAddress, zoneID: zoneID)
         case .none:
             guard let ipAddress = AnyIPAddress(textualRepresentation: span) else {
                 return nil
             }
-            return (ipAddress, nil)
+            self.init(address: ipAddress, zoneID: nil)
         }
+    }
+}
+
+// MARK: - CustomStringConvertible
+
+@available(swiftDNSApplePlatforms 15, *)
+extension HostsFile.Target: CustomStringConvertible {
+    package var description: String {
+        let addressString =
+            switch self.address {
+            case .v4(let ipv4):
+                ipv4.description
+            case .v6(let ipv6):
+                ipv6.description
+            }
+        if let zoneID = self.zoneID {
+            return addressString + "%" + zoneID
+        }
+
+        return addressString
     }
 }

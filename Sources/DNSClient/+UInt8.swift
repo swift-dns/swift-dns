@@ -24,4 +24,9 @@ extension UInt8 {
     static var asciiHashtag: UInt8 {
         0x23
     }
+
+    @inlinable
+    static var asciiTab: UInt8 {
+        0x09
+    }
 }
