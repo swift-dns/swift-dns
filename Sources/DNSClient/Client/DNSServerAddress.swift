@@ -1,5 +1,5 @@
-public import struct DNSModels.DomainName
 public import enum DNSModels.AnyIPAddress
+public import struct DNSModels.DomainName
 public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public

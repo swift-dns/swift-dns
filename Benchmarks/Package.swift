@@ -135,7 +135,7 @@ package.targets += [
         name: "DNSParsingBenchs",
         dependencies: [
             .product(name: "Benchmark", package: "package-benchmark"),
-            "DNSModels"
+            "DNSModels",
         ],
         path: "DNSParsing",
         swiftSettings: settings,
@@ -147,7 +147,7 @@ package.targets += [
         name: "DomainNameBenchs",
         dependencies: [
             .product(name: "Benchmark", package: "package-benchmark"),
-            "DNSModels"
+            "DNSModels",
         ],
         path: "DomainName",
         swiftSettings: settings,

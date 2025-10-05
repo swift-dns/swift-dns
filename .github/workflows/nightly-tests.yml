@@ -119,15 +119,6 @@ jobs:
 
       - name: Update swift via Swiftly
         run: |
-          # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
-          BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
-          if [[ "${BLOCK_SIZE}" -lt 1024 ]]; then
-            echo "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
-            rm -rf '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' '${{ env.SWIFTLY_BIN_DIR }}' '${{ env.SWIFTLY_HOME_DIR }}'
-          else
-            echo "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
-          fi
-
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
           installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
@@ -223,6 +214,15 @@ jobs:
 
       - name: Update swift via Swiftly
         run: |
+          # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
+          BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
+          if [[ "${BLOCK_SIZE}" -lt 1024 ]]; then
+            echo "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
+            rm -rf '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' '${{ env.SWIFTLY_BIN_DIR }}' '${{ env.SWIFTLY_HOME_DIR }}'
+          else
+            echo "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
+          fi
+
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
           installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
