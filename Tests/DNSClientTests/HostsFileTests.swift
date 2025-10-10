@@ -7,63 +7,30 @@ import struct NIOCore.ByteBuffer
 
 @Suite
 struct HostsFileTests {
-    @available(swiftDNSApplePlatforms 26, *)
-    @Test(
-        arguments: [(Resources, HostsFile)]([
-            (
-                Resources.hosts,
-                HostsFile([
-                    ("odin", ["127.0.0.2", "127.0.0.3", "::2"]),
-                    ("thor", ["127.1.1.1", "127.1.2.1", "127.1.3.1"]),
-                    ("ullr", ["127.1.1.2"]),
-                    ("ullrhost", ["127.1.1.2"]),
-                    ("localhost", ["fe80::1%lo0"]),
-                ]),
-            ),
-            (
-                Resources.hostsSingleLine,
-                HostsFile([
-                    ("odin", ["127.0.0.2"])
-                ]),
-            ),
-            (
-                Resources.hostsIPv4,
-                HostsFile([
-                    ("localhost", ["127.0.0.1", "127.0.0.2", "127.0.0.3"]),
-                    ("localhost.localdomain", ["127.0.0.3"]),
-                ]),
-            ),
-            (
-                Resources.hostsIPv6,
-                HostsFile([
-                    ("localhost", ["::1", "fe80::1", "fe80::2%lo0", "fe80::3%lo0"]),
-                    ("localhost.localdomain", ["fe80::3%lo0"]),
-                ]),
-            ),
-            (
-                Resources.hostsCase,
-                HostsFile([
-                    ("PreserveMe", ["127.0.0.1", "::1"]),
-                    ("PreserveMe.local", ["127.0.0.1", "::1"]),
-                ]),
-            ),
-        ])
-    )
-    func `parsing host-files works`(
+    @available(swiftDNSApplePlatforms 15, *)
+    @Test(arguments: hostFilesWithCapacities)
+    func `parsing host files works`(
         resource: Resources,
-        expectedHostsFile: HostsFile
+        expectedHostsFile: HostsFile,
+        maximumSizeAllowed: ByteCount,
+        expectReadFailure: Bool
     ) async throws {
         let path = resource.qualifiedPath()
         let filePath = FilePath(path)
-        let hostsFile = try await HostsFile(
-            readingFileAt: filePath,
-            fileSystem: .shared,
-            maximumSizeAllowed: .kibibytes(100)
-        )
-        let hostsFileEntries = self.sort(entries: hostsFile._entries)
-        let expectedHostsFileEntries = self.sort(entries: expectedHostsFile._entries)
-        #expect(hostsFileEntries.map(\.0) == expectedHostsFileEntries.map(\.0))
-        #expect(hostsFileEntries.map(\.1) == expectedHostsFileEntries.map(\.1))
+        do {
+            let hostsFile = try await HostsFile(
+                readingFileAt: filePath,
+                fileSystem: .shared,
+                maximumSizeAllowed: maximumSizeAllowed
+            )
+            let hostsFileEntries = self.sort(entries: hostsFile._entries)
+            let expectedHostsFileEntries = self.sort(entries: expectedHostsFile._entries)
+            #expect(hostsFileEntries.map(\.0) == expectedHostsFileEntries.map(\.0))
+            #expect(hostsFileEntries.map(\.1) == expectedHostsFileEntries.map(\.1))
+            #expect(!expectReadFailure)
+        } catch {
+            #expect(expectReadFailure)
+        }
     }
 
     @available(swiftDNSApplePlatforms 15, *)
@@ -80,18 +47,80 @@ struct HostsFileTests {
     }
 }
 
-@available(swiftDNSApplePlatforms 26, *)
+@available(swiftDNSApplePlatforms 15, *)
 extension HostsFile {
     init(_ array: [(name: String, addresses: [String])]) {
         self.init(_entries: [:])
         for (name, addresses) in array {
             let name = try! DomainName(name)
             for address in addresses {
-                let target = HostsFile.Target(
-                    from: address.utf8Span.span
-                )!
+                var address = address
+                let target = address.withUTF8 {
+                    HostsFile.Target(from: $0.span)!
+                }
                 self._entries[name._data] = target
             }
         }
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
+private let hostFiles: [(Resources, HostsFile)] = [
+    (
+        Resources.hosts,
+        HostsFile([
+            ("odin", ["127.0.0.2", "127.0.0.3", "::2"]),
+            ("thor", ["127.1.1.1", "127.1.2.1", "127.1.3.1"]),
+            ("ullr", ["127.1.1.2"]),
+            ("ullrhost", ["127.1.1.2"]),
+            ("localhost", ["fe80::1%lo0"]),
+        ]),
+    ),
+    (
+        Resources.hostsSingleLine,
+        HostsFile([
+            ("odin", ["127.0.0.2"])
+        ]),
+    ),
+    (
+        Resources.hostsIPv4,
+        HostsFile([
+            ("localhost", ["127.0.0.1", "127.0.0.2", "127.0.0.3"]),
+            ("localhost.localdomain", ["127.0.0.3"]),
+        ]),
+    ),
+    (
+        Resources.hostsIPv6,
+        HostsFile([
+            ("localhost", ["::1", "fe80::1", "fe80::2%lo0", "fe80::3%lo0"]),
+            ("localhost.localdomain", ["fe80::3%lo0"]),
+        ]),
+    ),
+    (
+        Resources.hostsCase,
+        HostsFile([
+            ("PreserveMe", ["127.0.0.1", "::1"]),
+            ("PreserveMe.local", ["127.0.0.1", "::1"]),
+        ]),
+    ),
+]
+
+/// (capacity, expect read failure)
+private let capacities: [(ByteCount, Bool)] = [
+    (.bytes(10), true),
+    (.kibibytes(1), false),
+    (.kibibytes(2), false),
+    (.kibibytes(5), false),
+    (.kibibytes(10), false),
+    (.kibibytes(64), false),
+    (.kibibytes(1024), false),
+]
+
+/// (resource, hostsFile, capacity, expect read failure)
+@available(swiftDNSApplePlatforms 15, *)
+private let hostFilesWithCapacities: [(Resources, HostsFile, ByteCount, Bool)] = hostFiles.flatMap {
+    (resource, hostsFile) in
+    capacities.map { capacity, expectReadFailure in
+        (resource, hostsFile, capacity, expectReadFailure)
     }
 }
