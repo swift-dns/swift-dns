@@ -1,7 +1,7 @@
 import DNSCore
 package import Endpoint
 
-import struct NIOCore.ByteBuffer
+package import struct NIOCore.ByteBuffer
 package import struct NIOFileSystem.ByteCount
 package import struct NIOFileSystem.FilePath
 package import struct NIOFileSystem.FileSystem
@@ -22,29 +22,22 @@ package struct HostsFile: Sendable, Hashable {
     }
 
     /// A lookup table from domain name to target.
-    /// All domain names have FQDN set to false.
-    package var _entries: [DomainName: Target]
+    /// [DomainName._data: Target]
+    package var _entries: [ByteBuffer: Target]
 
-    package init(_entries: [DomainName: Target]) {
+    /// [DomainName._data: Target]
+    package init(_entries: [ByteBuffer: Target]) {
         self._entries = _entries
     }
 
     package func target(for domainName: DomainName) -> Target? {
-        if let target = self._entries[domainName] {
-            return target
-        }
-        if domainName.isFQDN {
-            var domainName = domainName
-            domainName.isFQDN = false
-            return self._entries[domainName]
-        }
-        return nil
+        self._entries[domainName._data]
     }
 
     package init(
         readingFileAt path: FilePath,
         fileSystem: FileSystem,
-        maximumSizeAllowed: ByteCount,
+        maximumSizeAllowed: ByteCount
     ) async throws {
         /// Read the whole file, hosts files are usually not huge
         let buffer = try await fileSystem.withFileHandle(
@@ -119,7 +112,7 @@ package struct HostsFile: Sendable, Hashable {
         startIndex: Int,
         endIndex: Int,
         from span: Span<UInt8>,
-        into entries: inout [DomainName: Target]
+        into entries: inout [ByteBuffer: Target]
     ) {
         let range = Range(uncheckedBounds: (startIndex, endIndex))
         let span = span.extracting(unchecked: range)
@@ -137,7 +130,7 @@ package struct HostsFile: Sendable, Hashable {
     @inlinable
     static func parseLine(
         lineBytes span: Span<UInt8>,
-        into entries: inout [DomainName: Target]
+        into entries: inout [ByteBuffer: Target]
     ) {
         var target: Target? = nil
 
@@ -175,7 +168,7 @@ package struct HostsFile: Sendable, Hashable {
                             /// TODO: maybe report the failure somehow?
                             continue
                         }
-                        entries[domainName] = target
+                        entries[domainName._data] = target
                     } else {
                         target = Target(from: chunk)
                         guard
@@ -213,7 +206,7 @@ package struct HostsFile: Sendable, Hashable {
                 guard let domainName = try? DomainName(_uncheckedAssumingValidUTF8: chunk) else {
                     return
                 }
-                entries[domainName] = target
+                entries[domainName._data] = target
             } else {
                 /// Parsing the target here isn't of any use
                 return

@@ -3,6 +3,8 @@ import DNSModels
 import NIOFileSystem
 import Testing
 
+import struct NIOCore.ByteBuffer
+
 @Suite
 struct HostsFileTests {
     @available(swiftDNSApplePlatforms 26, *)
@@ -65,7 +67,7 @@ struct HostsFileTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    func sort(entries: [DomainName: HostsFile.Target]) -> [(DomainName, HostsFile.Target)] {
+    func sort(entries: [ByteBuffer: HostsFile.Target]) -> [(ByteBuffer, HostsFile.Target)] {
         entries.sorted(by: { lhs, rhs in
             if lhs.key == rhs.key {
                 if lhs.value.address == rhs.value.address {
@@ -88,7 +90,7 @@ extension HostsFile {
                 let target = HostsFile.Target(
                     from: address.utf8Span.span
                 )!
-                self._entries[name] = target
+                self._entries[name._data] = target
             }
         }
     }
