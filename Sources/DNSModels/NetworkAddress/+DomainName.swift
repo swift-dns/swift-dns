@@ -3,13 +3,15 @@ import SwiftIDNA
 import struct NIOCore.ByteBuffer
 
 extension DomainName {
+    @available(swiftDNSApplePlatforms 13, *)
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
 
         try self.read(from: &buffer)
 
-        let checkResult = self._data.withUnsafeReadableBytes {
-            IDNA.performCharacterCheck(dnsWireFormatBytes: $0)
+        let checkResult: IDNA.CharacterCheckResult? = self._data.withUnsafeReadableBytes {
+            let span = $0.bindMemory(to: UInt8.self).span
+            return IDNA.performDNSComplaintByteCheck(onDNSWireFormatSpan: span)
         }
         switch checkResult {
         case .containsOnlyIDNANoOpCharacters:
@@ -20,7 +22,7 @@ extension DomainName {
                 for idx in ptr.indices {
                     let byte = ptr[idx]
                     if byte.isUppercasedASCIILetter {
-                        ptr[idx] = byte.uncheckedToLowercasedASCIILetter()
+                        ptr[idx] = byte._uncheckedToLowercasedASCIILetterAssumingUppercasedLetter()
                     }
                 }
             }
@@ -28,7 +30,9 @@ extension DomainName {
             /// Attempt to repair the domain name if it was not IDNA-compatible.
             /// This is technically not allowed in the DNS wire format, but we tolerate it.
             let description = self.utf8Representation()
-            self = try Self.init(string: description)
+            self = try Self.init(description)
+        case .none:
+            throw ProtocolError.failedToValidate("DomainName", DNSBuffer(buffer: self._data))
         }
     }
 

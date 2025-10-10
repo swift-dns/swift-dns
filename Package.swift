@@ -14,8 +14,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.7"),
-        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.2"),
+        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.15"),
+        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.3"),
 
         /// For the connection pool implementation copied from `PostgresNIO`.
         /// `PostgresNIO` is still supporting Swift 5.10 at the time of writing, so can't use stdlib atomics.
@@ -44,10 +44,12 @@ let package = Package(
                 "DNSModels",
                 "_DNSConnectionPool",
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "Endpoint", package: "swift-endpoint"),
                 .product(
                     name: "ServiceLifecycle",
                     package: "swift-service-lifecycle",

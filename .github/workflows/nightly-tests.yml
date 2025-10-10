@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - name: swiftlang/swift:nightly-main-jammy
+          - name: swiftlang/swift:nightly-6.2-jammy
         config:
           - mode: "debug"
           - mode: "release"

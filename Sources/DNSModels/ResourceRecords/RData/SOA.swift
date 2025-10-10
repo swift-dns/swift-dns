@@ -70,6 +70,7 @@ public struct SOA: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension SOA {
     package init(from buffer: inout DNSBuffer) throws {
         self.mName = try DomainName(from: &buffer)

@@ -7,6 +7,7 @@ public struct NS: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension NS {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)

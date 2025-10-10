@@ -37,6 +37,7 @@ public struct Query: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension Query {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)

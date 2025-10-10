@@ -192,6 +192,7 @@ public struct SIG: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension SIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.typeCovered = try RecordType(from: &buffer)

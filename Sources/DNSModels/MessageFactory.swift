@@ -67,7 +67,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         recursionDesired: Bool = true,
         checkingDisabled: Bool = false,
     ) throws -> Self {
-        let domainName = try DomainName(string: domainName, idnaConfiguration: idnaConfiguration)
+        let domainName = try DomainName(domainName, idnaConfiguration: idnaConfiguration)
         return Self.forQuery(
             domainName: domainName,
             recursionDesired: recursionDesired,

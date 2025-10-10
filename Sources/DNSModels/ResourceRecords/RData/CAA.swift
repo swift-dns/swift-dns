@@ -91,6 +91,7 @@ public struct CAA: Sendable, Equatable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes16To31 handles flags
@@ -175,6 +176,7 @@ extension CAA.Property {
 }
 
 extension CAA.Value {
+    @available(swiftDNSApplePlatforms 13, *)
     package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {
         case .issue, .issueWildcard:
@@ -218,6 +220,7 @@ extension CAA.Value {
         }
     }
 
+    @available(swiftDNSApplePlatforms 13, *)
     static func readIssuer(
         from buffer: inout DNSBuffer
     ) throws -> (DomainName?, [(key: String, value: String)]) {
@@ -231,12 +234,17 @@ extension CAA.Value {
             if nameBytes.isEmpty {
                 domainName = nil
             } else {
-                domainName = try DomainName(expectingASCIIBytes: nameBytes)
+                domainName = try nameBytes.withSpan_Compatibility {
+                    try DomainName(_uncheckedAssumingValidUTF8: $0)
+                }
                 buffer.moveReaderIndex(forwardBy: nameBytes.count)
             }
         } else {
             if buffer.readableBytes > 0 {
-                domainName = try DomainName(expectingASCIIBytes: buffer.readableBytesView)
+                domainName = try buffer.withUnsafeReadableBytes {
+                    let span = $0.bindMemory(to: UInt8.self).span
+                    return try DomainName(_uncheckedAssumingValidUTF8: span)
+                }
                 buffer.moveReaderIndex(to: buffer.writerIndex)
                 /// There was no semicolon in the buffer so the whole of it was the domainName.
                 /// Therefore, we can return immediately.
