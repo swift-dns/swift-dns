@@ -54,6 +54,7 @@ public struct NAPTR: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension NAPTR {
     package init(from buffer: inout DNSBuffer) throws {
         self.order = try buffer.readInteger(as: UInt16.self).unwrap(

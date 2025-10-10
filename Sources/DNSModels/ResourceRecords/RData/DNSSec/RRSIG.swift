@@ -7,6 +7,7 @@ public struct RRSIG: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension RRSIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try SIG(from: &buffer)

@@ -104,29 +104,29 @@ enum Resources: String {
     var domainName: DomainName? {
         switch self {
         case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket:
-            return try? DomainName(string: "mahdibm.com.")
+            return try? DomainName("mahdibm.com.")
         case .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket:
-            return try? DomainName(string: "cloudflare.com.")
+            return try? DomainName("cloudflare.com.")
         case .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket:
-            return try? DomainName(string: "example.com.")
+            return try? DomainName("example.com.")
         case .dnsQueryCNAMERawGithubusercontentComPacket,
             .dnsResponseCNAMERawGithubusercontentComPacket:
-            return try? DomainName(string: "raw.githubusercontent.com.")
+            return try? DomainName("raw.githubusercontent.com.")
         case .dnsQueryCNAMEWwwGithubComPacket, .dnsResponseCNAMEWwwGithubComPacket:
-            return try? DomainName(string: "www.github.com.")
+            return try? DomainName("www.github.com.")
         case .dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket:
-            return try? DomainName(string: "cloudflare.com.")
+            return try? DomainName("cloudflare.com.")
         case .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
             .dnsResponseCERTForDnsCertTestingMahdibmComPacket:
-            return try? DomainName(string: "for-dns-cert-testing.mahdibm.com.")
+            return try? DomainName("for-dns-cert-testing.mahdibm.com.")
         case .dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket:
-            return try? DomainName(string: "mahdibm.com.")
+            return try? DomainName("mahdibm.com.")
         case .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket:
-            return try? DomainName(string: "apple.com.")
+            return try? DomainName("apple.com.")
         case .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet:
-            return try? DomainName(string: "9.9.9.9.")
+            return try? DomainName("9.9.9.9.")
         case .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
-            return try? DomainName(string: "cloudflare.com.")
+            return try? DomainName("cloudflare.com.")
         case .hosts, .hostsIPv4, .hostsIPv6, .hostsSingleLine, .hostsCase, .topDomains:
             return nil
         }

@@ -25,6 +25,7 @@ public struct MX: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension MX {
     package init(from buffer: inout DNSBuffer) throws {
         self.preference = try buffer.readInteger(as: UInt16.self).unwrap(

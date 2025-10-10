@@ -7,6 +7,7 @@ public struct PTR: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension PTR {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)

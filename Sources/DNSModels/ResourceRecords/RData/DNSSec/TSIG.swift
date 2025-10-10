@@ -272,7 +272,7 @@ extension TSIG.Algorithm: RawRepresentable {
         case "hmac-sha512": self = .HMAC_SHA512
         case "hmac-sha512-256": self = .HMAC_SHA512_256
         default:
-            if let domainName = try? DomainName(string: rawValue) {
+            if let domainName = try? DomainName(rawValue) {
                 self = .unknown(domainName)
             } else {
                 return nil
@@ -314,18 +314,22 @@ extension TSIG.Algorithm: RawRepresentable {
     }
 
     package func toDomainName() throws -> DomainName {
+        var domainName: String
         switch self {
-        case .HMAC_MD5: return try DomainName(uncheckedASCIIBytes: "hmac-md5.sig-alg.reg.int".utf8)
-        case .GSS: return try DomainName(uncheckedASCIIBytes: "gss-tsig".utf8)
-        case .HMAC_SHA1: return try DomainName(uncheckedASCIIBytes: "hmac-sha1".utf8)
-        case .HMAC_SHA224: return try DomainName(uncheckedASCIIBytes: "hmac-sha224".utf8)
-        case .HMAC_SHA256: return try DomainName(uncheckedASCIIBytes: "hmac-sha256".utf8)
-        case .HMAC_SHA256_128: return try DomainName(uncheckedASCIIBytes: "hmac-sha256-128".utf8)
-        case .HMAC_SHA384: return try DomainName(uncheckedASCIIBytes: "hmac-sha384".utf8)
-        case .HMAC_SHA384_192: return try DomainName(uncheckedASCIIBytes: "hmac-sha384-192".utf8)
-        case .HMAC_SHA512: return try DomainName(uncheckedASCIIBytes: "hmac-sha512".utf8)
-        case .HMAC_SHA512_256: return try DomainName(uncheckedASCIIBytes: "hmac-sha512-256".utf8)
+        case .HMAC_MD5: domainName = "hmac-md5.sig-alg.reg.int"
+        case .GSS: domainName = "gss-tsig"
+        case .HMAC_SHA1: domainName = "hmac-sha1"
+        case .HMAC_SHA224: domainName = "hmac-sha224"
+        case .HMAC_SHA256: domainName = "hmac-sha256"
+        case .HMAC_SHA256_128: domainName = "hmac-sha256-128"
+        case .HMAC_SHA384: domainName = "hmac-sha384"
+        case .HMAC_SHA384_192: domainName = "hmac-sha384-192"
+        case .HMAC_SHA512: domainName = "hmac-sha512"
+        case .HMAC_SHA512_256: domainName = "hmac-sha512-256"
         case .unknown(let domainName): return domainName
+        }
+        return try domainName.withSpan_Compatibility { span in
+            try DomainName(_uncheckedAssumingValidUTF8: span)
         }
     }
 }

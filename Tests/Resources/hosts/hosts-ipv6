@@ -1,3 +1,4 @@
+# shellcheck disable=SC2148
 # See https://tools.ietf.org/html/rfc5952, https://tools.ietf.org/html/rfc4007.
 
 # internet address and host name

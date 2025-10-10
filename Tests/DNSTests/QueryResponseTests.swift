@@ -7,7 +7,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeAExampleComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "example.com."),
+            domainName: try DomainName("example.com."),
             queryType: .A,
             queryClass: .IN
         )
@@ -73,7 +73,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "example.com.")
+        let domainName = try DomainName("example.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .A)
         #expect(response.queries.first?.queryClass == .IN)
@@ -131,7 +131,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "cloudflare.com."),
+            domainName: try DomainName("cloudflare.com."),
             queryType: .AAAA,
             queryClass: .IN
         )
@@ -197,7 +197,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "cloudflare.com.")
+        let domainName = try DomainName("cloudflare.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .AAAA)
         #expect(response.queries.first?.queryClass == .IN)
@@ -282,7 +282,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeCAACloudflareComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "cloudflare.com."),
+            domainName: try DomainName("cloudflare.com."),
             queryType: .CAA,
             queryClass: .IN
         )
@@ -348,7 +348,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "cloudflare.com.")
+        let domainName = try DomainName("cloudflare.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .CAA)
         #expect(response.queries.first?.queryClass == .IN)
@@ -615,7 +615,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeCERTForDnsCertTestingMahdibmComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "for-dns-cert-testing.mahdibm.com."),
+            domainName: try DomainName("for-dns-cert-testing.mahdibm.com."),
             queryType: .CERT,
             queryClass: .IN
         )
@@ -681,7 +681,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "for-dns-cert-testing.mahdibm.com.")
+        let domainName = try DomainName("for-dns-cert-testing.mahdibm.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .CERT)
         #expect(response.queries.first?.queryClass == .IN)
@@ -749,7 +749,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeCNAMEWwwGithubComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "www.github.com."),
+            domainName: try DomainName("www.github.com."),
             queryType: .CNAME,
             queryClass: .IN
         )
@@ -815,7 +815,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "www.github.com.")
+        let domainName = try DomainName("www.github.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
@@ -836,7 +836,7 @@ struct QueryResponseTests {
             Issue.record("rdata was not of type CNAME: \(answer.rdata).")
             return
         }
-        let nameNoWWW = try DomainName(string: "github.com.")
+        let nameNoWWW = try DomainName("github.com.")
         #expect(cname.domainName == nameNoWWW)
 
         /// The 'additional' was an EDNS
@@ -856,7 +856,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeCNAMERawGithubusercontentComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "raw.githubusercontent.com."),
+            domainName: try DomainName("raw.githubusercontent.com."),
             queryType: .CNAME,
             queryClass: .IN
         )
@@ -922,7 +922,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "raw.githubusercontent.com.")
+        let domainName = try DomainName("raw.githubusercontent.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .CNAME)
         #expect(response.queries.first?.queryClass == .IN)
@@ -931,8 +931,8 @@ struct QueryResponseTests {
         let nameServer = try #require(response.nameServers.first)
         switch nameServer.rdata {
         case .SOA(let soa):
-            let mName = try DomainName(string: "ns-1411.awsdns-48.org.")
-            let rName = try DomainName(string: "awsdns-hostmaster.amazon.com.")
+            let mName = try DomainName("ns-1411.awsdns-48.org.")
+            let rName = try DomainName("awsdns-hostmaster.amazon.com.")
             #expect(soa.mName == mName)
             #expect(soa.rName == rName)
             #expect(soa.serial == 1)
@@ -963,7 +963,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeMXMahdibmComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "mahdibm.com."),
+            domainName: try DomainName("mahdibm.com."),
             queryType: .MX,
             queryClass: .IN
         )
@@ -1029,7 +1029,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "mahdibm.com.")
+        let domainName = try DomainName("mahdibm.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .MX)
         #expect(response.queries.first?.queryClass == .IN)
@@ -1060,11 +1060,11 @@ struct QueryResponseTests {
         let expectedMXs = [
             MX(
                 preference: 10,
-                exchange: try DomainName(string: "in1-smtp.messagingengine.com.")
+                exchange: try DomainName("in1-smtp.messagingengine.com.")
             ),
             MX(
                 preference: 20,
-                exchange: try DomainName(string: "in2-smtp.messagingengine.com.")
+                exchange: try DomainName("in2-smtp.messagingengine.com.")
             ),
         ]
         #expect(mxs.count == expectedMXs.count)
@@ -1090,7 +1090,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeNSAppleComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "apple.com."),
+            domainName: try DomainName("apple.com."),
             queryType: .NS,
             queryClass: .IN
         )
@@ -1156,7 +1156,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "apple.com.")
+        let domainName = try DomainName("apple.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .NS)
         #expect(response.queries.first?.queryClass == .IN)
@@ -1185,10 +1185,10 @@ struct QueryResponseTests {
             }
         }
         let expectedNSs = [
-            NS(domainName: try DomainName(string: "d.ns.apple.com.")),
-            NS(domainName: try DomainName(string: "c.ns.apple.com.")),
-            NS(domainName: try DomainName(string: "a.ns.apple.com.")),
-            NS(domainName: try DomainName(string: "b.ns.apple.com.")),
+            NS(domainName: try DomainName("d.ns.apple.com.")),
+            NS(domainName: try DomainName("c.ns.apple.com.")),
+            NS(domainName: try DomainName("a.ns.apple.com.")),
+            NS(domainName: try DomainName("b.ns.apple.com.")),
         ]
         #expect(nss.count == expectedNSs.count)
         for (ns, expectedNS) in zip(nss, expectedNSs) {
@@ -1212,7 +1212,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeOPTCloudflareComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "cloudflare.com."),
+            domainName: try DomainName("cloudflare.com."),
             queryType: .OPT,
             queryClass: .IN
         )
@@ -1280,7 +1280,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .ServFail)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "cloudflare.com.")
+        let domainName = try DomainName("cloudflare.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .OPT)
         #expect(response.queries.first?.queryClass == .IN)
@@ -1572,7 +1572,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodePTR9dot9dot9dot9Query() throws {
         let query = Query(
-            domainName: try DomainName(string: "9.9.9.9.in-addr.arpa."),
+            domainName: try DomainName("9.9.9.9.in-addr.arpa."),
             queryType: .PTR,
             queryClass: .IN
         )
@@ -1638,7 +1638,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "9.9.9.9.in-addr.arpa.")
+        let domainName = try DomainName("9.9.9.9.in-addr.arpa.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .PTR)
         #expect(response.queries.first?.queryClass == .IN)
@@ -1667,7 +1667,7 @@ struct QueryResponseTests {
             }
         }
         let expectedPTRs = [
-            PTR(domainName: try DomainName(string: "dns9.quad9.net."))
+            PTR(domainName: try DomainName("dns9.quad9.net."))
         ]
         #expect(ptrs.count == expectedPTRs.count)
         for (ptr, expectedPTR) in zip(ptrs, expectedPTRs) {
@@ -1691,7 +1691,7 @@ struct QueryResponseTests {
     @available(swiftDNSApplePlatforms 15, *)
     @Test func encodeTXTExampleComQuery() throws {
         let query = Query(
-            domainName: try DomainName(string: "example.com."),
+            domainName: try DomainName("example.com."),
             queryType: .TXT,
             queryClass: .IN
         )
@@ -1757,7 +1757,7 @@ struct QueryResponseTests {
         #expect(response.header.responseCode == .NoError)
 
         #expect(response.queries.count == 1)
-        let domainName = try DomainName(string: "example.com.")
+        let domainName = try DomainName("example.com.")
         #expect(response.queries.first?.domainName == domainName)
         #expect(response.queries.first?.queryType == .TXT)
         #expect(response.queries.first?.queryClass == .IN)

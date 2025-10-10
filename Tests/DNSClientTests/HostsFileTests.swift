@@ -83,7 +83,7 @@ extension HostsFile {
     init(_ array: [(name: String, addresses: [String])]) {
         self.init(_entries: [:])
         for (name, addresses) in array {
-            let name = try! DomainName(string: name)
+            let name = try! DomainName(name)
             for address in addresses {
                 let target = HostsFile.Target(
                     from: address.utf8Span.span

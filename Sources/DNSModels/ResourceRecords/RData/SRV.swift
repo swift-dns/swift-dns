@@ -72,6 +72,7 @@ public struct SRV: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension SRV {
     package init(from buffer: inout DNSBuffer) throws {
         self.priority = try buffer.readInteger(as: UInt16.self).unwrap(

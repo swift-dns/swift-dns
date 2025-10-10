@@ -168,17 +168,8 @@ package struct HostsFile: Sendable, Hashable {
                     let chunk = span.extracting(unchecked: chunkRange)
 
                     if let target {
-                        /// FIXME: remove usage of array, use span directly
-                        let array = [UInt8](unsafeUninitializedCapacity: chunk.count) {
-                            (arrayBuffer, arrayCount) in
-                            let ptr = UnsafeMutableRawBufferPointer(arrayBuffer)
-                            chunk.withUnsafeBytes { chunkPtr in
-                                ptr.copyMemory(from: chunkPtr)
-                            }
-                            arrayCount = chunk.count
-                        }
                         guard
-                            let domainName = try? DomainName(expectingASCIIBytes: array)
+                            let domainName = try? DomainName(_uncheckedAssumingValidUTF8: chunk)
                         else {
                             /// Don't halt
                             /// TODO: maybe report the failure somehow?
@@ -219,18 +210,7 @@ package struct HostsFile: Sendable, Hashable {
             let chunk = span.extracting(unchecked: chunkRange)
 
             if let target {
-                /// FIXME: remove usage of array, use span directly
-                let array = [UInt8](unsafeUninitializedCapacity: chunk.count) {
-                    (arrayBuffer, arrayCount) in
-                    let ptr = UnsafeMutableRawBufferPointer(arrayBuffer)
-                    chunk.withUnsafeBytes { chunkPtr in
-                        ptr.copyMemory(from: chunkPtr)
-                    }
-                    arrayCount = chunk.count
-                }
-                guard
-                    let domainName = try? DomainName(expectingASCIIBytes: array)
-                else {
+                guard let domainName = try? DomainName(_uncheckedAssumingValidUTF8: chunk) else {
                     return
                 }
                 entries[domainName] = target
@@ -264,7 +244,7 @@ extension HostsFile.Target {
         case .some(let percentSignIndex):
             let ipAddressRange = Range(uncheckedBounds: (0, percentSignIndex))
             let ipAddressSpan = span.extracting(unchecked: ipAddressRange)
-            guard let ipAddress = AnyIPAddress(textualRepresentation: ipAddressSpan) else {
+            guard let ipAddress = AnyIPAddress(_uncheckedAssumingValidUTF8: ipAddressSpan) else {
                 return nil
             }
 
@@ -295,7 +275,7 @@ extension HostsFile.Target {
 
             self.init(address: ipAddress, zoneID: zoneID)
         case .none:
-            guard let ipAddress = AnyIPAddress(textualRepresentation: span) else {
+            guard let ipAddress = AnyIPAddress(_uncheckedAssumingValidUTF8: span) else {
                 return nil
             }
             self.init(address: ipAddress, zoneID: nil)

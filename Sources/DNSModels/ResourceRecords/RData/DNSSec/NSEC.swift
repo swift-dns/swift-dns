@@ -32,6 +32,7 @@ public struct NSEC: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 13, *)
 extension NSEC {
     /// FIXME: can we know the length of the domain name so we can pre-reserve capacity?
     package init(from buffer: inout DNSBuffer) throws {

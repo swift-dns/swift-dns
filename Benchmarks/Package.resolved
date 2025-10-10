@@ -1,5 +1,5 @@
 {
-  "originHash" : "0fa6fbd44d4f36f1b50173554e8ee1be4418374294d8069dee09f713c8d29586",
+  "originHash" : "bc5b25ecc4042b7d2b19bf1924166d4a5660797afb18fc2b91916bc030b7a74b",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-endpoint.git",
       "state" : {
-        "revision" : "8884270c6e77f8f552a2895451f5bc1cad21be00",
-        "version" : "1.0.0-beta.2"
+        "revision" : "357486f9913919c42b79ad0c89c93363ecc19a48",
+        "version" : "1.0.0-beta.3"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-idna.git",
       "state" : {
-        "revision" : "cc0996098f0ac8ab279b96927251b10ae5a3a033",
-        "version" : "1.0.0-beta.9"
+        "revision" : "8ea4f4078883e4ba834243eea0d25674450c44a9",
+        "version" : "1.0.0-beta.15"
       }
     },
     {
@@ -105,8 +105,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-transport-services.git",
       "state" : {
-        "revision" : "e645014baea2ec1c2db564410c51a656cf47c923",
-        "version" : "1.25.1"
+        "revision" : "df6c28355051c72c884574a6c858bc54f7311ff9",
+        "version" : "1.25.2"
       }
     },
     {
@@ -123,8 +123,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/swift-service-lifecycle.git",
       "state" : {
-        "revision" : "e7187309187695115033536e8fc9b2eb87fd956d",
-        "version" : "2.8.0"
+        "revision" : "0fcc4c9c2d58dd98504c06f7308c86de775396ff",
+        "version" : "2.9.0"
       }
     },
     {
