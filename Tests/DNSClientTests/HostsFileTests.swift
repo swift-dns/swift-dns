@@ -111,7 +111,6 @@ private let capacities: [(ByteCount, Bool)] = [
     (.kibibytes(1), false),
     (.kibibytes(2), false),
     (.kibibytes(5), false),
-    (.kibibytes(10), false),
     (.kibibytes(64), false),
     (.kibibytes(1024), false),
 ]

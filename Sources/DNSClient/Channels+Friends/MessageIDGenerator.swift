@@ -40,6 +40,10 @@ package struct MessageIDGenerator: Sendable, ~Copyable {
         self.count = 0
     }
 
+    /// TODO: I'd think this implementation could be improved to become more efficient.
+    /// Will have to dig and see if someone else has already figured out a good algorithm.
+    /// For doing a few requests this implementation is as fast as it could be since realistically
+    /// it'll only need to generate a random number.
     @inlinable
     package mutating func next() throws(Errors) -> UInt16 {
         if self.count == Self.capacity {

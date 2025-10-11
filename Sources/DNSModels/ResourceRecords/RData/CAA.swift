@@ -94,7 +94,7 @@ public struct CAA: Sendable, Equatable {
 @available(swiftDNSApplePlatforms 13, *)
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
-        /// TODO: move flags to how Bytes16To31 handles flags
+        /// TODO: move flags to how Bytes3And4 handles flags
         let flags = try buffer.readInteger(as: UInt8.self).unwrap(
             or: .failedToRead("CAA.flags", buffer)
         )

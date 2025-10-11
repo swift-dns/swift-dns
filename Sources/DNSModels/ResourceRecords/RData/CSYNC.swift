@@ -58,7 +58,7 @@ extension CSYNC {
         let flags = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("CSYNC.flags", buffer)
         )
-        /// TODO: flag parsing like in Header Bytes16To31
+        /// TODO: flag parsing like in Header Bytes3And4
         self.immediate = flags & 0b0000_0001 == 0b0000_0001
         self.soaMinimum = flags & 0b0000_0010 == 0b0000_0010
         self.reservedFlags = flags & 0b1111_1111_1111_1100

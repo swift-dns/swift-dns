@@ -3,155 +3,155 @@ import Testing
 
 @Suite
 struct HeaderTests {
-    @Test func setGetWorksInBytes16To31WithDefaultTrue() throws {
+    @Test func setGetWorksInBytes3And4WithDefaultTrue() throws {
         do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: 0)
-            bytes16To31.messageType = .Query
-            #expect(bytes16To31.messageType == .Query)
-            bytes16To31.opCode = .Query
-            #expect(bytes16To31.opCode == .Query)
-            bytes16To31.authoritative = true
-            #expect(bytes16To31.authoritative == true)
-            bytes16To31.truncation = true
-            #expect(bytes16To31.truncation == true)
-            bytes16To31.recursionDesired = true
-            #expect(bytes16To31.recursionDesired == true)
-            bytes16To31.recursionAvailable = true
-            #expect(bytes16To31.recursionAvailable == true)
-            bytes16To31.authenticData = true
-            #expect(bytes16To31.authenticData == true)
-            bytes16To31.checkingDisabled = true
-            #expect(bytes16To31.checkingDisabled == true)
-            bytes16To31.responseCode = .NoError
-            #expect(bytes16To31.responseCode == .NoError)
+            var bytes3And4 = Header.Bytes3And4(rawValue: 0)
+            bytes3And4.messageType = .Query
+            #expect(bytes3And4.messageType == .Query)
+            bytes3And4.opCode = .Query
+            #expect(bytes3And4.opCode == .Query)
+            bytes3And4.authoritative = true
+            #expect(bytes3And4.authoritative == true)
+            bytes3And4.truncation = true
+            #expect(bytes3And4.truncation == true)
+            bytes3And4.recursionDesired = true
+            #expect(bytes3And4.recursionDesired == true)
+            bytes3And4.recursionAvailable = true
+            #expect(bytes3And4.recursionAvailable == true)
+            bytes3And4.authenticData = true
+            #expect(bytes3And4.authenticData == true)
+            bytes3And4.checkingDisabled = true
+            #expect(bytes3And4.checkingDisabled == true)
+            bytes3And4.responseCode = .NoError
+            #expect(bytes3And4.responseCode == .NoError)
         }
 
         do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: .max)
-            bytes16To31.messageType = .Query
-            #expect(bytes16To31.messageType == .Query)
-            bytes16To31.opCode = .Query
-            #expect(bytes16To31.opCode == .Query)
-            bytes16To31.authoritative = true
-            #expect(bytes16To31.authoritative == true)
-            bytes16To31.truncation = true
-            #expect(bytes16To31.truncation == true)
-            bytes16To31.recursionDesired = true
-            #expect(bytes16To31.recursionDesired == true)
-            bytes16To31.recursionAvailable = true
-            #expect(bytes16To31.recursionAvailable == true)
-            bytes16To31.authenticData = true
-            #expect(bytes16To31.authenticData == true)
-            bytes16To31.checkingDisabled = true
-            #expect(bytes16To31.checkingDisabled == true)
-            bytes16To31.responseCode = .NoError
-            #expect(bytes16To31.responseCode == .NoError)
-        }
-    }
-
-    @Test func setGetWorksInBytes16To31WithDefaultFalse() throws {
-        do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: 0)
-            bytes16To31.messageType = .Response
-            #expect(bytes16To31.messageType == .Response)
-            bytes16To31.opCode = .DSO
-            #expect(bytes16To31.opCode == .DSO)
-            bytes16To31.authoritative = false
-            #expect(bytes16To31.authoritative == false)
-            bytes16To31.truncation = false
-            #expect(bytes16To31.truncation == false)
-            bytes16To31.recursionDesired = false
-            #expect(bytes16To31.recursionDesired == false)
-            bytes16To31.recursionAvailable = false
-            #expect(bytes16To31.recursionAvailable == false)
-            bytes16To31.authenticData = false
-            #expect(bytes16To31.authenticData == false)
-            bytes16To31.checkingDisabled = false
-            #expect(bytes16To31.checkingDisabled == false)
-            bytes16To31.responseCode = .NXDomain
-            #expect(bytes16To31.responseCode == .NXDomain)
-        }
-
-        do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: .max)
-            bytes16To31.messageType = .Response
-            #expect(bytes16To31.messageType == .Response)
-            bytes16To31.opCode = .DSO
-            #expect(bytes16To31.opCode == .DSO)
-            bytes16To31.authoritative = false
-            #expect(bytes16To31.authoritative == false)
-            bytes16To31.truncation = false
-            #expect(bytes16To31.truncation == false)
-            bytes16To31.recursionDesired = false
-            #expect(bytes16To31.recursionDesired == false)
-            bytes16To31.recursionAvailable = false
-            #expect(bytes16To31.recursionAvailable == false)
-            bytes16To31.authenticData = false
-            #expect(bytes16To31.authenticData == false)
-            bytes16To31.checkingDisabled = false
-            #expect(bytes16To31.checkingDisabled == false)
-            bytes16To31.responseCode = .NXDomain
-            #expect(bytes16To31.responseCode == .NXDomain)
+            var bytes3And4 = Header.Bytes3And4(rawValue: .max)
+            bytes3And4.messageType = .Query
+            #expect(bytes3And4.messageType == .Query)
+            bytes3And4.opCode = .Query
+            #expect(bytes3And4.opCode == .Query)
+            bytes3And4.authoritative = true
+            #expect(bytes3And4.authoritative == true)
+            bytes3And4.truncation = true
+            #expect(bytes3And4.truncation == true)
+            bytes3And4.recursionDesired = true
+            #expect(bytes3And4.recursionDesired == true)
+            bytes3And4.recursionAvailable = true
+            #expect(bytes3And4.recursionAvailable == true)
+            bytes3And4.authenticData = true
+            #expect(bytes3And4.authenticData == true)
+            bytes3And4.checkingDisabled = true
+            #expect(bytes3And4.checkingDisabled == true)
+            bytes3And4.responseCode = .NoError
+            #expect(bytes3And4.responseCode == .NoError)
         }
     }
 
-    @Test func setGetWorksInBytes16To31WithDefaultFalseAndReverseOrdering() throws {
+    @Test func setGetWorksInBytes3And4WithDefaultFalse() throws {
         do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: 0)
-            bytes16To31.responseCode = .NotZone
-            #expect(bytes16To31.responseCode == .NotZone)
-            bytes16To31.checkingDisabled = false
-            #expect(bytes16To31.checkingDisabled == false)
-            bytes16To31.authenticData = false
-            #expect(bytes16To31.authenticData == false)
-            bytes16To31.recursionAvailable = false
-            #expect(bytes16To31.recursionAvailable == false)
-            bytes16To31.recursionDesired = false
-            #expect(bytes16To31.recursionDesired == false)
-            bytes16To31.truncation = false
-            #expect(bytes16To31.truncation == false)
-            bytes16To31.authoritative = false
-            #expect(bytes16To31.authoritative == false)
-            bytes16To31.opCode = .Notify
-            #expect(bytes16To31.opCode == .Notify)
-            bytes16To31.messageType = .Response
-            #expect(bytes16To31.messageType == .Response)
+            var bytes3And4 = Header.Bytes3And4(rawValue: 0)
+            bytes3And4.messageType = .Response
+            #expect(bytes3And4.messageType == .Response)
+            bytes3And4.opCode = .DSO
+            #expect(bytes3And4.opCode == .DSO)
+            bytes3And4.authoritative = false
+            #expect(bytes3And4.authoritative == false)
+            bytes3And4.truncation = false
+            #expect(bytes3And4.truncation == false)
+            bytes3And4.recursionDesired = false
+            #expect(bytes3And4.recursionDesired == false)
+            bytes3And4.recursionAvailable = false
+            #expect(bytes3And4.recursionAvailable == false)
+            bytes3And4.authenticData = false
+            #expect(bytes3And4.authenticData == false)
+            bytes3And4.checkingDisabled = false
+            #expect(bytes3And4.checkingDisabled == false)
+            bytes3And4.responseCode = .NXDomain
+            #expect(bytes3And4.responseCode == .NXDomain)
         }
 
         do {
-            var bytes16To31 = Header.Bytes16To31(rawValue: .max)
-            bytes16To31.responseCode = .NotZone
-            #expect(bytes16To31.responseCode == .NotZone)
-            bytes16To31.checkingDisabled = false
-            #expect(bytes16To31.checkingDisabled == false)
-            bytes16To31.authenticData = false
-            #expect(bytes16To31.authenticData == false)
-            bytes16To31.recursionAvailable = false
-            #expect(bytes16To31.recursionAvailable == false)
-            bytes16To31.recursionDesired = false
-            #expect(bytes16To31.recursionDesired == false)
-            bytes16To31.truncation = false
-            #expect(bytes16To31.truncation == false)
-            bytes16To31.authoritative = false
-            #expect(bytes16To31.authoritative == false)
-            bytes16To31.opCode = .Notify
-            #expect(bytes16To31.opCode == .Notify)
-            bytes16To31.messageType = .Response
-            #expect(bytes16To31.messageType == .Response)
+            var bytes3And4 = Header.Bytes3And4(rawValue: .max)
+            bytes3And4.messageType = .Response
+            #expect(bytes3And4.messageType == .Response)
+            bytes3And4.opCode = .DSO
+            #expect(bytes3And4.opCode == .DSO)
+            bytes3And4.authoritative = false
+            #expect(bytes3And4.authoritative == false)
+            bytes3And4.truncation = false
+            #expect(bytes3And4.truncation == false)
+            bytes3And4.recursionDesired = false
+            #expect(bytes3And4.recursionDesired == false)
+            bytes3And4.recursionAvailable = false
+            #expect(bytes3And4.recursionAvailable == false)
+            bytes3And4.authenticData = false
+            #expect(bytes3And4.authenticData == false)
+            bytes3And4.checkingDisabled = false
+            #expect(bytes3And4.checkingDisabled == false)
+            bytes3And4.responseCode = .NXDomain
+            #expect(bytes3And4.responseCode == .NXDomain)
         }
     }
 
-    @Test func testRealWorldBytes16To31Parsing() throws {
-        let bytes16To31 = Header.Bytes16To31(rawValue: 33152)
-        #expect(bytes16To31.messageType == .Response)
-        #expect(bytes16To31.opCode == .Query)
-        #expect(bytes16To31.authoritative == false)
-        #expect(bytes16To31.truncation == false)
-        #expect(bytes16To31.recursionDesired == true)
-        #expect(bytes16To31.recursionAvailable == true)
-        #expect(bytes16To31.authenticData == false)
-        #expect(bytes16To31.checkingDisabled == false)
-        #expect(bytes16To31.responseCode == .NoError)
+    @Test func setGetWorksInBytes3And4WithDefaultFalseAndReverseOrdering() throws {
+        do {
+            var bytes3And4 = Header.Bytes3And4(rawValue: 0)
+            bytes3And4.responseCode = .NotZone
+            #expect(bytes3And4.responseCode == .NotZone)
+            bytes3And4.checkingDisabled = false
+            #expect(bytes3And4.checkingDisabled == false)
+            bytes3And4.authenticData = false
+            #expect(bytes3And4.authenticData == false)
+            bytes3And4.recursionAvailable = false
+            #expect(bytes3And4.recursionAvailable == false)
+            bytes3And4.recursionDesired = false
+            #expect(bytes3And4.recursionDesired == false)
+            bytes3And4.truncation = false
+            #expect(bytes3And4.truncation == false)
+            bytes3And4.authoritative = false
+            #expect(bytes3And4.authoritative == false)
+            bytes3And4.opCode = .Notify
+            #expect(bytes3And4.opCode == .Notify)
+            bytes3And4.messageType = .Response
+            #expect(bytes3And4.messageType == .Response)
+        }
+
+        do {
+            var bytes3And4 = Header.Bytes3And4(rawValue: .max)
+            bytes3And4.responseCode = .NotZone
+            #expect(bytes3And4.responseCode == .NotZone)
+            bytes3And4.checkingDisabled = false
+            #expect(bytes3And4.checkingDisabled == false)
+            bytes3And4.authenticData = false
+            #expect(bytes3And4.authenticData == false)
+            bytes3And4.recursionAvailable = false
+            #expect(bytes3And4.recursionAvailable == false)
+            bytes3And4.recursionDesired = false
+            #expect(bytes3And4.recursionDesired == false)
+            bytes3And4.truncation = false
+            #expect(bytes3And4.truncation == false)
+            bytes3And4.authoritative = false
+            #expect(bytes3And4.authoritative == false)
+            bytes3And4.opCode = .Notify
+            #expect(bytes3And4.opCode == .Notify)
+            bytes3And4.messageType = .Response
+            #expect(bytes3And4.messageType == .Response)
+        }
+    }
+
+    @Test func testRealWorldBytes3And4Parsing() throws {
+        let bytes3And4 = Header.Bytes3And4(rawValue: 33152)
+        #expect(bytes3And4.messageType == .Response)
+        #expect(bytes3And4.opCode == .Query)
+        #expect(bytes3And4.authoritative == false)
+        #expect(bytes3And4.truncation == false)
+        #expect(bytes3And4.recursionDesired == true)
+        #expect(bytes3And4.recursionAvailable == true)
+        #expect(bytes3And4.authenticData == false)
+        #expect(bytes3And4.checkingDisabled == false)
+        #expect(bytes3And4.responseCode == .NoError)
     }
 
     @Test func headerParsesCorrectly() throws {

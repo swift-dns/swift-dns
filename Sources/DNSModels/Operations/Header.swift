@@ -43,7 +43,7 @@ public struct Header: Sendable {
     /// Represents Bytes 16 to 31 in the DNS header.
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
     @_spi(Testing)
-    public struct Bytes16To31: Sendable {
+    public struct Bytes3And4: Sendable {
         /// private
         public var rawValue: UInt16
 
@@ -164,25 +164,25 @@ public struct Header: Sendable {
     /// Represents Bytes 16 to 31 in the DNS header.
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
     /// private
-    var bytes16To31: Bytes16To31
+    var bytes3And4: Bytes3And4
 
     /// Whether this message is a query, or a response.
     public var messageType: MessageType {
         get {
-            bytes16To31.messageType
+            bytes3And4.messageType
         }
         set {
-            bytes16To31.messageType = newValue
+            bytes3And4.messageType = newValue
         }
     }
 
     /// The kind of query.
     public var opCode: OPCode {
         get {
-            bytes16To31.opCode
+            bytes3And4.opCode
         }
         set {
-            bytes16To31.opCode = newValue
+            bytes3And4.opCode = newValue
         }
     }
 
@@ -192,10 +192,10 @@ public struct Header: Sendable {
     /// the first owner domainName in the answer section.
     public var authoritative: Bool {
         get {
-            bytes16To31.authoritative
+            bytes3And4.authoritative
         }
         set {
-            bytes16To31.authoritative = newValue
+            bytes3And4.authoritative = newValue
         }
     }
 
@@ -203,30 +203,30 @@ public struct Header: Sendable {
     /// transmission channel.
     public var truncation: Bool {
         get {
-            bytes16To31.truncation
+            bytes3And4.truncation
         }
         set {
-            bytes16To31.truncation = newValue
+            bytes3And4.truncation = newValue
         }
     }
 
     /// If true, it directs the name server to pursue the query recursively.
     public var recursionDesired: Bool {
         get {
-            bytes16To31.recursionDesired
+            bytes3And4.recursionDesired
         }
         set {
-            bytes16To31.recursionDesired = newValue
+            bytes3And4.recursionDesired = newValue
         }
     }
 
     /// Whether recursive query support is available in the name server.
     public var recursionAvailable: Bool {
         get {
-            bytes16To31.recursionAvailable
+            bytes3And4.recursionAvailable
         }
         set {
-            bytes16To31.recursionAvailable = newValue
+            bytes3And4.recursionAvailable = newValue
         }
     }
 
@@ -234,10 +234,10 @@ public struct Header: Sendable {
     /// authenticated by the server according to the policies of that server.
     public var authenticData: Bool {
         get {
-            bytes16To31.authenticData
+            bytes3And4.authenticData
         }
         set {
-            bytes16To31.authenticData = newValue
+            bytes3And4.authenticData = newValue
         }
     }
 
@@ -247,20 +247,20 @@ public struct Header: Sendable {
     /// is acceptable to the resolver sending the query.
     public var checkingDisabled: Bool {
         get {
-            bytes16To31.checkingDisabled
+            bytes3And4.checkingDisabled
         }
         set {
-            bytes16To31.checkingDisabled = newValue
+            bytes3And4.checkingDisabled = newValue
         }
     }
 
     /// The response code.
     public var responseCode: ResponseCode {
         get {
-            bytes16To31.responseCode
+            bytes3And4.responseCode
         }
         set {
-            bytes16To31.responseCode = newValue
+            bytes3And4.responseCode = newValue
         }
     }
     public var queryCount: UInt16
@@ -291,7 +291,7 @@ public struct Header: Sendable {
         self.nameServerCount = nameServerCount
         self.additionalCount = additionalCount
 
-        self.bytes16To31 = Bytes16To31(rawValue: 0)
+        self.bytes3And4 = Bytes3And4(rawValue: 0)
         self.messageType = messageType
         self.opCode = opCode
         self.authoritative = authoritative
@@ -309,7 +309,7 @@ extension Header {
         self.id = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("Header.id", buffer)
         )
-        self.bytes16To31 = try Header.Bytes16To31(from: &buffer)
+        self.bytes3And4 = try Header.Bytes3And4(from: &buffer)
         self.queryCount = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("Header.queryCount", buffer)
         )
@@ -328,7 +328,7 @@ extension Header {
 extension Header {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.id)
-        self.bytes16To31.encode(into: &buffer)
+        self.bytes3And4.encode(into: &buffer)
         buffer.writeInteger(self.queryCount)
         buffer.writeInteger(self.answerCount)
         buffer.writeInteger(self.nameServerCount)
@@ -336,16 +336,16 @@ extension Header {
     }
 }
 
-extension Header.Bytes16To31 {
+extension Header.Bytes3And4 {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
-            or: .failedToRead("Header.Bytes16To31.rawValue", buffer)
+            or: .failedToRead("Header.Bytes3And4.rawValue", buffer)
         )
         self.init(rawValue: rawValue)
     }
 }
 
-extension Header.Bytes16To31 {
+extension Header.Bytes3And4 {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
