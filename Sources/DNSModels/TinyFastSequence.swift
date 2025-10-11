@@ -131,6 +131,30 @@ extension TinyFastSequence: Sequence {
     }
 }
 
+extension TinyFastSequence: CustomStringConvertible {
+    @inlinable
+    public var description: String {
+        switch self.base {
+        case .none:
+            return "[]"
+        case .n(let array):
+            return array.description
+        }
+    }
+}
+
+extension TinyFastSequence: CustomDebugStringConvertible {
+    @inlinable
+    public var debugDescription: String {
+        switch self.base {
+        case .none:
+            return "TinyFastSequence([])"
+        case .n(let array):
+            return "TinyFastSequence(\(array.debugDescription))"
+        }
+    }
+}
+
 extension TinyFastSequence: Equatable where Element: Equatable {}
 extension TinyFastSequence.Base: Equatable where Element: Equatable {}
 

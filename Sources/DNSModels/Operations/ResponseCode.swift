@@ -88,6 +88,40 @@ public enum ResponseCode: Sendable {
     case unknown(UInt16)
 }
 
+extension ResponseCode: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .NoError: "NoError"
+        case .FormErr: "FormErr"
+        case .ServFail: "ServFail"
+        case .NXDomain: "NXDomain"
+        case .NotImp: "NotImp"
+        case .Refused: "Refused"
+        case .YXDomain: "YXDomain"
+        case .YXRRSet: "YXRRSet"
+        case .NXRRSet: "NXRRSet"
+        case .NotAuth: "NotAuth"
+        case .NotZone: "NotZone"
+        case .BADSIG: "BADSIG"
+        case .BADVERS: "BADVERS"
+        case .BADKEY: "BADKEY"
+        case .BADTIME: "BADTIME"
+        case .BADMODE: "BADMODE"
+        case .BADNAME: "BADNAME"
+        case .BADALG: "BADALG"
+        case .BADTRUNC: "BADTRUNC"
+        case .BADCOOKIE: "BADCOOKIE"
+        case .unknown(let value): "unknown(\(value))"
+        }
+    }
+}
+
+extension ResponseCode: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "[\(self.rawValue)]\(self.description)"
+    }
+}
+
 extension ResponseCode: RawRepresentable {
     public init(_ rawValue: UInt16) {
         switch rawValue {

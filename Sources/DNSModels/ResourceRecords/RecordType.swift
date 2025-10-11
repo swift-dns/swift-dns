@@ -85,6 +85,55 @@ public enum RecordType: Sendable, Hashable {
     case unknown(UInt16)
 }
 
+extension RecordType: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .A: "A"
+        case .AAAA: "AAAA"
+        case .ANY: "ANY"
+        case .AXFR: "AXFR"
+        case .CAA: "CAA"
+        case .CDNSKEY: "CDNSKEY"
+        case .CERT: "CERT"
+        case .CDS: "CDS"
+        case .CNAME: "CNAME"
+        case .CSYNC: "CSYNC"
+        case .DNSKEY: "DNSKEY"
+        case .DS: "DS"
+        case .HINFO: "HINFO"
+        case .HTTPS: "HTTPS"
+        case .KEY: "KEY"
+        case .IXFR: "IXFR"
+        case .MX: "MX"
+        case .NAPTR: "NAPTR"
+        case .NS: "NS"
+        case .NSEC: "NSEC"
+        case .NSEC3: "NSEC3"
+        case .NSEC3PARAM: "NSEC3PARAM"
+        case .NULL: "NULL"
+        case .OPENPGPKEY: "OPENPGPKEY"
+        case .OPT: "OPT"
+        case .PTR: "PTR"
+        case .RRSIG: "RRSIG"
+        case .SIG: "SIG"
+        case .SOA: "SOA"
+        case .SRV: "SRV"
+        case .SSHFP: "SSHFP"
+        case .SVCB: "SVCB"
+        case .TLSA: "TLSA"
+        case .TSIG: "TSIG"
+        case .TXT: "TXT"
+        case .unknown(let code): "unknown(\(code))"
+        }
+    }
+}
+
+extension RecordType: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "[\(self.rawValue)]\(self.description)"
+    }
+}
+
 extension RecordType: RawRepresentable {
     public init(_ rawValue: UInt16) {
         switch rawValue {

@@ -42,7 +42,6 @@ public struct Header: Sendable {
 
     /// Represents Bytes 16 to 31 in the DNS header.
     /// That is, QR, OPCODE, AA, TC, RD, RA, ZZ, AD, CD and RCODE.
-    @_spi(Testing)
     public struct Bytes3And4: Sendable {
         /// private
         public var rawValue: UInt16
@@ -58,9 +57,7 @@ public struct Header: Sendable {
                 /// clear the 15th bit then set it to the new value
                 self.rawValue =
                     (self.rawValue & 0b01111111_11111111)
-                    | UInt16(
-                        truncatingIfNeeded: newValue.rawValue
-                    ) &<<< 15
+                    | UInt16(truncatingIfNeeded: newValue.rawValue) &<<< 15
             }
         }
         public var opCode: OPCode {
@@ -70,9 +67,7 @@ public struct Header: Sendable {
             set {
                 self.rawValue =
                     (self.rawValue & 0b10000111_11111111)
-                    | UInt16(
-                        truncatingIfNeeded: newValue.rawValue
-                    ) &<<< 11
+                    | UInt16(truncatingIfNeeded: newValue.rawValue) &<<< 11
             }
         }
         public var authoritative: Bool {
@@ -336,6 +331,12 @@ extension Header {
     }
 }
 
+extension Header.Bytes3And4: CustomStringConvertible {
+    public var description: String {
+        "Bytes3And4(rawValue: \(self.rawValue), messageType: \(self.messageType), opCode: \(self.opCode), authoritative: \(self.authoritative), truncation: \(self.truncation), recursionDesired: \(self.recursionDesired), recursionAvailable: \(self.recursionAvailable), authenticData: \(self.authenticData), checkingDisabled: \(self.checkingDisabled), responseCode: \(self.responseCode))"
+    }
+}
+
 extension Header.Bytes3And4 {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -351,12 +352,17 @@ extension Header.Bytes3And4 {
     }
 }
 
-/// All the flags of the request/response header
-struct Flags: Sendable {
-    var authoritative: Bool
-    var truncation: Bool
-    var recursionDesired: Bool
-    var recursionAvailable: Bool
-    var authenticData: Bool
-    var checkingDisabled: Bool
+extension Header.MessageType: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .Query: "Query"
+        case .Response: "Response"
+        }
+    }
+}
+
+extension Header.MessageType: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "[\(self.rawValue)]\(self.description)"
+    }
 }

@@ -1,4 +1,4 @@
-@_spi(Testing) import DNSModels
+import DNSModels
 import Testing
 
 @Suite
