@@ -10,7 +10,7 @@ import struct NIOCore.ByteBuffer
 @Suite(.serialized)
 struct IntegrationTests {
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "example.com.")
@@ -82,7 +82,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "新华网.中国.")
@@ -153,7 +153,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<AAAA>.forQuery(domainName: "cloudflare.com.")
@@ -225,7 +225,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CAA>.forQuery(domainName: "apple.com.")
@@ -301,7 +301,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCERT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CERT>.forQuery(
@@ -399,7 +399,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(domainName: "www.github.com.")
@@ -464,7 +464,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(
@@ -542,7 +542,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<MX>.forQuery(domainName: "mahdibm.com.")
@@ -632,7 +632,7 @@ struct IntegrationTests {
     @Test func queryNAPTR() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<NS>.forQuery(domainName: "apple.com.")
@@ -723,7 +723,7 @@ struct IntegrationTests {
     @Test func queryOPT() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<PTR>.forQuery(domainName: "9.9.9.9.in-addr.arpa.")
@@ -813,7 +813,7 @@ struct IntegrationTests {
     @Test func queryTLSA() async throws {}
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<TXT>.forQuery(domainName: "example.com.")
@@ -934,12 +934,12 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
-    @Test(arguments: makeTestingDNSClientsForConcurrentTest())
+    @Test(.packetCaptureMarker, arguments: makeTestingDNSClientsForConcurrentTest())
     func query100DomainsConcurrently(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             await withTaskGroup(of: Void.self) { group in
                 let withAnswers = Atomic(0)
-                let errors: Mutex<[(String, any Error)]> = .init([])
+                let errors: Mutex<[(Substring, any Error)]> = .init([])
 
                 for domain in self.loadTop100Domains() {
                     group.addTask { @Sendable () -> Void in
@@ -1027,13 +1027,14 @@ struct IntegrationTests {
 
     @available(swiftDNSApplePlatforms 15, *)
     @Test(
+        .packetCaptureMarker,
         .tags(.timeConsuming),
         arguments: makeTestingDNSClientsForSequentialTest()
     )
     func query100DomainsSequentially(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             var withAnswers = 0
-            var errors: [(String, any Error)] = []
+            var errors: [(Substring, any Error)] = []
 
             for domain in self.loadTop100Domains() {
                 do {
@@ -1072,7 +1073,7 @@ struct IntegrationTests {
     }
 
     /// A bunch don't even have A records. All have NS records.
-    func loadTop100Domains() -> [String] {
+    func loadTop100Domains() -> [Substring].SubSequence {
         String(
             decoding: Resources.topDomains.data(),
             as: UTF8.self
@@ -1080,7 +1081,6 @@ struct IntegrationTests {
         .split(separator: "\n")
         .dropFirst()
         .prefix(100)
-        .map(String.init)
     }
 
     @available(swiftDNSApplePlatforms 15, *)
