@@ -10,8 +10,9 @@ extension DomainName {
         try self.read(from: &buffer)
 
         let checkResult: IDNA.CharacterCheckResult? = self._data.withUnsafeReadableBytes {
-            let span = $0.bindMemory(to: UInt8.self).span
-            return IDNA.performDNSComplaintByteCheck(onDNSWireFormatSpan: span)
+            $0.withMemoryRebound(to: UInt8.self) {
+                IDNA.performDNSComplaintByteCheck(onDNSWireFormatSpan: $0.span)
+            }
         }
         switch checkResult {
         case .containsOnlyIDNANoOpCharacters:

@@ -47,8 +47,9 @@ package struct HostsFile: Sendable, Hashable {
             try await fileHandle.readToEnd(maximumSizeAllowed: maximumSizeAllowed)
         }
         self = buffer.withUnsafeReadableBytes { ptr in
-            let span = ptr.bindMemory(to: UInt8.self).span
-            return Self(span: span)
+            ptr.withMemoryRebound(to: UInt8.self) {
+                Self(span: $0.span)
+            }
         }
     }
 

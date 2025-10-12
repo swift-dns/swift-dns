@@ -242,8 +242,9 @@ extension CAA.Value {
         } else {
             if buffer.readableBytes > 0 {
                 domainName = try buffer.withUnsafeReadableBytes {
-                    let span = $0.bindMemory(to: UInt8.self).span
-                    return try DomainName(_uncheckedAssumingValidUTF8: span)
+                    try $0.withMemoryRebound(to: UInt8.self) {
+                        try DomainName(_uncheckedAssumingValidUTF8: $0.span)
+                    }
                 }
                 buffer.moveReaderIndex(to: buffer.writerIndex)
                 /// There was no semicolon in the buffer so the whole of it was the domainName.
