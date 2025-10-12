@@ -1063,12 +1063,10 @@ struct IntegrationTests {
             /// Keep track of the errors for debugging, even if they are less than the test-failure amount below.
             if !errors.isEmpty {
                 print("\(#function) encountered these errors:\n\(errors)")
-            }
-            if errors.count >= 5 {
                 Issue.record("Too many errors: \(errors)")
             }
 
-            #expect(withAnswers >= 95)
+            #expect(withAnswers == 100)
         }
     }
 
