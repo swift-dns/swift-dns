@@ -62,10 +62,10 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests and capture packets
+      - name: Run tests while capturing packets
         id: tests-run
         run: |
-          tcpdump -w dns.pcap port 53 and host 8.8.4.4 &
+          tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
           TCPDUMP_PID=$!
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
@@ -287,10 +287,10 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests and capture packets
+      - name: Run tests while capturing packets
         id: tests-run
         run: |
-          sudo tcpdump -w dns.pcap port 53 and host 8.8.4.4 &
+          sudo tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
           TCPDUMP_PID=$!
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
