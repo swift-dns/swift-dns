@@ -30,6 +30,18 @@ struct DomainNameTests {
         )
     }
 
+    @Test func decodeDomainContainingWithInvalidASCIIByte() throws {
+        var buffer = DNSBuffer(bytes: [
+            0x07, 0x45, 0x78, 0x61,
+            0x6d, 0x70, 0x6c, "[".utf8.first!,
+            0x03, 0x63, 0x4f, 0x6d,
+            0x00,
+        ])
+        #expect(throws: (any Error).self) {
+            try DomainName(from: &buffer)
+        }
+    }
+
     /// Testing `新华网.中国.` which turns into `xn--xkrr14bows.xn--fiqs8s.` based on punycode.
     /// There are non-ascii bytes in this buffer which is technically not correct.
     /// The initializer is expected to repair the bytes into ASCII.
@@ -55,23 +67,5 @@ struct DomainNameTests {
             domainName.description(format: .ascii, options: .includeRootLabelIndicator)
                 == "xn--xkrr14bows.xn--fiqs8s."
         )
-    }
-
-    @available(swiftDNSApplePlatforms 15, *)
-    @Test func ipv4AddressToName() throws {
-        let ipAddress = IPv4Address(192, 168, 1, 1)
-        let name1 = DomainName(ipv4: ipAddress)
-        let name2 = DomainName(ip: .v4(ipAddress))
-        #expect(name1.description == "192.168.1.1")
-        #expect(name2.description == "192.168.1.1")
-    }
-
-    @available(swiftDNSApplePlatforms 15, *)
-    @Test func ipv6AddressToName() {
-        let ipAddress: IPv6Address = 0x2a01_5cc0_0001_0002_0000_0000_0000_0004
-        let name1 = DomainName(ipv6: ipAddress)
-        let name2 = DomainName(ip: .v6(ipAddress))
-        #expect(name1.description == "[2a01:5cc0:1:2::4]")
-        #expect(name2.description == "[2a01:5cc0:1:2::4]")
     }
 }

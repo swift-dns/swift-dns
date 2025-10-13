@@ -9,11 +9,8 @@ extension DomainName {
 
         try self.read(from: &buffer)
 
-        let checkResult: IDNA.CharacterCheckResult? = self._data.withUnsafeReadableBytes {
-            $0.withMemoryRebound(to: UInt8.self) {
-                IDNA.performDNSComplaintByteCheck(onDNSWireFormatSpan: $0.span)
-            }
-        }
+        let checkResult = self.performCharacterCheck()
+
         switch checkResult {
         case .containsOnlyIDNANoOpCharacters:
             break
@@ -32,7 +29,7 @@ extension DomainName {
             /// This is technically not allowed in the DNS wire format, but we tolerate it.
             let description = self.utf8Representation()
             self = try Self.init(description)
-        case .none:
+        case .containsInvalidASCIIByte:
             throw ProtocolError.failedToValidate("DomainName", DNSBuffer(buffer: self._data))
         }
     }
@@ -43,33 +40,6 @@ extension DomainName {
 
         var lastSuccessfulIdx = startIndex
         var idx = startIndex
-
-        func flushIntoData() throws {
-            if startIndex == idx {
-                /// Root label
-                buffer.moveReaderIndex(to: idx + 1)
-            } else {
-                let count = self._data.readableBytes
-                let length = idx - startIndex
-                if count == 0 {
-                    self._data = buffer.getSlice(at: startIndex, length: length)!
-                    buffer.moveReaderIndex(to: idx + 1)
-                } else {
-                    var slice = buffer.getSlice(at: startIndex, length: length)!
-                    buffer.moveReaderIndex(to: idx + 1)
-                    self._data.writeBuffer(&slice)
-                }
-
-                if self.encodedLength > Self.maxLength {
-                    throw ProtocolError.lengthLimitExceeded(
-                        "DomainName.label",
-                        actual: self.encodedLength,
-                        max: Int(Self.maxLength),
-                        buffer
-                    )
-                }
-            }
-        }
 
         while let byte = buffer.getInteger(at: idx, as: UInt8.self) {
             lastSuccessfulIdx = idx
@@ -86,7 +56,7 @@ extension DomainName {
                 // less.
                 self.isFQDN = true
 
-                try flushIntoData()
+                try flushIntoData(startIndex: startIndex, idx: idx, buffer: &buffer)
 
                 return
             case let byte:
@@ -95,7 +65,7 @@ extension DomainName {
                 case 0b1100_0000:
                     let originalReaderIndex = buffer.readerIndex
                     /// The domainName processing is going to end after we're done with the pointer
-                    try flushIntoData()
+                    try flushIntoData(startIndex: startIndex, idx: idx, buffer: &buffer)
 
                     buffer.moveReaderIndex(to: originalReaderIndex)
 
@@ -137,6 +107,37 @@ extension DomainName {
         throw ProtocolError.failedToValidate("DomainName", buffer)
     }
 
+    mutating func flushIntoData(
+        startIndex: Int,
+        idx: Int,
+        buffer: inout DNSBuffer
+    ) throws {
+        if startIndex == idx {
+            /// Root label
+            buffer.moveReaderIndex(to: idx + 1)
+        } else {
+            let count = self._data.readableBytes
+            let length = idx - startIndex
+            if count == 0 {
+                self._data = buffer.getSlice(at: startIndex, length: length)!
+                buffer.moveReaderIndex(to: idx + 1)
+            } else {
+                var slice = buffer.getSlice(at: startIndex, length: length)!
+                buffer.moveReaderIndex(to: idx + 1)
+                self._data.writeBuffer(&slice)
+            }
+
+            if self.encodedLength > Self.maxLength {
+                throw ProtocolError.lengthLimitExceeded(
+                    "DomainName.label",
+                    actual: self.encodedLength,
+                    max: Int(Self.maxLength),
+                    buffer
+                )
+            }
+        }
+    }
+
     private func utf8Representation() -> String {
         var domainName = self.map {
             String(buffer: $0)
@@ -145,6 +146,63 @@ extension DomainName {
             domainName.append(".")
         }
         return domainName
+    }
+
+    /// The result of checking characters for IDNA compliance.
+    enum CharacterCheckResult {
+        /// The sequence contains only characters that IDNA's toASCII function won't change.
+        case containsOnlyIDNANoOpCharacters
+        /// The sequence contains uppercased ASCII letters that will be lowercased after IDNA's toASCII conversion.
+        /// The sequence does not contain any other characters that IDNA's toASCII function will change.
+        case onlyNeedsLowercasingOfUppercasedASCIILetters
+        /// The sequence contains characters that IDNA's toASCII function might or might not change.
+        case mightChangeAfterIDNAConversion
+        /// The sequence contains an invalid ASCII byte.
+        /// Only characters allowed by `UInt8.isAcceptableDomainNameCharacter` are allowed.
+        case containsInvalidASCIIByte
+    }
+
+    @available(swiftDNSApplePlatforms 13, *)
+    func performCharacterCheck() -> CharacterCheckResult {
+        var containsUppercased = false
+
+        for label in self {
+            let checkResult: CharacterCheckResult = label.withUnsafeReadableBytes { ptr in
+                for idx in 0..<ptr.count {
+                    let byte = ptr[idx]
+
+                    /// Based on IDNA, all ASCII characters other than uppercased letters are 'valid'
+                    /// Uppercased letters are each 'mapped' to their lowercased equivalent.
+                    ///
+                    /// Based on DNS wire format though, only latin letters, digits, and hyphens are allowed.
+                    if byte.isUppercasedASCIILetter {
+                        containsUppercased = true
+                    } else if byte.isAcceptableDomainNameCharacter {
+                        continue
+                    } else if byte.isASCII {
+                        return .containsInvalidASCIIByte
+                    } else {
+                        return .mightChangeAfterIDNAConversion
+                    }
+                }
+
+                return containsUppercased
+                    ? .onlyNeedsLowercasingOfUppercasedASCIILetters
+                    : .containsOnlyIDNANoOpCharacters
+            }
+
+            switch checkResult {
+            case .containsOnlyIDNANoOpCharacters,
+                .onlyNeedsLowercasingOfUppercasedASCIILetters:
+                continue
+            case .mightChangeAfterIDNAConversion, .containsInvalidASCIIByte:
+                return checkResult
+            }
+        }
+
+        return containsUppercased
+            ? .onlyNeedsLowercasingOfUppercasedASCIILetters
+            : .containsOnlyIDNANoOpCharacters
     }
 }
 

@@ -47,7 +47,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         /// Don't leak the promise
         for pendingQuery in pendingQueries {
-            queryProducer.fullfilQuery(
+            queryProducer.fulfillQuery(
                 pendingQuery: pendingQuery,
                 with: DNSClientError.connectionClosed
             )
@@ -110,7 +110,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.connectionClosed
         )
@@ -160,7 +160,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -220,7 +220,7 @@ struct DNSChannelHandlerStateMachineTests {
                     )
                 )
         )
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: DNSClientError.connectionClosing
         )
@@ -237,7 +237,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
         #expect(action4 == .respondAndClose(pendingQuery1, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: message1
         )
@@ -295,7 +295,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery2.requestID)
         #expect(action4 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: message2
         )
@@ -312,7 +312,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action5 = stateMachine.receivedResponse(requestID: pendingQuery1.requestID)
         #expect(action5 == .respondAndClose(pendingQuery1, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: message1
         )
@@ -346,7 +346,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .cancel(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.cancelled
         )
@@ -381,7 +381,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -437,7 +437,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .cancel(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.cancelled
         )
@@ -486,7 +486,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action5 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action5 == .respond(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -542,7 +542,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: DNSClientError.cancelled
         )
@@ -561,7 +561,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action4 == .cancel(pendingQuery2, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: DNSClientError.cancelled
         )
@@ -631,7 +631,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: DNSClientError.cancelled
         )
@@ -651,7 +651,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action5 == .cancelAndClose("context!", pendingQuery2, .cancel))
         expect(stateMachine._state == State.closed(nil))
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: DNSClientError.cancelled
         )
@@ -694,7 +694,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .throwError(DNSClientError.connectionClosed))
         expect(stateMachine._state == .closed(nil))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.connectionClosed
         )
@@ -759,7 +759,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
         expect(stateMachine._state == .closed(nil))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.connectionClosed
         )
@@ -790,7 +790,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action2 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action2 == .respond(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -843,7 +843,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery2.requestID)
         #expect(action3 == .respond(pendingQuery2, .reschedule(pendingQuery1.deadline)))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: message2
         )
@@ -879,11 +879,11 @@ struct DNSChannelHandlerStateMachineTests {
         )
         expect(stateMachine._state == .closed(nil))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: DNSClientError.connectionClosed
         )
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery3,
             with: DNSClientError.connectionClosed
         )
@@ -920,7 +920,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .failPendingQueriesAndClose([pendingQuery], .cancel))
         expect(stateMachine._state == State.closed(nil))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.connectionClosed
         )
@@ -946,7 +946,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action2 == .failAndReschedule(pendingQuery, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.queryTimeout
         )
@@ -1004,7 +1004,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action3 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action3 == .respond(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -1060,7 +1060,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery1,
             with: DNSClientError.queryTimeout
         )
@@ -1079,7 +1079,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action4 == .failAndReschedule(pendingQuery2, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
         /// Response is failed due to cancellation
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery2,
             with: DNSClientError.queryTimeout
         )
@@ -1117,7 +1117,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .failAndClose("context!", pendingQuery, .cancel))
         expect(stateMachine._state == State.closed(nil))
 
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: DNSClientError.queryTimeout
         )
@@ -1191,7 +1191,7 @@ struct DNSChannelHandlerStateMachineTests {
 
         let action4 = stateMachine.receivedResponse(requestID: pendingQuery.requestID)
         #expect(action4 == .respondAndClose(pendingQuery, .cancel))
-        queryProducer.fullfilQuery(
+        queryProducer.fulfillQuery(
             pendingQuery: pendingQuery,
             with: message
         )
@@ -1269,7 +1269,7 @@ struct DNSChannelHandlerStateMachineTests {
                 switch action2 {
                 case .respond(let pendingQuery, _):
                     #expect(pendingQuery == pendingQuery)
-                    queryProducer.fullfilQuery(
+                    queryProducer.fulfillQuery(
                         pendingQuery: pendingQuery,
                         with: message
                     )
@@ -1344,7 +1344,7 @@ struct DNSChannelHandlerStateMachineTests {
             switch action2 {
             case .respond(let pendingQuery, _):
                 #expect(pendingQuery == pendingQuery)
-                queryProducer.fullfilQuery(
+                queryProducer.fulfillQuery(
                     pendingQuery: pendingQuery,
                     with: message
                 )

@@ -44,7 +44,7 @@ package struct QueryProducer: Sendable, ~Copyable {
     }
 
     @usableFromInline
-    package mutating func fullfilQuery(
+    package mutating func fulfillQuery(
         pendingQuery: PendingQuery,
         with message: Message
     ) {
@@ -53,7 +53,7 @@ package struct QueryProducer: Sendable, ~Copyable {
     }
 
     @usableFromInline
-    package mutating func fullfilQuery(
+    package mutating func fulfillQuery(
         pendingQuery: PendingQuery,
         with error: any Error
     ) {

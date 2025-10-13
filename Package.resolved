@@ -1,5 +1,5 @@
 {
-  "originHash" : "30d1f69c828d1a2509b92b2818b8be71a1546bae497f420d22347b6c0419b8f0",
+  "originHash" : "e2cabf237e60d05e9ef40aa856cc5e309d823cfc4a3bbae8fccc2331e756596b",
   "pins" : [
     {
       "identity" : "swift-async-algorithms",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-endpoint.git",
       "state" : {
-        "revision" : "357486f9913919c42b79ad0c89c93363ecc19a48",
-        "version" : "1.0.0-beta.3"
+        "revision" : "109240e44c2ca000f5750b98aeda3206217bf231",
+        "version" : "1.0.0-beta.4"
       }
     },
     {

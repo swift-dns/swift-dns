@@ -18,13 +18,13 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
             let channelHandler = self.channelHandler.value
             switch channelHandler.stateMachine.hitDeadline(now: eventLoop.now) {
             case .failAndReschedule(let query, let deadlineCallbackAction):
-                channelHandler.queryProducer.fullfilQuery(
+                channelHandler.queryProducer.fulfillQuery(
                     pendingQuery: query,
                     with: DNSClientError.queryTimeout
                 )
                 channelHandler.processDeadlineCallbackAction(action: deadlineCallbackAction)
             case .failAndClose(let context, let query, let deadlineCallbackAction):
-                channelHandler.queryProducer.fullfilQuery(
+                channelHandler.queryProducer.fulfillQuery(
                     pendingQuery: query,
                     with: DNSClientError.queryTimeout
                 )
@@ -122,7 +122,7 @@ extension DNSChannelHandler {
                 promise: nil
             )
         case .throwError(let error):
-            self.queryProducer.fullfilQuery(
+            self.queryProducer.fulfillQuery(
                 pendingQuery: pendingQuery,
                 with: error
             )
@@ -133,15 +133,15 @@ extension DNSChannelHandler {
         context: ChannelHandlerContext,
         decodingResult: DNSMessageDecoder.DecodingResult
     ) {
-        func fullfilQueryWithDecodingResult(pendingQuery: PendingQuery) {
+        func fulfillQueryWithDecodingResult(pendingQuery: PendingQuery) {
             switch decodingResult {
             case .message(let message):
-                self.queryProducer.fullfilQuery(
+                self.queryProducer.fulfillQuery(
                     pendingQuery: pendingQuery,
                     with: message
                 )
             case .identifiableError(_, let error):
-                self.queryProducer.fullfilQuery(
+                self.queryProducer.fulfillQuery(
                     pendingQuery: pendingQuery,
                     with: DNSClientError.decodingError(error)
                 )
@@ -151,9 +151,9 @@ extension DNSChannelHandler {
         switch self.stateMachine.receivedResponse(requestID: decodingResult.messageID) {
         case .respond(let pendingQuery, let deadlineAction):
             self.processDeadlineCallbackAction(action: deadlineAction)
-            fullfilQueryWithDecodingResult(pendingQuery: pendingQuery)
+            fulfillQueryWithDecodingResult(pendingQuery: pendingQuery)
         case .respondAndClose(let pendingQuery, let deadlineCallbackAction):
-            fullfilQueryWithDecodingResult(pendingQuery: pendingQuery)
+            fulfillQueryWithDecodingResult(pendingQuery: pendingQuery)
             self.closeConnectionAndTakeDeadlineAction(
                 context: context,
                 deadlineCallbackAction: deadlineCallbackAction,
@@ -270,13 +270,13 @@ extension DNSChannelHandler {
 
         switch self.stateMachine.cancel(requestID: requestID) {
         case .cancel(let query, let deadlineCallbackAction):
-            self.queryProducer.fullfilQuery(
+            self.queryProducer.fulfillQuery(
                 pendingQuery: query,
                 with: DNSClientError.cancelled
             )
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
         case .cancelAndClose(let context, let query, let deadlineCallbackAction):
-            self.queryProducer.fullfilQuery(
+            self.queryProducer.fulfillQuery(
                 pendingQuery: query,
                 with: DNSClientError.cancelled
             )
@@ -299,7 +299,7 @@ extension DNSChannelHandler {
         switch self.stateMachine.forceClose() {
         case .failPendingQueriesAndClose(let queries, let deadlineCallbackAction):
             for query in queries {
-                self.queryProducer.fullfilQuery(
+                self.queryProducer.fulfillQuery(
                     pendingQuery: query,
                     with: error
                 )

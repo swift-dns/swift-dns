@@ -1046,11 +1046,7 @@ struct IntegrationTests {
                     #expect(response.header.responseCode == .NoError, "\(domain)")
                     #expect(response.header.messageType == .Response, "\(domain)")
                     #expect(response.header.opCode == .Query, "\(domain)")
-                    #expect(
-                        response.queries.first?.domainName.isEssentiallyEqual(to: domainName)
-                            == true,
-                        "\(domain)"
-                    )
+                    #expect(response.queries.first?.domainName == domainName, "\(domain)")
                     if response.header.answerCount > 0 {
                         #expect(response.answers.count > 0, "\(domain)")
                         withAnswers += 1

@@ -1,5 +1,5 @@
 {
-  "originHash" : "bc5b25ecc4042b7d2b19bf1924166d4a5660797afb18fc2b91916bc030b7a74b",
+  "originHash" : "cf3db00bdd12cc1c036436455bee6fe90aca090d38b6651d56a0457be5b3d712",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
       "state" : {
-        "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
-        "version" : "1.6.1"
+        "revision" : "cdd0ef3755280949551dc26dee5de9ddeda89f54",
+        "version" : "1.6.2"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-endpoint.git",
       "state" : {
-        "revision" : "357486f9913919c42b79ad0c89c93363ecc19a48",
-        "version" : "1.0.0-beta.3"
+        "revision" : "109240e44c2ca000f5750b98aeda3206217bf231",
+        "version" : "1.0.0-beta.4"
       }
     },
     {
