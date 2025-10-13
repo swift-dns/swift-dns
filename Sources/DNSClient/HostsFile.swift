@@ -34,105 +34,71 @@ package struct HostsFile: Sendable, Hashable {
         self._entries[domainName._data]
     }
 
+    /// A description
+    /// - Parameters:
+    ///   - path: The path to the file to read.
+    ///   - fileSystem: The file system to read the file from.
+    ///   - readChunkSize: The amount of bytes to read at a time from the file. Defaults to 128 KiB.
     package init(
         readingFileAt path: FilePath,
-        fileSystem: FileSystem,
-        maximumSizeAllowed: ByteCount
+        fileSystem: FileSystem = .shared,
+        readChunkSize: ByteCount = .kibibytes(128)
     ) async throws {
-        /// Read the whole file, hosts files are usually not huge
-        let buffer = try await fileSystem.withFileHandle(
+        self.init(_entries: [:])
+
+        try await fileSystem.withFileHandle(
             forReadingAt: path,
             options: .init(followSymbolicLinks: true, closeOnExec: true)
         ) { fileHandle in
-            try await fileHandle.readToEnd(maximumSizeAllowed: maximumSizeAllowed)
-        }
-        self = buffer.withUnsafeReadableBytes { ptr in
-            ptr.withMemoryRebound(to: UInt8.self) {
-                Self(span: $0.span)
-            }
-        }
-    }
-
-    init(span: Span<UInt8>) {
-        self._entries = [:]
-
-        guard span.count > 0 else {
-            return
-        }
-
-        var idx = 0
-        var chunkStartIndex = 0
-        let count = span.count
-        while idx < count {
-            /// Unchecked because idx is always in 0..<span.count
-            switch span[unchecked: idx] {
-            case UInt8.asciiCarriageReturn:
-                Self.parseLine(
-                    startIndex: chunkStartIndex,
-                    endIndex: idx,
-                    from: span,
-                    into: &self._entries
-                )
-
-                let nextIdx = idx &+ 1
-                if count > nextIdx,
-                    span[unchecked: nextIdx] == UInt8.asciiLineFeed
-                {
-                    /// This is a \r\n, skip the \n too
-                    idx &+== 1
+            var reader = fileHandle.bufferedReader(capacity: readChunkSize)
+            while true {
+                let (buffer, eof) = try await reader.read(while: {
+                    !($0 == .asciiLineFeed || $0 == .asciiCarriageReturn)
+                })
+                buffer.withUnsafeReadableBytes { ptr in
+                    ptr.withMemoryRebound(to: UInt8.self) {
+                        self.readLine($0.span)
+                    }
                 }
+                if eof { break }
+                try await reader.drop(1)
+            }
+        }
+    }
 
-                chunkStartIndex = idx &+ 1
-                idx &+== 1
-            case UInt8.asciiLineFeed:
-                Self.parseLine(
-                    startIndex: chunkStartIndex,
-                    endIndex: idx,
-                    from: span,
-                    into: &self._entries
+    @inlinable
+    mutating func readLine(_ span: Span<UInt8>) {
+        debugOnly {
+            if span.contains(where: {
+                $0 == .asciiLineFeed || $0 == .asciiCarriageReturn
+            }) {
+                fatalError(
+                    """
+                    A line that contains a line feed or carriage return is more than just a line.
+                    Line: \(String(_uncheckedAssumingValidUTF8: span).debugDescription)
+                    """
                 )
-
-                chunkStartIndex = idx &+ 1
-                idx &+== 1
-            default:
-                idx &+== 1
-                continue
             }
         }
 
-        Self.parseLine(
-            startIndex: chunkStartIndex,
-            endIndex: idx,
-            from: span,
-            into: &self._entries
-        )
-    }
-
-    @inlinable
-    static func parseLine(
-        startIndex: Int,
-        endIndex: Int,
-        from span: Span<UInt8>,
-        into entries: inout [ByteBuffer: Target]
-    ) {
-        let range = Range(uncheckedBounds: (startIndex, endIndex))
-        let span = span.extracting(unchecked: range)
-        /// Short-circuit comment parsing
-        /// No need to try to parse if the line starts with a hashtag
-        if span[unchecked: 0] == .asciiHashtag {
+        guard
+            span.count > 0,
+            span[unchecked: 0] != .asciiHashtag
+        else {
             return
         }
-        Self.parseLine(
-            lineBytes: span,
-            into: &entries
-        )
-    }
 
-    @inlinable
-    static func parseLine(
-        lineBytes span: Span<UInt8>,
-        into entries: inout [ByteBuffer: Target]
-    ) {
+        var span = span
+
+        /// Drop `\n`. This is useful if the line is terminated with a `\r\n`.
+        /// The line will be sent to this function when `\r` is seen, so we have to drop the `\n` here.
+        ///
+        /// We checked above the span is not empty so the index is safe and the range are safe.
+        if span[unchecked: 0] == .asciiLineFeed {
+            let range = Range<Int>(uncheckedBounds: (1, span.count))
+            span = span.extracting(unchecked: range)
+        }
+
         var target: Target? = nil
 
         var idx = 0
@@ -169,7 +135,7 @@ package struct HostsFile: Sendable, Hashable {
                             /// TODO: maybe report the failure somehow?
                             continue
                         }
-                        entries[domainName._data] = target
+                        self._entries[domainName._data] = target
                     } else {
                         target = Target(from: chunk)
                         guard
@@ -207,7 +173,7 @@ package struct HostsFile: Sendable, Hashable {
                 guard let domainName = try? DomainName(_uncheckedAssumingValidUTF8: chunk) else {
                     return
                 }
-                entries[domainName._data] = target
+                self._entries[domainName._data] = target
             } else {
                 /// Parsing the target here isn't of any use
                 return
@@ -255,17 +221,8 @@ extension HostsFile.Target {
                     upper: endIndex
                 )
             )
-            let zoneID = String(
-                unsafeUninitializedCapacity: zoneIDRange.count,
-                initializingUTF8With: { stringBuffer in
-                    let bufferPointer = UnsafeMutableRawBufferPointer(stringBuffer)
-                    span.withUnsafeBytes { spanPtr in
-                        let zoneIDBuffer = UnsafeRawBufferPointer(rebasing: spanPtr[zoneIDRange])
-                        bufferPointer.copyMemory(from: zoneIDBuffer)
-                    }
-                    return zoneIDRange.count
-                }
-            )
+            let zoneIDBuffer = span.extracting(unchecked: zoneIDRange)
+            let zoneID = String(_uncheckedAssumingValidUTF8: zoneIDBuffer)
 
             self.init(address: ipAddress, zoneID: zoneID)
         case .none:

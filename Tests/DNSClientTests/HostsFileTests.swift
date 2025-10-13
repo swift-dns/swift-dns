@@ -12,24 +12,36 @@ struct HostsFileTests {
     func `parsing host files works`(
         resource: Resources,
         expectedHostsFile: HostsFile,
-        maximumSizeAllowed: ByteCount,
-        expectReadFailure: Bool
+        readChunkSize: ByteCount
     ) async throws {
         let path = resource.qualifiedPath()
         let filePath = FilePath(path)
-        do {
-            let hostsFile = try await HostsFile(
-                readingFileAt: filePath,
-                fileSystem: .shared,
-                maximumSizeAllowed: maximumSizeAllowed
+        let hostsFile = try await HostsFile(
+            readingFileAt: filePath,
+            fileSystem: .shared,
+            readChunkSize: readChunkSize
+        )
+
+        let hostsFileEntries = self.sort(entries: hostsFile._entries)
+        let expectedEntries = self.sort(entries: expectedHostsFile._entries)
+
+        #expect(hostsFileEntries.count == expectedEntries.count)
+
+        for (parsed, expected) in zip(hostsFileEntries.map(\.0), expectedEntries.map(\.0)) {
+            let parsedDomainName = DomainName(
+                isFQDN: false,
+                _uncheckedAssumingValidWireFormatBytes: parsed
             )
-            let hostsFileEntries = self.sort(entries: hostsFile._entries)
-            let expectedHostsFileEntries = self.sort(entries: expectedHostsFile._entries)
-            #expect(hostsFileEntries.map(\.0) == expectedHostsFileEntries.map(\.0))
-            #expect(hostsFileEntries.map(\.1) == expectedHostsFileEntries.map(\.1))
-            #expect(!expectReadFailure)
-        } catch {
-            #expect(expectReadFailure)
+            let expectedDomainName = DomainName(
+                isFQDN: false,
+                _uncheckedAssumingValidWireFormatBytes: expected
+            )
+            #expect(parsed == expected)
+            #expect(parsedDomainName == expectedDomainName)
+        }
+
+        for (parsed, expected) in zip(hostsFileEntries.map(\.1), expectedEntries.map(\.1)) {
+            #expect(parsed == expected)
         }
     }
 
@@ -105,21 +117,20 @@ private let hostFiles: [(Resources, HostsFile)] = [
     ),
 ]
 
-/// (capacity, expect read failure)
-private let capacities: [(ByteCount, Bool)] = [
-    (.bytes(10), true),
-    (.kibibytes(1), false),
-    (.kibibytes(2), false),
-    (.kibibytes(5), false),
-    (.kibibytes(64), false),
-    (.kibibytes(1024), false),
+private let readChunkSizes: [ByteCount] = [
+    .bytes(10),
+    .kibibytes(1),
+    .kibibytes(2),
+    .kibibytes(5),
+    .kibibytes(64),
+    .kibibytes(1024),
 ]
 
-/// (resource, hostsFile, capacity, expect read failure)
+/// (resource, hostsFile, readChunkSize)
 @available(swiftDNSApplePlatforms 15, *)
-private let hostFilesWithCapacities: [(Resources, HostsFile, ByteCount, Bool)] = hostFiles.flatMap {
+private let hostFilesWithCapacities: [(Resources, HostsFile, ByteCount)] = hostFiles.flatMap {
     (resource, hostsFile) in
-    capacities.map { capacity, expectReadFailure in
-        (resource, hostsFile, capacity, expectReadFailure)
+    readChunkSizes.map { readChunkSize in
+        (resource, hostsFile, readChunkSize)
     }
 }
