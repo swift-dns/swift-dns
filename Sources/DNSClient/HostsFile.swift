@@ -187,7 +187,8 @@ extension HostsFile.Target {
     @inlinable
     package init?(from span: Span<UInt8>) {
         var percentSignIndex: Int? = nil
-        let endIndex = span.count &-- 1
+        let count = span.count
+        let endIndex = count &-- 1
         for idx in span.indices {
             let backwardsIdx = endIndex &-- idx
             /// Unchecked because backwardsIdx is always in 0..<span.count
@@ -217,8 +218,8 @@ extension HostsFile.Target {
                 uncheckedBounds: (
                     /// Unchecked because this can't be higher than byte buffer's writer index
                     lower: zoneIDStartIndex,
-                    /// Unchecked because this can't be higher than byte buffer's writer index
-                    upper: endIndex
+                    /// Unchecked because this can't be higher than byte buffer's writer index + 1
+                    upper: count
                 )
             )
             let zoneIDBuffer = span.extracting(unchecked: zoneIDRange)
@@ -237,19 +238,50 @@ extension HostsFile.Target {
 // MARK: - CustomStringConvertible
 
 @available(swiftDNSApplePlatforms 15, *)
+extension HostsFile: CustomStringConvertible {
+    package var description: String {
+        let toReserve = self._entries.reduce(into: 0) { sum, element in
+            let (buffer, target) = (element.key, element.value)
+            /// Domain name length
+            sum += buffer.readableBytes &- 1
+            /// IP address max length is 15
+            sum += 13
+            /// Zone ID approx length
+            sum += target.zoneID == nil ? 0 : 4
+        }
+        var result = ""
+        result.reserveCapacity(toReserve &+ "HostsFile(_entries: [])".count)
+
+        result += "HostsFile(_entries: ["
+
+        var iterator = self._entries.makeIterator()
+        if let (buffer, target) = iterator.next() {
+            let domainName = DomainName(
+                isFQDN: false,
+                _uncheckedAssumingValidWireFormatBytes: buffer
+            )
+            result += "\(domainName): \(target)"
+        }
+        while let (buffer, target) = iterator.next() {
+            let domainName = DomainName(
+                isFQDN: false,
+                _uncheckedAssumingValidWireFormatBytes: buffer
+            )
+            result += ", \(domainName): \(target)"
+        }
+
+        result += "])"
+        return result
+    }
+}
+
+@available(swiftDNSApplePlatforms 15, *)
 extension HostsFile.Target: CustomStringConvertible {
     package var description: String {
-        let addressString =
-            switch self.address {
-            case .v4(let ipv4):
-                ipv4.description
-            case .v6(let ipv6):
-                ipv6.description
-            }
+        let addressString = self.address.description
         if let zoneID = self.zoneID {
             return addressString + "%" + zoneID
         }
-
         return addressString
     }
 }

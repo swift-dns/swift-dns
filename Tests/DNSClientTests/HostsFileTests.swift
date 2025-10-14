@@ -46,6 +46,21 @@ struct HostsFileTests {
     }
 
     @available(swiftDNSApplePlatforms 15, *)
+    @Test func `description works`() async throws {
+        let path = Resources.hosts.qualifiedPath()
+        let filePath = FilePath(path)
+        let hostsFile = try await HostsFile(readingFileAt: filePath)
+        let description = hostsFile.description
+        #expect(description.hasPrefix("HostsFile(_entries: ["))
+        #expect(description.contains("localhost: [fe80::1]%lo0"))
+        #expect(description.contains("odin: [::2]"))
+        #expect(description.contains("thor: 127.1.3.1"))
+        #expect(description.contains("ullr: 127.1.1.2"))
+        #expect(description.contains("ullrhost: 127.1.1.2"))
+        #expect(description.hasSuffix("])"))
+    }
+
+    @available(swiftDNSApplePlatforms 15, *)
     func sort(entries: [ByteBuffer: HostsFile.Target]) -> [(ByteBuffer, HostsFile.Target)] {
         entries.sorted(by: { lhs, rhs in
             if lhs.key == rhs.key {
