@@ -1,11 +1,12 @@
 import NIOCore
 
-final class TCPFrameDecoder: ByteToMessageDecoder {
+struct TCPFrameDecoder: ByteToMessageDecoder {
     typealias InboundOut = ByteBuffer
 
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         var readBuffer = buffer
-        guard let size: UInt16 = readBuffer.readInteger(),
+        guard
+            let size: UInt16 = readBuffer.readInteger(),
             let slice = readBuffer.readSlice(length: Int(size))
         else {
             return .needMoreData
