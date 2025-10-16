@@ -33,7 +33,7 @@ struct DomainNameTests {
     @Test func decodeDomainContainingWithInvalidASCIIByte() throws {
         var buffer = DNSBuffer(bytes: [
             0x07, 0x45, 0x78, 0x61,
-            0x6d, 0x70, 0x6c, "[".utf8.first!,
+            0x6d, 0x70, 0x6c, UInt8(ascii: "["),
             0x03, 0x63, 0x4f, 0x6d,
             0x00,
         ])

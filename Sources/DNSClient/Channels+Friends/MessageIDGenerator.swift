@@ -36,7 +36,7 @@ package struct MessageIDGenerator: Sendable, ~Copyable {
 
     package init() {
         self.ids = BitSet()
-        self.ids.reserveCapacity(Int(UInt16.max))
+        self.ids.reserveCapacity(Self.capacity)
         self.count = 0
     }
 
@@ -57,7 +57,7 @@ package struct MessageIDGenerator: Sendable, ~Copyable {
         case true:
             /// `unsafelyUnwrapped` is safe here, there are extensive tests for this.
             /// If the value evaluates to `nil`, that would mean we've exhausted the UInt16 namespace
-            /// but that cannot happen with the `Self.maxAllowed` limit imposed above.
+            /// but that cannot happen with the `Self.capacity` limit imposed above.
             let next = (self.firstGreaterThan(int) ?? self.firstLessThan(int)).unsafelyUnwrapped
             ids.insert(next)
             count &+== 1
@@ -83,7 +83,7 @@ package struct MessageIDGenerator: Sendable, ~Copyable {
 
     @usableFromInline
     func firstGreaterThan(_ id: Int) -> Int? {
-        let upperBound = Int(MessageIDGenerator.randomNumberRange.upperBound)
+        let upperBound = Int(Self.randomNumberRange.upperBound)
         guard id < upperBound else { return nil }
         for newId in (id &++ 1)...upperBound {
             if !self.ids.contains(newId) {

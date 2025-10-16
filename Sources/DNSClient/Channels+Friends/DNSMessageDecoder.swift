@@ -60,7 +60,7 @@ package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
             let id = dnsBuffer.readInteger(as: UInt16.self)!
             dnsBuffer.moveReaderIndex(to: endIndex)
 
-            assert(
+            precondition(
                 startIndex != endIndex,
                 """
                 The readerIndex has not changed after a decoding failure.
