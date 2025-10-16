@@ -140,7 +140,7 @@ package.targets += [
             "DNSModels",
         ],
         path: "DNSParsing",
-        swiftSettings: benchmarkSettings,
+        swiftSettings: settings,
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
@@ -152,15 +152,9 @@ package.targets += [
             "DNSModels",
         ],
         path: "DomainName",
-        swiftSettings: benchmarkSettings,
+        swiftSettings: settings,
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
     ),
 ]
-
-var benchmarkSettings: [SwiftSetting] {
-    settings + [
-        .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
-    ]
-}
