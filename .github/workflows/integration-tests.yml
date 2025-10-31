@@ -94,7 +94,7 @@ jobs:
           mv dns.pcap "${FILE_NAME}.pcap"
 
       - name: Archive packet capture
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
           path: "${{ steps.calculate-capture-file-name.outputs.file_name }}.pcap"
@@ -319,7 +319,7 @@ jobs:
           mv dns.pcap "${FILE_NAME}.pcap"
 
       - name: Archive packet capture
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
           path: "${{ steps.calculate-capture-file-name.outputs.file_name }}.pcap"
