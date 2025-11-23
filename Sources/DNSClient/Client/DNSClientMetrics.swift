@@ -2,7 +2,7 @@ import Logging
 public import _DNSConnectionPool
 
 /// DNS client connection pool metrics
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
     @usableFromInline

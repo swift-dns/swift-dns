@@ -1,11 +1,11 @@
+import Atomics
 public import DNSModels
 package import Logging
 public import NIOCore
 import NIOPosix
-import Synchronization
 
 /// Single connection to a DNS server
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 public final actor DNSConnection: Sendable {
     @usableFromInline
     let executor: any SerialExecutor
@@ -23,7 +23,7 @@ public final actor DNSConnection: Sendable {
     @usableFromInline
     let channelHandler: DNSChannelHandler
     let configuration: DNSConnectionConfiguration
-    let isClosed: Atomic<Bool>
+    let isClosed: ManagedAtomic<Bool>
     var isOverUDP: Bool {
         channelHandler.isOverUDP
     }
@@ -36,7 +36,12 @@ public final actor DNSConnection: Sendable {
         configuration: DNSConnectionConfiguration,
         logger: Logger
     ) {
-        self.executor = channel.eventLoop.executor
+        if #available(swiftDNSApplePlatforms 14, *) {
+            self.executor = channel.eventLoop.executor
+        } else {
+            /// FIXME: Satisfy compiler while I find out what to do here
+            self.executor = { fatalError() }()
+        }
         self.channel = channel
         self.channelHandler = channelHandler
         self.configuration = configuration
@@ -146,7 +151,7 @@ public final actor DNSConnection: Sendable {
     // }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package struct PreparedQuery: Sendable, ~Copyable {
     @usableFromInline

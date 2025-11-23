@@ -376,7 +376,7 @@ extension TSIG.Algorithm {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -393,7 +393,7 @@ extension TSIG: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension TSIG: Queryable {
     @inlinable
     public static var recordType: RecordType { .TSIG }

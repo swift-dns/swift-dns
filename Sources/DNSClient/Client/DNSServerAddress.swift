@@ -3,7 +3,7 @@ public import struct DNSModels.DomainName
 public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 public enum DNSServerAddress: Hashable, Sendable {
     // We keep the IP address serialization precisely as it is in the URL.
     // Some platforms have quirks in their implementations of 'ntop', for example
@@ -15,7 +15,7 @@ public enum DNSServerAddress: Hashable, Sendable {
     case unixSocket(path: String)
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension DNSServerAddress {
     /// The host name which will be send as an HTTP `Host` header.
     /// Only returns nil if the `self` is a `unixSocket`.

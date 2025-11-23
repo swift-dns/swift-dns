@@ -283,7 +283,7 @@ extension NSEC3.HashAlgorithm {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension NSEC3: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -300,7 +300,7 @@ extension NSEC3: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension NSEC3: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC3 }

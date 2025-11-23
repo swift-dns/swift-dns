@@ -1,24 +1,24 @@
 /// HTTPS is really a derivation of the original SVCB record data. See SVCB for more documentation
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 public struct HTTPS: Sendable {
     public var svcb: SVCB
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HTTPS {
     package init(from buffer: inout DNSBuffer) throws {
         self.svcb = try SVCB(from: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HTTPS {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.svcb.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HTTPS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -35,7 +35,7 @@ extension HTTPS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HTTPS: Queryable {
     @inlinable
     public static var recordType: RecordType { .HTTPS }

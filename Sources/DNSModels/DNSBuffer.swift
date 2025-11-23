@@ -1,5 +1,6 @@
 public import DNSCore
 
+import struct IPAddress.UnsignedInt128
 public import struct NIOCore.ByteBuffer
 public import struct NIOCore.ByteBufferView
 public import enum NIOCore.Endianness
@@ -73,8 +74,23 @@ package struct DNSBuffer: Sendable {
         self._buffer.reserveCapacity(minimumWritableBytes: minimumWritableBytes)
     }
 
+    package mutating func readUnsignedInt128() -> UnsignedInt128? {
+        guard
+            let high = self.readInteger(as: UInt64.self),
+            let low = self.readInteger(as: UInt64.self)
+        else {
+            return nil
+        }
+        return UnsignedInt128(_low: low, _high: high)
+    }
+
     package mutating func readInteger<T: FixedWidthInteger>(as: T.Type = T.self) -> T? {
         self._buffer.readInteger(as: T.self)
+    }
+
+    package mutating func writeUnsignedInt128(_ value: UnsignedInt128) {
+        self._buffer.writeInteger(value._high)
+        self._buffer.writeInteger(value._low)
     }
 
     package mutating func writeInteger<T: FixedWidthInteger>(_ value: T) {

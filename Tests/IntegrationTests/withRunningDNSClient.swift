@@ -3,7 +3,7 @@ import Logging
 import NIOPosix
 import Testing
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 func withRunningDNSClient(
     _ client: DNSClient,
     function: (DNSClient) async throws -> Void

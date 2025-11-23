@@ -1,6 +1,6 @@
 public import SwiftIDNA
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// private
     @usableFromInline
@@ -95,7 +95,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension MessageFactory {
     package func __testing_copyMessage() -> Message {
         self.message

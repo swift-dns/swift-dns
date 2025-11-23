@@ -36,7 +36,7 @@ extension CNAME {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension CNAME: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -53,7 +53,7 @@ extension CNAME: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension CNAME: Queryable {
     @inlinable
     public static var recordType: RecordType { .CNAME }

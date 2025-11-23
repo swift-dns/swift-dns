@@ -6,7 +6,7 @@ package import struct NIOFileSystem.ByteCount
 package import struct NIOFileSystem.FilePath
 package import struct NIOFileSystem.FileSystem
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 package struct HostsFile: Sendable, Hashable {
     package struct Target: Sendable, Hashable {
         package var address: AnyIPAddress
@@ -182,7 +182,7 @@ package struct HostsFile: Sendable, Hashable {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HostsFile.Target {
     @inlinable
     package init?(from span: Span<UInt8>) {
@@ -237,7 +237,7 @@ extension HostsFile.Target {
 
 // MARK: - CustomStringConvertible
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HostsFile: CustomStringConvertible {
     package var description: String {
         let toReserve = self._entries.reduce(into: 0) { sum, element in
@@ -275,7 +275,7 @@ extension HostsFile: CustomStringConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension HostsFile.Target: CustomStringConvertible {
     package var description: String {
         let addressString = self.address.description

@@ -1,3 +1,5 @@
+public import IPAddress
+
 infix operator &-- : AdditionPrecedence
 
 @inlinable
@@ -56,6 +58,14 @@ package func &>>> <I: FixedWidthInteger>(lhs: I, rhs: some FixedWidthInteger) ->
     return result
 }
 
+@inlinable
+@inline(__always)
+package func &>>> (lhs: UnsignedInt128, rhs: some FixedWidthInteger) -> UnsignedInt128 {
+    let result = lhs &>> rhs
+    assert(result == (lhs >> rhs))
+    return result
+}
+
 infix operator &>>== : AssignmentPrecedence
 
 @inlinable
@@ -70,6 +80,14 @@ infix operator &<<< : BitwiseShiftPrecedence
 @inlinable
 @inline(__always)
 package func &<<< <I: FixedWidthInteger>(lhs: I, rhs: some FixedWidthInteger) -> I {
+    let result = lhs &<< rhs
+    assert(result == (lhs << rhs))
+    return result
+}
+
+@inlinable
+@inline(__always)
+package func &<<< (lhs: UnsignedInt128, rhs: some FixedWidthInteger) -> UnsignedInt128 {
     let result = lhs &<< rhs
     assert(result == (lhs << rhs))
     return result

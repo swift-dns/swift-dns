@@ -1,14 +1,15 @@
+import Atomics
 import DNSClient
 import DNSModels
 import Logging
+import NIOConcurrencyHelpers
 import NIOCore
 import NIOEmbedded
-import Synchronization
 import Testing
 
 @Suite
 struct DNSConnectionTests {
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `query tests`() async throws {
         try await self.runQueryTests(
             queryableTypes: A.self,
@@ -24,7 +25,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func runQueryTests<each QueryableType: Queryable>(
         queryableTypes: repeat (each QueryableType).Type
     ) async throws {
@@ -38,7 +39,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
@@ -70,7 +71,7 @@ struct DNSConnectionTests {
         #expect("\(response)" == "\(message)")
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -101,7 +102,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test
     func `query cancelled then response arrives later then continue using the channel`()
         async throws
@@ -186,7 +187,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `query does not run when task is already cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -211,7 +212,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
@@ -245,7 +246,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test
     func `query timed out then response arrives later then continue using the channel`()
         async throws
@@ -326,7 +327,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `query does not run when connection is closed`() async throws {
         typealias QueryableType = TXT
 
@@ -347,7 +348,7 @@ struct DNSConnectionTests {
         #expect(!channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
@@ -361,7 +362,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func runSequentialTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,
@@ -402,7 +403,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     @Test func `concurrent MX queries over one connection`() async throws {
         typealias QueryableType = MX
 
@@ -419,7 +420,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func runConcurrentTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,
@@ -427,8 +428,9 @@ struct DNSConnectionTests {
         count: Int,
         queryableType: QueryableType.Type
     ) async throws {
-        let messageSuccessfullySentOverChannel: Mutex<[UInt16: ByteBuffer]> = Mutex([:])
-        let messageSuccessfullySentOverChannelCount: Atomic<Int> = Atomic(0)
+        let messageSuccessfullySentOverChannel: NIOLockedValueBox<[UInt16: ByteBuffer]> =
+            NIOLockedValueBox([:])
+        let messageSuccessfullySentOverChannelCount: ManagedAtomic<Int> = ManagedAtomic(0)
 
         for _ in 0..<count {
             taskGroup.addTask { @Sendable in
@@ -452,18 +454,20 @@ struct DNSConnectionTests {
                 let oneReceivedMessageID = try #require(
                     oneOutbound.peekInteger(as: UInt16.self)
                 )
-                messageSuccessfullySentOverChannelCount.add(1, ordering: .relaxed)
-                messageSuccessfullySentOverChannel.withLock {
+                messageSuccessfullySentOverChannelCount.wrappingIncrement(by: 1, ordering: .relaxed)
+                messageSuccessfullySentOverChannel.withLockedValue {
                     $0[oneReceivedMessageID] = oneOutbound
                 }
                 /// The message ID should not be 0 because the channel handler reassigns it
                 #expect(oneReceivedMessageID != 0)
 
                 try await self.simpleWait(until: {
-                    messageSuccessfullySentOverChannel.withLock({ $0[messageID] != nil })
+                    messageSuccessfullySentOverChannel.withLockedValue({ $0[messageID] != nil })
                 })
 
-                let _outbound = messageSuccessfullySentOverChannel.withLock({ $0[messageID] })
+                let _outbound = messageSuccessfullySentOverChannel.withLockedValue({
+                    $0[messageID]
+                })
                 let outbound = try #require(_outbound)
                 #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
                 #expect(outbound.peekInteger(as: UInt16.self) == messageID)
@@ -484,7 +488,7 @@ struct DNSConnectionTests {
 
         /// There is a chance that message IDs were reused and a value replaced another value
         /// in the dictionary.
-        #expect(messageSuccessfullySentOverChannel.withLock({ $0.count }) <= count)
+        #expect(messageSuccessfullySentOverChannel.withLockedValue({ $0.count }) <= count)
         #expect(messageSuccessfullySentOverChannelCount.load(ordering: .relaxed) == count)
     }
 
@@ -501,7 +505,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func bufferAndMessage(
         from resource: Resources,
         changingIDTo messageID: UInt16?
@@ -519,7 +523,7 @@ struct DNSConnectionTests {
         return (buffer, message)
     }
 
-    @available(swiftDNSApplePlatforms 15, *)
+    @available(swiftDNSApplePlatforms 13, *)
     func makeTestConnection(
         configuration: DNSConnectionConfiguration = .init(),
         address: DNSServerAddress = .domain(
