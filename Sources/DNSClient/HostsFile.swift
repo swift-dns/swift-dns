@@ -50,37 +50,22 @@ package struct HostsFile: Sendable, Hashable {
             forReadingAt: path,
             options: .init(followSymbolicLinks: true, closeOnExec: true)
         ) { fileHandle in
-            var reader = fileHandle.bufferedReader(capacity: readChunkSize)
-            while true {
-                let (buffer, eof) = try await reader.read(while: {
-                    !($0 == .asciiLineFeed || $0 == .asciiCarriageReturn)
-                })
-                buffer.withUnsafeReadableBytes { ptr in
+            let lines =
+                fileHandle
+                .readChunks(chunkLength: readChunkSize)
+                .splitLines()
+            for try await line in lines {
+                line.withUnsafeReadableBytes { ptr in
                     ptr.withMemoryRebound(to: UInt8.self) {
                         self.readLine($0.span)
                     }
                 }
-                if eof { break }
-                try await reader.drop(1)
             }
         }
     }
 
     @inlinable
     mutating func readLine(_ span: Span<UInt8>) {
-        debugOnly {
-            if span.contains(where: {
-                $0 == .asciiLineFeed || $0 == .asciiCarriageReturn
-            }) {
-                fatalError(
-                    """
-                    A line that contains a line feed or carriage return is more than just a line.
-                    Line: \(String(_uncheckedAssumingValidUTF8: span).debugDescription)
-                    """
-                )
-            }
-        }
-
         guard
             span.count > 0,
             span[unchecked: 0] != .asciiHashtag
