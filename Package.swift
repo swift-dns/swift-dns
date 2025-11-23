@@ -21,6 +21,9 @@ let package = Package(
     targets: [
         .target(
             name: "DNSCore",
+            dependencies: [
+                .product(name: "IPAddress", package: "swift-endpoint")
+            ],
             swiftSettings: settings
         ),
         .target(
