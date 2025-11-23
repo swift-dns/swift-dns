@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install zstd for faster caching, and curl for codecov action
         run: |
@@ -188,7 +188,7 @@ jobs:
           xcode-version: ${{ matrix.xcode.version }}
 
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore swiftly home
         id: "restore-home"
@@ -235,14 +235,15 @@ jobs:
           swiftly install --assume-yes ${{ matrix.swift.version }}
           swiftly use --assume-yes ${{ matrix.swift.version }}
 
-      - name: Restore .build
-        if: ${{ runner.debug != '1' }}
-        id: "restore-cache"
-        uses: actions/cache/restore@v4
-        with:
-          path: .build
-          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
-          restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-"
+      # Issue: https://github.com/actions/runner/issues/449
+      # - name: Restore .build
+      #   if: ${{ runner.debug != '1' }}
+      #   id: "restore-cache"
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     path: .build
+      #     key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
+      #     restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-"
 
       - name: Build ${{ github.event.repository.name }}
         run: |
@@ -253,12 +254,13 @@ jobs:
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
-      - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .build
-          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
+      # Issue: https://github.com/actions/runner/issues/449
+      # - name: Cache .build
+      #   if: steps.restore-cache.outputs.cache-hit != 'true'
+      #   uses: actions/cache/save@v4
+      #   with:
+      #     path: .build
+      #     key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
         run: |

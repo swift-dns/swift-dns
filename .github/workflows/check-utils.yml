@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
