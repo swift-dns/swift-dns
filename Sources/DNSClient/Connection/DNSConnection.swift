@@ -36,12 +36,7 @@ public final actor DNSConnection: Sendable {
         configuration: DNSConnectionConfiguration,
         logger: Logger
     ) {
-        if #available(swiftDNSApplePlatforms 14, *) {
-            self.executor = channel.eventLoop.executor
-        } else {
-            /// FIXME: Satisfy compiler while I find out what to do here
-            self.executor = { fatalError() }()
-        }
+        self.executor = channel.eventLoop.executor_Compatibility
         self.channel = channel
         self.channelHandler = channelHandler
         self.configuration = configuration

@@ -121,5 +121,8 @@ var settings: [SwiftSetting] {
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 13:macOS 13, iOS 16, tvOS 16, watchOS 9"
         ),
+        .enableExperimentalFeature(
+            "AvailabilityMacro=swiftDNSApplePlatforms 10.15:macOS 10.15, iOS 13, tvOS 13, watchOS 6"
+        ),
     ]
 }
