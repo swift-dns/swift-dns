@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install zstd for faster caching, and curl for codecov action
         run: |
@@ -188,7 +188,7 @@ jobs:
           xcode-version: ${{ matrix.xcode.version }}
 
       - name: Check out ${{ github.event.repository.name }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore swiftly home
         id: "restore-home"
