@@ -1,8 +1,9 @@
+import Atomics
 public import DNSModels
-import Synchronization
 import _DNSConnectionPool
 
 package import struct Logging.Logger
+import struct NIOConcurrencyHelpers.NIOLockedValueBox
 package import struct NIOCore.ByteBufferAllocator
 package import protocol NIOCore.EventLoopGroup
 
@@ -11,7 +12,7 @@ import ServiceLifecycle
 #endif
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -19,7 +20,9 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     /// FIXME: using DNSConnection for now to have something sendable.
     @usableFromInline
     var udpConnection: DNSConnection?
-    nonisolated let udpConnectionWaiters = Mutex<[CheckedContinuation<DNSConnection, Never>]>([])
+    nonisolated let udpConnectionWaiters = NIOLockedValueBox<
+        [CheckedContinuation<DNSConnection, Never>]
+    >([])
     let udpEventLoopGroup: any EventLoopGroup
     let tcpTransport: TCPDNSClientTransport
     let logger: Logger
@@ -86,7 +89,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(
@@ -143,7 +146,7 @@ extension PreferUDPOrUseTCPDNSClientTransport {
             return try await operation(factory, options, connection)
         } else {
             let connection = await withCheckedContinuation { continuation in
-                self.udpConnectionWaiters.withLock {
+                self.udpConnectionWaiters.withLockedValue {
                     $0.append(continuation)
                 }
             }
@@ -170,7 +173,7 @@ extension PreferUDPOrUseTCPDNSClientTransport {
         /// possibly should extract this logic to its own mini-component
         do {
             self.udpConnection = try await self.makeUDPConnection()
-            self.udpConnectionWaiters.withLock { continuations in
+            self.udpConnectionWaiters.withLockedValue { continuations in
                 for continuation in continuations {
                     continuation.resume(returning: self.udpConnection!)
                 }

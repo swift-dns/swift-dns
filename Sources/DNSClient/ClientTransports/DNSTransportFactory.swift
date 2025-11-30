@@ -1,7 +1,7 @@
 public import struct Logging.Logger
 public import protocol NIOCore.EventLoopGroup
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 public struct DNSClientTransportFactory: Sendable {
     let transport: DNSClient.Transport
 

@@ -1,18 +1,18 @@
-import Synchronization
+import Atomics
 public import _DNSConnectionPool
 
 /// Connection id generator for DNS connection pool
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package final class IncrementalIDGenerator: ConnectionIDGeneratorProtocol {
-    private let atomic: Atomic<Int>
+    private let atomic: ManagedAtomic<Int>
 
     init() {
-        self.atomic = .init(0)
+        self.atomic = ManagedAtomic(0)
     }
 
     @usableFromInline
     package func next() -> Int {
-        self.atomic.wrappingAdd(1, ordering: .relaxed).oldValue
+        self.atomic.loadThenWrappingIncrement(by: 1, ordering: .relaxed)
     }
 }

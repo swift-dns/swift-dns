@@ -37,7 +37,7 @@ jobs:
           apt update -q && apt install -yq libjemalloc-dev zstd
 
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

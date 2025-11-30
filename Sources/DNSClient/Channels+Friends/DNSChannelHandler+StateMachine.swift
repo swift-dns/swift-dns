@@ -2,7 +2,7 @@ public import NIOCore
 
 import struct OrderedCollections.OrderedDictionary
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension DNSChannelHandler {
     @usableFromInline
     package struct StateMachine<Context>: ~Copyable {
@@ -375,7 +375,41 @@ extension DNSChannelHandler {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+// MARK: + Sendable
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.State: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.ProcessingState: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.SendQueryAction: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.ReceivedResponseAction: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.CancelAction: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.GracefulShutdownAction: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.CloseAction: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.HitDeadlineAction: Sendable where Context: Sendable {}
+
+@available(swiftDNSApplePlatforms 13, *)
+extension DNSChannelHandler.StateMachine.DeadlineCallbackAction: Sendable {}
+
+// MARK: + Testing
+
+@available(swiftDNSApplePlatforms 13, *)
 extension DNSChannelHandler.StateMachine.ProcessingState {
     package static func __for_testing(
         context: Context,

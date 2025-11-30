@@ -1,5 +1,5 @@
+public import Atomics
 public import DNSModels
-public import Synchronization
 public import _DNSConnectionPool
 
 package import struct Logging.Logger
@@ -36,7 +36,7 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 }
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
     package let serverAddress: DNSServerAddress
@@ -48,7 +48,7 @@ package actor TCPDNSClientTransport {
 
     let allocator: ByteBufferAllocator
     @usableFromInline
-    let isRunning: Atomic<Bool>
+    let isRunning: ManagedAtomic<Bool>
 
     package init(
         serverAddress: DNSServerAddress,
@@ -85,7 +85,7 @@ package actor TCPDNSClientTransport {
         self.eventLoopGroup = eventLoopGroup
         self.logger = logger
         self.allocator = ByteBufferAllocator()
-        self.isRunning = Atomic(false)
+        self.isRunning = ManagedAtomic(false)
     }
 
     /// Run TCPDNSClientTransport's connection pool
@@ -140,7 +140,7 @@ package actor TCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension TCPDNSClientTransport {
     @usableFromInline
     func query(

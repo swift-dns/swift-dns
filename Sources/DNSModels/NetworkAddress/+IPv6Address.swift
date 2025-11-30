@@ -1,10 +1,11 @@
 import DNSCore
+import IPAddress
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension IPv6Address {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(
-            try buffer.readInteger(as: UInt128.self).unwrap(
+            try buffer.readUnsignedInt128().unwrap(
                 or: .failedToRead("IPv6Address", buffer)
             )
         )
@@ -24,7 +25,7 @@ extension IPv6Address {
             )
         }
 
-        self.init(0)
+        self.init(.zero)
 
         buffer.withUnsafeReadableBytes { ptr in
             for idx in 0..<16 {
@@ -33,7 +34,7 @@ extension IPv6Address {
                     let byte = ptr[idx]
                     /// All these unchecked operations are safe because idx is always in 0..<16
                     let shift = 8 &** (15 &-- idx)
-                    self.address |= UInt128(byte) &<<< shift
+                    self.address |= UnsignedInt128(byte) &<<< shift
                 case false:
                     break
                 }
@@ -43,10 +44,10 @@ extension IPv6Address {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension IPv6Address {
     package func encode(into buffer: inout DNSBuffer) {
-        buffer.writeInteger(self.address)
+        buffer.writeUnsignedInt128(self.address)
     }
 
     package func encode(into buffer: inout DNSBuffer, addressLength: Int) throws {
@@ -62,8 +63,8 @@ extension IPv6Address {
             /// All these unchecked operations are safe because idx is always in 0..<16
             let shift = 8 &** (15 &-- idx)
             let shifted = self.address &>>> shift
-            let masked = shifted & 0xFF
-            let byte = UInt8(exactly: masked).unsafelyUnwrapped
+            let masked = shifted & UnsignedInt128(_low: 0xFF, _high: 0)
+            let byte = UInt8(exactly: masked._low).unsafelyUnwrapped
             buffer.writeInteger(byte)
         }
     }

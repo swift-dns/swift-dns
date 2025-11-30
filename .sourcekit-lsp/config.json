@@ -1,13 +1,4 @@
 {
   "$schema": "https://raw.githubusercontent.com/swiftlang/sourcekit-lsp/refs/heads/release/6.2/config.schema.json",
-  "backgroundIndexing": true,
-  "backgroundPreparationMode": "enabled",
-  "experimentalFeatures": [
-    "on-type-formatting",
-    "structured-logs"
-  ],
-  "logging": {
-    "level": "debug",
-    "privacyLevel": "private"
-  }
+  "experimentalFeatures": ["on-type-formatting", "structured-logs"]
 }

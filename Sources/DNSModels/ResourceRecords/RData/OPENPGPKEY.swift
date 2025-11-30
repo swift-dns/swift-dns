@@ -27,7 +27,7 @@ extension OPENPGPKEY {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension OPENPGPKEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -44,7 +44,7 @@ extension OPENPGPKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension OPENPGPKEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .OPENPGPKEY }

@@ -1,7 +1,7 @@
 package import DNSModels
 package import NIOCore
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
     package enum DecodingResult {
         case message(Message)

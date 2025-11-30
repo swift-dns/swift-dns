@@ -5,7 +5,7 @@ import class NIOPosix.MultiThreadedEventLoopGroup
 import class NIOTransportServices.NIOTSEventLoopGroup
 #endif
 
-@available(swiftDNSApplePlatforms 15, *)
+@available(swiftDNSApplePlatforms 13, *)
 extension DNSClient {
     /// Returns the default `EventLoopGroup` singleton for TCP connections, automatically selecting the best for the platform.
     ///
