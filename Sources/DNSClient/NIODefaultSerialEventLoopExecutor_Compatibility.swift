@@ -1,6 +1,6 @@
 import NIOCore
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension EventLoop {
     var executor_Compatibility: any SerialExecutor {
         if #available(swiftDNSApplePlatforms 14, *) {

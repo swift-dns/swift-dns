@@ -40,7 +40,7 @@ public import struct NIOCore.ByteBuffer
 ///   If any RRs are malformed, the client MUST reject the entire RRSet and
 ///   fall back to non-SVCB connection establishment.
 /// ```
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 public struct SVCB: Sendable {
     ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2)
     ///
@@ -488,7 +488,7 @@ public struct SVCB: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB {
     package init(from buffer: inout DNSBuffer) throws {
         self.svcPriority = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -508,7 +508,7 @@ extension SVCB {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.svcPriority)
@@ -520,7 +520,7 @@ extension SVCB {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamKey: RawRepresentable {
     public init(_ rawValue: UInt16) {
         switch rawValue {
@@ -557,7 +557,7 @@ extension SVCB.SVCParamKey: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamKey {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -567,9 +567,9 @@ extension SVCB.SVCParamKey {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue {
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     package init(from buffer: inout DNSBuffer, key: SVCB.SVCParamKey) throws {
         let length = try buffer.readInteger(as: UInt16.self).unwrap(
             or: .failedToRead("SVCB.SVCParamValue.length", buffer)
@@ -611,7 +611,7 @@ extension SVCB.SVCParamValue {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.Mandatory {
     package init(from buffer: inout DNSBuffer) throws {
         self.keys = []
@@ -624,7 +624,7 @@ extension SVCB.SVCParamValue.Mandatory {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.ALPN {
     package init(from buffer: inout DNSBuffer) throws {
         self.protocols = []
@@ -641,7 +641,7 @@ extension SVCB.SVCParamValue.ALPN {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.IPHint where IPType == A {
     package init(from buffer: inout DNSBuffer) throws {
         self.addresses = []
@@ -651,7 +651,7 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     package init(from buffer: inout DNSBuffer) throws {
         self.addresses = []
@@ -661,28 +661,28 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.ECHConfigList {
     package init(from buffer: inout DNSBuffer) throws {
         self.config = buffer.readToEnd()
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.Unknown {
     package init(from buffer: inout DNSBuffer) throws {
         self.data = buffer.readToEnd()
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamKey {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue {
     package func encode(into buffer: inout DNSBuffer) throws {
         var valueBuffer = DNSBuffer()
@@ -714,7 +714,7 @@ extension SVCB.SVCParamValue {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.Mandatory {
     package func encode(into buffer: inout DNSBuffer) throws {
         for key in self.keys {
@@ -723,7 +723,7 @@ extension SVCB.SVCParamValue.Mandatory {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.ALPN {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(minimumWritableBytes: self.lengthInDNSWireProtocol)
@@ -738,7 +738,7 @@ extension SVCB.SVCParamValue.ALPN {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.IPHint where IPType == A {
     package func encode(into buffer: inout DNSBuffer) throws {
         guard let length = Int(exactly: self.addresses.count * IPv4Address.size) else {
@@ -751,7 +751,7 @@ extension SVCB.SVCParamValue.IPHint where IPType == A {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     package func encode(into buffer: inout DNSBuffer) throws {
         guard let length = Int(exactly: self.addresses.count * IPv6Address.size) else {
@@ -764,21 +764,21 @@ extension SVCB.SVCParamValue.IPHint where IPType == AAAA {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.ECHConfigList {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeBuffer(self.config)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB.SVCParamValue.Unknown {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeBuffer(self.data)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -795,7 +795,7 @@ extension SVCB: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB: Queryable {
     @inlinable
     public static var recordType: RecordType { .SVCB }

@@ -203,6 +203,7 @@ public struct TLSA: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA {
     package init(from buffer: inout DNSBuffer) throws {
         self.certUsage = try CertUsage(from: &buffer)
@@ -212,6 +213,7 @@ extension TLSA {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA {
     package func encode(into buffer: inout DNSBuffer) throws {
         self.certUsage.encode(into: &buffer)
@@ -249,6 +251,7 @@ extension TLSA.CertUsage: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.CertUsage {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -258,6 +261,7 @@ extension TLSA.CertUsage {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.CertUsage {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -288,6 +292,7 @@ extension TLSA.Selector: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.Selector {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -297,6 +302,7 @@ extension TLSA.Selector {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.Selector {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -329,6 +335,7 @@ extension TLSA.Matching: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.Matching {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -338,13 +345,14 @@ extension TLSA.Matching {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA.Matching {
     func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -361,7 +369,7 @@ extension TLSA: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension TLSA: Queryable {
     @inlinable
     public static var recordType: RecordType { .TLSA }

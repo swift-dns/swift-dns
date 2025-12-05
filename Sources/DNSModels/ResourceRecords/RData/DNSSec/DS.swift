@@ -62,6 +62,7 @@ public struct DS: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DS {
     package init(from buffer: inout DNSBuffer) throws {
         self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -73,6 +74,7 @@ extension DS {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DS {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.keyTag)
@@ -82,7 +84,7 @@ extension DS {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -99,7 +101,7 @@ extension DS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DS: Queryable {
     @inlinable
     public static var recordType: RecordType { .DS }

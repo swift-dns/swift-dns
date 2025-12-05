@@ -88,6 +88,7 @@ public struct CERT: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT {
     package init(from buffer: inout DNSBuffer) throws {
         self.certType = try CertType(from: &buffer)
@@ -99,6 +100,7 @@ extension CERT {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT {
     package func encode(into buffer: inout DNSBuffer) throws {
         certType.encode(into: &buffer)
@@ -181,6 +183,7 @@ extension CERT.CertType: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT.CertType {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -190,13 +193,14 @@ extension CERT.CertType {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT.CertType {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -213,7 +217,7 @@ extension CERT: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CERT: Queryable {
     @inlinable
     public static var recordType: RecordType { .CERT }

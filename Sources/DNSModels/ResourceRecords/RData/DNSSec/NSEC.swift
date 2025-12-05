@@ -32,7 +32,7 @@ public struct NSEC: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC {
     /// FIXME: can we know the length of the domain name so we can pre-reserve capacity?
     package init(from buffer: inout DNSBuffer) throws {
@@ -41,6 +41,7 @@ extension NSEC {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.nextDomainName.encode(into: &buffer)
@@ -48,7 +49,7 @@ extension NSEC {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -65,7 +66,7 @@ extension NSEC: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC }

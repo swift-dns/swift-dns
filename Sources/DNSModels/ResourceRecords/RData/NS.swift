@@ -7,20 +7,21 @@ public struct NS: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NS {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NS {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.domainName.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -37,7 +38,7 @@ extension NS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NS: Queryable {
     @inlinable
     public static var recordType: RecordType { .NS }

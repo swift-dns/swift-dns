@@ -4,7 +4,7 @@ import DequeModule
 package import Logging
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 private let channelHandlerIDGenerator = IncrementalIDGenerator()
 
 @available(swiftDNSApplePlatforms 13, *)

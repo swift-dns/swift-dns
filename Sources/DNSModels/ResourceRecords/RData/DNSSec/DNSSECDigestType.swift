@@ -56,6 +56,7 @@ extension DNSSECDigestType: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSSECDigestType {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -65,6 +66,7 @@ extension DNSSECDigestType {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSSECDigestType {
     func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

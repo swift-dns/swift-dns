@@ -7,7 +7,7 @@ import struct NIOCore.ByteBuffer
 
 @Suite
 struct HostsFileTests {
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(arguments: hostFilesWithCapacities)
     func `parsing host files works`(
         resource: Resources,
@@ -45,7 +45,7 @@ struct HostsFileTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `description works`() async throws {
         let path = Resources.hosts.qualifiedPath()
         let filePath = FilePath(path)
@@ -60,7 +60,7 @@ struct HostsFileTests {
         #expect(description.hasSuffix("])"))
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func sort(entries: [ByteBuffer: HostsFile.Target]) -> [(ByteBuffer, HostsFile.Target)] {
         entries.sorted(by: { lhs, rhs in
             if lhs.key == rhs.key {
@@ -74,7 +74,7 @@ struct HostsFileTests {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension HostsFile {
     init(_ array: [(name: String, addresses: [String])]) {
         self.init(_entries: [:])
@@ -91,7 +91,7 @@ extension HostsFile {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 private let hostFiles: [(Resources, HostsFile)] = [
     (
         Resources.hosts,
@@ -142,7 +142,7 @@ private let readChunkSizes: [ByteCount] = [
 ]
 
 /// (resource, hostsFile, readChunkSize)
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 private let hostFilesWithCapacities: [(Resources, HostsFile, ByteCount)] = hostFiles.flatMap {
     (resource, hostsFile) in
     readChunkSizes.map { readChunkSize in

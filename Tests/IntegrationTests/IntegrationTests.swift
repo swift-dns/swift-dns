@@ -10,7 +10,7 @@ import struct NIOCore.ByteBuffer
 
 @Suite(.serialized)
 struct IntegrationTests {
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -82,7 +82,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -153,7 +153,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -225,7 +225,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -301,7 +301,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCERT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -399,7 +399,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -464,7 +464,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -542,7 +542,7 @@ struct IntegrationTests {
         /// TODO: try `education.github.com`
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -632,7 +632,7 @@ struct IntegrationTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -723,7 +723,7 @@ struct IntegrationTests {
     /// OPT is used in every other query, so it's already well-tested.
     @Test func queryOPT() async throws {}
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -813,7 +813,7 @@ struct IntegrationTests {
 
     @Test func queryTLSA() async throws {}
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -889,7 +889,7 @@ struct IntegrationTests {
 
     @Test func queryUpdate0() async throws {}
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     private static func makeTestingDNSClientsForConcurrentTest() -> [DNSClient] {
         [
             try! DNSClient(
@@ -934,7 +934,7 @@ struct IntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClientsForConcurrentTest())
     func query100DomainsConcurrently(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -983,7 +983,7 @@ struct IntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     private static func makeTestingDNSClientsForSequentialTest() -> [DNSClient] {
         [
             try! DNSClient(
@@ -1026,7 +1026,7 @@ struct IntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test(
         .packetCaptureMarker,
         .tags(.timeConsuming),
@@ -1080,7 +1080,7 @@ struct IntegrationTests {
         .prefix(100)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     private static func makeTestingDNSClients() -> [DNSClient] {
         [
             try! DNSClient(

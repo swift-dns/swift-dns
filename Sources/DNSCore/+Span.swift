@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Span {
     @inlinable
     package func contains(where predicate: (Element) -> Bool) -> Bool {

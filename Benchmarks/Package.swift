@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
         .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.17"),
-        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.5"),
+        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.6"),
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
     targets: [
@@ -110,6 +110,7 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("StrictMemorySafety"),
         .enableUpcomingFeature("InferIsolatedConformances"),
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+        .enableExperimentalFeature("Lifetimes"),
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
         ),
@@ -121,6 +122,9 @@ var settings: [SwiftSetting] {
         ),
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 13:macOS 13, iOS 16, tvOS 16, watchOS 9"
+        ),
+        .enableExperimentalFeature(
+            "AvailabilityMacro=swiftDNSApplePlatforms 11:macOS 11, iOS 14, tvOS 14, watchOS 7"
         ),
         .enableExperimentalFeature(
             "AvailabilityMacro=swiftDNSApplePlatforms 10.15:macOS 10.15, iOS 13, tvOS 13, watchOS 6"

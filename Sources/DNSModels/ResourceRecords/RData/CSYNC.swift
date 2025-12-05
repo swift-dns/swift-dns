@@ -50,6 +50,7 @@ public struct CSYNC: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC {
     package init(from buffer: inout DNSBuffer) throws {
         self.soaSerial = try buffer.readInteger(as: UInt32.self).unwrap(
@@ -66,6 +67,7 @@ extension CSYNC {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.soaSerial)
@@ -74,7 +76,7 @@ extension CSYNC {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -91,7 +93,7 @@ extension CSYNC: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC: Queryable {
     @inlinable
     public static var recordType: RecordType { .CSYNC }

@@ -7,7 +7,7 @@ public import struct NIOCore.ByteBuffer
 public import struct NIOCore.ByteBufferAllocator
 public import struct NIOCore.NIODeadline
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 @usableFromInline
 package struct QueryProducer: Sendable, ~Copyable {
     private var messageIDGenerator: MessageIDGenerator
@@ -63,7 +63,7 @@ package struct QueryProducer: Sendable, ~Copyable {
 }
 
 /// A message with a handle to create a PendingQuery from it.
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 @usableFromInline
 package struct ProducedMessage: Sendable {
     @usableFromInline

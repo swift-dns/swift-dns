@@ -7,20 +7,21 @@ public struct RRSIG: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try SIG(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.value.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -37,7 +38,7 @@ extension RRSIG: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG: Queryable {
     @inlinable
     public static var recordType: RecordType { .RRSIG }
