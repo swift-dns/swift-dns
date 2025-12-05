@@ -25,6 +25,7 @@ public struct NULL: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NULL {
     package init(from buffer: inout DNSBuffer) throws {
         self.anything = try buffer.readLengthPrefixedStringByteBuffer(
@@ -34,6 +35,7 @@ extension NULL {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NULL {
     package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixedString(
@@ -45,7 +47,7 @@ extension NULL {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NULL: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -62,7 +64,7 @@ extension NULL: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NULL: Queryable {
     @inlinable
     public static var recordType: RecordType { .NULL }

@@ -23,20 +23,21 @@ public struct CNAME: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.domainName.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -53,7 +54,7 @@ extension CNAME: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME: Queryable {
     @inlinable
     public static var recordType: RecordType { .CNAME }

@@ -67,6 +67,7 @@ public struct DNSKEY: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY {
     package init(from buffer: inout DNSBuffer) throws {
         self.flags = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -80,6 +81,7 @@ extension DNSKEY {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.flags)
@@ -88,6 +90,7 @@ extension DNSKEY {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY.PublicKey {
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try DNSSECAlgorithm(from: &buffer)
@@ -95,6 +98,7 @@ extension DNSKEY.PublicKey {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY.PublicKey {
     package func encode(into buffer: inout DNSBuffer) {
         self.algorithm.encode(into: &buffer)
@@ -102,7 +106,7 @@ extension DNSKEY.PublicKey {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -119,7 +123,7 @@ extension DNSKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .DNSKEY }

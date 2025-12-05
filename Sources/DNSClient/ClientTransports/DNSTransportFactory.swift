@@ -9,6 +9,7 @@ public struct DNSClientTransportFactory: Sendable {
         self.transport = transport
     }
 
+    @available(swiftDNSApplePlatforms 13, *)
     public static func `default`(
         serverAddress: DNSServerAddress,
         udpConnectionConfiguration: DNSConnectionConfiguration = .init(),
@@ -31,6 +32,7 @@ public struct DNSClientTransportFactory: Sendable {
         )
     }
 
+    @available(swiftDNSApplePlatforms 13, *)
     public static func preferUDPOrUseTCP(
         serverAddress: DNSServerAddress,
         udpConnectionConfiguration: DNSConnectionConfiguration = .init(),
@@ -53,6 +55,7 @@ public struct DNSClientTransportFactory: Sendable {
         )
     }
 
+    @available(swiftDNSApplePlatforms 13, *)
     public static func tcp(
         serverAddress: DNSServerAddress,
         configuration: TCPDNSClientTransportConfiguration = .init(),

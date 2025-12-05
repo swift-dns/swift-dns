@@ -89,6 +89,7 @@ extension DNSSECAlgorithm: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSSECAlgorithm {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -98,6 +99,7 @@ extension DNSSECAlgorithm {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension DNSSECAlgorithm {
     func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

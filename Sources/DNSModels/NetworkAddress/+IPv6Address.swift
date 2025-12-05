@@ -1,7 +1,7 @@
 import DNSCore
 import IPAddress
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension IPv6Address {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(
@@ -44,7 +44,7 @@ extension IPv6Address {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension IPv6Address {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeUnsignedInt128(self.address)

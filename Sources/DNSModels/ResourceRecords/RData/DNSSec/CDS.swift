@@ -20,6 +20,7 @@ public struct CDS: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CDS {
     package init(from buffer: inout DNSBuffer) throws {
         self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -38,6 +39,7 @@ extension CDS {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CDS {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.keyTag)
@@ -48,7 +50,7 @@ extension CDS {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CDS: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -65,7 +67,7 @@ extension CDS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CDS: Queryable {
     @inlinable
     public static var recordType: RecordType { .CDS }

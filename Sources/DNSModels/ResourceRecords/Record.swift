@@ -34,7 +34,7 @@
 ///     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 ///
 /// ```
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 public struct Record: Sendable {
     public var nameLabels: DomainName
     public var recordType: RecordType {
@@ -52,7 +52,7 @@ public struct Record: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Record {
     package init(from buffer: inout DNSBuffer) throws {
         self.nameLabels = try DomainName(from: &buffer)
@@ -68,7 +68,7 @@ extension Record {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension [Record] {
     package enum DecodingError: Error {
         case mustBeFinalResourceRecord(String)
@@ -134,7 +134,7 @@ extension [Record] {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Record {
     package func encode(into buffer: inout DNSBuffer) throws {
         try nameLabels.encode(into: &buffer)

@@ -299,6 +299,7 @@ public struct Header: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Header {
     package init(from buffer: inout DNSBuffer) throws {
         self.id = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -320,6 +321,7 @@ extension Header {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Header {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.id)
@@ -337,6 +339,7 @@ extension Header.Bytes3And4: CustomStringConvertible {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Header.Bytes3And4 {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -346,6 +349,7 @@ extension Header.Bytes3And4 {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension Header.Bytes3And4 {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

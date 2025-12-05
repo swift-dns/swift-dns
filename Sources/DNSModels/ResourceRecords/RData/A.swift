@@ -29,19 +29,21 @@ public struct A: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension A {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try IPv4Address(from: &buffer)
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension A {
     package func encode(into buffer: inout DNSBuffer) {
         self.value.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension A: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -58,7 +60,7 @@ extension A: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension A: Queryable {
     @inlinable
     public static var recordType: RecordType { .A }

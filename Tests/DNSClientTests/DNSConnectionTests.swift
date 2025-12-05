@@ -9,7 +9,7 @@ import Testing
 
 @Suite
 struct DNSConnectionTests {
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `query tests`() async throws {
         try await self.runQueryTests(
             queryableTypes: A.self,
@@ -25,7 +25,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func runQueryTests<each QueryableType: Queryable>(
         queryableTypes: repeat (each QueryableType).Type
     ) async throws {
@@ -39,7 +39,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
@@ -71,7 +71,7 @@ struct DNSConnectionTests {
         #expect("\(response)" == "\(message)")
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -102,7 +102,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test
     func `query cancelled then response arrives later then continue using the channel`()
         async throws
@@ -187,7 +187,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `query does not run when task is already cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -212,7 +212,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
@@ -246,7 +246,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test
     func `query timed out then response arrives later then continue using the channel`()
         async throws
@@ -327,7 +327,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `query does not run when connection is closed`() async throws {
         typealias QueryableType = TXT
 
@@ -348,7 +348,7 @@ struct DNSConnectionTests {
         #expect(!channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
@@ -362,7 +362,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func runSequentialTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,
@@ -403,7 +403,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func `concurrent MX queries over one connection`() async throws {
         typealias QueryableType = MX
 
@@ -420,7 +420,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func runConcurrentTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,
@@ -505,7 +505,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func bufferAndMessage(
         from resource: Resources,
         changingIDTo messageID: UInt16?
@@ -523,7 +523,7 @@ struct DNSConnectionTests {
         return (buffer, message)
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func makeTestConnection(
         configuration: DNSConnectionConfiguration = .init(),
         address: DNSServerAddress = .domain(

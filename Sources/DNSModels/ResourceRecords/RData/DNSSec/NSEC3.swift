@@ -208,6 +208,7 @@ public struct NSEC3: Sendable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3 {
     package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try HashAlgorithm(from: &buffer)
@@ -230,6 +231,7 @@ extension NSEC3 {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3 {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.hashAlgorithm.encode(into: &buffer)
@@ -266,6 +268,7 @@ extension NSEC3.HashAlgorithm: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3.HashAlgorithm {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -277,13 +280,14 @@ extension NSEC3.HashAlgorithm {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3.HashAlgorithm {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -300,7 +304,7 @@ extension NSEC3: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3: Queryable {
     @inlinable
     public static var recordType: RecordType { .NSEC3 }

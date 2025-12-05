@@ -72,7 +72,7 @@ public struct SRV: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SRV {
     package init(from buffer: inout DNSBuffer) throws {
         self.priority = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -88,6 +88,7 @@ extension SRV {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SRV {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.priority)
@@ -97,7 +98,7 @@ extension SRV {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SRV: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -114,7 +115,7 @@ extension SRV: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension SRV: Queryable {
     @inlinable
     public static var recordType: RecordType { .SRV }

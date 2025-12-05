@@ -29,6 +29,7 @@ public struct HINFO: Sendable {
     public var os: String
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO {
     package init(from buffer: inout DNSBuffer) throws {
         self.cpu = try buffer.readLengthPrefixedStringAsString(name: "HINFO.cpu")
@@ -36,6 +37,7 @@ extension HINFO {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO {
     package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixedString(
@@ -53,7 +55,7 @@ extension HINFO {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -70,7 +72,7 @@ extension HINFO: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO: Queryable {
     @inlinable
     public static var recordType: RecordType { .HINFO }

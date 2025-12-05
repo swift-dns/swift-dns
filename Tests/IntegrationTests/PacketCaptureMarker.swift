@@ -51,7 +51,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
     /// Send a dns message over udp to 240.1.2.3, with the edns part of
     /// the message populated with a message in utf8.
     /// This is so we can see the test boundaries in a packet capture.
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func send(subDomain: String, info: String) async {
         do {
             try await self._send(
@@ -71,7 +71,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
     /// Send a dns message over udp to 240.1.2.3, with the edns part of
     /// the message populated with a message in utf8.
     /// This is so we can see the test boundaries in a packet capture.
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     func _send(subDomain: String, info: String) async throws {
         var message = try MessageFactory<A>
             .forQuery(domainName: "\(subDomain).marker.packet.local.")

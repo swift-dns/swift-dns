@@ -91,7 +91,7 @@ public struct CAA: Sendable, Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes3And4 handles flags
@@ -107,6 +107,7 @@ extension CAA {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
@@ -147,6 +148,7 @@ extension CAA.Property: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA.Property {
     package init(from buffer: inout DNSBuffer) throws {
         let length = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -167,6 +169,7 @@ extension CAA.Property {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA.Property {
     package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixed(as: UInt8.self) {
@@ -176,7 +179,7 @@ extension CAA.Property {
 }
 
 extension CAA.Value {
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {
         case .issue, .issueWildcard:
@@ -202,6 +205,7 @@ extension CAA.Value {
             keyValues: [(key: String, value: String)]
         )
 
+        @available(swiftDNSApplePlatforms 10.15, *)
         var keyValues: [(key: String, value: String)] {
             get throws {
                 switch self {
@@ -220,7 +224,7 @@ extension CAA.Value {
         }
     }
 
-    @available(swiftDNSApplePlatforms 13, *)
+    @available(swiftDNSApplePlatforms 10.15, *)
     static func readIssuer(
         from buffer: inout DNSBuffer
     ) throws -> (DomainName?, [(key: String, value: String)]) {
@@ -241,11 +245,9 @@ extension CAA.Value {
             }
         } else {
             if buffer.readableBytes > 0 {
-                domainName = try buffer.withUnsafeReadableBytes {
-                    try $0.withMemoryRebound(to: UInt8.self) {
-                        try DomainName(_uncheckedAssumingValidUTF8: $0.span)
-                    }
-                }
+                domainName = try DomainName(
+                    _uncheckedAssumingValidUTF8: Span<UInt8>(_bytes: buffer.readableBytesSpan)
+                )
                 buffer.moveReaderIndex(to: buffer.writerIndex)
                 /// There was no semicolon in the buffer so the whole of it was the domainName.
                 /// Therefore, we can return immediately.
@@ -342,7 +344,7 @@ extension CAA.Value {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -359,7 +361,7 @@ extension CAA: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension CAA: Queryable {
     @inlinable
     public static var recordType: RecordType { .CAA }

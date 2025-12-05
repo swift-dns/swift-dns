@@ -430,6 +430,7 @@ extension KEY.KeyTrust: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY {
     package init(from buffer: inout DNSBuffer) throws {
         let flags = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -458,6 +459,7 @@ extension KEY {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
@@ -472,6 +474,7 @@ extension KEY {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.KeyTrust {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -481,6 +484,7 @@ extension KEY.KeyTrust {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.KeyTrust {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -531,6 +535,7 @@ extension KEY.KeyUsage: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.KeyUsage {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -540,6 +545,7 @@ extension KEY.KeyUsage {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.KeyUsage {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -583,6 +589,7 @@ extension KEY.UpdateScope: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.UpdateScope {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -592,6 +599,7 @@ extension KEY.UpdateScope {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.UpdateScope {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -642,6 +650,7 @@ extension KEY.Proto: RawRepresentable {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.Proto {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -651,13 +660,14 @@ extension KEY.Proto {
     }
 }
 
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY.Proto {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY: RDataConvertible {
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
@@ -674,7 +684,7 @@ extension KEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension KEY: Queryable {
     @inlinable
     public static var recordType: RecordType { .KEY }

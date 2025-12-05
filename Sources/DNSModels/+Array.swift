@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension [UInt8] {
     @inline(__always)
     borrowing func withSpan_Compatibility<T>(

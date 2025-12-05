@@ -312,7 +312,7 @@ extension DNSConnectionFactory {
 }
 
 // MARK: - +NIOClientTCPBootstrapProtocol
-@available(swiftDNSApplePlatforms 13, *)
+@available(swiftDNSApplePlatforms 10.15, *)
 extension NIOClientTCPBootstrapProtocol {
     func connect(target: DNSServerAddress) -> EventLoopFuture<any Channel> {
         switch target {
