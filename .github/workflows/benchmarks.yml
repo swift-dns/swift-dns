@@ -21,8 +21,6 @@ jobs:
   benchmark-vs-thresholds:
     runs-on: [self-hosted, linux, x64]
 
-    container: swift:6.2-noble
-
     permissions:
       pull-requests: write # For the comment action
       contents: write # For committing threshold updates
@@ -30,9 +28,13 @@ jobs:
     steps:
       # jemalloc is a dependency of the Benchmarking package
       # actions/cache will detect zstd and will become much faster.
-      - name: Install jemalloc, zstd, curl and jq
-        run: |
-          apt update -q && apt install -yq libjemalloc-dev zstd curl jq
+      # jemalloc, zstd and jq are already installed in the self-hosted runner so we skip this step.
+
+      - name: Manually update PATH with Swift
+        run: echo "/home/gha/.local/share/swiftly/toolchains/6.2.1/usr/bin" >> $GITHUB_PATH
+
+      - name: Enable full performance
+        run: /usr/bin/ordo-performance
 
       - name: Find commit info
         id: commit-info
@@ -279,6 +281,10 @@ jobs:
           if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
             echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
           fi
+
+      - name: Enable powersave mode
+        if: always()
+        run: /usr/bin/ordo-performance powersave
 
       - name: Exit with correct status
         run: exit ${{ steps.comparison.outputs.exit-status }}

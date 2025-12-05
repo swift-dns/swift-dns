@@ -14,7 +14,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.15"),
+        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.17"),
         .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.5"),
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],

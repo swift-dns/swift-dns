@@ -24,14 +24,14 @@ public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
     }
 
     public subscript<T>(dynamicMember member: KeyPath<Message, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors
+        /// FIXME: use `read`/`modify` accessors?
         get {
             self.message[keyPath: member]
         }
     }
 
     public subscript<T>(dynamicMember member: WritableKeyPath<Message, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors
+        /// FIXME: use `read`/`modify` accessors?
         get {
             self.message[keyPath: member]
         }
@@ -64,14 +64,14 @@ public struct SpecializedRecord<RDataType: RDataConvertible>: Sendable {
     }
 
     public subscript<T>(dynamicMember member: KeyPath<Record, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors
+        /// FIXME: use `read`/`modify` accessors?
         get {
             self.record[keyPath: member]
         }
     }
 
     public subscript<T>(dynamicMember member: WritableKeyPath<Record, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors
+        /// FIXME: use `read`/`modify` accessors?
         get {
             self.record[keyPath: member]
         }
