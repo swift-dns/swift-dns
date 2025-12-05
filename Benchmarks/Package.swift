@@ -16,7 +16,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.15"),
+        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.17"),
         .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.5"),
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
@@ -46,6 +46,7 @@ let package = Package(
                 "DNSModels",
                 "_DNSConnectionPool",
                 .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
                 .product(name: "Atomics", package: "swift-atomics"),
@@ -135,7 +136,7 @@ package.platforms = [.macOS(.v26)]
 package.dependencies.append(
     .package(
         url: "https://github.com/MahdiBM/package-benchmark.git",
-        branch: "mmbm-range-relative-thresholds-options-bak"
+        branch: "mmbm-range-relative-thresholds-options"
     ),
 )
 
