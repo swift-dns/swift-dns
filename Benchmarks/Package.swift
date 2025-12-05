@@ -152,17 +152,5 @@ package.targets += [
         plugins: [
             .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
         ]
-    ),
-    .executableTarget(
-        name: "DomainNameBenchs",
-        dependencies: [
-            .product(name: "Benchmark", package: "package-benchmark"),
-            "DNSModels",
-        ],
-        path: "DomainName",
-        swiftSettings: settings,
-        plugins: [
-            .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
-        ]
-    ),
+    )
 ]
