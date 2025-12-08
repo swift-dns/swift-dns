@@ -346,6 +346,10 @@ extension CAA.Value {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CAA: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .CAA }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .CAA(let caa):
@@ -363,9 +367,6 @@ extension CAA: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CAA: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .CAA }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

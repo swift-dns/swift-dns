@@ -131,6 +131,10 @@ extension SSHFP.FingerprintType {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension SSHFP: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .SSHFP }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .SSHFP(let sshfp):
@@ -148,9 +152,6 @@ extension SSHFP: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension SSHFP: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .SSHFP }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

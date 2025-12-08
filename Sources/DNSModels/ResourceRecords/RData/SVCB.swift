@@ -780,6 +780,10 @@ extension SVCB.SVCParamValue.Unknown {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .SVCB }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .SVCB(let svcb):
@@ -797,9 +801,6 @@ extension SVCB: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension SVCB: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .SVCB }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

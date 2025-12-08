@@ -118,7 +118,7 @@ extension DNSChannelHandler {
             self.processDeadlineCallbackAction(action: deadlineCallbackAction)
 
             context.writeAndFlush(
-                self.wrapOutboundOut(ByteBuffer(dnsBuffer: producedMessage.buffer)),
+                self.wrapOutboundOut(ByteBuffer(dnsBuffer: producedMessage.encodedMessage)),
                 promise: nil
             )
         case .throwError(let error):

@@ -61,6 +61,10 @@ extension TXT: Equatable {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension TXT: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .TXT }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .TXT(let txt):
@@ -78,9 +82,6 @@ extension TXT: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension TXT: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .TXT }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

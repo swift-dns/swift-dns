@@ -71,17 +71,14 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     package func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await self.withConnection(
             message: factory,
-            options: options,
             isolation: isolation
-        ) { factory, options, conn in
+        ) { factory, conn in
             try await self.query(
                 message: factory,
-                options: options,
                 connection: conn,
                 isolation: isolation
             )
@@ -94,13 +91,11 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         connection: DNSConnection,
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await connection.send(
             message: factory,
-            options: options,
             allocator: self.allocator
         )
     }
@@ -108,27 +103,23 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func withConnection<RData: RDataConvertible>(
         message factory: consuming MessageFactory<RData>,
-        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
         operation: (
             consuming MessageFactory<RData>,
-            DNSRequestOptions,
             DNSConnection
-        ) async throws -> Message
-    ) async throws -> Message {
+        ) async throws -> (query: Message, response: Message)
+    ) async throws -> (query: Message, response: Message) {
         /// FIXME: Add logic to choose TCP when it should
         switch true {
         case true:
             try await self.withUDPConnection(
                 message: factory,
-                options: options,
                 isolation: isolation,
                 operation: operation
             )
         case false:
             try await self.tcpTransport.withConnection(
                 message: factory,
-                options: options,
                 isolation: isolation,
                 operation: operation
             )
@@ -137,20 +128,21 @@ extension PreferUDPOrUseTCPDNSClientTransport {
 
     func withUDPConnection<RData: RDataConvertible>(
         message factory: consuming MessageFactory<RData>,
-        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
-        operation: (consuming MessageFactory<RData>, DNSRequestOptions, DNSConnection) async throws
-            -> Message
-    ) async throws -> Message {
+        operation: (
+            consuming MessageFactory<RData>,
+            DNSConnection
+        ) async throws -> (query: Message, response: Message)
+    ) async throws -> (query: Message, response: Message) {
         if let connection = await self.udpConnection {
-            return try await operation(factory, options, connection)
+            return try await operation(factory, connection)
         } else {
             let connection = await withCheckedContinuation { continuation in
                 self.udpConnectionWaiters.withLockedValue {
                     $0.append(continuation)
                 }
             }
-            return try await operation(factory, options, connection)
+            return try await operation(factory, connection)
         }
     }
 

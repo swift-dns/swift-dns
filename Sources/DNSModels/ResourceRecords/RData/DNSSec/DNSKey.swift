@@ -108,6 +108,10 @@ extension DNSKEY.PublicKey {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .DNSKEY }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.DNSKEY(let dnskey)):
@@ -125,9 +129,6 @@ extension DNSKEY: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension DNSKEY: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .DNSKEY }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

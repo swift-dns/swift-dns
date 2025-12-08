@@ -378,6 +378,10 @@ extension TSIG.Algorithm {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension TSIG: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .TSIG }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.TSIG(let tsig)):
@@ -395,9 +399,6 @@ extension TSIG: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension TSIG: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .TSIG }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

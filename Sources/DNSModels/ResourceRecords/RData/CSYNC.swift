@@ -78,6 +78,10 @@ extension CSYNC {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .CSYNC }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .CSYNC(let csync):
@@ -95,9 +99,6 @@ extension CSYNC: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CSYNC: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .CSYNC }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

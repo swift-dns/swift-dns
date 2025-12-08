@@ -66,12 +66,10 @@ public final actor DNSConnection: Sendable {
     @inlinable
     package func send(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions,
         allocator: ByteBufferAllocator
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         let preparedQuery = try self.prepareQuery(
             message: factory,
-            options: options,
             allocator: allocator
         )
         return try await preparedQuery.send()
@@ -86,13 +84,11 @@ public final actor DNSConnection: Sendable {
     @inlinable
     package func prepareQuery(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions,
         allocator: ByteBufferAllocator
     ) throws -> PreparedQuery {
         try self.channelHandler.preflightCheck()
         let producedMessage = try self.channelHandler.queryProducer.produceMessage(
             message: factory,
-            options: options,
             allocator: allocator
         )
         return PreparedQuery(
@@ -161,9 +157,11 @@ package struct PreparedQuery: Sendable, ~Copyable {
     }
 
     @inlinable
-    package func send() async throws -> Message {
-        try await self.connection.send(
+    package func send() async throws -> (query: Message, response: Message) {
+        let query = self.producedMessage._message
+        let response = try await self.connection.send(
             producedMessage: self.producedMessage
         )
+        return (query, response)
     }
 }

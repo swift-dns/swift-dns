@@ -669,6 +669,10 @@ extension KEY.Proto {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension KEY: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .KEY }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.KEY(let key)):
@@ -686,9 +690,6 @@ extension KEY: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension KEY: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .KEY }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

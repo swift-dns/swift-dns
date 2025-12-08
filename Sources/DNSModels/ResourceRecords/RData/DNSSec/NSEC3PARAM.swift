@@ -119,6 +119,10 @@ extension NSEC3PARAM {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3PARAM: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .NSEC3PARAM }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.NSEC3PARAM(let nsec3param)):
@@ -136,9 +140,6 @@ extension NSEC3PARAM: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension NSEC3PARAM: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .NSEC3PARAM }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

@@ -23,6 +23,10 @@ extension PTR {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension PTR: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .PTR }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .PTR(let ptr):
@@ -40,9 +44,6 @@ extension PTR: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension PTR: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .PTR }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

@@ -52,6 +52,10 @@ extension CDS {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CDS: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .CDS }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.CDS(let cds)):
@@ -69,9 +73,6 @@ extension CDS: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CDS: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .CDS }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }
