@@ -254,7 +254,7 @@ struct QueryResponseTests {
         }
         let expectedIPv4s = [
             IPv4Address(185, 200, 232, 40),
-            IPv4Address(185, 200, 232, 48)
+            IPv4Address(185, 200, 232, 48),
         ]
         #expect(ipv4s == expectedIPv4s)
 

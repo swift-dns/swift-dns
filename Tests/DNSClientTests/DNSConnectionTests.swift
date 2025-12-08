@@ -47,7 +47,7 @@ struct DNSConnectionTests {
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
-        async let asyncResponse = try await connection.send(
+        async let (_, asyncResponse) = try await connection.send(
             message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
             allocator: .init()
         )
@@ -159,7 +159,7 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 allocator: .init()
             )
@@ -215,7 +215,7 @@ struct DNSConnectionTests {
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
-        async let asyncResponse = try await connection.send(
+        async let (_, asyncResponse) = try await connection.send(
             message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
             allocator: .init()
         )
@@ -252,7 +252,7 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 allocator: .init()
             )
@@ -295,7 +295,7 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
                 allocator: .init()
             )
@@ -372,7 +372,7 @@ struct DNSConnectionTests {
             )
             let producedMessage = preparedQuery.producedMessage
             let messageID = producedMessage.messageID
-            async let asyncResponse = try await preparedQuery.send()
+            async let (_, asyncResponse) = try await preparedQuery.send()
 
             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
             let receivedMessageID = try #require(
@@ -434,7 +434,7 @@ struct DNSConnectionTests {
                     allocator: .init()
                 )
                 let messageID = preparedQuery.producedMessage.messageID
-                async let asyncResponse = try await preparedQuery.send()
+                async let (_, asyncResponse) = try await preparedQuery.send()
 
                 /// We're sending queries concurrently so this is not necessarily the
                 /// message that we just sent. We just wait for one message to be written and
