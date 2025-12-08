@@ -1,19 +1,23 @@
 public import Logging
 public import NIOCore
-import NIOPosix
+public import NIOPosix
 
 import struct DNSModels.DomainName
 
 #if canImport(Network)
-import Network
-import NIOTransportServices
+public import Network
+public import NIOTransportServices
 #endif
 
 @available(swiftDNSApplePlatforms 13, *)
-package struct DNSConnectionFactory {
+@usableFromInline
+package struct DNSConnectionFactory: Sendable {
+    @usableFromInline
     let socketAddress: SocketAddress
+    @usableFromInline
     let configuration: DNSConnectionConfiguration
 
+    @inlinable
     package init(
         configuration: DNSConnectionConfiguration,
         serverAddress: DNSServerAddress
@@ -47,6 +51,7 @@ package struct DNSConnectionFactory {
         )
     }
 
+    @inlinable
     func makeTCPConnection(
         address: DNSServerAddress,
         connectionID: Int,
@@ -207,7 +212,8 @@ extension DNSConnectionFactory {
     }
 
     /// create a BSD sockets based bootstrap
-    private func createSocketsBootstrap(
+    @inlinable
+    func createSocketsBootstrap(
         eventLoop: any EventLoop,
         isolation: isolated (any Actor)?
     ) -> ClientBootstrap {
@@ -217,7 +223,8 @@ extension DNSConnectionFactory {
 
     #if canImport(Network)
     /// create a NIOTransportServices bootstrap using Network.framework
-    private func createTSBootstrap(
+    @inlinable
+    func createTSBootstrap(
         eventLoop: any EventLoop,
         tlsOptions: NWProtocolTLS.Options?,
         isolation: isolated (any Actor)?
@@ -235,7 +242,8 @@ extension DNSConnectionFactory {
     }
     #endif
 
-    private func makeTCPChannelHandler(
+    @inlinable
+    func makeTCPChannelHandler(
         eventLoop: any EventLoop,
         logger: Logger,
         isolation: isolated (any Actor)?
@@ -248,7 +256,8 @@ extension DNSConnectionFactory {
         )
     }
 
-    private func makeInitializedTCPBootstrap(
+    @inlinable
+    func makeInitializedTCPBootstrap(
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
@@ -282,7 +291,8 @@ extension DNSConnectionFactory {
         return (bootstrap, channelHandler)
     }
 
-    private func makeInitializedTCPChannel(
+    @inlinable
+    func makeInitializedTCPChannel(
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,

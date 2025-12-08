@@ -34,6 +34,7 @@ package struct MessageIDGenerator: Sendable, ~Copyable {
         1...UInt16.max
     }
 
+    @inlinable
     package init() {
         self.ids = BitSet()
         self.ids.reserveCapacity(Self.capacity)

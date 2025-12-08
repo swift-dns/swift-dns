@@ -2,9 +2,9 @@ public import Atomics
 public import DNSModels
 public import _DNSConnectionPool
 
-package import struct Logging.Logger
-package import struct NIOCore.ByteBufferAllocator
-package import protocol NIOCore.EventLoopGroup
+public import struct Logging.Logger
+public import struct NIOCore.ByteBufferAllocator
+public import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 public import ServiceLifecycle
@@ -39,17 +39,54 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
+    @usableFromInline
     package let serverAddress: DNSServerAddress
+    @usableFromInline
     package let configuration: TCPDNSClientTransportConfiguration
     @usableFromInline
     let connectionPool: TCPConnectionPool
+    @usableFromInline
     let eventLoopGroup: any EventLoopGroup
+    @usableFromInline
     let logger: Logger
 
+    @usableFromInline
     let allocator: ByteBufferAllocator
     @usableFromInline
     let isRunning: ManagedAtomic<Bool>
 
+    @inlinable
+    package init(
+        serverAddress: DNSServerAddress,
+        configuration: TCPDNSClientTransportConfiguration = .init(),
+        eventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
+        logger: Logger = .noopLogger,
+        makeConnection: @Sendable @escaping () -> DNSConnection
+    ) {
+        self.serverAddress = serverAddress
+        self.configuration = configuration
+        self.connectionPool = TCPConnectionPool(
+            configuration: configuration.connectionPoolConfiguration.toConnectionPoolConfig(),
+            idGenerator: IncrementalIDGenerator(),
+            requestType: ConnectionRequest<DNSConnection>.self,
+            keepAliveBehavior: NoOpKeepAliveBehavior(connectionType: DNSConnection.self),
+            observabilityDelegate: DNSClientMetrics(logger: logger),
+            clock: .continuous
+        ) { (connectionID, pool) in
+            var logger = logger
+            logger[metadataKey: "dns_tcp_conn_id"] = "\(connectionID)"
+
+            let connection = makeConnection()
+
+            return ConnectionAndMetadata(connection: connection, maximalStreamsOnConnection: 1)
+        }
+        self.eventLoopGroup = eventLoopGroup
+        self.logger = logger
+        self.allocator = ByteBufferAllocator()
+        self.isRunning = ManagedAtomic(false)
+    }
+
+    @inlinable
     package init(
         serverAddress: DNSServerAddress,
         configuration: TCPDNSClientTransportConfiguration = .init(),

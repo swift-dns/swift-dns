@@ -53,12 +53,13 @@ package struct DNSBuffer: Sendable {
         self._dnsStartIndex = _dnsStartIndex
     }
 
-    @usableFromInline
+    @inlinable
     package init() {
         self._buffer = ByteBuffer()
         self._dnsStartIndex = self._buffer.readerIndex
     }
 
+    @inlinable
     package init(buffer: ByteBuffer) {
         self._buffer = buffer
         self._dnsStartIndex = self._buffer.readerIndex
@@ -93,6 +94,7 @@ package struct DNSBuffer: Sendable {
         return UnsignedInt128(_low: low, _high: high)
     }
 
+    @inlinable
     package mutating func readInteger<T: FixedWidthInteger>(as: T.Type = T.self) -> T? {
         self._buffer.readInteger(as: T.self)
     }
@@ -118,6 +120,7 @@ package struct DNSBuffer: Sendable {
         self._buffer.moveReaderIndex(forwardBy: forwardBy)
     }
 
+    @inlinable
     package mutating func moveReaderIndex(to offset: Int) {
         self._buffer.moveReaderIndex(to: offset)
     }
@@ -413,6 +416,7 @@ extension DNSBuffer {
 extension ByteBuffer {
     /// consuming doesn't do much here but that's what I expect (that the DNSBuffer is
     /// no longer touched after getting the underlying ByteBuffer)
+    @inlinable
     package init(dnsBuffer: consuming DNSBuffer) {
         self = dnsBuffer._buffer
     }

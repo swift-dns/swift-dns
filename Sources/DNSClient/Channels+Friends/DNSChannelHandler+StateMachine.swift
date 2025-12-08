@@ -28,6 +28,7 @@ extension DNSChannelHandler {
         @usableFromInline
         package var _state: State
 
+        @inlinable
         package init() {
             self._state = .initialized
         }

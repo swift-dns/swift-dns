@@ -22,6 +22,7 @@ public struct DNSClient: Sendable {
 
     /// Run DNSClient connection pool
     /// This is intentionally marked as throws so it can fail in the future if it needs to.
+    @inlinable
     public func run() async throws {
         switch self.transport {
         case .preferUDPOrUseTCP(let transport):
@@ -48,11 +49,14 @@ public struct DNSClient: Sendable {
         message factory: consuming MessageFactory<some RDataConvertible>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> Message {
-        try await self._query(message: factory, isolation: isolation).response
+        try await self._query(
+            message: factory,
+            isolation: isolation
+        ).response
     }
 
     @inlinable
-    public func _query(
+    package func _query(
         message factory: consuming MessageFactory<some RDataConvertible>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> (query: Message, response: Message) {

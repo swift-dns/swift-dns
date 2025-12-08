@@ -8,8 +8,10 @@ public import struct NIOCore.NIODeadline
 @available(swiftDNSApplePlatforms 10.15, *)
 @usableFromInline
 package struct QueryProducer: Sendable, ~Copyable {
-    private var messageIDGenerator: MessageIDGenerator
+    @usableFromInline
+    var messageIDGenerator: MessageIDGenerator
 
+    @inlinable
     package init() {
         self.messageIDGenerator = MessageIDGenerator()
     }

@@ -1,11 +1,12 @@
 import DNSCore
 public import DNSModels
 import DequeModule
-package import Logging
+public import Logging
 public import NIOCore
 
 @available(swiftDNSApplePlatforms 10.15, *)
-private let channelHandlerIDGenerator = IncrementalIDGenerator()
+@usableFromInline
+let _channelHandlerIDGenerator = IncrementalIDGenerator()
 
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
@@ -62,16 +63,22 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
     let eventLoop: any EventLoop
     @usableFromInline
     let configuration: DNSConnectionConfiguration
+    @usableFromInline
     let decoder: NIOSingleStepByteToMessageProcessor<DNSMessageDecoder>
     @usableFromInline
     private(set) var deadlineCallback: NIOScheduledCallback?
     @usableFromInline
     var queryProducer: QueryProducer
+    @usableFromInline
     var stateMachine: StateMachine<ChannelHandlerContext>
+    @usableFromInline
     let isOverUDP: Bool
+    @usableFromInline
     let id: Int
+    @usableFromInline
     let logger: Logger
 
+    @inlinable
     package init(
         eventLoop: any EventLoop,
         configuration: DNSConnectionConfiguration,
@@ -84,7 +91,7 @@ package final class DNSChannelHandler: ChannelDuplexHandler {
         self.queryProducer = QueryProducer()
         self.stateMachine = StateMachine()
         self.isOverUDP = isOverUDP
-        self.id = channelHandlerIDGenerator.next()
+        self.id = _channelHandlerIDGenerator.next()
         var logger = logger
         logger[metadataKey: "dns_chnl_hndlr_id"] = "\(self.id)"
         self.logger = logger

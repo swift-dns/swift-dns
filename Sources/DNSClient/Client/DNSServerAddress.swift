@@ -37,6 +37,7 @@ extension DNSServerAddress {
         }
     }
 
+    @inlinable
     package func asSocketAddress() throws -> SocketAddress {
         switch self {
         case .ipAddress(_, let address):
