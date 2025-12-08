@@ -129,6 +129,151 @@ struct QueryResponseTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func encodeAWwwExampleComQuery() throws {
+        let query = Query(
+            domainName: try DomainName("www.example.com."),
+            queryType: .A,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x1306,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryAWwwExampleComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func decodeAWwwExampleComResponse() throws {
+        var buffer = Resources.dnsResponseAWwwExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x1306)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 4)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == false)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        let domainName = try DomainName("www.example.com.")
+        #expect(response.queries.first?.domainName == domainName)
+        #expect(response.queries.first?.queryType == .A)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 4)
+
+        let cnameRecords = response.answers.prefix(2)
+        #expect(
+            cnameRecords.allSatisfy { $0.nameLabels.isFQDN },
+            "\(cnameRecords)"
+        )
+        let edgeSuiteDomainName = try DomainName("www.example.com-v4.edgesuite.net.")
+        #expect(
+            cnameRecords.map(\.nameLabels) == [domainName, edgeSuiteDomainName],
+            "\(cnameRecords)"
+        )
+        #expect(cnameRecords.allSatisfy { $0.recordType == .CNAME }, "\(response.answers).")
+        #expect(cnameRecords.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(cnameRecords.map(\.ttl) == [201, 21391], "\(response.answers).")
+        let cnameDomainNames = cnameRecords.compactMap {
+            switch $0.rdata {
+            case .CNAME(let cname):
+                return cname.domainName
+            default:
+                Issue.record("rdata was not of type CNAME: \($0.rdata).")
+                return nil
+            }
+        }
+        let akamaiDoaminName = try DomainName("a1422.dscr.akamai.net.")
+        #expect(cnameDomainNames == [edgeSuiteDomainName, akamaiDoaminName])
+
+        let aRecords = response.answers.suffix(2)
+        #expect(
+            aRecords.allSatisfy { $0.nameLabels.isFQDN },
+            "\(aRecords)"
+        )
+        #expect(
+            aRecords.allSatisfy { $0.nameLabels == akamaiDoaminName },
+            "\(aRecords)"
+        )
+        #expect(aRecords.allSatisfy { $0.recordType == .A }, "\(response.answers).")
+        #expect(aRecords.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(aRecords.allSatisfy { $0.ttl == 20 }, "\(response.answers).")
+        let ipv4s = aRecords.compactMap {
+            switch $0.rdata {
+            case .A(let a):
+                return a.value
+            default:
+                Issue.record("rdata was not of type A: \($0.rdata).")
+                return nil
+            }
+        }
+        let expectedIPv4s = [
+            IPv4Address(185, 200, 232, 40),
+            IPv4Address(185, 200, 232, 48)
+        ]
+        #expect(ipv4s == expectedIPv4s)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+        #expect(edns.options.options.isEmpty)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
             domainName: try DomainName("cloudflare.com."),

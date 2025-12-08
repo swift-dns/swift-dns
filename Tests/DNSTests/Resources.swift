@@ -11,6 +11,9 @@ enum Resources: String {
     case dnsQueryAExampleComPacket = "example.com-a-query-packet"
     case dnsResponseAExampleComPacket = "example.com-a-response-packet"
 
+    case dnsQueryAWwwExampleComPacket = "www.example.com-a-query-packet"
+    case dnsResponseAWwwExampleComPacket = "www.example.com-a-response-packet"
+
     case dnsQueryAAAACloudflareComPacket = "cloudflare.com-aaaa-query-packet"
     case dnsResponseAAAACloudflareComPacket = "cloudflare.com-aaaa-response-packet"
 
@@ -83,6 +86,7 @@ enum Resources: String {
     var subDirectory: String? {
         switch self {
         case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket,
+            .dnsQueryAWwwExampleComPacket, .dnsResponseAWwwExampleComPacket,
             .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket,
             .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket,
             .dnsQueryCNAMERawGithubusercontentComPacket,
@@ -104,7 +108,9 @@ enum Resources: String {
     var domainName: DomainName? {
         switch self {
         case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket:
-            return try? DomainName("mahdibm.com.")
+            return try? DomainName("example.com.")
+        case .dnsQueryAWwwExampleComPacket, .dnsResponseAWwwExampleComPacket:
+            return try? DomainName("www.example.com.")
         case .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket:
             return try? DomainName("cloudflare.com.")
         case .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket:
