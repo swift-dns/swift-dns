@@ -1,6 +1,3 @@
-import DNSCore
-package import Endpoint
-
 package import struct NIOCore.ByteBuffer
 package import struct NIOFileSystem.ByteCount
 package import struct NIOFileSystem.FilePath

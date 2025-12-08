@@ -1,42 +1,59 @@
-import Atomics
+public import Atomics
 public import DNSModels
 import _DNSConnectionPool
 
-package import struct Logging.Logger
-import struct NIOConcurrencyHelpers.NIOLockedValueBox
-package import struct NIOCore.ByteBufferAllocator
-package import protocol NIOCore.EventLoopGroup
+public import struct Logging.Logger
+public import struct NIOConcurrencyHelpers.NIOLockedValueBox
+public import struct NIOCore.ByteBufferAllocator
+public import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 import ServiceLifecycle
 #endif
 
+@available(swiftDNSApplePlatforms 13, *)
+@usableFromInline
+let _connectionIDGenerator = IncrementalIDGenerator()
+
 /// Configuration for the DNS client
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
+    @usableFromInline
     package let serverAddress: DNSServerAddress
+    @usableFromInline
     package let connectionConfiguration: DNSConnectionConfiguration
     /// FIXME: using DNSConnection for now to have something sendable.
     @usableFromInline
     var udpConnection: DNSConnection?
+    @usableFromInline
     nonisolated let udpConnectionWaiters = NIOLockedValueBox<
         [CheckedContinuation<DNSConnection, Never>]
     >([])
+    @usableFromInline
     let udpEventLoopGroup: any EventLoopGroup
+    @usableFromInline
     let tcpTransport: TCPDNSClientTransport
+    @usableFromInline
+    let connectionFactory: DNSConnectionFactory
+    @usableFromInline
     let logger: Logger
+    @usableFromInline
     let allocator: ByteBufferAllocator
+    @inlinable
     var isRunning: Bool {
         self.tcpTransport.isRunning.load(ordering: .relaxed)
     }
 
+    @inlinable
     package init(
         serverAddress: DNSServerAddress,
         udpConnectionConfiguration: DNSConnectionConfiguration = .init(),
         udpEventLoopGroup: any EventLoopGroup = DNSClient.defaultUDPEventLoopGroup,
+        udpConnectionFactory: DNSConnectionFactory,
         tcpConfiguration: TCPDNSClientTransportConfiguration = .init(),
         tcpEventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
+        tcpConnectionFactory: DNSConnectionFactory,
         logger: Logger = .noopLogger
     ) throws {
         self.serverAddress = serverAddress
@@ -45,9 +62,11 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
             serverAddress: serverAddress,
             configuration: tcpConfiguration,
             eventLoopGroup: tcpEventLoopGroup,
+            connectionFactory: tcpConnectionFactory,
             logger: logger
         )
         self.udpEventLoopGroup = udpEventLoopGroup
+        self.connectionFactory = udpConnectionFactory
         self.logger = logger
         self.allocator = ByteBufferAllocator()
     }
@@ -147,13 +166,9 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     }
 
     func makeUDPConnection() async throws -> DNSConnection {
-        let udpConnectionFactory = try DNSConnectionFactory(
-            configuration: self.connectionConfiguration,
-            serverAddress: serverAddress
-        )
-        let udpConnection = try await udpConnectionFactory.makeUDPConnection(
+        let udpConnection = try await self.connectionFactory.makeUDPConnection(
             address: serverAddress,
-            connectionID: 0,
+            connectionID: _connectionIDGenerator.next(),
             eventLoop: self.udpEventLoopGroup.any(),
             logger: logger
         )

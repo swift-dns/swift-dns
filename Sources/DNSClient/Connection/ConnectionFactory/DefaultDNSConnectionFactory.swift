@@ -11,7 +11,7 @@ public import NIOTransportServices
 
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
-package struct DNSConnectionFactory: Sendable {
+package struct DefaultDNSConnectionFactory: Sendable {
     @usableFromInline
     let socketAddress: SocketAddress
     @usableFromInline
@@ -26,7 +26,8 @@ package struct DNSConnectionFactory: Sendable {
         self.socketAddress = try serverAddress.asSocketAddress()
     }
 
-    func makeUDPConnection(
+    @inlinable
+    package func makeUDPConnection(
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
@@ -52,7 +53,7 @@ package struct DNSConnectionFactory: Sendable {
     }
 
     @inlinable
-    func makeTCPConnection(
+    package func makeTCPConnection(
         address: DNSServerAddress,
         connectionID: Int,
         eventLoop: any EventLoop,
@@ -81,8 +82,9 @@ package struct DNSConnectionFactory: Sendable {
 
 // MARK: - UDP
 @available(swiftDNSApplePlatforms 13, *)
-extension DNSConnectionFactory {
-    private func makeUDPBootstrap(
+extension DefaultDNSConnectionFactory {
+    @inlinable
+    func makeUDPBootstrap(
         eventLoop: any EventLoop,
         isolation: isolated (any Actor)?
     ) -> DatagramBootstrap {
@@ -100,7 +102,8 @@ extension DNSConnectionFactory {
             )
     }
 
-    private func makeUDPChannelHandler(
+    @inlinable
+    func makeUDPChannelHandler(
         eventLoop: any EventLoop,
         logger: Logger,
         isolation: isolated (any Actor)?
@@ -113,7 +116,8 @@ extension DNSConnectionFactory {
         )
     }
 
-    private func makeInitializedUDPBootstrap(
+    @inlinable
+    func makeInitializedUDPBootstrap(
         /// FXIME: what about deadline?
         deadline: NIODeadline,
         eventLoop: any EventLoop,
@@ -144,7 +148,8 @@ extension DNSConnectionFactory {
         return (bootstrap, channelHandler)
     }
 
-    private func makeInitializedUDPChannel(
+    @inlinable
+    func makeInitializedUDPChannel(
         deadline: NIODeadline,
         eventLoop: any EventLoop,
         logger: Logger,
@@ -173,7 +178,7 @@ extension DNSConnectionFactory {
 
 // MARK: - TCP
 @available(swiftDNSApplePlatforms 13, *)
-extension DNSConnectionFactory {
+extension DefaultDNSConnectionFactory {
     @inlinable
     func makeTCPBootstrap(
         address: DNSServerAddress,
