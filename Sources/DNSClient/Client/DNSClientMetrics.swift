@@ -1,5 +1,6 @@
-import Logging
 public import _DNSConnectionPool
+
+public import struct Logging.Logger
 
 /// DNS client connection pool metrics
 @available(swiftDNSApplePlatforms 13, *)
@@ -8,8 +9,10 @@ final class DNSClientMetrics: ConnectionPoolObservabilityDelegate {
     @usableFromInline
     typealias ConnectionID = DNSConnection.ID
 
+    @usableFromInline
     let logger: Logger
 
+    @inlinable
     init(logger: Logger) {
         self.logger = logger
     }

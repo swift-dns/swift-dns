@@ -1,8 +1,14 @@
-import NIOCore
+public import NIOCore
 
-struct TCPFrameDecoder: ByteToMessageDecoder {
+@usableFromInline
+struct TCPFrameDecoder: Sendable, ByteToMessageDecoder {
+    @usableFromInline
     typealias InboundOut = ByteBuffer
 
+    @inlinable
+    init() {}
+
+    @inlinable
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         var readBuffer = buffer
         guard
@@ -18,6 +24,7 @@ struct TCPFrameDecoder: ByteToMessageDecoder {
         return .continue
     }
 
+    @inlinable
     func decodeLast(
         context: ChannelHandlerContext,
         buffer: inout ByteBuffer,

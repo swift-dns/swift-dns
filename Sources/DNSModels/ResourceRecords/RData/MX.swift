@@ -45,6 +45,10 @@ extension MX {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension MX: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .MX }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .MX(let mx):
@@ -62,9 +66,6 @@ extension MX: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension MX: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .MX }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

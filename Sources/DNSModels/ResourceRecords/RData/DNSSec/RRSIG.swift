@@ -23,6 +23,10 @@ extension RRSIG {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .RRSIG }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .DNSSEC(.RRSIG(let rrsig)):
@@ -40,9 +44,6 @@ extension RRSIG: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension RRSIG: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .RRSIG }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

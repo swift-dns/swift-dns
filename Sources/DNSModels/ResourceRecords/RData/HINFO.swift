@@ -57,6 +57,10 @@ extension HINFO {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .HINFO }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .HINFO(let hinfo):
@@ -74,9 +78,6 @@ extension HINFO: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension HINFO: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .HINFO }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

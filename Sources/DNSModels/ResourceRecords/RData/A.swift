@@ -45,6 +45,10 @@ extension A {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension A: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .A }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .A(let a):
@@ -62,9 +66,6 @@ extension A: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension A: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .A }
-
     /// TODO: check what do the other DNS classes do anyway, and if tying a type to a
     /// specific class is a good idea.
     @inlinable

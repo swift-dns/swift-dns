@@ -1566,10 +1566,7 @@ extension DNSClientError: Equatable {
 extension QueryProducer {
     mutating func produceFakeMessageAndPendingQuery() -> (Message, PendingQuery) {
         let factory = try! MessageFactory<A>.forQuery(domainName: "mahdibm.com")
-        let message = try! self.produceDNSMessage(
-            message: factory,
-            options: []
-        )
+        let message = try! self.produceDNSMessage(message: factory)
         let producedMessage = try! ProducedMessage(
             message: message,
             allocator: .init()
@@ -1585,7 +1582,6 @@ extension QueryProducer {
         let factory = try! MessageFactory<A>.forQuery(domainName: "mahdibm.com")
         let producedMessage = try! self.produceMessage(
             message: factory,
-            options: [],
             allocator: .init()
         )
         return producedMessage.messageID

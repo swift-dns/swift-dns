@@ -202,6 +202,10 @@ extension CERT.CertType {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CERT: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .CERT }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .CERT(let cert):
@@ -219,9 +223,6 @@ extension CERT: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CERT: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .CERT }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

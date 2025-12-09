@@ -226,6 +226,10 @@ extension OPT {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension OPT: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .OPT }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .OPT(let opt):
@@ -243,9 +247,6 @@ extension OPT: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension OPT: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .OPT }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

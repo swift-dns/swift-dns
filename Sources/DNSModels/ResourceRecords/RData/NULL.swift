@@ -49,6 +49,10 @@ extension NULL {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension NULL: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .NULL }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .NULL(let null):
@@ -66,9 +70,6 @@ extension NULL: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension NULL: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .NULL }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

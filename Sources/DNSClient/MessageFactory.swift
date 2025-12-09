@@ -1,3 +1,4 @@
+public import DNSModels
 public import SwiftIDNA
 
 @available(swiftDNSApplePlatforms 10.15, *)
@@ -11,10 +12,24 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     @inlinable
     init(message: consuming Message) {
         self.message = message
+        assert(
+            self.message.queries.count == 1,
+            """
+            Message must have at least 1 queries.
+            More than 1 queries is not currently supported.
+            Get in touch with me if you need support for multiple queries.
+            """
+        )
     }
 
+    @inlinable
     package consuming func takeMessage() -> Message {
         self.message
+    }
+
+    @inlinable
+    package func copy() -> Self {
+        Self(message: self.message)
     }
 
     /// Creates a message for a query.
@@ -41,9 +56,11 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
                     queryCount: 1,
                     answerCount: 0,
                     nameServerCount: 0,
-                    additionalCount: 0
+                    additionalCount: 1
                 ),
                 queries: [
+                    /// A bunch of other places depend on the fact that after calling this func,
+                    /// 1 and exactly 1 queries exist.
                     Query(
                         domainName: domainName,
                         queryType: QueryType.recordType,
@@ -54,7 +71,13 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
                 nameServers: [],
                 additionals: [],
                 signature: [],
-                edns: nil
+                edns: EDNS(
+                    rcodeHigh: 0,
+                    version: 0,
+                    flags: .init(dnssecOk: false, z: 0),
+                    maxPayload: 4096,
+                    options: OPT(options: [])
+                )
             )
         )
     }
@@ -76,22 +99,16 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     }
 
     @inlinable
-    public mutating func apply(options: DNSRequestOptions) {
-        if options.contains(.edns) {
-            self.message.header.additionalCount += 1
-            self.message.edns = EDNS(
-                rcodeHigh: 0,
-                version: 0,
-                flags: .init(dnssecOk: false, z: 0),
-                maxPayload: 4096,
-                options: OPT(options: [])
-            )
-        }
-    }
-
-    @inlinable
     public mutating func apply(requestID: UInt16) {
         self.message.header.id = requestID
+    }
+
+    @usableFromInline
+    package mutating func setDomainName(
+        to newDomainName: DomainName
+    ) {
+        /// Safe to subscript at index 0 after `forQuery` has been called
+        self.message.queries[0].domainName = newDomainName
     }
 }
 

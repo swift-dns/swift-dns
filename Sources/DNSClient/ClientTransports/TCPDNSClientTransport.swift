@@ -2,9 +2,9 @@ public import Atomics
 public import DNSModels
 public import _DNSConnectionPool
 
-package import struct Logging.Logger
-package import struct NIOCore.ByteBufferAllocator
-package import protocol NIOCore.EventLoopGroup
+public import struct Logging.Logger
+public import struct NIOCore.ByteBufferAllocator
+public import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 public import ServiceLifecycle
@@ -39,27 +39,30 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
+    @usableFromInline
     package let serverAddress: DNSServerAddress
+    @usableFromInline
     package let configuration: TCPDNSClientTransportConfiguration
     @usableFromInline
     let connectionPool: TCPConnectionPool
+    @usableFromInline
     let eventLoopGroup: any EventLoopGroup
+    @usableFromInline
     let logger: Logger
 
+    @usableFromInline
     let allocator: ByteBufferAllocator
     @usableFromInline
     let isRunning: ManagedAtomic<Bool>
 
+    @inlinable
     package init(
         serverAddress: DNSServerAddress,
         configuration: TCPDNSClientTransportConfiguration = .init(),
         eventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
+        connectionFactory tcpConnectionFactory: DNSConnectionFactory,
         logger: Logger = .noopLogger
     ) throws {
-        let tcpConnectionFactory = try DNSConnectionFactory(
-            configuration: configuration.connectionConfiguration,
-            serverAddress: serverAddress
-        )
         self.serverAddress = serverAddress
         self.configuration = configuration
         self.connectionPool = TCPConnectionPool(
@@ -122,17 +125,14 @@ package actor TCPDNSClientTransport {
     @usableFromInline
     package func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await self.withConnection(
             message: factory,
-            options: options,
             isolation: isolation
-        ) { factory, options, conn in
+        ) { factory, conn in
             try await self.query(
                 message: factory,
-                options: options,
                 connection: conn,
                 isolation: isolation
             )
@@ -145,13 +145,11 @@ extension TCPDNSClientTransport {
     @usableFromInline
     func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         connection: DNSConnection,
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await connection.send(
             message: factory,
-            options: options,
             allocator: self.allocator
         )
     }
@@ -165,19 +163,17 @@ extension TCPDNSClientTransport {
     @usableFromInline
     func withConnection<RDataConv: RDataConvertible>(
         message factory: consuming MessageFactory<RDataConv>,
-        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
         operation: (
             consuming MessageFactory<RDataConv>,
-            DNSRequestOptions,
             DNSConnection
-        ) async throws -> Message
-    ) async throws -> Message {
+        ) async throws -> (query: Message, response: Message)
+    ) async throws -> (query: Message, response: Message) {
         let lease = try await self.leaseConnection()
 
         defer { lease.release() }
 
-        return try await operation(factory, options, lease.connection)
+        return try await operation(factory, lease.connection)
     }
 
     func leaseConnection() async throws -> ConnectionLease<DNSConnection> {

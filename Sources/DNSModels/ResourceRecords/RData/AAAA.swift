@@ -24,6 +24,10 @@ extension AAAA {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension AAAA: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .AAAA }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .AAAA(let aaaa):
@@ -41,9 +45,6 @@ extension AAAA: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension AAAA: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .AAAA }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

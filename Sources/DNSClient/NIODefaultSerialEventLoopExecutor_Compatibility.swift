@@ -1,7 +1,8 @@
-import NIOCore
+public import NIOCore
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension EventLoop {
+    @usableFromInline
     var executor_Compatibility: any SerialExecutor {
         if #available(swiftDNSApplePlatforms 14, *) {
             return self.executor

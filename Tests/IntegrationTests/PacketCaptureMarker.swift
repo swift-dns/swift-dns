@@ -1,3 +1,4 @@
+import DNSClient
 import DNSModels
 import NIOCore
 import NIOPosix

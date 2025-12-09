@@ -37,6 +37,7 @@ package struct PendingQuery: Sendable {
     package var promise: DynamicPromise<Message>
     @usableFromInline
     package let requestID: UInt16
+    @usableFromInline
     package let deadline: NIODeadline
 
     /// Use ProducedMessage.producePendingQuery instead.

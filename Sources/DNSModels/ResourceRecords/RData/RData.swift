@@ -636,7 +636,8 @@ public enum RData: Sendable {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension RData {
-    var recordType: RecordType {
+    @inlinable
+    public var recordType: RecordType {
         switch self {
         case .A: return .A
         case .AAAA: return .AAAA

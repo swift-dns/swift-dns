@@ -43,13 +43,12 @@ struct DNSConnectionTests {
     func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
-        async let asyncResponse = try await connection.send(
+        async let (_, asyncResponse) = try await connection.send(
             message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-            options: .default,
             allocator: .init()
         )
 
@@ -59,7 +58,7 @@ struct DNSConnectionTests {
         /// The message ID should not be 0 because the channel handler reassigns it
         #expect(messageID != 0)
 
-        let (buffer, message) = self.bufferAndMessage(
+        let (buffer, message) = Utils.bufferAndMessage(
             from: responseResource,
             changingIDTo: messageID
         )
@@ -75,7 +74,7 @@ struct DNSConnectionTests {
     @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -84,7 +83,6 @@ struct DNSConnectionTests {
                 await #expect(throws: DNSClientError.cancelled) {
                     _ = try await connection.send(
                         message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                        options: .default,
                         allocator: .init()
                     )
                 }
@@ -107,7 +105,7 @@ struct DNSConnectionTests {
     func `query cancelled then response arrives later then continue using the channel`()
         async throws
     {
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
         do {
             typealias QueryableType = TXT
@@ -122,7 +120,6 @@ struct DNSConnectionTests {
                     await #expect(throws: DNSClientError.cancelled) {
                         let preparedQuery = try await connection.prepareQuery(
                             message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                            options: .default,
                             allocator: .init()
                         )
 
@@ -145,7 +142,7 @@ struct DNSConnectionTests {
             #expect(channel.isActive)
 
             /// Response arrives after the timeout
-            let (buffer, _) = self.bufferAndMessage(
+            let (buffer, _) = Utils.bufferAndMessage(
                 from: responseResource,
                 changingIDTo: sentMessageID
             )
@@ -162,9 +159,8 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                options: .default,
                 allocator: .init()
             )
 
@@ -174,7 +170,7 @@ struct DNSConnectionTests {
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
-            let (buffer, message) = self.bufferAndMessage(
+            let (buffer, message) = Utils.bufferAndMessage(
                 from: responseResource,
                 changingIDTo: messageID
             )
@@ -191,7 +187,7 @@ struct DNSConnectionTests {
     @Test func `query does not run when task is already cancelled`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -202,7 +198,6 @@ struct DNSConnectionTests {
                 await #expect(throws: DNSClientError.cancelled) {
                     _ = try await connection.send(
                         message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                        options: .default,
                         allocator: .init()
                     )
                 }
@@ -216,13 +211,12 @@ struct DNSConnectionTests {
     @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
-        async let asyncResponse = try await connection.send(
+        async let (_, asyncResponse) = try await connection.send(
             message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-            options: .default,
             allocator: .init()
         )
 
@@ -253,14 +247,13 @@ struct DNSConnectionTests {
     {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         do {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                options: .default,
                 allocator: .init()
             )
 
@@ -285,7 +278,7 @@ struct DNSConnectionTests {
 
             #expect(channel.isActive)
 
-            let (buffer, _) = self.bufferAndMessage(
+            let (buffer, _) = Utils.bufferAndMessage(
                 from: responseResource,
                 changingIDTo: messageID
             )
@@ -302,9 +295,8 @@ struct DNSConnectionTests {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
 
-            async let asyncResponse = try await connection.send(
+            async let (_, asyncResponse) = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                options: .default,
                 allocator: .init()
             )
 
@@ -314,7 +306,7 @@ struct DNSConnectionTests {
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
-            let (buffer, message) = self.bufferAndMessage(
+            let (buffer, message) = Utils.bufferAndMessage(
                 from: responseResource,
                 changingIDTo: messageID
             )
@@ -331,7 +323,7 @@ struct DNSConnectionTests {
     @Test func `query does not run when connection is closed`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -340,7 +332,6 @@ struct DNSConnectionTests {
         await #expect(throws: DNSClientError.connectionClosed) {
             _ = try await connection.send(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                options: .default,
                 allocator: .init()
             )
         }
@@ -352,7 +343,7 @@ struct DNSConnectionTests {
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
-        let (connection, channel) = try await self.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
         try await self.runSequentialTestQueries(
             connection: connection,
@@ -377,12 +368,11 @@ struct DNSConnectionTests {
 
             let preparedQuery = try await connection.prepareQuery(
                 message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                options: .default,
                 allocator: .init()
             )
             let producedMessage = preparedQuery.producedMessage
             let messageID = producedMessage.messageID
-            async let asyncResponse = try await preparedQuery.send()
+            async let (_, asyncResponse) = try await preparedQuery.send()
 
             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
             let receivedMessageID = try #require(
@@ -391,7 +381,7 @@ struct DNSConnectionTests {
             #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
             #expect(receivedMessageID == messageID)
 
-            let (buffer, message) = self.bufferAndMessage(
+            let (buffer, message) = Utils.bufferAndMessage(
                 from: responseResource,
                 changingIDTo: messageID
             )
@@ -408,7 +398,7 @@ struct DNSConnectionTests {
         typealias QueryableType = MX
 
         try await withThrowingTaskGroup { taskGroup -> Void in
-            let (connection, channel) = try await self.makeTestConnection()
+            let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
             try await self.runConcurrentTestQueries(
                 connection: connection,
@@ -441,11 +431,10 @@ struct DNSConnectionTests {
 
                 let preparedQuery = try await connection.prepareQuery(
                     message: MessageFactory<QueryableType>.forQuery(domainName: domainName),
-                    options: .default,
                     allocator: .init()
                 )
                 let messageID = preparedQuery.producedMessage.messageID
-                async let asyncResponse = try await preparedQuery.send()
+                async let (_, asyncResponse) = try await preparedQuery.send()
 
                 /// We're sending queries concurrently so this is not necessarily the
                 /// message that we just sent. We just wait for one message to be written and
@@ -472,7 +461,7 @@ struct DNSConnectionTests {
                 #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
                 #expect(outbound.peekInteger(as: UInt16.self) == messageID)
 
-                let (buffer, message) = self.bufferAndMessage(
+                let (buffer, message) = Utils.bufferAndMessage(
                     from: responseResource,
                     changingIDTo: messageID
                 )
@@ -503,58 +492,5 @@ struct DNSConnectionTests {
                 try await Task.sleep(for: .milliseconds(50))
             }
         }
-    }
-
-    @available(swiftDNSApplePlatforms 10.15, *)
-    func bufferAndMessage(
-        from resource: Resources,
-        changingIDTo messageID: UInt16?
-    ) -> (buffer: DNSBuffer, message: Message) {
-        var buffer = resource.buffer()
-        buffer.moveReaderIndex(forwardBy: 42)
-        buffer.moveDNSPortionStartIndex(forwardBy: 42)
-        if let messageID {
-            buffer.setInteger(messageID, at: 42)
-        }
-        let readerIndex = buffer.readerIndex
-        let message = try! Message(from: &buffer)
-        /// Reset the reader index to reuse the buffer
-        buffer.moveReaderIndex(to: readerIndex)
-        return (buffer, message)
-    }
-
-    @available(swiftDNSApplePlatforms 10.15, *)
-    func makeTestConnection(
-        configuration: DNSConnectionConfiguration = .init(),
-        address: DNSServerAddress = .domain(
-            domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
-            port: 53
-        ),
-        isOverUDP: Bool = true
-    ) async throws -> (
-        connection: DNSConnection,
-        channel: NIOAsyncTestingChannel
-    ) {
-        let channel = NIOAsyncTestingChannel()
-        let logger = Logger(label: "test")
-        /// FIXME: This is safe but better solution than using nonisolated(unsafe)?
-        nonisolated(unsafe) let channelHandler = DNSChannelHandler(
-            eventLoop: channel.eventLoop,
-            configuration: configuration,
-            isOverUDP: isOverUDP,
-            logger: logger
-        )
-        let connection = DNSConnection(
-            channel: channel,
-            connectionID: .random(in: .min ... .max),
-            channelHandler: channelHandler,
-            configuration: configuration,
-            logger: logger
-        )
-        channel.eventLoop.execute {
-            try! channel.pipeline.syncOperations.addHandler(channelHandler)
-        }
-        try await channel.connect(to: address.asSocketAddress())
-        return (connection, channel)
     }
 }

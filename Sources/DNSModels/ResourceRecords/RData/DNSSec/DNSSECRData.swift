@@ -516,7 +516,8 @@ public enum DNSSECRData: Sendable {
 }
 
 extension DNSSECRData {
-    var recordType: RecordType {
+    @inlinable
+    public var recordType: RecordType {
         switch self {
         case .CDNSKEY: return .CDNSKEY
         case .CDS: return .CDS

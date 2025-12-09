@@ -20,6 +20,10 @@ extension HTTPS {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension HTTPS: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .HTTPS }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .HTTPS(let https):
@@ -37,9 +41,6 @@ extension HTTPS: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension HTTPS: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .HTTPS }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }

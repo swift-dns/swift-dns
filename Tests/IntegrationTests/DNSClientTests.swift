@@ -8,17 +8,19 @@ import Testing
 
 import struct NIOCore.ByteBuffer
 
-@Suite(.serialized)
-struct IntegrationTests {
+extension SerializationNamespace {
+    struct DNSClientTests {}
+}
+
+extension SerializationNamespace.DNSClientTests {
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "example.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryA(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -62,9 +64,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let ipv4s = try response.answers.map {
-                try $0.rdata.value
-            }
+            let ipv4s = response.answers.map(\.rdata.value)
             #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// The 'additional' was an EDNS
@@ -83,14 +83,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "新华网.中国.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryA(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -134,9 +133,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .A }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let ipv4s = try response.answers.map {
-                try $0.rdata.value
-            }
+            let ipv4s = response.answers.map(\.rdata.value)
             #expect(ipv4s.allSatisfy { $0.address != 0 })
 
             /// response.additionals.count is whatever
@@ -154,14 +151,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<AAAA>.forQuery(domainName: "cloudflare.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryAAAA(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -205,9 +201,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let ipv6s = try response.answers.map {
-                try $0.rdata.value
-            }
+            let ipv6s = response.answers.map(\.rdata.value)
             #expect(ipv6s.allSatisfy { $0.address != .zero })
 
             /// The 'additional' was an EDNS
@@ -226,14 +220,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CAA>.forQuery(domainName: "apple.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCAA(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -277,9 +270,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .CAA }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let caa = try response.answers.map {
-                try $0.rdata
-            }
+            let caa = response.answers.map(\.rdata)
             #expect(
                 caa.allSatisfy {
                     $0.rawValue.readableBytes > 5
@@ -302,7 +293,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCERT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CERT>.forQuery(
@@ -310,8 +301,7 @@ struct IntegrationTests {
             )
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCERT(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -355,9 +345,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .CERT }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let certs = try response.answers.map {
-                try $0.rdata
-            }
+            let certs = response.answers.map(\.rdata)
             let expectedCerts = [
                 CERT(
                     certType: .PKIX,
@@ -400,14 +388,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(domainName: "www.github.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCNAME(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -446,7 +433,7 @@ struct IntegrationTests {
             #expect(answer.dnsClass == .IN)
             #expect(answer.ttl > 0)
             let nameNoWWW = try DomainName("github.com.")
-            let cname = try answer.rdata
+            let cname = answer.rdata
             #expect(cname.domainName == nameNoWWW)
 
             /// The 'additional' was an EDNS
@@ -465,7 +452,7 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(
@@ -473,8 +460,7 @@ struct IntegrationTests {
             )
             let message = factory.__testing_copyMessage()
             let response = try await client.queryCNAME(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -543,14 +529,13 @@ struct IntegrationTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<MX>.forQuery(domainName: "mahdibm.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryMX(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -594,9 +579,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .MX }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let mxs = try response.answers.map {
-                try $0.rdata
-            }.sorted {
+            let mxs = response.answers.map(\.rdata).sorted {
                 $0.preference < $1.preference
             }
             let expectedMXs = [
@@ -633,14 +616,13 @@ struct IntegrationTests {
     @Test func queryNAPTR() async throws {}
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<NS>.forQuery(domainName: "apple.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryNS(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -684,9 +666,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .NS }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let nss = try response.answers.map {
-                try $0.rdata
-            }.sorted {
+            let nss = response.answers.map(\.rdata).sorted {
                 $0.domainName.description < $1.domainName.description
             }
             let expectedNSs = [
@@ -724,14 +704,13 @@ struct IntegrationTests {
     @Test func queryOPT() async throws {}
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<PTR>.forQuery(domainName: "9.9.9.9.in-addr.arpa.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryPTR(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -775,9 +754,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .PTR }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let ptrs = try response.answers.map {
-                try $0.rdata
-            }
+            let ptrs = response.answers.map(\.rdata)
             let expectedPTRs = [
                 PTR(domainName: try DomainName("dns9.quad9.net."))
             ]
@@ -814,14 +791,13 @@ struct IntegrationTests {
     @Test func queryTLSA() async throws {}
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test(.packetCaptureMarker, arguments: makeTestingDNSClients())
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<TXT>.forQuery(domainName: "example.com.")
             let message = factory.__testing_copyMessage()
             let response = try await client.queryTXT(
-                message: factory,
-                options: .edns
+                message: factory
             )
 
             #expect(
@@ -865,9 +841,7 @@ struct IntegrationTests {
             #expect(response.answers.allSatisfy { $0.recordType == .TXT }, "\(response.answers).")
             #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
             /// response.answers[].ttl is whatever
-            let txts = try response.answers.map {
-                try $0.rdata
-            }
+            let txts = response.answers.map(\.rdata)
             #expect(txts.allSatisfy { ($0.txtData.first?.count ?? 0) > 5 })
 
             /// The 'additional' was an EDNS
@@ -947,8 +921,7 @@ struct IntegrationTests {
                         do {
                             let domainName = try DomainName(domain + ".")
                             let response = try await client.queryNS(
-                                message: .forQuery(domainName: domainName),
-                                options: .edns
+                                message: .forQuery(domainName: domainName)
                             )
                             #expect(response.header.responseCode == .NoError, "\(domain)")
                             #expect(response.header.messageType == .Response, "\(domain)")
@@ -1041,8 +1014,7 @@ struct IntegrationTests {
                 do {
                     let domainName = try DomainName(domain)
                     let response = try await client.queryNS(
-                        message: .forQuery(domainName: domainName),
-                        options: .edns
+                        message: .forQuery(domainName: domainName)
                     )
                     #expect(response.header.responseCode == .NoError, "\(domain)")
                     #expect(response.header.messageType == .Response, "\(domain)")
@@ -1078,40 +1050,5 @@ struct IntegrationTests {
         .split(separator: "\n")
         .dropFirst()
         .prefix(100)
-    }
-
-    @available(swiftDNSApplePlatforms 10.15, *)
-    private static func makeTestingDNSClients() -> [DNSClient] {
-        [
-            try! DNSClient(
-                transport: .preferUDPOrUseTCP(
-                    serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
-                        port: 53
-                    ),
-                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
-                    tcpConfiguration: .init(
-                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                        connectionPoolConfiguration: .init(),
-                        keepAliveBehavior: .init()
-                    ),
-                    logger: .init(label: "DNSClientTests")
-                )
-            ),
-            try! DNSClient(
-                transport: .tcp(
-                    serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
-                        port: 53
-                    ),
-                    configuration: .init(
-                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
-                        connectionPoolConfiguration: .init(),
-                        keepAliveBehavior: .init()
-                    ),
-                    logger: .init(label: "DNSClientTests")
-                )
-            ),
-        ]
     }
 }

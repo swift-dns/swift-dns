@@ -1,7 +1,15 @@
-import NIOCore
+public import NIOCore
 
-struct TCPFrameEncoder: MessageToByteEncoder {
-    func encode(data: ByteBuffer, out outboundBuffer: inout ByteBuffer) throws {
+@usableFromInline
+struct TCPFrameEncoder: Sendable, MessageToByteEncoder {
+    @usableFromInline
+    typealias OutboundIn = ByteBuffer
+
+    @inlinable
+    init() {}
+
+    @inlinable
+    func encode(data: OutboundIn, out outboundBuffer: inout ByteBuffer) throws {
         try outboundBuffer.writeLengthPrefixed(as: UInt16.self) { outboundBuffer in
             outboundBuffer.writeImmutableBuffer(data)
         }

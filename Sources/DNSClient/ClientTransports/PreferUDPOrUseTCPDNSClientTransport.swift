@@ -1,42 +1,59 @@
-import Atomics
+public import Atomics
 public import DNSModels
 import _DNSConnectionPool
 
-package import struct Logging.Logger
-import struct NIOConcurrencyHelpers.NIOLockedValueBox
-package import struct NIOCore.ByteBufferAllocator
-package import protocol NIOCore.EventLoopGroup
+public import struct Logging.Logger
+public import struct NIOConcurrencyHelpers.NIOLockedValueBox
+public import struct NIOCore.ByteBufferAllocator
+public import protocol NIOCore.EventLoopGroup
 
 #if ServiceLifecycleSupport
 import ServiceLifecycle
 #endif
 
+@available(swiftDNSApplePlatforms 13, *)
+@usableFromInline
+let _connectionIDGenerator = IncrementalIDGenerator()
+
 /// Configuration for the DNS client
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
+    @usableFromInline
     package let serverAddress: DNSServerAddress
+    @usableFromInline
     package let connectionConfiguration: DNSConnectionConfiguration
     /// FIXME: using DNSConnection for now to have something sendable.
     @usableFromInline
     var udpConnection: DNSConnection?
+    @usableFromInline
     nonisolated let udpConnectionWaiters = NIOLockedValueBox<
         [CheckedContinuation<DNSConnection, Never>]
     >([])
+    @usableFromInline
     let udpEventLoopGroup: any EventLoopGroup
+    @usableFromInline
     let tcpTransport: TCPDNSClientTransport
+    @usableFromInline
+    let connectionFactory: DNSConnectionFactory
+    @usableFromInline
     let logger: Logger
+    @usableFromInline
     let allocator: ByteBufferAllocator
+    @inlinable
     var isRunning: Bool {
         self.tcpTransport.isRunning.load(ordering: .relaxed)
     }
 
+    @inlinable
     package init(
         serverAddress: DNSServerAddress,
         udpConnectionConfiguration: DNSConnectionConfiguration = .init(),
         udpEventLoopGroup: any EventLoopGroup = DNSClient.defaultUDPEventLoopGroup,
+        udpConnectionFactory: DNSConnectionFactory,
         tcpConfiguration: TCPDNSClientTransportConfiguration = .init(),
         tcpEventLoopGroup: any EventLoopGroup = DNSClient.defaultTCPEventLoopGroup,
+        tcpConnectionFactory: DNSConnectionFactory,
         logger: Logger = .noopLogger
     ) throws {
         self.serverAddress = serverAddress
@@ -45,9 +62,11 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
             serverAddress: serverAddress,
             configuration: tcpConfiguration,
             eventLoopGroup: tcpEventLoopGroup,
+            connectionFactory: tcpConnectionFactory,
             logger: logger
         )
         self.udpEventLoopGroup = udpEventLoopGroup
+        self.connectionFactory = udpConnectionFactory
         self.logger = logger
         self.allocator = ByteBufferAllocator()
     }
@@ -71,17 +90,14 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     package func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await self.withConnection(
             message: factory,
-            options: options,
             isolation: isolation
-        ) { factory, options, conn in
+        ) { factory, conn in
             try await self.query(
                 message: factory,
-                options: options,
                 connection: conn,
                 isolation: isolation
             )
@@ -94,13 +110,11 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(
         message factory: consuming MessageFactory<some RDataConvertible>,
-        options: DNSRequestOptions = [],
         connection: DNSConnection,
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
+    ) async throws -> (query: Message, response: Message) {
         try await connection.send(
             message: factory,
-            options: options,
             allocator: self.allocator
         )
     }
@@ -108,27 +122,23 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func withConnection<RData: RDataConvertible>(
         message factory: consuming MessageFactory<RData>,
-        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
         operation: (
             consuming MessageFactory<RData>,
-            DNSRequestOptions,
             DNSConnection
-        ) async throws -> Message
-    ) async throws -> Message {
+        ) async throws -> (query: Message, response: Message)
+    ) async throws -> (query: Message, response: Message) {
         /// FIXME: Add logic to choose TCP when it should
         switch true {
         case true:
             try await self.withUDPConnection(
                 message: factory,
-                options: options,
                 isolation: isolation,
                 operation: operation
             )
         case false:
             try await self.tcpTransport.withConnection(
                 message: factory,
-                options: options,
                 isolation: isolation,
                 operation: operation
             )
@@ -137,35 +147,31 @@ extension PreferUDPOrUseTCPDNSClientTransport {
 
     func withUDPConnection<RData: RDataConvertible>(
         message factory: consuming MessageFactory<RData>,
-        options: DNSRequestOptions,
         isolation: isolated (any Actor)? = #isolation,
-        operation: (consuming MessageFactory<RData>, DNSRequestOptions, DNSConnection) async throws
-            -> Message
-    ) async throws -> Message {
+        operation: (
+            consuming MessageFactory<RData>,
+            DNSConnection
+        ) async throws -> (query: Message, response: Message)
+    ) async throws -> (query: Message, response: Message) {
         if let connection = await self.udpConnection {
-            return try await operation(factory, options, connection)
+            return try await operation(factory, connection)
         } else {
             let connection = await withCheckedContinuation { continuation in
                 self.udpConnectionWaiters.withLockedValue {
                     $0.append(continuation)
                 }
             }
-            return try await operation(factory, options, connection)
+            return try await operation(factory, connection)
         }
     }
 
     func makeUDPConnection() async throws -> DNSConnection {
-        let udpConnectionFactory = try DNSConnectionFactory(
-            configuration: self.connectionConfiguration,
-            serverAddress: serverAddress
-        )
-        let udpConnection = try await udpConnectionFactory.makeUDPConnection(
+        try await self.connectionFactory.makeUDPConnection(
             address: serverAddress,
-            connectionID: 0,
+            connectionID: _connectionIDGenerator.next(),
             eventLoop: self.udpEventLoopGroup.any(),
             logger: logger
         )
-        return udpConnection
     }
 
     func initializeNewUDPConnection() async {

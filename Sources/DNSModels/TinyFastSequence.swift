@@ -16,11 +16,21 @@ public struct TinyFastSequence<Element> {
 
     @inlinable
     public subscript(index: Int) -> Element {
-        switch self.base {
-        case .none:
-            preconditionFailure("Index out of bounds: \(index)")
-        case .n(let array):
-            return array[index]
+        _read {
+            switch self.base {
+            case .none:
+                preconditionFailure("Index out of bounds: \(index)")
+            case .n(let array):
+                yield array[index]
+            }
+        }
+        _modify {
+            switch self.base {
+            case .none:
+                preconditionFailure("Index out of bounds: \(index)")
+            case .n(var array):
+                yield &array[index]
+            }
         }
     }
 
@@ -92,6 +102,18 @@ public struct TinyFastSequence<Element> {
         case .n(var existing):
             self.base = .none(reserveCapacity: 0)  // prevent CoW
             existing.append(element)
+            self.base = .n(existing)
+        }
+    }
+
+    @inlinable
+    public mutating func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows {
+        switch self.base {
+        case .none:
+            return
+        case .n(var existing):
+            self.base = .none(reserveCapacity: 0)  // prevent CoW
+            try existing.removeAll(where: shouldBeRemoved)
             self.base = .n(existing)
         }
     }

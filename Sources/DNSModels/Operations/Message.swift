@@ -73,6 +73,7 @@ public struct Message: Sendable {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension Message {
+    @usableFromInline
     package init(from buffer: inout DNSBuffer) throws {
         self.header = try Header(from: &buffer)
 

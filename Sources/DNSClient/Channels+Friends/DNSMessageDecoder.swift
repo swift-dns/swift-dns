@@ -1,9 +1,11 @@
-package import DNSModels
-package import NIOCore
+public import DNSModels
+public import NIOCore
 
 @available(swiftDNSApplePlatforms 10.15, *)
-package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
-    package enum DecodingResult {
+@usableFromInline
+package struct DNSMessageDecoder: Sendable, NIOSingleStepByteToMessageDecoder {
+    @usableFromInline
+    package enum DecodingResult: Sendable {
         case message(Message)
         case identifiableError(id: UInt16, error: any Error)
 
@@ -17,10 +19,13 @@ package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
         }
     }
 
+    @usableFromInline
     package typealias InboundOut = DecodingResult
 
+    @inlinable
     package init() {}
 
+    @inlinable
     package func decode(buffer: inout ByteBuffer) -> DecodingResult? {
         /// Make sure we have at least 12 bytes to read as the DNS header.
         ///
@@ -76,6 +81,7 @@ package struct DNSMessageDecoder: NIOSingleStepByteToMessageDecoder {
         }
     }
 
+    @inlinable
     package func decodeLast(buffer: inout ByteBuffer, seenEOF: Bool) -> DecodingResult? {
         self.decode(buffer: &buffer)
     }

@@ -1,4 +1,4 @@
-import _DNSConnectionPool
+public import _DNSConnectionPool
 
 @available(swiftDNSApplePlatforms 13, *)
 public struct DNSConnectionPoolConfiguration: Sendable {
@@ -52,6 +52,7 @@ public struct DNSConnectionPoolConfiguration: Sendable {
 
 @available(swiftDNSApplePlatforms 13, *)
 extension DNSConnectionPoolConfiguration {
+    @inlinable
     func toConnectionPoolConfig() -> _DNSConnectionPool.ConnectionPoolConfiguration {
         var config = _DNSConnectionPool.ConnectionPoolConfiguration()
         config.minimumConnectionCount = self.minimumConnectionCount

@@ -1,26 +1,17 @@
-/// A ``Message`` that provides convenient access to its ``answers`` by taking care of unwrapping them to ``SpecializedRecord``.
+/// A ``Message`` that provides convenient access to its ``answers`` by taking care of unwrapping them to ``SpecializedRecords``.
 ///
 /// This type implements ``@dynamicMemberLookup`` over the ``message``, then shadows ``message.answers`` which
-/// is of type ``[Record]``, by providing a ``answers`` property which is of the specialized type ``[SpecializedRecord<RDataType>]``.
+/// is of type ``[Record]``, by providing a ``answers`` property which is of the specialized type ``SpecializedRecords<RDataType>``.
 @available(swiftDNSApplePlatforms 10.15, *)
 @dynamicMemberLookup
 public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
     public var message: Message
 
-    /// TODO: use a view type instead of accumulating into an array
     /// TODO: can do more than just `answers`?
 
-    public var answers: [SpecializedRecord<RDataType>] {
-        get {
-            self.message.answers.map {
-                SpecializedRecord(record: $0)
-            }
-        }
-        set {
-            self.message.answers = TinyFastSequence(
-                newValue.map(\.record)
-            )
-        }
+    /// Use `message.answers` if you want to access the raw records, or if you want to modify them.
+    public var answers: SpecializedRecords<RDataType> {
+        SpecializedRecords(records: self.message.answers)
     }
 
     public subscript<T>(dynamicMember member: KeyPath<Message, T>) -> T {
@@ -45,42 +36,137 @@ public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
     }
 }
 
-/// A ``Record`` that provides convenient access to its ``rdata`` by taking care of unwrapping it to ``RDataType``.
+/// A lazy sequence of ``Record``s that correspond to the given ``RDataType``.
 ///
-/// This type implements ``@dynamicMemberLookup`` over the ``record``, then shadows ``record.rdata`` which
-/// is of type ``RData``, by providing a ``rdata`` property which is of the specialized type ``RDataType``.
+/// For example you might use the dns resolver to resolve A records for `www.example.com.`.
+/// In this case, `www.example.com.` only has CNAME records and no A records.
+/// The upstream dns resolvers usually respond with 1-2 few CNAME records followed by 2+ A records.
+///
+/// What this type does is it filters out the CNAME records and only returns the A records to
+/// make the end user's life easier as they never requested CNAME records anyway.
 @available(swiftDNSApplePlatforms 10.15, *)
-@dynamicMemberLookup
-public struct SpecializedRecord<RDataType: RDataConvertible>: Sendable {
-    public var record: Record
-    public var rdata: RDataType {
-        get throws {
-            try RDataType(rdata: self.record.rdata)
+public struct SpecializedRecords<RDataType: RDataConvertible>: Sendable {
+    public let records: TinyFastSequence<Record>
+
+    public init(records: TinyFastSequence<Record>) {
+        self.records = records
+    }
+}
+
+@available(swiftDNSApplePlatforms 10.15, *)
+extension SpecializedRecords: Sequence {
+    /// Complexity: O(n)
+    @inlinable
+    public var undeterminedCount: Int {
+        self.count
+    }
+
+    /// A ``Record`` that provides convenient access to its ``rdata`` by taking care of unwrapping it to ``RDataType``.
+    ///
+    /// This type implements ``@dynamicMemberLookup`` over the ``record``, then shadows ``record.rdata`` which
+    /// is of type ``RData``, by providing a ``rdata`` property which is of the specialized type ``RDataType``.
+    ///
+    /// This type guarantees that `rdata` and `record.rdata` are the same.
+    /// That's the reason why both properties are marked as `private(set)`:
+    /// So we don't have to manage syncing `rdata` and `record.rdata` manually.
+    @dynamicMemberLookup
+    public struct Element: Sendable {
+        private(set) public var record: Record
+        public var rdata: RDataType {
+            try! RDataType(rdata: record.rdata)
+        }
+
+        public subscript<T>(dynamicMember member: KeyPath<Record, T>) -> T {
+            _read {
+                yield self.record[keyPath: member]
+            }
+        }
+
+        public init(record: Record) throws(FromRDataTypeMismatchError<RDataType>) {
+            self.record = record
+            /// Test once to ensure the RData is expected
+            _ = try RDataType(rdata: record.rdata)
         }
     }
 
-    public mutating func setRData(_ specializedRData: RDataType) {
-        self.record.rdata = specializedRData.toRData()
+    @inlinable
+    public func makeIterator() -> Iterator {
+        Iterator(base: self)
     }
 
-    public subscript<T>(dynamicMember member: KeyPath<Record, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors?
-        get {
-            self.record[keyPath: member]
+    /// An iterator over a ``SpecializedRecords`` that filters out records that
+    /// don't correspond to ``RDataType``.
+    public struct Iterator: Sendable, IteratorProtocol {
+        @usableFromInline
+        var baseIterator: TinyFastSequence<Record>.Iterator
+
+        @inlinable
+        init(base: SpecializedRecords<RDataType>) {
+            self.baseIterator = base.records.makeIterator()
+        }
+
+        @inlinable
+        public mutating func next() -> Element? {
+            while true {
+                guard let record = self.baseIterator.next() else {
+                    return nil
+                }
+
+                /// If the record is of the wrong type, we skip it and continue to the next record.
+                /// For example we could be getting both `CNAME` and `A` record for a domain name that
+                /// is `CNAME`ed to another domain name with `A` records.
+                ///
+                /// So here if the query is a A query, we simply ignore the `CNAME`s.
+                if let element = try? Element(record: record) {
+                    return element
+                } else {
+                    /// Got a bad record. Skip and continue to the next record.
+                    continue
+                }
+            }
         }
     }
+}
 
-    public subscript<T>(dynamicMember member: WritableKeyPath<Record, T>) -> T {
-        /// FIXME: use `read`/`modify` accessors?
-        get {
-            self.record[keyPath: member]
-        }
-        set {
-            self.record[keyPath: member] = newValue
-        }
+@available(swiftDNSApplePlatforms 10.15, *)
+extension SpecializedRecords: Collection {
+    public typealias Index = Int
+
+    /// Complexity: O(n)
+    @inlinable
+    public var count: Int {
+        self.records.count(where: { $0.recordType == RDataType.recordType })
     }
 
-    public init(record: Record) {
-        self.record = record
+    /// Complexity: O(1)
+    public var startIndex: Index {
+        0
+    }
+
+    /// Complexity: O(n)
+    public var endIndex: Index {
+        self.count
+    }
+
+    public func index(after i: Index) -> Index {
+        i + 1
+    }
+
+    public func index(before i: Index) -> Index {
+        i - 1
+    }
+
+    /// Complexity: O(n)
+    public subscript(position: Index) -> Element {
+        var index = 0
+        for record in records {
+            if let element = try? Element(record: record) {
+                if index == position {
+                    return element
+                }
+                index += 1
+            }
+        }
+        fatalError("Index \(position) is out of bounds of 0..<\(index)")
     }
 }

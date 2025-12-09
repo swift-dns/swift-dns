@@ -39,6 +39,10 @@ extension CNAME {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME: RDataConvertible {
+    @inlinable
+    public static var recordType: RecordType { .CNAME }
+
+    @inlinable
     public init(rdata: RData) throws(FromRDataTypeMismatchError<Self>) {
         switch rdata {
         case .CNAME(let cname):
@@ -56,9 +60,6 @@ extension CNAME: RDataConvertible {
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension CNAME: Queryable {
-    @inlinable
-    public static var recordType: RecordType { .CNAME }
-
     @inlinable
     public static var dnsClass: DNSClass { .IN }
 }
