@@ -11,7 +11,7 @@ public import NIOTransportServices
 
 @available(swiftDNSApplePlatforms 13, *)
 @usableFromInline
-package struct DefaultDNSConnectionFactory: Sendable {
+package struct DefaultDNSConnectionFactory: Sendable, AnyDNSConnectionFactory {
     @usableFromInline
     let socketAddress: SocketAddress
     @usableFromInline

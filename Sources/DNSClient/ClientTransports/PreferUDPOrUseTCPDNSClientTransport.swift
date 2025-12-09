@@ -166,13 +166,12 @@ extension PreferUDPOrUseTCPDNSClientTransport {
     }
 
     func makeUDPConnection() async throws -> DNSConnection {
-        let udpConnection = try await self.connectionFactory.makeUDPConnection(
+        try await self.connectionFactory.makeUDPConnection(
             address: serverAddress,
             connectionID: _connectionIDGenerator.next(),
             eventLoop: self.udpEventLoopGroup.any(),
             logger: logger
         )
-        return udpConnection
     }
 
     func initializeNewUDPConnection() async {

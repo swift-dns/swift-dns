@@ -43,7 +43,7 @@ struct DNSConnectionTests {
     func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -74,7 +74,7 @@ struct DNSConnectionTests {
     @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -105,7 +105,7 @@ struct DNSConnectionTests {
     func `query cancelled then response arrives later then continue using the channel`()
         async throws
     {
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
         do {
             typealias QueryableType = TXT
@@ -187,7 +187,7 @@ struct DNSConnectionTests {
     @Test func `query does not run when task is already cancelled`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -211,7 +211,7 @@ struct DNSConnectionTests {
     @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -247,7 +247,7 @@ struct DNSConnectionTests {
     {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         do {
             let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
             let domainName = try #require(responseResource.domainName)
@@ -323,7 +323,7 @@ struct DNSConnectionTests {
     @Test func `query does not run when connection is closed`() async throws {
         typealias QueryableType = TXT
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
         let (_, responseResource) = Resources.forQuery(queryableType: QueryableType.self)
         let domainName = try #require(responseResource.domainName)
 
@@ -343,7 +343,7 @@ struct DNSConnectionTests {
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
-        let (connection, channel) = try await Utils.makeTestConnection()
+        let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
         try await self.runSequentialTestQueries(
             connection: connection,
@@ -398,7 +398,7 @@ struct DNSConnectionTests {
         typealias QueryableType = MX
 
         try await withThrowingTaskGroup { taskGroup -> Void in
-            let (connection, channel) = try await Utils.makeTestConnection()
+            let (connection, channel) = try await TestingDNSConnectionFactory.makeTestConnection()
 
             try await self.runConcurrentTestQueries(
                 connection: connection,

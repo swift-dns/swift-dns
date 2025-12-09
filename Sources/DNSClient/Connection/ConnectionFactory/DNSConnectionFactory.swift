@@ -7,6 +7,7 @@ package struct DNSConnectionFactory: Sendable {
     @usableFromInline
     enum UnderlyingFactory: Sendable {
         case `default`(DefaultDNSConnectionFactory)
+        case other(any AnyDNSConnectionFactory)
     }
 
     @usableFromInline
@@ -31,6 +32,15 @@ package struct DNSConnectionFactory: Sendable {
             )
         )
     }
+
+    @inlinable
+    package static func other(
+        _ factory: any AnyDNSConnectionFactory
+    ) -> DNSConnectionFactory {
+        DNSConnectionFactory(
+            underlyingFactory: .other(factory)
+        )
+    }
 }
 
 @available(swiftDNSApplePlatforms 13, *)
@@ -44,8 +54,16 @@ extension DNSConnectionFactory {
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> DNSConnection {
         switch self.underlyingFactory {
-        case .default(let underlyingFactory):
-            return try await underlyingFactory.makeUDPConnection(
+        case .default(let defaultFactory):
+            return try await defaultFactory.makeUDPConnection(
+                address: address,
+                connectionID: connectionID,
+                eventLoop: eventLoop,
+                logger: logger,
+                isolation: isolation
+            )
+        case .other(let anyFactory):
+            return try await anyFactory.makeUDPConnection(
                 address: address,
                 connectionID: connectionID,
                 eventLoop: eventLoop,
@@ -64,8 +82,16 @@ extension DNSConnectionFactory {
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> DNSConnection {
         switch self.underlyingFactory {
-        case .default(let underlyingFactory):
-            return try await underlyingFactory.makeTCPConnection(
+        case .default(let defaultFactory):
+            return try await defaultFactory.makeTCPConnection(
+                address: address,
+                connectionID: connectionID,
+                eventLoop: eventLoop,
+                logger: logger,
+                isolation: isolation
+            )
+        case .other(let anyFactory):
+            return try await anyFactory.makeTCPConnection(
                 address: address,
                 connectionID: connectionID,
                 eventLoop: eventLoop,
