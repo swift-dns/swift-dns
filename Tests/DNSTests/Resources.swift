@@ -14,6 +14,9 @@ enum Resources: String {
     case dnsQueryAWwwExampleComPacket = "www.example.com-a-query-packet"
     case dnsResponseAWwwExampleComPacket = "www.example.com-a-response-packet"
 
+    case dnsQueryAAAAWwwExampleComPacket = "www.example.com-aaaa-query-packet"
+    case dnsResponseAAAAWwwExampleComPacket = "www.example.com-aaaa-response-packet"
+
     case dnsQueryAAAACloudflareComPacket = "cloudflare.com-aaaa-query-packet"
     case dnsResponseAAAACloudflareComPacket = "cloudflare.com-aaaa-response-packet"
 
@@ -87,6 +90,7 @@ enum Resources: String {
         switch self {
         case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket,
             .dnsQueryAWwwExampleComPacket, .dnsResponseAWwwExampleComPacket,
+            .dnsQueryAAAAWwwExampleComPacket, .dnsResponseAAAAWwwExampleComPacket,
             .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket,
             .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket,
             .dnsQueryCNAMERawGithubusercontentComPacket,
@@ -108,31 +112,33 @@ enum Resources: String {
     var domainName: DomainName? {
         switch self {
         case .dnsQueryAExampleComPacket, .dnsResponseAExampleComPacket:
-            return try? DomainName("example.com.")
+            return try! DomainName("example.com.")
         case .dnsQueryAWwwExampleComPacket, .dnsResponseAWwwExampleComPacket:
-            return try? DomainName("www.example.com.")
+            return try! DomainName("www.example.com.")
+        case .dnsQueryAAAAWwwExampleComPacket, .dnsResponseAAAAWwwExampleComPacket:
+            return try! DomainName("www.example.com.")
         case .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket:
-            return try? DomainName("cloudflare.com.")
+            return try! DomainName("cloudflare.com.")
         case .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket:
-            return try? DomainName("example.com.")
+            return try! DomainName("example.com.")
         case .dnsQueryCNAMERawGithubusercontentComPacket,
             .dnsResponseCNAMERawGithubusercontentComPacket:
-            return try? DomainName("raw.githubusercontent.com.")
+            return try! DomainName("raw.githubusercontent.com.")
         case .dnsQueryCNAMEWwwGithubComPacket, .dnsResponseCNAMEWwwGithubComPacket:
-            return try? DomainName("www.github.com.")
+            return try! DomainName("www.github.com.")
         case .dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket:
-            return try? DomainName("cloudflare.com.")
+            return try! DomainName("cloudflare.com.")
         case .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
             .dnsResponseCERTForDnsCertTestingMahdibmComPacket:
-            return try? DomainName("for-dns-cert-testing.mahdibm.com.")
+            return try! DomainName("for-dns-cert-testing.mahdibm.com.")
         case .dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket:
-            return try? DomainName("mahdibm.com.")
+            return try! DomainName("mahdibm.com.")
         case .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket:
-            return try? DomainName("apple.com.")
+            return try! DomainName("apple.com.")
         case .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet:
-            return try? DomainName("9.9.9.9.")
+            return try! DomainName("9.9.9.9.")
         case .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
-            return try? DomainName("cloudflare.com.")
+            return try! DomainName("cloudflare.com.")
         case .hosts, .hostsIPv4, .hostsIPv6, .hostsSingleLine, .hostsCase, .topDomains:
             return nil
         }

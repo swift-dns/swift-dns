@@ -274,6 +274,150 @@ struct QueryResponseTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func encodeAAAAWwwExampleComQuery() throws {
+        let query = Query(
+            domainName: try DomainName("www.example.com."),
+            queryType: .AAAA,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x40cb,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 4096,
+                options: OPT(options: [])
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryAAAAWwwExampleComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func decodeAAAAWwwExampleComResponse() throws {
+        var buffer = Resources.dnsResponseAAAAWwwExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x40cb)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 3)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == true)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        let domainName = try DomainName("www.example.com.")
+        #expect(response.queries.first?.domainName == domainName)
+        #expect(response.queries.first?.queryType == .AAAA)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 3)
+
+        let cnameRecords = response.answers.prefix(1)
+        #expect(
+            cnameRecords.allSatisfy { $0.nameLabels.isFQDN },
+            "\(cnameRecords)"
+        )
+        #expect(
+            cnameRecords.map(\.nameLabels) == [domainName],
+            "\(cnameRecords)"
+        )
+        #expect(cnameRecords.allSatisfy { $0.recordType == .CNAME }, "\(response.answers).")
+        #expect(cnameRecords.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(cnameRecords.map(\.ttl) == [201], "\(response.answers).")
+        let cnameDomainNames = cnameRecords.compactMap {
+            switch $0.rdata {
+            case .CNAME(let cname):
+                return cname.domainName
+            default:
+                Issue.record("rdata was not of type CNAME: \($0.rdata).")
+                return nil
+            }
+        }
+        let cloudflareDoaminName = try DomainName("www.example.com.cdn.cloudflare.net.")
+        #expect(cnameDomainNames == [cloudflareDoaminName])
+
+        let aaaaRecords = response.answers.suffix(2)
+        #expect(
+            aaaaRecords.allSatisfy { $0.nameLabels.isFQDN },
+            "\(aaaaRecords)"
+        )
+        #expect(
+            aaaaRecords.allSatisfy { $0.nameLabels == cloudflareDoaminName },
+            "\(aaaaRecords)"
+        )
+        #expect(aaaaRecords.allSatisfy { $0.recordType == .AAAA }, "\(response.answers).")
+        #expect(aaaaRecords.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+        #expect(aaaaRecords.allSatisfy { $0.ttl == 97 }, "\(response.answers).")
+        let ipv6s = aaaaRecords.compactMap {
+            switch $0.rdata {
+            case .AAAA(let aaaa):
+                return aaaa.value
+            default:
+                Issue.record("rdata was not of type AAAA: \($0.rdata).")
+                return nil
+            }
+        }
+        let expectedIPv6s = [
+            IPv6Address("2606:4700:10::ac42:9071")!,
+            IPv6Address("2606:4700:10::6814:22dc")!,
+        ]
+        #expect(ipv6s == expectedIPv6s)
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+        #expect(edns.options.options.isEmpty)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func encodeAAAACloudflareComQuery() throws {
         let query = Query(
             domainName: try DomainName("cloudflare.com."),
