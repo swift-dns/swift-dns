@@ -47,13 +47,13 @@ extension TestingDNSConnectionFactory {
         }
     }
 
-    func expectNewUDPChannel() -> Expectation {
+    func registerExpectationForNewUDPChannel() -> Expectation {
         let expectation = Expectation()
         self.udpConfirmations.append(expectation)
         return expectation
     }
 
-    func expectNewTCPChannel() -> Expectation {
+    func registerExpectationForNewTCPChannel() -> Expectation {
         let expectation = Expectation()
         self.tcpConfirmations.append(expectation)
         return expectation

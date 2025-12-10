@@ -76,7 +76,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
     func _send(subDomain: String, info: String) async throws {
         var message = try MessageFactory<A>
             .forQuery(domainName: "\(subDomain).marker.packet.local.")
-            .__testing_copyMessage()
+            .copy().takeMessage()
         message.header.id = .max
         message.edns = EDNS(
             rcodeHigh: 0,

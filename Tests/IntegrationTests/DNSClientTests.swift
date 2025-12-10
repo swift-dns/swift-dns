@@ -18,7 +18,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "example.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryA(
                 message: factory
             )
@@ -27,7 +27,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -87,7 +87,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryANonASCIIDomain(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "新华网.中国.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryA(
                 message: factory
             )
@@ -96,7 +96,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -155,7 +155,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryAAAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<AAAA>.forQuery(domainName: "cloudflare.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryAAAA(
                 message: factory
             )
@@ -164,7 +164,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -224,7 +224,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryCAA(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CAA>.forQuery(domainName: "apple.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryCAA(
                 message: factory
             )
@@ -233,7 +233,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -299,7 +299,7 @@ extension SerializationNamespace.DNSClientTests {
             let factory = try MessageFactory<CERT>.forQuery(
                 domainName: "for-dns-cert-testing.mahdibm.com."
             )
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryCERT(
                 message: factory
             )
@@ -308,7 +308,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -392,7 +392,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(domainName: "www.github.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryCNAME(
                 message: factory
             )
@@ -401,7 +401,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -458,7 +458,7 @@ extension SerializationNamespace.DNSClientTests {
             let factory = try MessageFactory<CNAME>.forQuery(
                 domainName: "raw.githubusercontent.com."
             )
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryCNAME(
                 message: factory
             )
@@ -467,7 +467,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -533,7 +533,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryMX(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<MX>.forQuery(domainName: "mahdibm.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryMX(
                 message: factory
             )
@@ -542,7 +542,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -620,7 +620,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryNS(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<NS>.forQuery(domainName: "apple.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryNS(
                 message: factory
             )
@@ -629,7 +629,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -708,7 +708,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryPTR(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<PTR>.forQuery(domainName: "9.9.9.9.in-addr.arpa.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryPTR(
                 message: factory
             )
@@ -717,7 +717,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)
@@ -795,7 +795,7 @@ extension SerializationNamespace.DNSClientTests {
     func queryTXT(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<TXT>.forQuery(domainName: "example.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await client.queryTXT(
                 message: factory
             )
@@ -804,7 +804,7 @@ extension SerializationNamespace.DNSClientTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)

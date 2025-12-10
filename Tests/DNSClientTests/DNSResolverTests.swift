@@ -13,7 +13,7 @@ struct DNSResolverTests {
             let responseResource = Resources.dnsResponseAWwwExampleComPacket
             let domainName = try #require(responseResource.domainName)
 
-            let expectation = await connFactory.expectNewUDPChannel()
+            let expectation = await connFactory.registerExpectationForNewUDPChannel()
             async let asyncResponse = try await resolver.resolveA(
                 message: .forQuery(domainName: domainName)
             )

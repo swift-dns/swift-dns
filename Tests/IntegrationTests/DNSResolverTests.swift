@@ -20,7 +20,7 @@ extension SerializationNamespace.DNSResolverTests {
         try await withRunningDNSClient(client) { client in
             let resolver = DNSResolver(client: client)
             let factory = try MessageFactory<A>.forQuery(domainName: "www.example.com.")
-            let message = factory.__testing_copyMessage()
+            let message = factory.copy().takeMessage()
             let response = try await resolver.resolveA(
                 message: factory
             )
@@ -29,7 +29,7 @@ extension SerializationNamespace.DNSResolverTests {
                 message.header.id == 0 && response.header.id != 0,
                 """
                 The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
-                This is only possible to happen because we're illegally using `factory.__testing_copyMessage()`.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
                 """
             )
             #expect(response.header.queryCount > 0)

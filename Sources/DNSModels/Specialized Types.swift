@@ -71,7 +71,7 @@ extension SpecializedRecords: Sequence {
     /// So we don't have to manage syncing `rdata` and `record.rdata` manually.
     @dynamicMemberLookup
     public struct Element: Sendable {
-        private(set) public var record: Record
+        public let record: Record
         public var rdata: RDataType {
             try! RDataType(rdata: record.rdata)
         }
@@ -139,24 +139,29 @@ extension SpecializedRecords: Collection {
     }
 
     /// Complexity: O(1)
+    @inlinable
     public var startIndex: Index {
         0
     }
 
     /// Complexity: O(n)
+    @inlinable
     public var endIndex: Index {
         self.count
     }
 
+    @inlinable
     public func index(after i: Index) -> Index {
         i + 1
     }
 
+    @inlinable
     public func index(before i: Index) -> Index {
         i - 1
     }
 
     /// Complexity: O(n)
+    @inlinable
     public subscript(position: Index) -> Element {
         var index = 0
         for record in records {
