@@ -208,7 +208,7 @@ extension DNSChannelHandler {
         self.forceClose(context: context, error: .handlerRemoved)
     }
 
-    /// This triggered before when the connection-factory is done so virtually a
+    /// This is triggered before when the connection-factory is done so virtually a
     /// new channel is always active in the beginning of its lifecycle.
     @usableFromInline
     package func channelActive(context: ChannelHandlerContext) {

@@ -8,13 +8,13 @@ public import ServiceLifecycle
 @available(swiftDNSApplePlatforms 13, *)
 public struct DNSClient: Sendable {
     @usableFromInline
-    enum Transport: Sendable {
+    package enum Transport: Sendable {
         case preferUDPOrUseTCP(PreferUDPOrUseTCPDNSClientTransport)
         case tcp(TCPDNSClientTransport)
     }
 
     @usableFromInline
-    let transport: Transport
+    package let transport: Transport
 
     public init(transport transportFactory: DNSClientTransportFactory) {
         self.transport = transportFactory.transport

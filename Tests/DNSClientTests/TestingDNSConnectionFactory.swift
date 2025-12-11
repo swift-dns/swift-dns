@@ -16,8 +16,8 @@ actor TestingDNSConnectionFactory {
     var udpChannels: [NIOAsyncTestingChannel] = []
     var tcpChannels: [NIOAsyncTestingChannel] = []
 
-    var udpConfirmations: [Expectation] = []
-    var tcpConfirmations: [Expectation] = []
+    var udpExpectations: [Expectation] = []
+    var tcpExpectations: [Expectation] = []
 
     init(
         udpConnectionConfiguration: DNSConnectionConfiguration = .init(),
@@ -25,6 +25,64 @@ actor TestingDNSConnectionFactory {
     ) {
         self.udpConnectionConfiguration = udpConnectionConfiguration
         self.tcpConnectionConfiguration = tcpConnectionConfiguration
+    }
+}
+
+extension TestingDNSConnectionFactory {
+    typealias FactoryAndResolver = (
+        factory: TestingDNSConnectionFactory,
+        resolver: DNSResolver
+    )
+
+    static func makeConnFactoryAndDNSResolvers() -> [FactoryAndResolver] {
+        [
+            self.makeUDPConnFactoryAndDNSResolver(),
+            self.makeTCPConnFactoryAndDNSResolver(),
+        ]
+    }
+
+    private static func makeUDPConnFactoryAndDNSResolver() -> FactoryAndResolver {
+        let factory = TestingDNSConnectionFactory()
+        let client = DNSClient(
+            transport: try! .preferUDPOrUseTCP(
+                serverAddress: .domain(
+                    domainName: DomainName(ipv4: .defaultTestDNSServer),
+                    port: 53
+                ),
+                udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
+                udpConnectionFactory: .other(factory),
+                tcpConfiguration: .init(
+                    connectionConfiguration: .init(queryTimeout: .seconds(2)),
+                    connectionPoolConfiguration: .init(),
+                    keepAliveBehavior: .init()
+                ),
+                tcpConnectionFactory: .other(factory),
+                logger: .init(label: "DNSClientTests")
+            )
+        )
+        let resolver = DNSResolver(client: client)
+        return (factory, resolver)
+    }
+
+    private static func makeTCPConnFactoryAndDNSResolver() -> FactoryAndResolver {
+        let factory = TestingDNSConnectionFactory()
+        let client = DNSClient(
+            transport: try! .tcp(
+                serverAddress: .domain(
+                    domainName: DomainName(ipv4: .defaultTestDNSServer),
+                    port: 53
+                ),
+                configuration: .init(
+                    connectionConfiguration: .init(queryTimeout: .seconds(2)),
+                    connectionPoolConfiguration: .init(),
+                    keepAliveBehavior: .init()
+                ),
+                connectionFactory: .other(factory),
+                logger: .init(label: "DNSClientTests")
+            )
+        )
+        let resolver = DNSResolver(client: client)
+        return (factory, resolver)
     }
 }
 
@@ -47,16 +105,22 @@ extension TestingDNSConnectionFactory {
         }
     }
 
-    func registerExpectationForNewUDPChannel() -> Expectation {
+    func registerExpectationForNewChannel(udp: Bool) -> Expectation {
         let expectation = Expectation()
-        self.udpConfirmations.append(expectation)
+        if udp {
+            self.udpExpectations.append(expectation)
+        } else {
+            self.tcpExpectations.append(expectation)
+        }
         return expectation
     }
 
-    func registerExpectationForNewTCPChannel() -> Expectation {
-        let expectation = Expectation()
-        self.tcpConfirmations.append(expectation)
-        return expectation
+    func getFirstChannel(udp: Bool) -> NIOAsyncTestingChannel? {
+        if udp {
+            return self.udpChannels.first
+        } else {
+            return self.tcpChannels.first
+        }
     }
 }
 
@@ -64,18 +128,18 @@ extension TestingDNSConnectionFactory {
 extension TestingDNSConnectionFactory: AnyDNSConnectionFactory {
     private func appendUDPChannel(_ channel: NIOAsyncTestingChannel) {
         self.udpChannels.append(channel)
-        for expectation in self.udpConfirmations {
+        for expectation in self.udpExpectations {
             expectation.fulfill()
         }
-        self.udpConfirmations.removeAll()
+        self.udpExpectations.removeAll()
     }
 
     private func appendTCPChannel(_ channel: NIOAsyncTestingChannel) {
         self.tcpChannels.append(channel)
-        for expectation in self.tcpConfirmations {
+        for expectation in self.tcpExpectations {
             expectation.fulfill()
         }
-        self.tcpConfirmations.removeAll()
+        self.tcpExpectations.removeAll()
     }
 
     package func makeUDPConnection(

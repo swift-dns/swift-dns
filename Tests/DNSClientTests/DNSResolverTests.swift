@@ -6,23 +6,30 @@ import Testing
 
 struct DNSResolverTests {
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test func `resolve A record where the original record is a CNAME`() async throws {
-        let (connFactory, resolver) = try await self.makeResolver()
+    @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
+    func `resolve A record where the original record is a CNAME`(
+        connFactory: TestingDNSConnectionFactory,
+        resolver: DNSResolver
+    ) async throws {
         try await withRunningDNSResolver(resolver) { resolver in
             let queryResource = Resources.dnsQueryAWwwExampleComPacket
             let responseResource = Resources.dnsResponseAWwwExampleComPacket
             let domainName = try #require(responseResource.domainName)
+            let isOverUDP = await resolver.client.isOverUDP
 
-            let expectation = await connFactory.registerExpectationForNewUDPChannel()
+            let expectation = await connFactory.registerExpectationForNewChannel(udp: isOverUDP)
             async let asyncResponse = try await resolver.resolveA(
                 message: .forQuery(domainName: domainName)
             )
 
             await expectation.waitFulfillment()
 
-            let channel = try await #require(connFactory.udpChannels.first)
+            /// With TCP, technically we might have multiple channels.
+            /// For now we just get the first one and it's working since PostgresNIO's conn-pool
+            /// implementation which we use, just uses the first conn for the first query.
+            let channel = try #require(await connFactory.getFirstChannel(udp: isOverUDP))
             let channelCount = await connFactory.udpChannels.count
-            #expect(channelCount == 1)
+            #expect(channelCount <= 1)
 
             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
             #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
@@ -51,23 +58,27 @@ struct DNSResolverTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test func `resolve AAAA record where the original record is a CNAME`() async throws {
-        let (connFactory, resolver) = try await self.makeResolver()
+    @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
+    func `resolve AAAA record where the original record is a CNAME`(
+        connFactory: TestingDNSConnectionFactory,
+        resolver: DNSResolver
+    ) async throws {
         try await withRunningDNSResolver(resolver) { resolver in
             let queryResource = Resources.dnsQueryAAAAWwwExampleComPacket
             let responseResource = Resources.dnsResponseAAAAWwwExampleComPacket
             let domainName = try #require(responseResource.domainName)
+            let isOverUDP = await resolver.client.isOverUDP
 
-            let expectation = await connFactory.registerExpectationForNewUDPChannel()
+            let expectation = await connFactory.registerExpectationForNewChannel(udp: isOverUDP)
             async let asyncResponse = try await resolver.resolveAAAA(
                 message: .forQuery(domainName: domainName)
             )
 
             await expectation.waitFulfillment()
 
-            let channel = try await #require(connFactory.udpChannels.first)
+            let channel = try #require(await connFactory.getFirstChannel(udp: isOverUDP))
             let channelCount = await connFactory.udpChannels.count
-            #expect(channelCount == 1)
+            #expect(channelCount <= 1)
 
             let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
             #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
@@ -93,31 +104,5 @@ struct DNSResolverTests {
             /// FIXME: use equatable instead of string comparison
             #expect("\(response.message)" == "\(message)")
         }
-    }
-
-    func makeResolver() async throws -> (
-        factory: TestingDNSConnectionFactory,
-        resolver: DNSResolver
-    ) {
-        let factory = TestingDNSConnectionFactory()
-        let client = DNSClient(
-            transport: try .preferUDPOrUseTCP(
-                serverAddress: .domain(
-                    domainName: DomainName(ipv4: .defaultTestDNSServer),
-                    port: 53
-                ),
-                udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
-                udpConnectionFactory: .other(factory),
-                tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(2)),
-                    connectionPoolConfiguration: .init(),
-                    keepAliveBehavior: .init()
-                ),
-                tcpConnectionFactory: .other(factory),
-                logger: .init(label: "DNSClientTests")
-            )
-        )
-        let resolver = DNSResolver(client: client)
-        return (factory, resolver)
     }
 }
