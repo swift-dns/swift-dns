@@ -10,6 +10,10 @@ public actor DNSResolver {
         self.client = client
     }
 
+    public init(transport transportFactory: DNSClientTransportFactory) {
+        self.client = DNSClient(transport: transportFactory)
+    }
+
     @inlinable
     public func run() async throws {
         try await self.client.run()

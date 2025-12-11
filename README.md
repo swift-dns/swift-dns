@@ -31,14 +31,14 @@ A high-performance Swift DNS library built on top of SwiftNIO; aiming to provide
 
 ## Usage
 
-Initialize a `DNSClient`, then use the `query` methods:
+Initialize a `DNSResolver`, then use the `query` methods:
 
 ```swift
 import DNSClient
 import DNSModels
 
-/// Create a `DNSClient`
-let client = try DNSClient(
+/// Create a `DNSResolver`
+let resolver = try DNSResolver(
     transport: .default(
         serverAddress: .domain(
             /// Connect to Cloudflare's DNS primary server @ 1.1.1.1
@@ -51,38 +51,40 @@ let client = try DNSClient(
 try await withThrowingTaskGroup(of: Void.self) { taskGroup in
     /// Use `addImmediateTask` instead of `addTask` on macOS 26 or Linux.
     taskGroup.addTask {
-        try await client.run()  /// !important
+        try await resolver.run()/// !important
     }
 
-    /// You can use the client while the `client.run()` method is not cancelled.
+    /// You can use the resolver while the `resolver.run()` method is not cancelled.
 
     /// Send the query
     /// `response` will be of type `Message`
-    let response = try await client.queryA(
+    let response = try await resolver.resolveA(
         message: .forQuery(domainName: "mahdibm.com")
     )
 
     /// Read the answers
     for answer in response.answers {
         /// `a` will be of type `A`
-        let a = try answer.rdata
+        let a = answer.rdata
         /// `ipv4` will be of type `IPv4Address`
         let ipv4 = a.value
-        print("Got ipv4 \(ipv4) for domain \(response.queries.first?.domainName.description ?? "n/a")")
+        print(
+            "Got ipv4 \(ipv4) for domain \(response.queries.first?.domainName.description ?? "n/a")"
+        )
     }
 
-    /// To shutdown the client, cancel its run method, by cancelling the taskGroup.
+    /// To shutdown the resolver, cancel its run method, by cancelling the taskGroup.
     taskGroup.cancelAll()
 }
 ```
 
 You can use different transports if you so desire.
-The `default` transport is `preferUDPOrUseTCP` similar to other DNS clients and resolvers.
+The `default` transport is `preferUDPOrUseTCP` similar to other DNS resolvers and resolvers.
 Currently a TCP-only transport is also supported:
 
 ```swift
-/// Create a `DNSClient` with the TCP transport
-let client = try DNSClient(
+/// Create a `DNSResolver` with the TCP transport
+let resolver = try DNSResolver(
     transport: .tcp(
         serverAddress: .domain(
             domainName: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
@@ -115,7 +117,8 @@ Some examples of these operators are:
   - [ ] DoH (DNS Over HTTPS)
   - [ ] DoQ (DNS Over Quic)
   - [ ] MDNS
-- [ ] DNS resolver (DNS client but with caching etc...)
+- [x] DNS resolver (DNS client but with following CNAMEs, doing caching etc...)
+  - Implementation is in progress
 - [ ] DNS server
 - [ ] DNSSEC
 

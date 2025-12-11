@@ -393,7 +393,8 @@ struct DNSConnectionTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @Test func `concurrent MX queries over one connection`() async throws {
+    @Test(.tags(.timeConsuming))
+    func `concurrent MX queries over one connection`() async throws {
         typealias QueryableType = MX
 
         try await withThrowingTaskGroup { taskGroup -> Void in
