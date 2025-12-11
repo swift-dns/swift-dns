@@ -22,45 +22,10 @@ extension DNSResolver {
         message factory: consuming MessageFactory<A>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> SpecializedMessage<A> {
-        var factory = factory
-        while true {
-            let (query, response) = try await self.client._query(
-                message: factory.copy(),
-                isolation: isolation
-            )
-
-            if response.answers.contains(where: { $0.recordType == .A }) {
-                return SpecializedMessage<A>(message: response)
-            }
-
-            switch response.answers.first?.rdata {
-            case .none:
-                return SpecializedMessage<A>(message: response)
-            case .some(let rdata):
-                switch rdata {
-                case .CNAME(let cname):
-                    /// FIXME: have a way to stop after certain number of tries
-                    factory.setDomainName(to: cname.domainName)
-                    continue
-                case .A:
-                    assertionFailure(
-                        """
-                        Should be impossible to reach here.
-                        We already checked there are no A records in the response answers.
-                        Query: \(query)
-                        Response: \(response)
-                        """
-                    )
-                    fallthrough
-                default:
-                    throw ResolutionFailure(
-                        query: query,
-                        response: response,
-                        reason: .receivedUnexpectedRecordType(rdata.recordType)
-                    )
-                }
-            }
-        }
+        try await self.resolveFollowingCNAMEs(
+            factory: factory,
+            isolation: isolation
+        )
     }
 
     @inlinable
@@ -68,44 +33,69 @@ extension DNSResolver {
         message factory: consuming MessageFactory<AAAA>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> SpecializedMessage<AAAA> {
+        try await self.resolveFollowingCNAMEs(
+            factory: factory,
+            isolation: isolation
+        )
+    }
+
+    @inlinable
+    func resolveFollowingCNAMEs<RDataType: RDataConvertible>(
+        factory: consuming MessageFactory<RDataType>,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> SpecializedMessage<RDataType> {
+        assert(
+            RDataType.recordType != .CNAME,
+            "No need to resolve following CNAMEs for CNAME records."
+        )
+
         var factory = factory
+        var cnameChain = TinyFastSequence<Record>()
         while true {
-            let (query, response) = try await self.client._query(
+            let (query, _response) = try await self.client._query(
                 message: factory.copy(),
                 isolation: isolation
             )
+            var response = _response
 
-            if response.answers.contains(where: { $0.recordType == .AAAA }) {
-                return SpecializedMessage<AAAA>(message: response)
+            if response.answers.contains(where: { $0.recordType == RDataType.recordType }) {
+                appendingAnswerChain(to: &response, chain: &cnameChain)
+                return SpecializedMessage<RDataType>(message: response)
             }
 
-            switch response.answers.first?.rdata {
-            case .none:
-                return SpecializedMessage<AAAA>(message: response)
-            case .some(let rdata):
-                switch rdata {
-                case .CNAME(let cname):
-                    /// FIXME: have a way to stop after certain number of tries
-                    factory.setDomainName(to: cname.domainName)
-                    continue
-                case .AAAA:
-                    assertionFailure(
-                        """
-                        Should be impossible to reach here.
-                        We already checked there are no AAAA records in the response answers.
-                        Query: \(query)
-                        Response: \(response)
-                        """
-                    )
-                    fallthrough
-                default:
-                    throw ResolutionFailure(
-                        query: query,
-                        response: response,
-                        reason: .receivedUnexpectedRecordType(rdata.recordType)
-                    )
-                }
+            guard let firstAnswerRecord = response.answers.first else {
+                appendingAnswerChain(to: &response, chain: &cnameChain)
+                /// Empty answers
+                return SpecializedMessage<RDataType>(message: response)
+            }
+
+            switch firstAnswerRecord.rdata {
+            case .CNAME(let cname):
+                /// FIXME: have a way to stop after certain number of tries
+                factory.setDomainName(to: cname.domainName)
+                cnameChain.append(firstAnswerRecord)
+                continue
+            case let rdata where rdata.recordType == RDataType.recordType:
+                assertionFailure("Cannot reach here")
+                fallthrough
+            default:
+                throw ResolutionFailure(
+                    query: query,
+                    response: response,
+                    reason: .receivedUnexpectedRecordType(firstAnswerRecord.recordType)
+                )
             }
         }
+    }
+
+    @inlinable
+    func appendingAnswerChain(
+        to message: inout Message,
+        chain: inout TinyFastSequence<Record>,
+        isolation: isolated (any Actor)? = #isolation
+    ) {
+        if chain.isEmpty { return }
+        chain.append(contentsOf: message.answers)
+        message.answers = chain
     }
 }

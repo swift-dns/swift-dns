@@ -107,6 +107,22 @@ public struct TinyFastSequence<Element> {
     }
 
     @inlinable
+    public mutating func append(contentsOf other: TinyFastSequence<Element>) {
+        switch self.base {
+        case .none(let reserveCapacity):
+            var new = [Element]()
+            new.reserveCapacity(Swift.max(other.count, reserveCapacity))
+            new.append(contentsOf: other)
+            self.base = .n(new)
+
+        case .n(var existing):
+            self.base = .none(reserveCapacity: 0)  // prevent CoW
+            existing.append(contentsOf: other)
+            self.base = .n(existing)
+        }
+    }
+
+    @inlinable
     public mutating func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows {
         switch self.base {
         case .none:
