@@ -524,8 +524,78 @@ extension SerializationNamespace.DNSClientTests {
 
     @Test func queryHINFO() async throws {}
 
-    @Test func queryHTTPS() async throws {
-        /// TODO: try `education.github.com`
+    @available(swiftDNSApplePlatforms 10.15, *)
+    @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
+    func queryHTTPS(client: DNSClient) async throws {
+        try await withRunningDNSClient(client) { client in
+            let factory = try MessageFactory<HTTPS>.forQuery(domainName: "cdn.discordapp.com.")
+            let message = factory.copy().takeMessage()
+            let response = try await client.queryHTTPS(
+                message: factory
+            )
+
+            #expect(
+                message.header.id == 0 && response.header.id != 0,
+                """
+                The channel handler reassigns the id. We expect it to be 0 initially, but not in the response.
+                This is only possible to happen because we're using `factory.copy().takeMessage()`.
+                """
+            )
+            #expect(response.header.queryCount > 0)
+            #expect(response.header.answerCount > 0)
+            /// response.header.nameServerCount is whatever
+            #expect(response.header.additionalCount > 0)
+            #expect(response.header.messageType == .Response)
+            #expect(response.header.opCode == .Query)
+            #expect(response.header.authoritative == false)
+            #expect(response.header.truncation == false)
+            #expect(response.header.recursionDesired == true)
+            #expect(response.header.recursionAvailable == true)
+            /// `response.header.authenticData` is whatever
+            #expect(response.header.checkingDisabled == false)
+            #expect(response.header.responseCode == .NoError)
+
+            #expect(response.queries.count == 1)
+            let domainName = try DomainName("cdn.discordapp.com.")
+            #expect(response.queries.first?.domainName == domainName)
+            #expect(response.queries.first?.queryType == .HTTPS)
+            #expect(response.queries.first?.queryClass == .IN)
+
+            #expect(response.nameServers.count == 0)
+
+            #expect(response.answers.count > 0)
+            #expect(
+                response.answers.allSatisfy { $0.nameLabels.isFQDN },
+                "\(response.answers)"
+            )
+            #expect(
+                response.answers.allSatisfy { $0.nameLabels == domainName },
+                "\(response.answers)"
+            )
+            #expect(response.answers.allSatisfy { $0.recordType == .HTTPS }, "\(response.answers).")
+            #expect(response.answers.allSatisfy { $0.dnsClass == .IN }, "\(response.answers).")
+            /// response.answers[].ttl is whatever
+            for https in response.answers.map(\.rdata) {
+                #expect(https.svcb.targetName == .root)
+                let keys = https.svcb.svcParams.map(\.key)
+                #expect(keys.contains(.alpn))
+                #expect(keys.contains(.ipv4hint))
+                #expect(keys.contains(.echConfigList))
+            }
+
+            /// The 'additional' was an EDNS
+            #expect(response.additionals.count == 0)
+
+            #expect(response.signature.count == 0)
+
+            let edns = try #require(response.edns)
+            #expect(edns.rcodeHigh == 0)
+            /// edns.version is whatever
+            /// edns.flags.dnssecOk is whatever
+            /// edns.flags.z is whatever
+            /// edns.maxPayload is whatever
+            /// edns.options.options is whatever
+        }
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
@@ -869,7 +939,7 @@ extension SerializationNamespace.DNSClientTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -889,7 +959,7 @@ extension SerializationNamespace.DNSClientTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     configuration: .init(
@@ -962,7 +1032,7 @@ extension SerializationNamespace.DNSClientTests {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
@@ -981,7 +1051,7 @@ extension SerializationNamespace.DNSClientTests {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     configuration: .init(

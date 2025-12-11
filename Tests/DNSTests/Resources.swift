@@ -30,6 +30,9 @@ enum Resources: String {
     case dnsQueryCNAMEWwwGithubComPacket = "www.github.com-cname-query-packet"
     case dnsResponseCNAMEWwwGithubComPacket = "www.github.com-cname-response-packet"
 
+    case dnsQueryHTTPSCdnDiscordappComPacket = "cdn.discordapp.com-https-query-packet"
+    case dnsResponseHTTPSCdnDiscordappComPacket = "cdn.discordapp.com-https-response-packet"
+
     case dnsQueryCAACloudflareComPacket = "cloudflare.com-caa-query-packet"
     case dnsResponseCAACloudflareComPacket = "cloudflare.com-caa-response-packet"
 
@@ -94,11 +97,14 @@ enum Resources: String {
             .dnsQueryAAAACloudflareComPacket, .dnsResponseAAAACloudflareComPacket,
             .dnsQueryTXTExampleComPacket, .dnsResponseTXTExampleComPacket,
             .dnsQueryCNAMERawGithubusercontentComPacket,
-            .dnsResponseCNAMERawGithubusercontentComPacket, .dnsQueryCNAMEWwwGithubComPacket,
-            .dnsResponseCNAMEWwwGithubComPacket, .dnsQueryCAACloudflareComPacket,
-            .dnsResponseCAACloudflareComPacket, .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
-            .dnsResponseCERTForDnsCertTestingMahdibmComPacket, .dnsQueryMXMahdibmComPacket,
-            .dnsResponseMXMahdibmComPacket, .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket,
+            .dnsResponseCNAMERawGithubusercontentComPacket,
+            .dnsQueryCNAMEWwwGithubComPacket, .dnsResponseCNAMEWwwGithubComPacket,
+            .dnsQueryHTTPSCdnDiscordappComPacket, .dnsResponseHTTPSCdnDiscordappComPacket,
+            .dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket,
+            .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
+            .dnsResponseCERTForDnsCertTestingMahdibmComPacket,
+            .dnsQueryMXMahdibmComPacket, .dnsResponseMXMahdibmComPacket,
+            .dnsQueryNSAppleComPacket, .dnsResponseNSAppleComPacket,
             .dnsQueryPTR9dot9dot9dot9Packet, .dnsResponsePTR9dot9dot9dot9Packet,
             .dnsQueryOPTCloudflareComPacket, .dnsResponseOPTCloudflareComPacket:
             return "dns-packets"
@@ -126,6 +132,8 @@ enum Resources: String {
             return try! DomainName("raw.githubusercontent.com.")
         case .dnsQueryCNAMEWwwGithubComPacket, .dnsResponseCNAMEWwwGithubComPacket:
             return try! DomainName("www.github.com.")
+        case .dnsQueryHTTPSCdnDiscordappComPacket, .dnsResponseHTTPSCdnDiscordappComPacket:
+            return try! DomainName("cdn.discordapp.com.")
         case .dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket:
             return try! DomainName("cloudflare.com.")
         case .dnsQueryCERTForDnsCertTestingMahdibmComPacket,
@@ -160,6 +168,8 @@ enum Resources: String {
                 .dnsQueryCNAMERawGithubusercontentComPacket,
                 .dnsResponseCNAMERawGithubusercontentComPacket
             )
+        case is HTTPS.Type:
+            return (.dnsQueryHTTPSCdnDiscordappComPacket, .dnsResponseHTTPSCdnDiscordappComPacket)
         case is CAA.Type:
             return (.dnsQueryCAACloudflareComPacket, .dnsResponseCAACloudflareComPacket)
         case is CERT.Type:

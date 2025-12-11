@@ -21,7 +21,7 @@
 ///     decimal numbers separated by dots without any imbedded spaces (e.g.,
 ///     "10.2.0.52" or "192.0.5.6").
 /// ```
-public struct A: Sendable {
+public struct A: Sendable, Hashable {
     public var value: IPv4Address
 
     public init(value: IPv4Address) {

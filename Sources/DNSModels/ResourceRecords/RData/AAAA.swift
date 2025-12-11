@@ -1,6 +1,6 @@
 /// The DNS AAAA record type, an IPv6 address
 @available(swiftDNSApplePlatforms 10.15, *)
-public struct AAAA: Sendable {
+public struct AAAA: Sendable, Hashable {
     public var value: IPv6Address
 
     public init(value: IPv6Address) {

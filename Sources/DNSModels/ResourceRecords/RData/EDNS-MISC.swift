@@ -1,3 +1,4 @@
+import func DNSCore.debugOnly
 public import struct NIOCore.ByteBuffer
 
 /// The code of the EDNS data option
@@ -195,12 +196,128 @@ public enum EDNSOption: Sendable, Hashable {
         }
     }
 
+    /// [RFC 7873, Domain Name System (DNS) Cookies](https://datatracker.ietf.org/doc/html/rfc7873#section-4)
+    ///
+    /// ```text
+    /// In a request sent by a client to a server when the client does not
+    /// know the server's cookie, its length is 8, consisting of an 8-byte
+    /// Client Cookie, as shown in Figure 1.
+    ///
+    ///                   1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
+    ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    /// |        OPTION-CODE = 10      |       OPTION-LENGTH = 8        |
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    /// |                                                               |
+    /// +-+-    Client Cookie (fixed size, 8 bytes)              -+-+-+-+
+    /// |                                                               |
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    ///
+    ///           Figure 1: COOKIE Option, Unknown Server Cookie
+    ///
+    /// In a request sent by a client when a Server Cookie is known, and in
+    /// all responses to such a request, the length is variable -- from 16 to
+    /// 40 bytes, consisting of an 8-byte Client Cookie followed by the
+    /// variable-length (8 bytes to 32 bytes) Server Cookie, as shown in
+    /// Figure 2.  The variability of the option length stems from the
+    /// variable-length Server Cookie.  The Server Cookie is an integer
+    /// number of bytes, with a minimum size of 8 bytes for security and a
+    /// maximum size of 32 bytes for convenience of implementation.
+    ///
+    ///                      1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
+    ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    /// |        OPTION-CODE = 10      |   OPTION-LENGTH >= 16, <= 40   |
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    /// |                                                               |
+    /// +-+-    Client Cookie (fixed size, 8 bytes)              -+-+-+-+
+    /// |                                                               |
+    /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    /// |                                                               |
+    /// /       Server Cookie  (variable size, 8 to 32 bytes)           /
+    /// /                                                               /
+    /// +-+-+-+-...
+    ///
+    ///            Figure 2: COOKIE Option, Known Server Cookie
+    /// ```
+    public struct Cookie: Sendable, Hashable {
+        public struct ValidationError: Error {
+            public enum Reason: Sendable, Hashable {
+                case clientCookieMustBeExactly8Bytes(actualLength: Int)
+                case serverCookieMustBeEmptyOr8To32Bytes(actualLength: Int)
+            }
+
+            public let cookie: ByteBuffer
+            public let reason: Reason
+        }
+
+        private(set) public var clientCookie: ByteBuffer {
+            willSet {
+                debugOnly {
+                    try! Self.validate(clientCookie: newValue)
+                }
+            }
+        }
+        private(set) public var serverCookie: ByteBuffer {
+            willSet {
+                debugOnly {
+                    try! Self.validate(serverCookie: newValue)
+                }
+            }
+        }
+
+        public mutating func setClientCookie(_ clientCookie: ByteBuffer) throws(ValidationError) {
+            try Self.validate(clientCookie: clientCookie)
+            self.clientCookie = clientCookie
+        }
+
+        public mutating func setServerCookie(_ serverCookie: ByteBuffer) throws(ValidationError) {
+            try Self.validate(serverCookie: serverCookie)
+            self.serverCookie = serverCookie
+        }
+
+        static func validate(clientCookie: ByteBuffer) throws(ValidationError) {
+            guard clientCookie.readableBytes == 8 else {
+                throw ValidationError(
+                    cookie: clientCookie,
+                    reason: .clientCookieMustBeExactly8Bytes(
+                        actualLength: clientCookie.readableBytes
+                    )
+                )
+            }
+        }
+
+        static func validate(serverCookie: ByteBuffer) throws(ValidationError) {
+            let length = serverCookie.readableBytes
+            guard length == 0 || (length >= 8 && length <= 32) else {
+                throw ValidationError(
+                    cookie: serverCookie,
+                    reason: .serverCookieMustBeEmptyOr8To32Bytes(
+                        actualLength: serverCookie.readableBytes
+                    )
+                )
+            }
+        }
+
+        public init(
+            clientCookie: ByteBuffer,
+            serverCookie: ByteBuffer
+        ) throws(ValidationError) {
+            try Self.validate(clientCookie: clientCookie)
+            try Self.validate(serverCookie: serverCookie)
+            self.clientCookie = clientCookie
+            self.serverCookie = serverCookie
+        }
+    }
+
     /// [RFC 6975, DNSSEC Algorithm Understood](https://tools.ietf.org/html/rfc6975)
     case dau(SupportedAlgorithms)
     /// [RFC 7871, Client Subnet, Optional](https://tools.ietf.org/html/rfc7871)
     case subnet(ClientSubnet)
     /// [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3)
     case keepalive(Keepalive)
+    /// [RFC 7873, Domain Name System (DNS) Cookies](https://datatracker.ietf.org/doc/html/rfc7873#section-4)
+    case cookie(Cookie)
     /// Unknown, used to deal with unknown or unsupported codes
     case unknown(UInt16, ByteBuffer)
 }
@@ -215,6 +332,8 @@ extension EDNSOption {
             self = .subnet(try ClientSubnet(from: &buffer))
         case .keepalive:
             self = .keepalive(try Keepalive(from: &buffer))
+        case .cookie:
+            self = .cookie(try Cookie(from: &buffer))
         default:
             self = .unknown(code.rawValue, buffer.readToEnd())
         }
@@ -234,7 +353,12 @@ extension EDNSOption {
             buffer.writeInteger(subnet.lengthForWireProtocol)
             try subnet.encode(into: &buffer)
         case .keepalive(let keepalive):
+            /// Due to keepalive structure, length is always 2 bytes.
+            buffer.writeInteger(2 as UInt16)
             keepalive.encode(into: &buffer)
+        case .cookie(let cookie):
+            buffer.writeInteger(cookie.lengthForWireProtocol)
+            cookie.encode(into: &buffer)
         case .unknown(_, let data):
             try buffer.writeLengthPrefixedString(
                 name: "EDNSOption.unknown",
@@ -432,6 +556,35 @@ extension EDNSOption.Keepalive {
 extension EDNSOption.Keepalive {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.timeout)
+    }
+}
+
+@available(swiftDNSApplePlatforms 10.15, *)
+extension EDNSOption.Cookie {
+    var lengthForWireProtocol: UInt16 {
+        UInt16(exactly: self.clientCookie.readableBytes + self.serverCookie.readableBytes)!
+    }
+}
+
+@available(swiftDNSApplePlatforms 10.15, *)
+extension EDNSOption.Cookie {
+    /// Will consume the entire buffer up to the end, so should only be provided with
+    /// the portion of the buffer that contains the cookie, and nothing more.
+    package init(from buffer: inout DNSBuffer) throws {
+        self.clientCookie = try buffer.readByteBuffer(length: 8).unwrap(
+            or: .failedToRead("EDNSOption.Cookie.clientCookie", buffer)
+        )
+        let serverCookie = buffer.readToEnd()
+        try Self.validate(serverCookie: serverCookie)
+        self.serverCookie = serverCookie
+    }
+}
+
+@available(swiftDNSApplePlatforms 10.15, *)
+extension EDNSOption.Cookie {
+    package func encode(into buffer: inout DNSBuffer) {
+        buffer.writeBuffer(self.clientCookie)
+        buffer.writeBuffer(serverCookie)
     }
 }
 

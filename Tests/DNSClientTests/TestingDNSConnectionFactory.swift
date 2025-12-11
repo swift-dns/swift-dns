@@ -116,16 +116,15 @@ extension TestingDNSConnectionFactory: AnyDNSConnectionFactory {
 extension TestingDNSConnectionFactory {
     static func makeTestConnection(
         configuration: DNSConnectionConfiguration = .init(),
-        address: DNSServerAddress = .domain(
-            domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
-            port: 53
-        ),
+        address: DNSServerAddress? = nil,
         connectionID: Int = .random(in: .min ... .max),
         isOverUDP: Bool = true
     ) async throws -> (
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel
     ) {
+        let ipv4Address: IPv4Address = isOverUDP ? .defaultTestDNSServer : .defaultTestDNSServer
+        let address = address ?? .domain(domainName: DomainName(ipv4: ipv4Address), port: 53)
         let channel = NIOAsyncTestingChannel()
         let logger = Logger(label: "test")
         /// FIXME: This is safe but better solution than using nonisolated(unsafe)?

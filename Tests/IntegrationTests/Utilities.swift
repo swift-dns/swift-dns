@@ -8,7 +8,7 @@ enum Utils {
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
@@ -23,7 +23,7 @@ enum Utils {
             try! DNSClient(
                 transport: .tcp(
                     serverAddress: .domain(
-                        domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                        domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
                     configuration: .init(

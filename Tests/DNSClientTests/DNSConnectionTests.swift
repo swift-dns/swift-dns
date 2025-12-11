@@ -22,6 +22,7 @@ struct DNSConnectionTests {
             NS.self,
             PTR.self,
             OPT.self,
+            HTTPS.self,
         )
     }
 

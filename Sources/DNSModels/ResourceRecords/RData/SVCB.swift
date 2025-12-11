@@ -41,7 +41,7 @@ public import struct NIOCore.ByteBuffer
 ///   fall back to non-SVCB connection establishment.
 /// ```
 @available(swiftDNSApplePlatforms 10.15, *)
-public struct SVCB: Sendable {
+public struct SVCB: Sendable, Hashable {
     ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2)
     ///
     /// ```text
@@ -95,7 +95,7 @@ public struct SVCB: Sendable {
     ///   *  a 2 octet field containing the SvcParamKey as an integer in
     ///      network byte order.  (See Section 14.3.2 for the defined values.)
     /// ```
-    public enum SVCParamKey: Sendable {
+    public enum SVCParamKey: Sendable, Hashable {
         /// Mandatory keys in this RR
         case mandatory
         /// Additional supported protocols
@@ -127,7 +127,7 @@ public struct SVCB: Sendable {
     ///   *  an octet string of this length whose contents are in a format
     ///      determined by the SvcParamKey.
     /// ```
-    public enum SVCParamValue: Sendable {
+    public enum SVCParamValue: Sendable, Hashable {
         ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-8)
         ///
         /// ```text
@@ -168,7 +168,7 @@ public struct SVCB: Sendable {
         ///    SHOULD NOT appear in the list either.  (Including them wastes space
         ///    and otherwise has no effect.)
         /// ```
-        public struct Mandatory: Sendable {
+        public struct Mandatory: Sendable, Hashable {
             public var keys: [SVCParamKey]
 
             public init(keys: [SVCParamKey]) {
@@ -282,7 +282,7 @@ public struct SVCB: Sendable {
         ///   supports the default transports.  This enables compatibility with the
         ///   greatest number of clients.
         /// ```
-        public struct ALPN: Sendable {
+        public struct ALPN: Sendable, Hashable {
             public var protocols: [String]
 
             var lengthInDNSWireProtocol: Int {
@@ -337,7 +337,7 @@ public struct SVCB: Sendable {
         ///   operators SHOULD NOT include these hints, because they are unlikely
         ///   to convey any performance benefit.
         /// ```
-        public struct IPHint<IPType: Sendable>: Sendable {
+        public struct IPHint<IPType: Sendable & Hashable>: Sendable, Hashable {
             public var addresses: [IPType]
 
             public init(addresses: [IPType]) {
@@ -361,7 +361,7 @@ public struct SVCB: Sendable {
         ///   with TLS server software. To enable simpler parsing, this SvcParam MUST NOT contain escape
         ///   sequences.
         /// ```
-        public struct ECHConfigList: Sendable {
+        public struct ECHConfigList: Sendable, Hashable {
             public var config: ByteBuffer
 
             public init(config: ByteBuffer) {
@@ -384,7 +384,7 @@ public struct SVCB: Sendable {
         ///   SvcParams in presentation format MAY appear in any order, but keys
         ///   MUST NOT be repeated.
         /// ```
-        public struct Unknown: Sendable {
+        public struct Unknown: Sendable, Hashable {
             public var data: ByteBuffer
 
             public init(data: ByteBuffer) {
@@ -475,7 +475,7 @@ public struct SVCB: Sendable {
 
     public var svcPriority: UInt16
     public var targetName: DomainName
-    public var svcParams: [(SVCParamKey, SVCParamValue)]
+    public var svcParams: [(key: SVCParamKey, value: SVCParamValue)]
 
     public init(
         svcPriority: UInt16,
@@ -485,6 +485,30 @@ public struct SVCB: Sendable {
         self.svcPriority = svcPriority
         self.targetName = targetName
         self.svcParams = svcParams
+    }
+}
+
+@available(swiftDNSApplePlatforms 10.15, *)
+/// For Hashable conformance that we've declared at the type definition site.
+extension SVCB {
+    public static func == (lhs: SVCB, rhs: SVCB) -> Bool {
+        if lhs.svcPriority != rhs.svcPriority { return false }
+        if lhs.targetName != rhs.targetName { return false }
+        if lhs.svcParams.count != rhs.svcParams.count { return false }
+        for (lhsKeyValue, rhsKeyValue) in zip(lhs.svcParams, rhs.svcParams) {
+            if lhsKeyValue.0 != rhsKeyValue.0 { return false }
+            if lhsKeyValue.1 != rhsKeyValue.1 { return false }
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.svcPriority)
+        hasher.combine(self.targetName)
+        for (key, value) in self.svcParams {
+            hasher.combine(key)
+            hasher.combine(value)
+        }
     }
 }
 

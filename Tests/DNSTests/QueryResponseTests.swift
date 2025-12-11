@@ -1258,6 +1258,157 @@ struct QueryResponseTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func encodeHTTPSCdnDiscordappComQuery() throws {
+        let query = Query(
+            domainName: try DomainName("cdn.discordapp.com."),
+            queryType: .HTTPS,
+            queryClass: .IN
+        )
+        let message = Message(
+            header: Header(
+                id: 0x5583,
+                messageType: .Query,
+                opCode: .Query,
+                authoritative: false,
+                truncation: false,
+                recursionDesired: true,
+                recursionAvailable: false,
+                authenticData: true,
+                checkingDisabled: false,
+                responseCode: .NoError,
+                queryCount: 1,
+                answerCount: 0,
+                nameServerCount: 0,
+                additionalCount: 1
+            ),
+            queries: [query],
+            answers: [],
+            nameServers: [],
+            additionals: [],
+            signature: [],
+            edns: EDNS(
+                rcodeHigh: 0,
+                version: 0,
+                flags: .init(dnssecOk: false, z: 0),
+                maxPayload: 1232,
+                options: OPT(
+                    options: [
+                        (
+                            .cookie,
+                            .cookie(
+                                try! .init(
+                                    clientCookie: ByteBuffer([
+                                        0x48, 0x62, 0x3d, 0x86, 0xba, 0xab, 0xcc, 0x10,
+                                    ]),
+                                    serverCookie: ByteBuffer()
+                                )
+                            )
+                        )
+                    ]
+                )
+            )
+        )
+        var buffer = DNSBuffer()
+        try message.encode(into: &buffer)
+
+        var expected = Resources.dnsQueryHTTPSCdnDiscordappComPacket.buffer()
+        expected.moveReaderIndex(forwardBy: 42)
+        #expect(buffer == expected)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
+    @Test func decodeHTTPSCdnDiscordappComResponse() throws {
+        var buffer = Resources.dnsResponseHTTPSCdnDiscordappComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        let response = try Message(from: &buffer)
+
+        #expect(response.header.id == 0x5583)
+        #expect(response.header.queryCount == 1)
+        #expect(response.header.answerCount == 1)
+        #expect(response.header.nameServerCount == 0)
+        #expect(response.header.additionalCount == 1)
+        #expect(response.header.messageType == .Response)
+        #expect(response.header.opCode == .Query)
+        #expect(response.header.authoritative == false)
+        #expect(response.header.truncation == false)
+        #expect(response.header.recursionDesired == true)
+        #expect(response.header.recursionAvailable == true)
+        #expect(response.header.authenticData == true)
+        #expect(response.header.checkingDisabled == false)
+        #expect(response.header.responseCode == .NoError)
+
+        #expect(response.queries.count == 1)
+        let domainName = try DomainName("cdn.discordapp.com.")
+        #expect(response.queries.first?.domainName == domainName)
+        #expect(response.queries.first?.queryType == .HTTPS)
+        #expect(response.queries.first?.queryClass == .IN)
+
+        #expect(response.nameServers.count == 0)
+
+        #expect(response.answers.count == 1)
+
+        switch response.answers.first?.rdata {
+        case .HTTPS(let https):
+            let expected = SVCB(
+                svcPriority: 1,
+                targetName: .root,
+                svcParams: [
+                    (
+                        .alpn,
+                        .alpn(.init(protocols: ["h3", "h2"]))
+                    ),
+                    (
+                        .ipv4hint,
+                        .ipv4hint(
+                            .init(addresses: [
+                                A(value: IPv4Address(162, 159, 129, 233)),
+                                A(value: IPv4Address(162, 159, 130, 233)),
+                                A(value: IPv4Address(162, 159, 133, 233)),
+                                A(value: IPv4Address(162, 159, 134, 233)),
+                                A(value: IPv4Address(162, 159, 135, 233)),
+                            ])
+                        )
+                    ),
+                    (
+                        .echConfigList,
+                        .echConfigList(
+                            .init(
+                                config: ByteBuffer([
+                                    0x00, 0x45, 0xfe, 0xd, 0x0, 0x41, 0x6b, 0x0, 0x20, 0x0, 0x20,
+                                    0x9b, 0x7a, 0x81, 0x9a, 0xb2, 0x7e, 0xec, 0x9f, 0x28, 0xbc, 0xc,
+                                    0x25, 0x23, 0x34, 0xee, 0x35, 0x22, 0x2b, 0x7d, 0xa, 0xc7, 0xd,
+                                    0xcb, 0xe7, 0xc9, 0xbf, 0xf1, 0x5e, 0x72, 0x3, 0x93, 0x52, 0x0,
+                                    0x4, 0x0, 0x1, 0x0, 0x1, 0x0, 0x12, 0x63, 0x6c, 0x6f, 0x75,
+                                    0x64, 0x66, 0x6c, 0x61, 0x72, 0x65, 0x2d, 0x65, 0x63, 0x68,
+                                    0x2e, 0x63, 0x6f, 0x6d, 0x0, 0x0,
+                                ])
+                            )
+                        )
+                    ),
+                ]
+            )
+            #expect(https.svcb == expected)
+        default:
+            Issue.record("rdata was not of type HTTPS: \(response.answers.first?.rdata).")
+        }
+
+        /// The 'additional' was an EDNS
+        #expect(response.additionals.count == 0)
+
+        #expect(response.signature.count == 0)
+
+        let edns = try #require(response.edns)
+        #expect(edns.rcodeHigh == 0)
+        #expect(edns.version == 0)
+        #expect(edns.flags.dnssecOk == false)
+        #expect(edns.flags.z == 0)
+        #expect(edns.maxPayload == 512)
+        #expect(edns.options.options.count == 0)
+    }
+
+    @available(swiftDNSApplePlatforms 10.15, *)
     @Test func encodeMXMahdibmComQuery() throws {
         let query = Query(
             domainName: try DomainName("mahdibm.com."),

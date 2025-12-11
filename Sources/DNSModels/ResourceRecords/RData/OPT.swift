@@ -167,7 +167,8 @@ extension OPT {
                 )
                 switch length {
                 case 0:
-                    options.append((code, try EDNSOption(from: &buffer, code: code)))
+                    var emptyBuffer = DNSBuffer()
+                    options.append((code, try EDNSOption(from: &emptyBuffer, code: code)))
                     state = .readCode
                 default:
                     state = .data(

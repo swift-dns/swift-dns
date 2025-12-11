@@ -103,7 +103,7 @@ struct DNSResolverTests {
         let client = DNSClient(
             transport: try .preferUDPOrUseTCP(
                 serverAddress: .domain(
-                    domainName: DomainName(ipv4: IPv4Address(8, 8, 4, 4)),
+                    domainName: DomainName(ipv4: .defaultTestDNSServer),
                     port: 53
                 ),
                 udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
