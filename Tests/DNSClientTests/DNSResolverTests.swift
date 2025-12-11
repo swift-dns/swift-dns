@@ -31,14 +31,17 @@ struct DNSResolverTests {
 
             let outboundMessage = try await channel.waitForOutboundMessage()
             #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
+            /// The message ID should not be 0 because the channel handler reassigns it
+            #expect(messageID != 0)
 
             var expectedQueryMessage = messageFactory.copy().takeMessage()
-            expectedQueryMessage.header.id = outboundMessage.header.id
+            expectedQueryMessage.header.id = messageID
             #expect("\(outboundMessage)" == "\(expectedQueryMessage)")
 
             let expectedResponse = Message(
                 header: Header(
-                    id: outboundMessage.header.id,
+                    id: messageID,
                     messageType: .Response,
                     opCode: .Query,
                     authoritative: false,
@@ -134,14 +137,17 @@ struct DNSResolverTests {
 
             let outboundMessage = try await channel.waitForOutboundMessage()
             #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
+            /// The message ID should not be 0 because the channel handler reassigns it
+            #expect(messageID != 0)
 
             var expectedQueryMessage = messageFactory.copy().takeMessage()
-            expectedQueryMessage.header.id = outboundMessage.header.id
+            expectedQueryMessage.header.id = messageID
             #expect("\(outboundMessage)" == "\(expectedQueryMessage)")
 
             let expectedResponse = Message(
                 header: Header(
-                    id: outboundMessage.header.id,
+                    id: messageID,
                     messageType: .Response,
                     opCode: .Query,
                     authoritative: false,

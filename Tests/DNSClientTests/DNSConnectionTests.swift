@@ -53,9 +53,9 @@ struct DNSConnectionTests {
             allocator: .init()
         )
 
-        let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-        #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-        let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+        let outboundMessage = try await channel.waitForOutboundMessage()
+        #expect(outboundMessage.queries.first?.domainName == domainName)
+        let messageID = outboundMessage.header.id
         /// The message ID should not be 0 because the channel handler reassigns it
         #expect(messageID != 0)
 
@@ -89,9 +89,9 @@ struct DNSConnectionTests {
                 }
             }
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+            let outboundMessage = try await channel.waitForOutboundMessage()
+            #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
@@ -130,9 +130,9 @@ struct DNSConnectionTests {
                     }
                 }
 
-                let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-                #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-                let receivedMessageID = try #require(outbound.peekInteger(as: UInt16.self))
+                let outboundMessage = try await channel.waitForOutboundMessage()
+                #expect(outboundMessage.queries.first?.domainName == domainName)
+                let receivedMessageID = outboundMessage.header.id
                 /// The message ID should not be 0 because the channel handler reassigns it
                 #expect(receivedMessageID != 0)
                 #expect(receivedMessageID == sentMessageID)
@@ -165,9 +165,9 @@ struct DNSConnectionTests {
                 allocator: .init()
             )
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+            let outboundMessage = try await channel.waitForOutboundMessage()
+            #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
@@ -221,9 +221,9 @@ struct DNSConnectionTests {
             allocator: .init()
         )
 
-        let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-        #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-        let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+        let outboundMessage = try await channel.waitForOutboundMessage()
+        #expect(outboundMessage.queries.first?.domainName == domainName)
+        let messageID = outboundMessage.header.id
         /// The message ID should not be 0 because the channel handler reassigns it
         #expect(messageID != 0)
 
@@ -258,9 +258,9 @@ struct DNSConnectionTests {
                 allocator: .init()
             )
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+            let outboundMessage = try await channel.waitForOutboundMessage()
+            #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
@@ -301,9 +301,9 @@ struct DNSConnectionTests {
                 allocator: .init()
             )
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-            let messageID = try #require(outbound.peekInteger(as: UInt16.self))
+            let outboundMessage = try await channel.waitForOutboundMessage()
+            #expect(outboundMessage.queries.first?.domainName == domainName)
+            let messageID = outboundMessage.header.id
             /// The message ID should not be 0 because the channel handler reassigns it
             #expect(messageID != 0)
 
@@ -375,11 +375,9 @@ struct DNSConnectionTests {
             let messageID = producedMessage.messageID
             async let (_, asyncResponse) = try await preparedQuery.send()
 
-            let outbound = try await channel.waitForOutboundWrite(as: ByteBuffer.self)
-            let receivedMessageID = try #require(
-                outbound.peekInteger(as: UInt16.self)
-            )
-            #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
+            let outboundMessage = try await channel.waitForOutboundMessage()
+            let receivedMessageID = outboundMessage.header.id
+            #expect(outboundMessage.queries.first?.domainName == domainName)
             #expect(receivedMessageID == messageID)
 
             let (buffer, message) = Utils.bufferAndMessage(
@@ -458,9 +456,10 @@ struct DNSConnectionTests {
                 let _outbound = messageSuccessfullySentOverChannel.withLockedValue({
                     $0[messageID]
                 })
-                let outbound = try #require(_outbound)
-                #expect(outbound.readableBytesView.contains(domainName._data.readableBytesView))
-                #expect(outbound.peekInteger(as: UInt16.self) == messageID)
+                var outboundMessageBuffer = DNSBuffer(buffer: try #require(_outbound))
+                let outboundMessage = try Message(from: &outboundMessageBuffer)
+                #expect(outboundMessage.queries.first?.domainName == domainName)
+                #expect(outboundMessage.header.id == messageID)
 
                 let (buffer, message) = Utils.bufferAndMessage(
                     from: responseResource,
