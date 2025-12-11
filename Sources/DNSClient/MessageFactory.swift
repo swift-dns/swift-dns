@@ -91,7 +91,7 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
         checkingDisabled: Bool = false,
     ) throws -> Self {
         let domainName = try DomainName(domainName, idnaConfiguration: idnaConfiguration)
-        return Self.forQuery(
+        return .forQuery(
             domainName: domainName,
             recursionDesired: recursionDesired,
             checkingDisabled: checkingDisabled
@@ -109,12 +109,5 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     ) {
         /// Safe to subscript at index 0 after `forQuery` has been called
         self.message.queries[0].domainName = newDomainName
-    }
-}
-
-@available(swiftDNSApplePlatforms 10.15, *)
-extension MessageFactory {
-    package func __testing_copyMessage() -> Message {
-        self.message
     }
 }

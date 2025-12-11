@@ -96,6 +96,8 @@ extension DNSResolver {
     ) {
         if chain.isEmpty { return }
         chain.append(contentsOf: message.answers)
+        /// `chain.count` is very unlikely to be greater than 65535: We don't consider it.
+        message.header.answerCount = UInt16(chain.count)
         message.answers = chain
     }
 }

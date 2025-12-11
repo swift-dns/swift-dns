@@ -30,6 +30,7 @@ public struct TinyFastSequence<Element> {
                 preconditionFailure("Index out of bounds: \(index)")
             case .n(var array):
                 yield &array[index]
+                self.base = .n(array)
             }
         }
     }

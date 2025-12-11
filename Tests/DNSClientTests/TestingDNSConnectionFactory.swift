@@ -4,6 +4,8 @@ import NIOCore
 import NIOEmbedded
 import Testing
 
+/// This is not supposed to be used concurrently, although it is Sendable to satisfy the
+/// ``AnyDNSConnectionFactory`` protocol.
 @available(swiftDNSApplePlatforms 10.15, *)
 actor TestingDNSConnectionFactory {
     typealias ChannelsKeyPath = ReferenceWritableKeyPath<
@@ -53,7 +55,11 @@ extension TestingDNSConnectionFactory {
                 udpConnectionFactory: .other(factory),
                 tcpConfiguration: .init(
                     connectionConfiguration: .init(queryTimeout: .seconds(2)),
-                    connectionPoolConfiguration: .init(),
+                    connectionPoolConfiguration: .init(
+                        minimumConnectionCount: 1,
+                        maximumConnectionSoftLimit: 1,
+                        maximumConnectionHardLimit: 1
+                    ),
                     keepAliveBehavior: .init()
                 ),
                 tcpConnectionFactory: .other(factory),
@@ -74,7 +80,11 @@ extension TestingDNSConnectionFactory {
                 ),
                 configuration: .init(
                     connectionConfiguration: .init(queryTimeout: .seconds(2)),
-                    connectionPoolConfiguration: .init(),
+                    connectionPoolConfiguration: .init(
+                        minimumConnectionCount: 1,
+                        maximumConnectionSoftLimit: 1,
+                        maximumConnectionHardLimit: 1
+                    ),
                     keepAliveBehavior: .init()
                 ),
                 connectionFactory: .other(factory),
@@ -100,8 +110,10 @@ extension TestingDNSConnectionFactory {
             self.continuation.finish()
         }
 
-        func waitFulfillment() async {
-            for await _ in self.stream {}
+        func waitFulfillment(timeout: Duration = .seconds(1)) async throws {
+            try await withTimeout(in: timeout, clock: .continuous) {
+                for await _ in self.stream {}
+            }
         }
     }
 
@@ -120,6 +132,30 @@ extension TestingDNSConnectionFactory {
             return self.udpChannels.first
         } else {
             return self.tcpChannels.first
+        }
+    }
+
+    func waitForOutboundMessage(udp: Bool) async throws -> Message {
+        let udpChannels = self.udpChannels
+        let tcpChannels = self.tcpChannels
+        return try await withTimeout(in: .seconds(1), clock: .continuous) {
+            if udp {
+                try #require(udpChannels.count == 1)
+                return try await self.udpChannels[0].waitForOutboundMessage()
+            } else {
+                try #require(tcpChannels.count == 1)
+                return try await self.tcpChannels[0].waitForOutboundMessage()
+            }
+        }
+    }
+
+    func writeInboundMessage(udp: Bool, message: Message) async throws {
+        if udp {
+            try #require(self.udpChannels.count == 1)
+            try await self.udpChannels[0].writeInboundMessage(message)
+        } else {
+            try #require(self.tcpChannels.count == 1)
+            try await self.tcpChannels[0].writeInboundMessage(message)
         }
     }
 }
