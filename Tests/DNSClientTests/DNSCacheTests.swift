@@ -35,7 +35,7 @@ struct DNSCacheTests {
         checkingDisabled: Bool,
         timeTravelSeconds: UInt32
     ) async throws {
-        let testClock = MockClock()
+        let testClock = ManualClock()
         let cache = DNSCache(clock: testClock)
         let message = self.makeMessage(checkingDisabled: checkingDisabled, ttl: 100)
 
@@ -47,7 +47,7 @@ struct DNSCacheTests {
             ttl: ttl
         )
 
-        testClock.advance(to: .now.advanced(by: .seconds(timeTravelSeconds)))
+        testClock.advance(by: .seconds(timeTravelSeconds))
 
         let _retrievedMessage = await cache.retrieve(
             domainName: domainName,
@@ -65,7 +65,7 @@ struct DNSCacheTests {
 
     @Test(arguments: [true, false])
     func `cached message expires`(checkingDisabled: Bool) async throws {
-        let testClock = MockClock()
+        let testClock = ManualClock()
         let cache = DNSCache(clock: testClock)
         let message = self.makeMessage(checkingDisabled: checkingDisabled)
 
@@ -77,7 +77,7 @@ struct DNSCacheTests {
             ttl: ttl
         )
 
-        testClock.advance(to: .now.advanced(by: .seconds(ttl + 1)))
+        testClock.advance(by: .seconds(ttl + 1))
 
         for checkingDisabled in [true, false] {
             let retrievedMessage = await cache.retrieve(
@@ -125,7 +125,7 @@ struct DNSCacheTests {
     func `cached message does save because cached message is close to expiration now`(
         checkingDisabled: Bool
     ) async throws {
-        let testClock = MockClock()
+        let testClock = ManualClock()
         let cache = DNSCache(clock: testClock)
         let message1 = self.makeMessage(
             checkingDisabled: checkingDisabled,
@@ -146,7 +146,7 @@ struct DNSCacheTests {
             ttl: ttl1
         )
 
-        testClock.advance(to: .now.advanced(by: .seconds(2)))
+        testClock.advance(by: .seconds(2))
         let ttl2 = try #require(message2.answers.last).ttl
         await cache.cache(
             domainName: domainName,
