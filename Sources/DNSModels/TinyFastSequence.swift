@@ -133,6 +133,10 @@ public struct TinyFastSequence<Element> {
         }
     }
 
+    public mutating func removeAll() {
+        self.base = .none(reserveCapacity: 0)
+    }
+
     @inlinable
     public mutating func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows {
         switch self.base {

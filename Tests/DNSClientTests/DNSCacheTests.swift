@@ -23,6 +23,46 @@ struct DNSCacheTests {
         #expect(retrievedMessage?.header.id == message.header.id)
     }
 
+    @Test(
+        arguments: [
+            (checkingDisabled: true, timeTravelSeconds: 3),
+            (checkingDisabled: true, timeTravelSeconds: 97),
+            (checkingDisabled: false, timeTravelSeconds: 3),
+            (checkingDisabled: false, timeTravelSeconds: 97),
+        ],
+    )
+    func `cached message has updated TTLs upon retrieval`(
+        checkingDisabled: Bool,
+        timeTravelSeconds: UInt32
+    ) async throws {
+        let testClock = MockClock()
+        let cache = DNSCache(clock: testClock)
+        let message = self.makeMessage(checkingDisabled: checkingDisabled, ttl: 100)
+
+        let domainName = try #require(message.queries.first).domainName
+        let ttl = try #require(message.answers.last).ttl
+        await cache.cache(
+            domainName: domainName,
+            message: message,
+            ttl: ttl
+        )
+
+        testClock.advance(to: .now.advanced(by: .seconds(timeTravelSeconds)))
+
+        let _retrievedMessage = await cache.retrieve(
+            domainName: domainName,
+            checkingDisabled: true
+        )
+        let retrievedMessage = try #require(_retrievedMessage)
+        #expect(retrievedMessage.header.id == message.header.id)
+
+        for (newAnswer, originalAnswer) in zip(retrievedMessage.answers, message.answers) {
+            let expectedTTL = originalAnswer.ttl - timeTravelSeconds
+            let expectedTTLRange = (expectedTTL - 1)...(expectedTTL + 1)
+            #expect(expectedTTLRange.contains(newAnswer.ttl))
+        }
+    }
+
     @Test(arguments: [true, false])
     func `cached message expires`(checkingDisabled: Bool) async throws {
         let testClock = MockClock()
