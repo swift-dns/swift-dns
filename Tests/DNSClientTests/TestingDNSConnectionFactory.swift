@@ -54,7 +54,7 @@ extension TestingDNSConnectionFactory {
                 udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
                 udpConnectionFactory: .other(factory),
                 tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(2)),
+                    connectionConfiguration: .init(queryTimeout: .seconds(1)),
                     connectionPoolConfiguration: .init(
                         minimumConnectionCount: 1,
                         maximumConnectionSoftLimit: 1,
@@ -79,7 +79,7 @@ extension TestingDNSConnectionFactory {
                     port: 53
                 ),
                 configuration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(2)),
+                    connectionConfiguration: .init(queryTimeout: .seconds(1)),
                     connectionPoolConfiguration: .init(
                         minimumConnectionCount: 1,
                         maximumConnectionSoftLimit: 1,

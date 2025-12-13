@@ -11,9 +11,9 @@ enum Utils {
                         domainName: DomainName(ipv4: .defaultTestDNSServer),
                         port: 53
                     ),
-                    udpConnectionConfiguration: .init(queryTimeout: .seconds(10)),
+                    udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
                     tcpConfiguration: .init(
-                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionConfiguration: .init(queryTimeout: .seconds(1)),
                         connectionPoolConfiguration: .init(),
                         keepAliveBehavior: .init()
                     ),
@@ -27,7 +27,7 @@ enum Utils {
                         port: 53
                     ),
                     configuration: .init(
-                        connectionConfiguration: .init(queryTimeout: .seconds(20)),
+                        connectionConfiguration: .init(queryTimeout: .seconds(1)),
                         connectionPoolConfiguration: .init(),
                         keepAliveBehavior: .init()
                     ),

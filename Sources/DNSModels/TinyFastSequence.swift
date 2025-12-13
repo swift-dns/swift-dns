@@ -70,6 +70,16 @@ public struct TinyFastSequence<Element> {
     }
 
     @inlinable
+    public var last: Element? {
+        switch self.base {
+        case .none:
+            return nil
+        case .n(let array):
+            return array.last
+        }
+    }
+
+    @inlinable
     public var isEmpty: Bool {
         switch self.base {
         case .none:

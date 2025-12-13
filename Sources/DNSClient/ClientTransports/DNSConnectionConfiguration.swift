@@ -13,7 +13,7 @@ public struct DNSConnectionConfiguration: Sendable {
     /// The maximum time to wait for a response to a query before considering the connection dead.
     ///
     /// This timeout applies to all queries sent to the DNS server.
-    /// Default value is 30 seconds.
+    /// Default value is 1 second.
     public var queryTimeout: Duration
 
     /// Creates a new DNS connection configuration.
@@ -22,8 +22,8 @@ public struct DNSConnectionConfiguration: Sendable {
     /// a connection to a DNS server with the specified parameters.
     ///
     /// - Parameters:
-    ///   - queryTimeout: Maximum time to wait for a response to a query. Defaults to 10 seconds.
-    public init(queryTimeout: Duration = .seconds(10)) {
+    ///   - queryTimeout: Maximum time to wait for a response to a query. Defaults to 1 second.
+    public init(queryTimeout: Duration = .seconds(1)) {
         self.queryTimeout = queryTimeout
     }
 }

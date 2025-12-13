@@ -30,18 +30,6 @@ struct DomainNameTests {
         )
     }
 
-    @Test func decodeDomainContainingWithInvalidASCIIByte() throws {
-        var buffer = DNSBuffer(bytes: [
-            0x07, 0x45, 0x78, 0x61,
-            0x6d, 0x70, 0x6c, UInt8(ascii: "["),
-            0x03, 0x63, 0x4f, 0x6d,
-            0x00,
-        ])
-        #expect(throws: (any Error).self) {
-            try DomainName(from: &buffer)
-        }
-    }
-
     /// Testing `新华网.中国.` which turns into `xn--xkrr14bows.xn--fiqs8s.` based on punycode.
     /// There are non-ascii bytes in this buffer which is technically not correct.
     /// The initializer is expected to repair the bytes into ASCII.
@@ -67,5 +55,34 @@ struct DomainNameTests {
             domainName.description(format: .ascii, options: .includeRootLabelIndicator)
                 == "xn--xkrr14bows.xn--fiqs8s."
         )
+    }
+
+    @Test(arguments: [
+        DNSBuffer(bytes: "mahdibm.com".utf8),
+        DNSBuffer(bytes: "3.hello.118.281j.k92837193784726738919283747289198327.mahdibm.com".utf8),
+        DNSBuffer(bytes: "*.example.com".utf8),
+        DNSBuffer(bytes: "_25._tcp.mail.example.com".utf8),
+    ])
+    func `decodes valid domain names`(buffer: DNSBuffer) throws {
+
+    }
+
+    @Test(arguments: [
+        DNSBuffer(bytes: "**.example.com".utf8),
+        DNSBuffer(bytes: "*.*.example.com".utf8),
+        DNSBuffer(bytes: "_25._tc_p.mail.example.com".utf8),
+        DNSBuffer(bytes: [
+            0x07, 0x45, 0x78, 0x61,
+            /// `[` is invalid in a domain name
+            0x6d, 0x70, 0x6c, UInt8(ascii: "["),
+            0x03, 0x63, 0x4f, 0x6d,
+            0x00,
+        ]),
+    ])
+    func `fails to decode invalid domain names`(buffer: DNSBuffer) throws {
+        var buffer = buffer
+        #expect(throws: (any Error).self) {
+            try DomainName(from: &buffer)
+        }
     }
 }
