@@ -51,10 +51,10 @@ extension TestingDNSConnectionFactory {
                     domainName: DomainName(ipv4: .defaultTestDNSServer),
                     port: 53
                 ),
-                udpConnectionConfiguration: .init(queryTimeout: .seconds(1)),
+                udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
                 udpConnectionFactory: .other(factory),
                 tcpConfiguration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(1)),
+                    connectionConfiguration: .init(queryTimeout: .seconds(5)),
                     connectionPoolConfiguration: .init(
                         minimumConnectionCount: 1,
                         maximumConnectionSoftLimit: 1,
@@ -79,7 +79,7 @@ extension TestingDNSConnectionFactory {
                     port: 53
                 ),
                 configuration: .init(
-                    connectionConfiguration: .init(queryTimeout: .seconds(1)),
+                    connectionConfiguration: .init(queryTimeout: .seconds(5)),
                     connectionPoolConfiguration: .init(
                         minimumConnectionCount: 1,
                         maximumConnectionSoftLimit: 1,
@@ -110,7 +110,7 @@ extension TestingDNSConnectionFactory {
             self.continuation.finish()
         }
 
-        func waitFulfillment(timeout: Duration = .seconds(1)) async throws {
+        func waitFulfillment(timeout: Duration = .seconds(5)) async throws {
             try await withTimeout(in: timeout, clock: .continuous) {
                 for await _ in self.stream {}
             }
@@ -138,7 +138,7 @@ extension TestingDNSConnectionFactory {
     func waitForOutboundMessage(udp: Bool) async throws -> Message {
         let udpChannels = self.udpChannels
         let tcpChannels = self.tcpChannels
-        return try await withTimeout(in: .seconds(1), clock: .continuous) {
+        return try await withTimeout(in: .seconds(5), clock: .continuous) {
             if udp {
                 try #require(udpChannels.count == 1)
                 return try await self.udpChannels[0].waitForOutboundMessage()

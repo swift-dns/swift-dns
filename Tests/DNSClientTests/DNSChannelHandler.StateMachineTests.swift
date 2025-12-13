@@ -962,7 +962,7 @@ struct DNSChannelHandlerStateMachineTests {
         stateMachine.setProcessing(context: "context!")
         expect(stateMachine._state == State.processing(.init(context: "context!")))
 
-        let action1 = stateMachine.hitDeadline(now: .now() + .seconds(1))
+        let action1 = stateMachine.hitDeadline(now: .now() + .seconds(5))
         #expect(action1 == .deadlineCallbackAction(.cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
@@ -1047,7 +1047,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
 
-        let action3 = stateMachine.hitDeadline(now: pendingQuery1.deadline + .seconds(1))
+        let action3 = stateMachine.hitDeadline(now: pendingQuery1.deadline + .seconds(5))
         /// Action asks to reschedule deadline for the next pending query
         #expect(action3 == .failAndReschedule(pendingQuery1, .reschedule(pendingQuery2.deadline)))
         expect(
@@ -1074,7 +1074,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
 
-        let action4 = stateMachine.hitDeadline(now: pendingQuery2.deadline + .seconds(1))
+        let action4 = stateMachine.hitDeadline(now: pendingQuery2.deadline + .seconds(5))
         /// Action asks to cancel deadline because no more queries are available
         #expect(action4 == .failAndReschedule(pendingQuery2, .cancel))
         expect(stateMachine._state == State.processing(.init(context: "context!")))
@@ -1113,7 +1113,7 @@ struct DNSChannelHandlerStateMachineTests {
                 )
         )
 
-        let action3 = stateMachine.hitDeadline(now: pendingQuery.deadline + .seconds(1))
+        let action3 = stateMachine.hitDeadline(now: pendingQuery.deadline + .seconds(5))
         #expect(action3 == .failAndClose("context!", pendingQuery, .cancel))
         expect(stateMachine._state == State.closed(nil))
 
