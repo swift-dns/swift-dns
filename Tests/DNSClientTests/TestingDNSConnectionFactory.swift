@@ -33,7 +33,7 @@ actor TestingDNSConnectionFactory {
 extension TestingDNSConnectionFactory {
     typealias FactoryAndResolver = (
         factory: TestingDNSConnectionFactory,
-        resolver: DNSResolver
+        resolver: _RecursiveDNSResolver
     )
 
     static func makeConnFactoryAndDNSResolvers() -> [FactoryAndResolver] {
@@ -66,7 +66,7 @@ extension TestingDNSConnectionFactory {
                 logger: .init(label: "DNSClientTests")
             )
         )
-        let resolver = DNSResolver(client: client)
+        let resolver = _RecursiveDNSResolver(client: client)
         return (factory, resolver)
     }
 
@@ -91,7 +91,7 @@ extension TestingDNSConnectionFactory {
                 logger: .init(label: "DNSClientTests")
             )
         )
-        let resolver = DNSResolver(client: client)
+        let resolver = _RecursiveDNSResolver(client: client)
         return (factory, resolver)
     }
 }

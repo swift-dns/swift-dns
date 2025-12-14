@@ -1,16 +1,24 @@
 public import struct NIOCore.ByteBuffer
 
 @available(swiftDNSApplePlatforms 13, *)
-@usableFromInline
-package final actor DNSCache<ClockType: Clock> where ClockType.Duration == Duration {
+public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Duration {
     @usableFromInline
     struct DictionaryWithExpiration: Sendable, ~Copyable {
         /// [DomainName._data: Message]
+        ///
+        /// The following condition must always be true:
+        /// ```
+        /// message.answers.allSatisfy { $0.ttl >= expirationTable[key].originalTTL }
+        /// ```
+        /// Meaning that the TTL used for calculating the expiration, must be the least ttl of all answers.
+        /// This condition is checked in debug builds in the `save` method.
         @usableFromInline
         var entries: [ByteBuffer: Message] = [:]
         @usableFromInline
         /// [DomainName._data: (expiresAt: ClockType.Instant, originalTTL: UInt32)]
         var expirationTable: [ByteBuffer: (expiresAt: ClockType.Instant, originalTTL: UInt32)] = [:]
+
+        /// TODO: Implement stale-cache saving
 
         @inlinable
         init() {}
@@ -50,6 +58,13 @@ package final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durat
             {
                 return
             }
+
+            /// Just making sure of these.
+            /// They should never be violated if the code works as expected.
+            assert(value.answers.allSatisfy { $0.ttl >= currentTTL })
+            assert(value.nameServers.allSatisfy { $0.ttl >= currentTTL })
+            assert(value.signature.allSatisfy { $0.ttl >= currentTTL })
+
             self.entries[key] = value
             self.expirationTable[key] = (expiresAt, currentTTL)
         }
@@ -68,12 +83,12 @@ package final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durat
 
     /// A description
     /// - Parameters:
-    ///   - ttlUpperLimit: Max allowed TTL in seconds.
+    ///   - ttlUpperLimit: Max allowed TTL in seconds. Defaults to 172_800 seconds (2 days).
     ///   - clock: Clock used to track time, for example in expiration times.
     ///
     @inlinable
-    package init(
-        ttlUpperLimit: UInt32 = 172800,
+    public init(
+        ttlUpperLimit: UInt32 = 172_800,
         clock: ClockType = .continuous
     ) {
         self.clock = clock
@@ -87,12 +102,19 @@ package final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durat
     ///   - message: The message to cache.
     ///   - ttl: Time-To-Live in seconds.
     @inlinable
-    package func cache(domainName: DomainName, message: Message, ttl: UInt32) {
+    package func save(domainName: DomainName, message: Message) {
+        if message.answers.isEmpty { return }
+
+        guard let ttl = self.calculateMinTTL(of: message) else {
+            return
+        }
+
         assert(message.queries.contains(where: { $0.domainName._data == domainName._data }))
 
         var message = message
         /// Cached additionals can cause problems
         message.additionals.removeAll()
+        message.header.additionalCount = 0
 
         let effectiveTTL = min(ttl, self.ttlUpperLimit)
         let expiresAt = clock.now.advanced(by: .seconds(effectiveTTL))
@@ -161,6 +183,20 @@ package final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durat
             /// In this case we only return the cache where `checkingDisabled` was false too.
             return withCheckingEnabled
         }
+    }
+
+    @inlinable
+    func calculateMinTTL(of message: Message) -> UInt32? {
+        guard var ttl = message.answers.min(by: { $0.ttl < $1.ttl })?.ttl else {
+            return nil
+        }
+        if let min2 = message.nameServers.min(by: { $0.ttl < $1.ttl })?.ttl {
+            ttl = min(ttl, min2)
+        }
+        if let min3 = message.signature.min(by: { $0.ttl < $1.ttl })?.ttl {
+            ttl = min(ttl, min3)
+        }
+        return ttl
     }
 
     @inlinable

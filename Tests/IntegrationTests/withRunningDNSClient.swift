@@ -1,12 +1,13 @@
 import DNSClient
 import Logging
 import NIOPosix
+import ServiceLifecycle
 import Testing
 
 @available(swiftDNSApplePlatforms 10.15, *)
-func withRunningDNSClient(
-    _ client: DNSClient,
-    function: (DNSClient) async throws -> Void
+func withRunningDNSClient<S: Service>(
+    _ client: S,
+    function: (S) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
         if #available(swiftDNSApplePlatforms 26, *) {

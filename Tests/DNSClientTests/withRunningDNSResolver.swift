@@ -5,8 +5,8 @@ import Testing
 
 @available(swiftDNSApplePlatforms 10.15, *)
 func withRunningDNSResolver(
-    _ resolver: DNSResolver,
-    function: (DNSResolver) async throws -> Void
+    _ resolver: _RecursiveDNSResolver,
+    function: (_RecursiveDNSResolver) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
         if #available(swiftDNSApplePlatforms 26, *) {

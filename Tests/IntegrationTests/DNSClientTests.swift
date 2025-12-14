@@ -4,6 +4,7 @@ import DNSModels
 import Logging
 import NIOConcurrencyHelpers
 import NIOPosix
+import ServiceLifecycle
 import Testing
 
 import struct NIOCore.ByteBuffer
@@ -15,7 +16,7 @@ extension SerializationNamespace {
 extension SerializationNamespace.DNSClientTests {
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryA(client: DNSClient) async throws {
+    func queryA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "example.com.")
             let message = factory.copy().takeMessage()
@@ -84,7 +85,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryANonASCIIDomain(client: DNSClient) async throws {
+    func queryANonASCIIDomain(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<A>.forQuery(domainName: "新华网.中国.")
             let message = factory.copy().takeMessage()
@@ -152,7 +153,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryAAAA(client: DNSClient) async throws {
+    func queryAAAA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<AAAA>.forQuery(domainName: "cloudflare.com.")
             let message = factory.copy().takeMessage()
@@ -221,7 +222,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryCAA(client: DNSClient) async throws {
+    func queryCAA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CAA>.forQuery(domainName: "apple.com.")
             let message = factory.copy().takeMessage()
@@ -294,7 +295,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryCERT(client: DNSClient) async throws {
+    func queryCERT(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CERT>.forQuery(
                 domainName: "for-dns-cert-testing.mahdibm.com."
@@ -389,7 +390,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryCNAMEWwwGithubCom(client: DNSClient) async throws {
+    func queryCNAMEWwwGithubCom(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(domainName: "www.github.com.")
             let message = factory.copy().takeMessage()
@@ -453,7 +454,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryCNAMERawGithubusercontentCom(client: DNSClient) async throws {
+    func queryCNAMERawGithubusercontentCom(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<CNAME>.forQuery(
                 domainName: "raw.githubusercontent.com."
@@ -526,7 +527,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryHTTPS(client: DNSClient) async throws {
+    func queryHTTPS(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<HTTPS>.forQuery(domainName: "cdn.discordapp.com.")
             let message = factory.copy().takeMessage()
@@ -600,7 +601,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryMX(client: DNSClient) async throws {
+    func queryMX(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<MX>.forQuery(domainName: "mahdibm.com.")
             let message = factory.copy().takeMessage()
@@ -687,7 +688,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryNS(client: DNSClient) async throws {
+    func queryNS(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<NS>.forQuery(domainName: "apple.com.")
             let message = factory.copy().takeMessage()
@@ -775,7 +776,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryPTR(client: DNSClient) async throws {
+    func queryPTR(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<PTR>.forQuery(domainName: "9.9.9.9.in-addr.arpa.")
             let message = factory.copy().takeMessage()
@@ -862,7 +863,7 @@ extension SerializationNamespace.DNSClientTests {
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
-    func queryTXT(client: DNSClient) async throws {
+    func queryTXT(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             let factory = try MessageFactory<TXT>.forQuery(domainName: "example.com.")
             let message = factory.copy().takeMessage()
@@ -934,7 +935,7 @@ extension SerializationNamespace.DNSClientTests {
     @Test func queryUpdate0() async throws {}
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    private static func makeTestingDNSClientsForConcurrentTest() -> [DNSClient] {
+    private static func makeTestingDNSClientsForConcurrentTest() -> [any DNSClientService] {
         [
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
@@ -975,12 +976,55 @@ extension SerializationNamespace.DNSClientTests {
                     logger: .init(label: "DNSClientTests")
                 )
             ),
+            ForwardingDNSResolver(
+                client: try! DNSClient(
+                    transport: .preferUDPOrUseTCP(
+                        serverAddress: .domain(
+                            domainName: DomainName(ipv4: .defaultTestDNSServer),
+                            port: 53
+                        ),
+                        udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
+                        tcpConfiguration: .init(
+                            connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                            connectionPoolConfiguration: .init(
+                                minimumConnectionCount: 0,
+                                maximumConnectionSoftLimit: 40,
+                                maximumConnectionHardLimit: 50,
+                                idleTimeout: .seconds(10)
+                            ),
+                            keepAliveBehavior: .init()
+                        ),
+                        logger: .init(label: "DNSClientTests")
+                    )
+                )
+            ),
+            ForwardingDNSResolver(
+                client: try! DNSClient(
+                    transport: .tcp(
+                        serverAddress: .domain(
+                            domainName: DomainName(ipv4: .defaultTestDNSServer),
+                            port: 53
+                        ),
+                        configuration: .init(
+                            connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                            connectionPoolConfiguration: .init(
+                                minimumConnectionCount: 0,
+                                maximumConnectionSoftLimit: 40,
+                                maximumConnectionHardLimit: 50,
+                                idleTimeout: .seconds(10)
+                            ),
+                            keepAliveBehavior: .init()
+                        ),
+                        logger: .init(label: "DNSClientTests")
+                    )
+                )
+            ),
         ]
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClientsForConcurrentTest())
-    func query100DomainsConcurrently(client: DNSClient) async throws {
+    func query100DomainsConcurrently(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             await withTaskGroup(of: Void.self) { group in
                 let withAnswers = ManagedAtomic(0)
@@ -1027,7 +1071,7 @@ extension SerializationNamespace.DNSClientTests {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    private static func makeTestingDNSClientsForSequentialTest() -> [DNSClient] {
+    private static func makeTestingDNSClientsForSequentialTest() -> [any DNSClientService] {
         [
             try! DNSClient(
                 transport: .preferUDPOrUseTCP(
@@ -1066,6 +1110,47 @@ extension SerializationNamespace.DNSClientTests {
                     logger: .init(label: "DNSClientTests")
                 )
             ),
+            ForwardingDNSResolver(
+                client: try! DNSClient(
+                    transport: .preferUDPOrUseTCP(
+                        serverAddress: .domain(
+                            domainName: DomainName(ipv4: .defaultTestDNSServer),
+                            port: 53
+                        ),
+                        udpConnectionConfiguration: .init(queryTimeout: .seconds(5)),
+                        tcpConfiguration: .init(
+                            connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                            connectionPoolConfiguration: .init(
+                                minimumConnectionCount: 0,
+                                maximumConnectionSoftLimit: 1,
+                                maximumConnectionHardLimit: 1,
+                                idleTimeout: .seconds(30)
+                            )
+                        ),
+                        logger: .init(label: "DNSClientTests")
+                    )
+                )
+            ),
+            ForwardingDNSResolver(
+                client: try! DNSClient(
+                    transport: .tcp(
+                        serverAddress: .domain(
+                            domainName: DomainName(ipv4: .defaultTestDNSServer),
+                            port: 53
+                        ),
+                        configuration: .init(
+                            connectionConfiguration: .init(queryTimeout: .seconds(5)),
+                            connectionPoolConfiguration: .init(
+                                minimumConnectionCount: 0,
+                                maximumConnectionSoftLimit: 1,
+                                maximumConnectionHardLimit: 1,
+                                idleTimeout: .seconds(30)
+                            )
+                        ),
+                        logger: .init(label: "DNSClientTests")
+                    )
+                )
+            ),
         ]
     }
 
@@ -1075,7 +1160,7 @@ extension SerializationNamespace.DNSClientTests {
         .tags(.timeConsuming),
         arguments: makeTestingDNSClientsForSequentialTest()
     )
-    func query100DomainsSequentially(client: DNSClient) async throws {
+    func query100DomainsSequentially(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
             var withAnswers = 0
             var errors: [(Substring, any Error)] = []

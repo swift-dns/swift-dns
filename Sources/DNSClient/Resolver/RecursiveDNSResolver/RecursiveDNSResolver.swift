@@ -3,7 +3,7 @@ public import ServiceLifecycle
 #endif
 
 @available(swiftDNSApplePlatforms 13, *)
-public actor DNSResolver {
+public struct _RecursiveDNSResolver {
     public let client: DNSClient
 
     public init(client: DNSClient) {
@@ -22,5 +22,5 @@ public actor DNSResolver {
 
 #if ServiceLifecycleSupport
 @available(swiftDNSApplePlatforms 13, *)
-extension DNSResolver: Service {}
+extension _RecursiveDNSResolver: Service {}
 #endif

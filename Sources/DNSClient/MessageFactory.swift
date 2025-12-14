@@ -5,7 +5,25 @@ public import SwiftIDNA
 public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// private
     @usableFromInline
-    var message: Message
+    var message: Message {
+        willSet {
+            /// Guard against these properties going out of sync or going empty.
+            assert(newValue.header.queryCount == 1)
+            assert(newValue.queries.count == 1)
+        }
+    }
+
+    @inlinable
+    var query: Query {
+        _read {
+            /// Safe to subscript
+            yield self.message.queries[0]
+        }
+        _modify {
+            /// Safe to subscript
+            yield &self.message.queries[0]
+        }
+    }
 
     /// Directly initializes the factory.
     /// Use convenience methods such as `forQuery(domainName:recursionDesired:checkingDisabled:)` instead.
@@ -107,7 +125,6 @@ public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     package mutating func setDomainName(
         to newDomainName: DomainName
     ) {
-        /// Safe to subscript at index 0 after `forQuery` has been called
-        self.message.queries[0].domainName = newDomainName
+        self.query.domainName = newDomainName
     }
 }

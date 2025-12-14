@@ -18,7 +18,7 @@ extension SerializationNamespace.DNSResolverTests {
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func `resolve A record where the original record is a CNAME`(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
-            let resolver = DNSResolver(client: client)
+            let resolver = _RecursiveDNSResolver(client: client)
             let factory = try MessageFactory<A>.forQuery(domainName: "www.example.com.")
             let message = factory.copy().takeMessage()
             let response = try await resolver.resolveA(
@@ -101,7 +101,7 @@ extension SerializationNamespace.DNSResolverTests {
     func `resolve AAAA record where the original record is a CNAME`(client: DNSClient) async throws
     {
         try await withRunningDNSClient(client) { client in
-            let resolver = DNSResolver(client: client)
+            let resolver = _RecursiveDNSResolver(client: client)
             let factory = try MessageFactory<AAAA>.forQuery(domainName: "www.example.com.")
             let message = factory.copy().takeMessage()
             let response = try await resolver.resolveAAAA(

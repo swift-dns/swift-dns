@@ -1,5 +1,5 @@
 @available(swiftDNSApplePlatforms 13, *)
-extension DNSResolver {
+extension _RecursiveDNSResolver {
     public struct ResolutionFailure: Sendable, Error {
         public enum Reason: Sendable {
             case receivedUnexpectedRecordType(RecordType)

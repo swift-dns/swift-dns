@@ -1,0 +1,1 @@
+../IntegrationTests/+_DNSClientProtocol.swift

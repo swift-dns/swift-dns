@@ -3,17 +3,30 @@ import Testing
 
 @Suite
 struct DNSCacheTests {
-    @Test(arguments: [true, false])
-    func `cache message and retrieve it`(checkingDisabled: Bool) async throws {
+    @Test(
+        arguments: [
+            (checkingDisabled: true, ttl: 97, cnameTTL: 201),
+            (checkingDisabled: false, ttl: 97, cnameTTL: 201),
+            (checkingDisabled: true, ttl: 97, cnameTTL: 50),
+            (checkingDisabled: false, ttl: 97, cnameTTL: 50),
+        ]
+    )
+    func `cache message and retrieve it`(
+        checkingDisabled: Bool,
+        ttl: UInt32,
+        cnameTTL: UInt32
+    ) async throws {
         let cache = DNSCache(clock: .continuous)
-        let message = self.makeMessage(checkingDisabled: checkingDisabled)
+        let message = self.makeMessage(
+            checkingDisabled: checkingDisabled,
+            ttl: ttl,
+            cnameTTL: cnameTTL
+        )
 
         let domainName = try #require(message.queries.first).domainName
-        let ttl = try #require(message.answers.last).ttl
-        await cache.cache(
+        await cache.save(
             domainName: domainName,
-            message: message,
-            ttl: ttl
+            message: message
         )
 
         let retrievedMessage = await cache.retrieve(
@@ -40,11 +53,9 @@ struct DNSCacheTests {
         let message = self.makeMessage(checkingDisabled: checkingDisabled, ttl: 100)
 
         let domainName = try #require(message.queries.first).domainName
-        let ttl = try #require(message.answers.last).ttl
-        await cache.cache(
+        await cache.save(
             domainName: domainName,
-            message: message,
-            ttl: ttl
+            message: message
         )
 
         testClock.advance(by: .seconds(timeTravelSeconds))
@@ -70,13 +81,12 @@ struct DNSCacheTests {
         let message = self.makeMessage(checkingDisabled: checkingDisabled)
 
         let domainName = try #require(message.queries.first).domainName
-        let ttl = try #require(message.answers.last).ttl
-        await cache.cache(
+        await cache.save(
             domainName: domainName,
-            message: message,
-            ttl: ttl
+            message: message
         )
 
+        let ttl = try #require(message.answers.min(by: { $0.ttl < $1.ttl })).ttl
         testClock.advance(by: .seconds(ttl + 1))
 
         for checkingDisabled in [true, false] {
@@ -106,11 +116,9 @@ struct DNSCacheTests {
         #expect(domainName == message2.queries.first?.domainName)
 
         for message in [message1, message2] {
-            let ttl = try #require(message.answers.last).ttl
-            await cache.cache(
+            await cache.save(
                 domainName: domainName,
-                message: message,
-                ttl: ttl
+                message: message
             )
         }
 
@@ -139,19 +147,15 @@ struct DNSCacheTests {
         let domainName = try #require(message1.queries.first).domainName
         #expect(domainName == message2.queries.first?.domainName)
 
-        let ttl1 = try #require(message1.answers.last).ttl
-        await cache.cache(
+        await cache.save(
             domainName: domainName,
-            message: message1,
-            ttl: ttl1
+            message: message1
         )
 
         testClock.advance(by: .seconds(2))
-        let ttl2 = try #require(message2.answers.last).ttl
-        await cache.cache(
+        await cache.save(
             domainName: domainName,
-            message: message2,
-            ttl: ttl2
+            message: message2
         )
 
         let retrievedMessage = await cache.retrieve(
@@ -172,11 +176,9 @@ struct DNSCacheTests {
         #expect(domainName == messageWithCheckingEnabled.queries.first?.domainName)
 
         for message in [messageWithCheckingDisabled, messageWithCheckingEnabled] {
-            let ttl = try #require(message.answers.last).ttl
-            await cache.cache(
+            await cache.save(
                 domainName: domainName,
-                message: message,
-                ttl: ttl
+                message: message
             )
         }
 
@@ -198,7 +200,11 @@ struct DNSCacheTests {
         }
     }
 
-    func makeMessage(checkingDisabled: Bool = true, ttl: UInt32 = 97) -> Message {
+    func makeMessage(
+        checkingDisabled: Bool = true,
+        ttl: UInt32 = 97,
+        cnameTTL: UInt32 = 201
+    ) -> Message {
         Message(
             header: Header(
                 id: .random(in: .min ... .max),
@@ -214,7 +220,7 @@ struct DNSCacheTests {
                 queryCount: 1,
                 answerCount: 2,
                 nameServerCount: 0,
-                additionalCount: 1
+                additionalCount: 0
             ),
             queries: TinyFastSequence([
                 Query(
@@ -227,7 +233,7 @@ struct DNSCacheTests {
                 Record(
                     nameLabels: try! DomainName("www.example.com."),
                     dnsClass: .IN,
-                    ttl: 201,
+                    ttl: cnameTTL,
                     rdata: RData.CNAME(
                         CNAME(
                             domainName: try! DomainName("www.example.com.cdn.cloudflare.net.")

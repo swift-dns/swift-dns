@@ -31,14 +31,14 @@ A high-performance Swift DNS library built on top of SwiftNIO; aiming to provide
 
 ## Usage
 
-Initialize a `DNSResolver`, then use the `query` methods:
+Initialize a `ForwardingDNSResolver`, then use the `query` methods:
 
 ```swift
 import DNSClient
 import DNSModels
 
-/// Create a `DNSResolver`
-let resolver = try DNSResolver(
+/// Create a `ForwardingDNSResolver`
+let resolver = try ForwardingDNSResolver(
     transport: .default(
         serverAddress: .domain(
             /// Connect to Cloudflare's DNS primary server @ 1.1.1.1
@@ -58,7 +58,7 @@ try await withThrowingTaskGroup(of: Void.self) { taskGroup in
 
     /// Send the query
     /// `response` will be of type `Message`
-    let response = try await resolver.resolveA(
+    let response = try await resolver.queryA(
         message: .forQuery(domainName: "mahdibm.com")
     )
 
@@ -83,8 +83,8 @@ The `default` transport is `preferUDPOrUseTCP` similar to other DNS resolvers an
 Currently a TCP-only transport is also supported:
 
 ```swift
-/// Create a `DNSResolver` with the TCP transport
-let resolver = try DNSResolver(
+/// Create a `ForwardingDNSResolver` with the TCP transport
+let resolver = try ForwardingDNSResolver(
     transport: .tcp(
         serverAddress: .domain(
             domainName: DomainName(ipv4: IPv4Address(1, 1, 1, 1)),
@@ -117,8 +117,9 @@ Some examples of these operators are:
   - [ ] DoH (DNS Over HTTPS)
   - [ ] DoQ (DNS Over Quic)
   - [ ] MDNS
-- [x] DNS resolver (DNS client but with following CNAMEs, doing caching etc...)
-  - Implementation is in progress
+- [x] DNS resolver
+  - [x] ForwardingDNSResolver: A DNS client but with caching.
+  - [ ] \_RecursiveDNSResolver: Implementation is in progress
 - [ ] DNS server
 - [ ] DNSSEC
 

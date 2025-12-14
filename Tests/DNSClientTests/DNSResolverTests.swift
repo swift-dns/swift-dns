@@ -9,11 +9,11 @@ struct DNSResolverTests {
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve A record where the original record is a CNAME`(
         connFactory: TestingDNSConnectionFactory,
-        resolver: DNSResolver
+        resolver: _RecursiveDNSResolver
     ) async throws {
         try await withRunningDNSResolver(resolver) { resolver in
             let domainName = try! DomainName("www.example.com.")
-            let isOverUDP = await resolver.client.isOverUDP
+            let isOverUDP = resolver.client.isOverUDP
 
             let messageFactory: MessageFactory<A> = .forQuery(domainName: domainName)
 
@@ -111,11 +111,11 @@ struct DNSResolverTests {
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve AAAA record where the original record is a CNAME`(
         connFactory: TestingDNSConnectionFactory,
-        resolver: DNSResolver
+        resolver: _RecursiveDNSResolver
     ) async throws {
         try await withRunningDNSResolver(resolver) { resolver in
             let domainName = try! DomainName("www.example.com.")
-            let isOverUDP = await resolver.client.isOverUDP
+            let isOverUDP = resolver.client.isOverUDP
 
             let messageFactory: MessageFactory<AAAA> = .forQuery(domainName: domainName)
 
@@ -210,13 +210,13 @@ struct DNSResolverTests {
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve AAAA record where there are multiple CNAME record layers`(
         connFactory: TestingDNSConnectionFactory,
-        resolver: DNSResolver
+        resolver: _RecursiveDNSResolver
     ) async throws {
         try await withRunningDNSResolver(resolver) { resolver in
             let domainName = try! DomainName("www.example.com.")
             let firstCNAME = try! DomainName("www.example.com.cdn.cloudflare.net.")
             let secondCNAME = try! DomainName("random.name.www.example.com.cdn.cloudflare.net.")
-            let isOverUDP = await resolver.client.isOverUDP
+            let isOverUDP = resolver.client.isOverUDP
 
             let messageFactory: MessageFactory<AAAA> = .forQuery(domainName: domainName)
 
