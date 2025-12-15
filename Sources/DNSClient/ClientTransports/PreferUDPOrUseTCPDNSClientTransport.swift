@@ -92,7 +92,25 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
         message factory: consuming MessageFactory<some RDataConvertible>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> (query: Message, response: Message) {
-        try await self.withConnection(
+        let udpQueryAndResponse = try await self.withUDPConnection(
+            message: factory.copy(),
+            isolation: isolation
+        ) { factory, conn in
+            try await self.query(
+                message: factory,
+                connection: conn,
+                isolation: isolation
+            )
+        }
+
+        /// If the response is not truncated, we can return the UDP response immediately.
+        if !udpQueryAndResponse.response.header.truncation {
+            return udpQueryAndResponse
+        }
+
+        /// If the response is truncated, we try the query over TCP.
+        /// Another option would be to use DNS cookies but I haven't implemented that yet.
+        return try await self.tcpTransport.withConnection(
             message: factory,
             isolation: isolation
         ) { factory, conn in
@@ -117,32 +135,6 @@ extension PreferUDPOrUseTCPDNSClientTransport {
             message: factory,
             allocator: self.allocator
         )
-    }
-
-    @usableFromInline
-    func withConnection<RData: RDataConvertible>(
-        message factory: consuming MessageFactory<RData>,
-        isolation: isolated (any Actor)? = #isolation,
-        operation: (
-            consuming MessageFactory<RData>,
-            DNSConnection
-        ) async throws -> (query: Message, response: Message)
-    ) async throws -> (query: Message, response: Message) {
-        /// FIXME: Add logic to choose TCP when it should
-        switch true {
-        case true:
-            try await self.withUDPConnection(
-                message: factory,
-                isolation: isolation,
-                operation: operation
-            )
-        case false:
-            try await self.tcpTransport.withConnection(
-                message: factory,
-                isolation: isolation,
-                operation: operation
-            )
-        }
     }
 
     func withUDPConnection<RData: RDataConvertible>(
