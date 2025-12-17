@@ -19,7 +19,7 @@ extension SerializationNamespace.DNSResolverTests {
     func `resolve A record where the original record is a CNAME`(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
             let resolver = _RecursiveDNSResolver(client: client)
-            let factory = try MessageFactory<A>.forQuery(domainName: "www.example.com.")
+            let factory = try MessageFactory<A>.forQuery(domainName: "forums.swift.org.")
             let message = factory.copy().takeMessage()
             let response = try await resolver.resolveA(
                 message: factory
@@ -48,7 +48,7 @@ extension SerializationNamespace.DNSResolverTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let domainName = try DomainName("www.example.com.")
+            let domainName = try DomainName("forums.swift.org.")
             #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .A)
             #expect(response.queries.first?.queryClass == .IN)
@@ -102,7 +102,7 @@ extension SerializationNamespace.DNSResolverTests {
     {
         try await withRunningDNSClient(client) { client in
             let resolver = _RecursiveDNSResolver(client: client)
-            let factory = try MessageFactory<AAAA>.forQuery(domainName: "www.example.com.")
+            let factory = try MessageFactory<AAAA>.forQuery(domainName: "forums.swift.org.")
             let message = factory.copy().takeMessage()
             let response = try await resolver.resolveAAAA(
                 message: factory
@@ -131,7 +131,7 @@ extension SerializationNamespace.DNSResolverTests {
             #expect(response.header.responseCode == .NoError)
 
             #expect(response.queries.count == 1)
-            let domainName = try DomainName("www.example.com.")
+            let domainName = try DomainName("forums.swift.org.")
             #expect(response.queries.first?.domainName == domainName)
             #expect(response.queries.first?.queryType == .AAAA)
             #expect(response.queries.first?.queryClass == .IN)
