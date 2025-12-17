@@ -23,26 +23,30 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
         @inlinable
         init() {}
 
+        @usableFromInline
+        enum RetrievalResult: Sendable {
+            case entry(Message, ttlHasAdvancedBy: UInt32)
+            case expiredEntry(Message)
+        }
+
         @inlinable
-        mutating func retrieve(
-            key: ByteBuffer,
-            clock: ClockType
-        ) -> (message: Message, ttlHasAdvancedBy: UInt32)? {
+        mutating func retrieve(key: ByteBuffer, clock: ClockType) -> RetrievalResult? {
             guard let (expiresAt, originalTTL) = self.expirationTable[key] else {
                 return nil
             }
             let remainingTTL = clock.now.duration(to: expiresAt)
             if remainingTTL > Duration.zero {
-                guard let entry = self.entries[key] else {
-                    return nil
-                }
+                /// Expiration table contained an entry, so the actual entries dict must contain an entry too.
+                /// Therefore we can safely force-unwrap the entry.
+                let entry = self.entries[key]!
+
                 let remainingTTLRoundedDownSeconds = remainingTTL.components.seconds
                 let ttlHasAdvancedBy = originalTTL - UInt32(remainingTTLRoundedDownSeconds)
-                return (entry, ttlHasAdvancedBy)
+                return .entry(entry, ttlHasAdvancedBy: ttlHasAdvancedBy)
             } else {
-                self.entries.removeValue(forKey: key)
+                let expiredEntry = self.entries.removeValue(forKey: key)
                 self.expirationTable.removeValue(forKey: key)
-                return nil
+                return expiredEntry.map { .expiredEntry($0) }
             }
         }
 
@@ -71,9 +75,104 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
     }
 
     @usableFromInline
-    var entriesCheckingDisabled = DictionaryWithExpiration()
+    struct EntriesWithExpiration: Sendable, ~Copyable {
+        @usableFromInline
+        var withCheckingDisabled = DictionaryWithExpiration()
+        @usableFromInline
+        var withCheckingEnabled = DictionaryWithExpiration()
+
+        @inlinable
+        init() {}
+
+        @inlinable
+        mutating func retrieve(
+            domainName: DomainName,
+            checkingDisabled: Bool,
+            clock: ClockType
+        ) -> DictionaryWithExpiration.RetrievalResult? {
+            let withCheckingEnabled = self.withCheckingEnabled.retrieve(
+                key: domainName._data,
+                clock: clock
+            )
+
+            if checkingDisabled {
+                return withCheckingEnabled
+                    ?? self.withCheckingDisabled.retrieve(
+                        key: domainName._data,
+                        clock: clock
+                    )
+            } else {
+                /// Checking-disabled is false, meaning there might have been a DNSSEC validation in process.
+                /// In this case we only return the cache where `checkingDisabled` was false too.
+                return withCheckingEnabled
+            }
+        }
+
+        @inlinable
+        mutating func save(
+            domainName: DomainName,
+            message: Message,
+            expiresAt: ClockType.Instant,
+            effectiveTTL: UInt32
+        ) {
+            if message.header.checkingDisabled {
+                self.withCheckingDisabled.save(
+                    key: domainName._data,
+                    value: message,
+                    expiresAt: expiresAt,
+                    currentTTL: effectiveTTL
+                )
+            } else {
+                self.withCheckingEnabled.save(
+                    key: domainName._data,
+                    value: message,
+                    expiresAt: expiresAt,
+                    currentTTL: effectiveTTL
+                )
+            }
+        }
+    }
+
     @usableFromInline
-    var entriesCheckingEnabled = DictionaryWithExpiration()
+    struct StaleEntries: Sendable, ~Copyable {
+        @usableFromInline
+        var withCheckingDisabled: [ByteBuffer: Message] = [:]
+        @usableFromInline
+        var withCheckingEnabled: [ByteBuffer: Message] = [:]
+
+        @inlinable
+        init() {}
+
+        @inlinable
+        mutating func retrieve(domainName: DomainName, checkingDisabled: Bool) -> Message? {
+            let withCheckingEnabled = self.withCheckingEnabled[domainName._data]
+
+            if checkingDisabled {
+                return withCheckingEnabled ?? self.withCheckingDisabled[domainName._data]
+            } else {
+                /// Checking-disabled is false, meaning there might have been a DNSSEC validation in process.
+                /// In this case we only return the cache where `checkingDisabled` was false too.
+                return withCheckingEnabled
+            }
+        }
+
+        @inlinable
+        mutating func save(domainName: DomainName, message: Message) {
+            assert(message.header.responseCode == .NoError)
+            assert(!message.answers.isEmpty)
+
+            if message.header.checkingDisabled {
+                self.withCheckingDisabled[domainName._data] = message
+            } else {
+                self.withCheckingEnabled[domainName._data] = message
+            }
+        }
+    }
+
+    @usableFromInline
+    var entries = EntriesWithExpiration()
+    @usableFromInline
+    var staleEntries = StaleEntries()
     /// Clock used to track time, for example in expiration times.
     @usableFromInline
     let clock: ClockType
@@ -103,7 +202,12 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
     ///   - ttl: Time-To-Live in seconds.
     @inlinable
     package func save(domainName: DomainName, message: Message) {
-        if message.answers.isEmpty { return }
+        guard
+            message.header.responseCode == .NoError,
+            !message.answers.isEmpty
+        else {
+            return
+        }
 
         guard let ttl = self.calculateMinTTL(of: message) else {
             return
@@ -118,20 +222,46 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
 
         let effectiveTTL = min(ttl, self.ttlUpperLimit)
         let expiresAt = clock.now.advanced(by: .seconds(effectiveTTL))
-        if message.header.checkingDisabled {
-            self.entriesCheckingDisabled.save(
-                key: domainName._data,
-                value: message,
-                expiresAt: expiresAt,
-                currentTTL: effectiveTTL
+        self.entries.save(
+            domainName: domainName,
+            message: message,
+            expiresAt: expiresAt,
+            effectiveTTL: effectiveTTL
+        )
+    }
+
+    /// Returns a cached message for the `domainName` and `checkingDisabled`, if available.
+    /// Prefers to return a message where `checkingDisabled` was false.
+    /// Won't return a message where `checkingDisabled` was true, if
+    /// the `checkingDisabled` parameter is false.
+    @inlinable
+    package func retrieve(
+        domainName: DomainName,
+        checkingDisabled: Bool,
+        useStaleCache: Bool
+    ) -> Message? {
+        if let retrievalResult = self.entries.retrieve(
+            domainName: domainName,
+            checkingDisabled: checkingDisabled,
+            clock: self.clock
+        ) {
+            switch retrievalResult {
+            case .entry(var message, let ttlHasAdvancedBy):
+                self.adjustTTLs(in: &message, ttlHasAdvancedBy: ttlHasAdvancedBy)
+
+                return message
+            case .expiredEntry(let message):
+                self.staleEntries.save(domainName: domainName, message: message)
+
+                return useStaleCache ? message : nil
+            }
+        } else if useStaleCache {
+            return self.retrieveFromStaleCache(
+                domainName: domainName,
+                checkingDisabled: checkingDisabled
             )
         } else {
-            self.entriesCheckingEnabled.save(
-                key: domainName._data,
-                value: message,
-                expiresAt: expiresAt,
-                currentTTL: effectiveTTL
-            )
+            return nil
         }
     }
 
@@ -140,49 +270,22 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
     /// Won't return a message where `checkingDisabled` was true, if
     /// the `checkingDisabled` parameter is false.
     @inlinable
-    package func retrieve(domainName: DomainName, checkingDisabled: Bool) -> Message? {
+    func retrieveFromStaleCache(
+        domainName: DomainName,
+        checkingDisabled: Bool
+    ) -> Message? {
         guard
-            var (message, _ttlHasAdvancedBy) = self._retrieve(
+            var message = self.staleEntries.retrieve(
                 domainName: domainName,
                 checkingDisabled: checkingDisabled
             )
         else {
             return nil
         }
-        /// To silence the compiler
-        self.actLikeWeAreMutatingTheValue(&_ttlHasAdvancedBy)
 
-        /// We must have cleared the additionals before caching the message
-        assert(message.additionals.isEmpty)
-        self.adjustTTLs(in: &message, ttlHasAdvancedBy: _ttlHasAdvancedBy)
+        self.setTTLs(in: &message, to: 0)
 
         return message
-    }
-
-    @inlinable
-    func actLikeWeAreMutatingTheValue(_: inout UInt32) {}
-
-    @inlinable
-    func _retrieve(
-        domainName: DomainName,
-        checkingDisabled: Bool
-    ) -> (message: Message, ttlHasAdvancedBy: UInt32)? {
-        let withCheckingEnabled = self.entriesCheckingEnabled.retrieve(
-            key: domainName._data,
-            clock: clock
-        )
-
-        if checkingDisabled {
-            return withCheckingEnabled
-                ?? self.entriesCheckingDisabled.retrieve(
-                    key: domainName._data,
-                    clock: clock
-                )
-        } else {
-            /// Checking-disabled is false, meaning there might have been a DNSSEC validation in process.
-            /// In this case we only return the cache where `checkingDisabled` was false too.
-            return withCheckingEnabled
-        }
     }
 
     @inlinable
@@ -201,9 +304,12 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
 
     @inlinable
     func adjustTTLs(in message: inout Message, ttlHasAdvancedBy: UInt32) {
+        /// We must have cleared the additionals before caching the message
+        assert(message.additionals.isEmpty)
+        assert(message.header.additionalCount == 0)
+
         self.adjustTTLs(in: &message.answers, ttlHasAdvancedBy: ttlHasAdvancedBy)
         self.adjustTTLs(in: &message.nameServers, ttlHasAdvancedBy: ttlHasAdvancedBy)
-        self.adjustTTLs(in: &message.additionals, ttlHasAdvancedBy: ttlHasAdvancedBy)
         self.adjustTTLs(in: &message.signature, ttlHasAdvancedBy: ttlHasAdvancedBy)
     }
 
@@ -214,6 +320,27 @@ public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Durati
     ) {
         for idx in 0..<records.count {
             records[idx].ttl -= ttlHasAdvancedBy
+        }
+    }
+
+    @inlinable
+    func setTTLs(in message: inout Message, to ttl: UInt32) {
+        /// We must have cleared the additionals before caching the message
+        assert(message.additionals.isEmpty)
+        assert(message.header.additionalCount == 0)
+
+        self.setTTLs(in: &message.answers, to: ttl)
+        self.setTTLs(in: &message.nameServers, to: ttl)
+        self.setTTLs(in: &message.signature, to: ttl)
+    }
+
+    @inlinable
+    func setTTLs(
+        in records: inout TinyFastSequence<Record>,
+        to ttl: UInt32
+    ) {
+        for idx in 0..<records.count {
+            records[idx].ttl = ttl
         }
     }
 }

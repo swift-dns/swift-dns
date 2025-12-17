@@ -11,6 +11,7 @@ public struct TinyFastSequence<Element> {
 
     @inlinable
     public init() {
+        /// TODO: see if `reserveCapacity: 4` is better or not.
         self.base = .none(reserveCapacity: 0)
     }
 

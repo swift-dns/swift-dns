@@ -14,7 +14,6 @@ where ClockType.Duration == Duration {
     @usableFromInline
     let cache: DNSCache<ClockType>
 
-    /// A description
     /// - Parameters:
     ///   - client: The client to forward queries to.
     ///   - cache: The cache to use for caching responses.
@@ -26,7 +25,6 @@ where ClockType.Duration == Duration {
         self.cache = cache
     }
 
-    /// A description
     /// - Parameters:
     ///   - client: The client to forward queries to.
     ///   - cache: The cache to use for caching responses.

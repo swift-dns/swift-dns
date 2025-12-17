@@ -29,11 +29,12 @@ struct DNSCacheTests {
             message: message
         )
 
-        let retrievedMessage = await cache.retrieve(
+        await self.expectRetrieve(
+            from: cache,
             domainName: domainName,
-            checkingDisabled: true
+            checkingDisabled: checkingDisabled,
+            expect: .cachedMessage(id: message.header.id)
         )
-        #expect(retrievedMessage?.header.id == message.header.id)
     }
 
     @Test(
@@ -60,12 +61,13 @@ struct DNSCacheTests {
 
         testClock.advance(by: .seconds(timeTravelSeconds))
 
-        let _retrievedMessage = await cache.retrieve(
+        let _retrievedMessage = await self.expectRetrieve(
+            from: cache,
             domainName: domainName,
-            checkingDisabled: true
+            checkingDisabled: checkingDisabled,
+            expect: .cachedMessage(id: message.header.id)
         )
         let retrievedMessage = try #require(_retrievedMessage)
-        #expect(retrievedMessage.header.id == message.header.id)
 
         for (newAnswer, originalAnswer) in zip(retrievedMessage.answers, message.answers) {
             let expectedTTL = originalAnswer.ttl - timeTravelSeconds
@@ -89,12 +91,17 @@ struct DNSCacheTests {
         let ttl = try #require(message.answers.min(by: { $0.ttl < $1.ttl })).ttl
         testClock.advance(by: .seconds(ttl + 1))
 
-        for checkingDisabled in [true, false] {
-            let retrievedMessage = await cache.retrieve(
+        for newCheckingDisabled in [true, false] {
+            let expectationMode: ExpectationMode =
+                (newCheckingDisabled == true || checkingDisabled == false)
+                ? .staleCachedMessage(id: message.header.id)
+                : .noCachedMessageExists
+            await self.expectRetrieve(
+                from: cache,
                 domainName: domainName,
-                checkingDisabled: checkingDisabled
+                checkingDisabled: newCheckingDisabled,
+                expect: expectationMode
             )
-            #expect(retrievedMessage == nil)
         }
     }
 
@@ -122,11 +129,12 @@ struct DNSCacheTests {
             )
         }
 
-        let retrievedMessage = await cache.retrieve(
+        await self.expectRetrieve(
+            from: cache,
             domainName: domainName,
-            checkingDisabled: checkingDisabled
+            checkingDisabled: checkingDisabled,
+            expect: .cachedMessage(id: message1.header.id)
         )
-        #expect(retrievedMessage?.header.id == message1.header.id)
     }
 
     @Test(arguments: [true, false])
@@ -158,13 +166,12 @@ struct DNSCacheTests {
             message: message2
         )
 
-        let retrievedMessage = await cache.retrieve(
+        await self.expectRetrieve(
+            from: cache,
             domainName: domainName,
-            checkingDisabled: checkingDisabled
+            checkingDisabled: checkingDisabled,
+            expect: .cachedMessage(id: message2.header.id)
         )
-        /// `message1` had a ttl of 100. After 2 seconds we added `message2` with a ttl of 99.
-        /// At that point `message1`'s ttl was 98, so `message2` should have been saved instead.
-        #expect(retrievedMessage?.header.id == message2.header.id)
     }
 
     @Test func `retrieving message prefers to return message with checking enabled`() async throws {
@@ -183,20 +190,72 @@ struct DNSCacheTests {
         }
 
         do {
-            let retrievedMessage = await cache.retrieve(
+            await self.expectRetrieve(
+                from: cache,
                 domainName: domainName,
-                checkingDisabled: true
+                checkingDisabled: true,
+                /// We requested `checkingDisabled: true` but we should still get the message with checking enabled.
+                expect: .cachedMessage(id: messageWithCheckingEnabled.header.id)
             )
-            /// We requested `checkingDisabled: true` but we should still get the message with checking enabled.
-            #expect(retrievedMessage?.header.id == messageWithCheckingEnabled.header.id)
         }
 
         do {
-            let retrievedMessage = await cache.retrieve(
+            await self.expectRetrieve(
+                from: cache,
                 domainName: domainName,
-                checkingDisabled: false
+                checkingDisabled: false,
+                expect: .cachedMessage(id: messageWithCheckingEnabled.header.id)
             )
-            #expect(retrievedMessage?.header.id == messageWithCheckingEnabled.header.id)
+        }
+    }
+
+    enum ExpectationMode {
+        case cachedMessage(id: UInt16)
+        case staleCachedMessage(id: UInt16)
+        case noCachedMessageExists
+    }
+
+    @discardableResult
+    func expectRetrieve<ClockType: Clock>(
+        from cache: DNSCache<ClockType>,
+        domainName: DomainName,
+        checkingDisabled: Bool,
+        expect expectationMode: ExpectationMode,
+        sourceLocation: Testing.SourceLocation = #_sourceLocation
+    ) async -> Message? {
+        func retrieve(stale: Bool) async -> Message? {
+            await cache.retrieve(
+                domainName: domainName,
+                checkingDisabled: checkingDisabled,
+                useStaleCache: stale
+            )
+        }
+
+        switch expectationMode {
+        case .cachedMessage(let id):
+            let possiblyStaleMessage = await retrieve(stale: true)
+            #expect(possiblyStaleMessage?.header.id == id, sourceLocation: sourceLocation)
+
+            let message = await retrieve(stale: false)
+            #expect(message?.header.id == id, sourceLocation: sourceLocation)
+
+            return message
+        case .staleCachedMessage(let id):
+            let possiblyStaleMessage = await retrieve(stale: true)
+            #expect(possiblyStaleMessage?.header.id == id, sourceLocation: sourceLocation)
+
+            let message = await retrieve(stale: false)
+            #expect(message == nil, sourceLocation: sourceLocation)
+
+            return possiblyStaleMessage
+        case .noCachedMessageExists:
+            let message = await retrieve(stale: false)
+            #expect(message == nil, sourceLocation: sourceLocation)
+
+            let possiblyStaleMessage = await retrieve(stale: true)
+            #expect(possiblyStaleMessage == nil, sourceLocation: sourceLocation)
+
+            return nil
         }
     }
 
