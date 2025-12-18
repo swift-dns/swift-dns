@@ -52,7 +52,7 @@ extension _RecursiveDNSResolver {
         var factory = factory
         var cnameChain = TinyFastSequence<Record>()
         while true {
-            let (query, _response) = try await self.client._query(
+            let (query, _response) = try await self.client.query(
                 message: factory.copy(),
                 isolation: isolation
             )

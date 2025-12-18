@@ -43,20 +43,9 @@ public struct DNSClient: Sendable {
     ///   - channel: The channel type to send the query on.
     ///   - isolation: The isolation on which the query will be sent.
     ///
-    /// - Returns: The query response.
+    /// - Returns: The query and the response.
     @inlinable
     public func query(
-        message factory: consuming MessageFactory<some RDataConvertible>,
-        isolation: isolated (any Actor)? = #isolation
-    ) async throws -> Message {
-        try await self._query(
-            message: factory,
-            isolation: isolation
-        ).response
-    }
-
-    @inlinable
-    package func _query(
         message factory: consuming MessageFactory<some RDataConvertible>,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> (query: Message, response: Message) {

@@ -9,10 +9,10 @@ import Testing
 import struct NIOCore.ByteBuffer
 
 extension SerializationNamespace {
-    struct DNSResolverTests {}
+    struct DNSResolverIntegrationTests {}
 }
 
-extension SerializationNamespace.DNSResolverTests {
+extension SerializationNamespace.DNSResolverIntegrationTests {
     /// Currently the upstream resolver responds with answers that start with a CNAME and the rest are the A records.
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())

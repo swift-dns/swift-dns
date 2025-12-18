@@ -10,10 +10,10 @@ import Testing
 import struct NIOCore.ByteBuffer
 
 extension SerializationNamespace {
-    struct DNSClientTests {}
+    struct DNSClientIntegrationTests {}
 }
 
-extension SerializationNamespace.DNSClientTests {
+extension SerializationNamespace.DNSClientIntegrationTests {
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryA(client: any DNSClientService) async throws {

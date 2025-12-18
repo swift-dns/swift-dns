@@ -2,7 +2,8 @@
 extension ForwardingDNSResolver: _DNSClientProtocol {
     @inlinable
     public func _querySpecialized<RDataType: RDataConvertible>(
-        message factory: consuming MessageFactory<RDataType>
+        message factory: consuming MessageFactory<RDataType>,
+        isolation: isolated (any Actor)?
     ) async throws -> SpecializedMessage<RDataType> {
         let domainName = factory.query.domainName
         let checkingDisabled = factory.message.header.checkingDisabled
@@ -15,7 +16,10 @@ extension ForwardingDNSResolver: _DNSClientProtocol {
         }
 
         do {
-            let response = try await self.client.query(message: factory)
+            let response = try await self.client.query(
+                message: factory,
+                isolation: isolation
+            ).response
             await self.cache.save(
                 domainName: domainName,
                 message: response
