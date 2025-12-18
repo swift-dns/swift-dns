@@ -292,6 +292,10 @@ jobs:
 
     timeout-minutes: 60
 
+    defaults:
+      run:
+        shell: pwsh
+
     steps:
       - name: Install Windows Swift toolchain
         uses: compnerd/gha-setup-swift@main
