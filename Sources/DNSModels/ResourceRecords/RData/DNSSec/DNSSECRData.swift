@@ -1,4 +1,5 @@
 /// Record data enum variants for DNSSEC-specific records.
+@nonexhaustive
 public enum DNSSECRData: Sendable {
     /// ```text
     /// RFC 7344              Delegation Trust Maintenance        September 2014

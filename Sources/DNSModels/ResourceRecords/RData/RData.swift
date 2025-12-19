@@ -1,4 +1,5 @@
 @available(swiftDNSApplePlatforms 10.15, *)
+@nonexhaustive
 public enum RData: Sendable {
     /// ```text
     /// -- RFC 1035 -- Domain Implementation and Specification    November 1987

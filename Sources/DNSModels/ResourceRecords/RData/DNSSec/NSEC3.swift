@@ -159,6 +159,7 @@ public struct NSEC3: Sendable {
     ///    Assignment of additional NSEC3 hash algorithms in this registry
     ///    requires IETF Standards Action [RFC2434].
     /// ```
+    @nonexhaustive
     public enum HashAlgorithm: Sendable {
         /// Hash for the Nsec3 records
         case SHA1

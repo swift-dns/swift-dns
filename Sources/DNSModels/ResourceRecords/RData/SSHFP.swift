@@ -48,6 +48,7 @@ public struct SSHFP: Sendable {
     ///
     /// The fingerprint type values have been updated in
     /// [RFC 6594](https://tools.ietf.org/html/rfc6594).
+    @nonexhaustive
     public enum FingerprintType: Sendable {
         /// Reserved value
         case reserved

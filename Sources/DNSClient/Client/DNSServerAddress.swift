@@ -4,6 +4,7 @@ public import enum NIOCore.SocketAddress
 
 /// FIXME: shouldn't expose SocketAddress as public
 @available(swiftDNSApplePlatforms 10.15, *)
+@nonexhaustive
 public enum DNSServerAddress: Hashable, Sendable {
     // We keep the IP address serialization precisely as it is in the URL.
     // Some platforms have quirks in their implementations of 'ntop', for example

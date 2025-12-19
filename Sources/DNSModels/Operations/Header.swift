@@ -33,6 +33,7 @@ import DNSCore
 /// ```
 public struct Header: Sendable {
     /// Message types are either Query (also Update) or Response
+    @nonexhaustive
     public enum MessageType: UInt8, Sendable {
         /// Queries are Client requests, these are either Queries or Updates
         case Query = 0

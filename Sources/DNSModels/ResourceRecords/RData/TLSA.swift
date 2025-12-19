@@ -66,6 +66,7 @@ public struct TLSA: Sendable {
     ///    |  255  | PrivCert | Reserved for Private Use       | [RFC6698]   |
     ///    +-------+----------+--------------------------------+-------------+
     /// ```
+    @nonexhaustive
     public enum CertUsage: Sendable {
         /// ```text
         ///       0 -- Certificate usage 0 is used to specify a CA certificate, or
@@ -144,6 +145,7 @@ public struct TLSA: Sendable {
     ///    unrelated to the use of "selector" in DomainKeys Identified Mail
     ///    (DKIM) [RFC6376].)
     /// ```
+    @nonexhaustive
     public enum Selector: Sendable {
         /// Full certificate: the Certificate binary structure as defined in [RFC5280](https://tools.ietf.org/html/rfc5280)
         case full
@@ -176,6 +178,7 @@ public struct TLSA: Sendable {
     ///    certificate (if possible) will assist clients that support a small
     ///    number of hash algorithms.
     /// ```
+    @nonexhaustive
     public enum Matching: Sendable {
         /// Exact match on selected content
         case raw

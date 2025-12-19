@@ -38,6 +38,7 @@ import DNSCore
 ///
 ///                 6-15            Reserved for future use.
 ///  ```
+@nonexhaustive
 public enum ResponseCode: Sendable {
     /// No Error [RFC 1035](https://tools.ietf.org/html/rfc1035)
     case NoError

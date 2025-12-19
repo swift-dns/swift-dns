@@ -143,6 +143,7 @@ public struct TSIG: Sendable {
     ///      | hmac-sha512-256          | MAY            | MAY             |
     ///      +--------------------------+----------------+-----------------+
     /// ```
+    @nonexhaustive
     public enum Algorithm: Sendable {
         /// HMAC-MD5.SIG-ALG.REG.INT (not supported for cryptographic operations)
         case HMAC_MD5

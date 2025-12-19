@@ -2,6 +2,7 @@ import func DNSCore.debugOnly
 public import struct NIOCore.ByteBuffer
 
 /// The code of the EDNS data option
+@nonexhaustive
 public enum EDNSCode: Sendable, Hashable {
     /// [RFC 6891, Reserved](https://tools.ietf.org/html/rfc6891)
     case zero
@@ -105,6 +106,7 @@ extension EDNSCode {
 ///
 /// <https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-13>
 @available(swiftDNSApplePlatforms 10.15, *)
+@nonexhaustive
 public enum EDNSOption: Sendable, Hashable {
     /// Used to specify the set of SupportedAlgorithms between a client and server
     public struct SupportedAlgorithms: Sendable, Hashable {
@@ -242,6 +244,7 @@ public enum EDNSOption: Sendable, Hashable {
     /// ```
     public struct Cookie: Sendable, Hashable {
         public struct ValidationError: Error {
+            @nonexhaustive
             public enum Reason: Sendable, Hashable {
                 case clientCookieMustBeExactly8Bytes(actualLength: Int)
                 case serverCookieMustBeEmptyOr8To32Bytes(actualLength: Int)
@@ -588,10 +591,11 @@ extension EDNSOption.Cookie {
     }
 }
 
-/// FIXME: what if we need to grow the size of this enum?
+/// FIXME: what if we need to grow the size of this enum to more than 8 bits?
+@nonexhaustive
 public enum DNSSECAlgorithmEDNSSubset: UInt8, Sendable {
 
-    /// I know the explicit numbers are not needed and Swift already does this.
+    /// I know the numbers are not needed and Swift already does this.
     /// Just being explicit for the sake of clarity.
 
     case RSASHA1 = 0
