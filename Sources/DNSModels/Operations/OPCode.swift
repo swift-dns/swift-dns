@@ -17,7 +17,7 @@
 /// ```
 /// Some OPCodes are defined in later RFCs, and some are deprecated.
 @nonexhaustive
-public enum OPCode {
+public enum OPCode: Sendable {
     /// Query request [RFC 1035](https://tools.ietf.org/html/rfc1035)
     case Query
     /// Status message [RFC 1035](https://tools.ietf.org/html/rfc1035)
