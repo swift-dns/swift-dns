@@ -1,4 +1,5 @@
 /// The DNS Record class
+@nonexhaustive
 public enum DNSClass: Sendable, Hashable {
     /// Internet
     case IN

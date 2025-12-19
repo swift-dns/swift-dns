@@ -46,6 +46,7 @@ public struct CERT: Sendable {
     ///    65280-65534            Experimental
     ///          65535            Reserved
     /// ```
+    @nonexhaustive
     public enum CertType: Sendable {
         /// 0, 255, 65535            Reserved
         case reserved

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.2.3
 
 import CompilerPluginSupport
 // MARK: - BEGIN exact copy of the main package's Package.swift
@@ -16,8 +16,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.17"),
-        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.6"),
+        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.18"),
+        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.7"),
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
     targets: [

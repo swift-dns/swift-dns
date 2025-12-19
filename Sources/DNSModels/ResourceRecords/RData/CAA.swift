@@ -5,6 +5,7 @@ public import struct NIOCore.ByteBuffer
 /// [RFC 8659, DNS Certification Authority Authorization, November 2019](https://www.rfc-editor.org/rfc/rfc8659)
 public struct CAA: Sendable, Equatable {
     /// Specifies in what contexts this key may be trusted for use
+    @nonexhaustive
     public enum Property: Sendable, Equatable {
         /// The issue property
         ///    entry authorizes the holder of the domain name `Issuer Domain
@@ -38,6 +39,7 @@ public struct CAA: Sendable, Equatable {
     /// `Unknown` => `Unknown`.
     ///
     /// `Unknown` is also used for invalid values of known Tag types that cannot be parsed.
+    @nonexhaustive
     public enum Value: Sendable, Equatable {
         /// Issuer authorized to issue certs for this zone, and any associated parameters
         case issuer(DomainName?, [(key: String, value: String)])

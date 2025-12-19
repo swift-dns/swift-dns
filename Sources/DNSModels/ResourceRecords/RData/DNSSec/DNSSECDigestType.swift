@@ -13,6 +13,7 @@
 /// ```
 ///
 /// <https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml>
+@nonexhaustive
 public enum DNSSECDigestType: Sendable {
     /// [RFC 3658](https://tools.ietf.org/html/rfc3658)
     case SHA1

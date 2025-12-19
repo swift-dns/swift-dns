@@ -16,6 +16,7 @@
 ///                 3-15            reserved for future use
 /// ```
 /// Some OPCodes are defined in later RFCs, and some are deprecated.
+@nonexhaustive
 public enum OPCode {
     /// Query request [RFC 1035](https://tools.ietf.org/html/rfc1035)
     case Query

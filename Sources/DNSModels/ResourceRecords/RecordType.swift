@@ -1,3 +1,4 @@
+@nonexhaustive
 public enum RecordType: Sendable, Hashable {
     /// [RFC 1035](https://tools.ietf.org/html/rfc1035) IPv4 Address record
     case A

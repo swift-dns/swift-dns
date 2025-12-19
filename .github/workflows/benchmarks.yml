@@ -31,7 +31,7 @@ jobs:
       # jemalloc, zstd and jq are already installed in the self-hosted runner so we skip this step.
 
       - name: Manually update PATH with Swift
-        run: echo "/home/gha/.local/share/swiftly/toolchains/6.2.1/usr/bin" >> $GITHUB_PATH
+        run: echo "/home/gha/.local/share/swiftly/toolchains/6.2.3/usr/bin" >> $GITHUB_PATH
 
       - name: Enable full performance
         run: /usr/bin/ordo-performance

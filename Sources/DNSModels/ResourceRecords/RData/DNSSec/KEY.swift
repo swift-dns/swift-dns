@@ -139,6 +139,7 @@ public import struct NIOCore.ByteBuffer
 ///
 public struct KEY: Sendable {
     /// Specifies in what contexts this key may be trusted for use
+    @nonexhaustive
     public enum KeyTrust: Sendable {
         /// Use of the key is prohibited for authentication
         case notAuth
@@ -151,6 +152,7 @@ public struct KEY: Sendable {
     }
 
     /// Declares what this key is for
+    @nonexhaustive
     public enum KeyUsage: Sendable {
         /// key associated with a "user" or "account" at an end entity, usually a host
         case host
@@ -328,7 +330,7 @@ public struct KEY: Sendable {
     ///
     /// text
     /// All Proto Octet values except DNSSEC (3) are eliminated
-    ///
+    @nonexhaustive
     public enum Proto: Sendable {
         /// Not in use
         // Deprecated by RFC3445

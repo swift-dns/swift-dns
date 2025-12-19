@@ -73,6 +73,7 @@
 ///  24-122    Unassigned
 /// 123-251    reserved
 /// ```
+@nonexhaustive
 public enum Algorithm: Sendable {
     /// 0, 9, 11, 123-251, 255   reserved
     case reserved(UInt8)

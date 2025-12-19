@@ -95,6 +95,7 @@ public struct SVCB: Sendable, Hashable {
     ///   *  a 2 octet field containing the SvcParamKey as an integer in
     ///      network byte order.  (See Section 14.3.2 for the defined values.)
     /// ```
+    @nonexhaustive
     public enum SVCParamKey: Sendable, Hashable {
         /// Mandatory keys in this RR
         case mandatory
@@ -127,6 +128,7 @@ public struct SVCB: Sendable, Hashable {
     ///   *  an octet string of this length whose contents are in a format
     ///      determined by the SvcParamKey.
     /// ```
+    @nonexhaustive
     public enum SVCParamValue: Sendable, Hashable {
         ///  [RFC 9460 SVCB and HTTPS Resource Records, Nov 2023](https://datatracker.ietf.org/doc/html/rfc9460#section-8)
         ///

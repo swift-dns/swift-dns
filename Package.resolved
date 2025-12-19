@@ -1,5 +1,5 @@
 {
-  "originHash" : "7f88dfe8381a03c5894390bd3b0effb67dee2e1dd6047fdc38c03fa2d73f505b",
+  "originHash" : "e64d86d95065b4b826ee1bf9bdf7cab9040e49025318be24e0e4d562345628e7",
   "pins" : [
     {
       "identity" : "swift-async-algorithms",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-endpoint.git",
       "state" : {
-        "revision" : "fb01998b616beb9f72dfc14f8a540b835619fd10",
-        "version" : "1.0.0-beta.6"
+        "revision" : "9d6ec9b8d9a0d1ab50b6b2f84e0a5e33c16102a1",
+        "version" : "1.0.0-beta.7"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-idna.git",
       "state" : {
-        "revision" : "3ad26f297bbdcf31ce6ba008b0775620fff4d034",
-        "version" : "1.0.0-beta.17"
+        "revision" : "8f21ed04b655c56db78e02224a0ce4565770ceb7",
+        "version" : "1.0.0-beta.18"
       }
     },
     {

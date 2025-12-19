@@ -1,4 +1,5 @@
 /// CustomStringConvertible and all
+@nonexhaustive
 public enum DNSClientError: Error {
     case cancelled
     case connectionClosing

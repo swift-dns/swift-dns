@@ -10,6 +10,7 @@
 /// DS RRs.  Those usable for transaction security would be present in
 /// SIG(0) and KEY RRs, as described in [RFC2931].
 /// ```
+@nonexhaustive
 public enum DNSSECAlgorithm: Sendable {
     /// 1   RSA/MD5 ([RFC 2537](https://tools.ietf.org/html/rfc2537))
     case RSAMD5
