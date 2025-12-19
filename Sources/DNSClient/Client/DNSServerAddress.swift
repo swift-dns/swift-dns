@@ -38,14 +38,25 @@ extension DNSServerAddress {
         }
     }
 
+    @nonexhaustive
+    public enum SocketAddressConversionError: Error, Sendable {
+        case expectedQuadDottedIPv4AddressOrArpaFormattedIPAddressAsHost(DomainName)
+    }
+
     @inlinable
     package func asSocketAddress() throws -> SocketAddress {
         switch self {
         case .ipAddress(_, let address):
             return address
         case .domain(let host, let port):
+            guard let ipAddress = AnyIPAddress(domainName: host) else {
+                /// Currently non-ip-address domains are not supported
+                throw
+                    SocketAddressConversionError
+                    .expectedQuadDottedIPv4AddressOrArpaFormattedIPAddressAsHost(host)
+            }
             return try SocketAddress(
-                ipAddress: host.description(format: .ascii),
+                ipAddress: ipAddress.description,
                 port: Int(port)
             )
         case .unixSocket(let path):
