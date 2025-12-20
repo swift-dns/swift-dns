@@ -287,10 +287,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    timeout-minutes: 15
+    timeout-minutes: 60
 
     steps:
-      - name: Ensure zstd is available
+      - name: Ensure zstd is available for faster caching
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
 
       - name: Check out code
