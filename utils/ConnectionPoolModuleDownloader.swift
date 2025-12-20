@@ -99,6 +99,17 @@ func downloadAndWriteFile(name: String, from url: String, to outputPath: String)
         in: &data
     )
 
+    let muslImportThenEndIf = Data("import Musl\n#endif".utf8)
+    let muslImportThenBionicImportThenEndIf = Data(
+        "import Musl\n#elseif canImport(Bionic)\nimport Bionic\n#endif".utf8
+    )
+
+    replace(
+        bytes: muslImportThenEndIf,
+        with: muslImportThenBionicImportThenEndIf,
+        in: &data
+    )
+
     // Create directory if it doesn't exist
     let directory = URL(fileURLWithPath: outputPath).deletingLastPathComponent().path
     if !fileManager.fileExists(atPath: directory) {

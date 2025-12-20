@@ -1,20 +1,11 @@
 #if canImport(Darwin)
 import Darwin
-#elseif os(Windows)
-import ucrt
 #elseif canImport(Glibc)
-@preconcurrency import Glibc
+import Glibc
 #elseif canImport(Musl)
-@preconcurrency import Musl
+import Musl
 #elseif canImport(Bionic)
-@preconcurrency import Bionic
-#elseif canImport(WASILibc)
-@preconcurrency import WASILibc
-#if canImport(wasi_pthread)
-import wasi_pthread
-#endif
-#else
-#error("The PoolStateMachine module was unable to identify your C library.")
+import Bionic
 #endif
 
 @usableFromInline
@@ -110,7 +101,7 @@ struct PoolStateMachine<
         case closeConnection(Connection, Max2Sequence<TimerCancellationToken>)
         /// Start process of shutting down the connection pool. Close connections, cancel timers.
         case initiateShutdown(Shutdown)
-        /// All connections have been closed, the pool event stream can be ended.
+        /// All connections have been closed, the pool event stream can be ended. 
         case cancelEventStreamAndFinalCleanup([TimerCancellationToken])
         case none
     }
@@ -131,8 +122,8 @@ struct PoolStateMachine<
         struct ConnectionCreationFailingContext: Sendable {
             @usableFromInline
             init(
-                timeOfFirstFailedAttempt: Clock.Instant,
-                error: any Error,
+                timeOfFirstFailedAttempt: Clock.Instant, 
+                error: any Error, 
                 connectionIDToRetry: ConnectionID
             ) {
                 self.timeOfFirstFailedAttempt = timeOfFirstFailedAttempt
@@ -180,9 +171,9 @@ struct PoolStateMachine<
         ///   - `shuttingDown` if the pool is being shut down (graceful shutdown behavior is managed by an external flag),
         ///   - `connectionCreationFailing` if a connection creation failed.
         case running
-        /// The last connection creation attempt failed. In this state, the pool attempts to establish
-        /// only one connection to the server at a time. New connection attempts are not initiated based
-        /// on incoming requests. Retries to establish a connection continue even if all requests have
+        /// The last connection creation attempt failed. In this state, the pool attempts to establish 
+        /// only one connection to the server at a time. New connection attempts are not initiated based 
+        /// on incoming requests. Retries to establish a connection continue even if all requests have 
         /// finished. Existing connections continue to serve requests.
         /// Can transition to:
         ///   - `circuitBreakOpen` on failed connection if the timer passed since entering this state has passed
@@ -328,7 +319,7 @@ struct PoolStateMachine<
                 connection: .none
             )
         } else if self.connections.stats.connecting >= self.configuration.maximumConcurrentConnectionRequests {
-            // We have too many connection requests, lets delay creating any new connections
+            // We have too many connection requests, lets delay creating any new connections 
             return .init(
                 request: requestAction,
                 connection: .none
@@ -448,8 +439,8 @@ struct PoolStateMachine<
         case .running:
             self.poolState = .connectionCreationFailing(
                 .init(
-                    timeOfFirstFailedAttempt: clock.now,
-                    error: error,
+                    timeOfFirstFailedAttempt: clock.now, 
+                    error: error, 
                     connectionIDToRetry: request.connectionID
                 )
             )
@@ -465,7 +456,7 @@ struct PoolStateMachine<
             creationFailingContext.numberOfFailedAttempts += 1
             var requestAction: RequestAction = .none
             // if failing for longer than connection timeout and there are no open connections move to circuit break state
-            if creationFailingContext.timeOfFirstFailedAttempt.duration(to: clock.now) > self.configuration.circuitBreakerTripAfter,
+            if creationFailingContext.timeOfFirstFailedAttempt.duration(to: clock.now) > self.configuration.circuitBreakerTripAfter, 
                 self.connections.stats.idle + self.connections.stats.leased == 0 {
                 self.poolState = .circuitBreakOpen(.init(creationFailingContext))
                 requestAction = .failRequests(self.requestQueue.removeAll(), ConnectionPoolError.connectionCreationCircuitBreakerTripped)
@@ -473,11 +464,11 @@ struct PoolStateMachine<
                 self.poolState = .connectionCreationFailing(creationFailingContext)
             }
             let timer = self.backoffNextConnectionAttempt(
-                connectionID: request.connectionID,
+                connectionID: request.connectionID, 
                 numberOfFailedAttempts: creationFailingContext.numberOfFailedAttempts
             )
             return .init(request: requestAction, connection: .scheduleTimers(.init(timer)))
-
+            
         case .circuitBreakOpen(var circuitBreakOpenContext):
             guard request.connectionID == circuitBreakOpenContext.connectionIDToRetry else {
                 let timers = self.connections.destroyFailedConnection(request.connectionID)
@@ -487,11 +478,11 @@ struct PoolStateMachine<
             circuitBreakOpenContext.numberOfFailedAttempts += 1
             self.poolState = .circuitBreakOpen(circuitBreakOpenContext)
             let timer = self.backoffNextConnectionAttempt(
-                connectionID: request.connectionID,
+                connectionID: request.connectionID, 
                 numberOfFailedAttempts: circuitBreakOpenContext.numberOfFailedAttempts
             )
             return .init(request: .none, connection: .scheduleTimers(.init(timer)))
-
+            
         case .shuttingDown, .shutDown:
             let timerToCancel = self.connections.destroyFailedConnection(request.connectionID)
             let connectionAction: ConnectionAction
@@ -695,7 +686,7 @@ struct PoolStateMachine<
         if !requests.isEmpty {
             let leaseResult = self.connections.leaseConnection(at: index, streams: UInt16(requests.count))
             let connectionsRequired: Int
-            // if request count is less than available streams and leased streams plus incoming connections then only
+            // if request count is less than available streams and leased streams plus incoming connections then only 
             // ensure we have minimum connections otherwise grow the number of connections
             if (self.requestQueue.count + 1) <= self.connections.stats.availableStreams + self.connections.stats.leasedStreams + self.connections.stats.connecting {
                 connectionsRequired = self.configuration.minimumConnectionCount - Int(self.connections.stats.active)
@@ -703,8 +694,8 @@ struct PoolStateMachine<
                 connectionsRequired = 1
             }
             let connectionAction = self.createMultipleConnectionsAction(
-                connectionsRequired,
-                cancelledTimers: .init(leaseResult.timersToCancel),
+                connectionsRequired, 
+                cancelledTimers: .init(leaseResult.timersToCancel), 
                 scheduledTimers: []
             ) ?? .cancelTimers(.init(leaseResult.timersToCancel))
             return .init(
@@ -740,8 +731,8 @@ struct PoolStateMachine<
 
                 let connectionsRequired = self.configuration.minimumConnectionCount - Int(self.connections.stats.active)
                 let connectionAction = self.createMultipleConnectionsAction(
-                    connectionsRequired,
-                    cancelledTimers: [],
+                    connectionsRequired, 
+                    cancelledTimers: [], 
                     scheduledTimers: timers
                 ) ?? .scheduleTimers(timers)
                 return .init(request: .none, connection: connectionAction)
@@ -760,14 +751,14 @@ struct PoolStateMachine<
 
     }
 
-    @inlinable
+    @inlinable 
     /* private */ mutating func createMultipleConnectionsAction(
-        _ connectionCount: Int,
-        cancelledTimers: TinyFastSequence<TimerCancellationToken>,
+        _ connectionCount: Int, 
+        cancelledTimers: TinyFastSequence<TimerCancellationToken>, 
         scheduledTimers: Max2Sequence<Timer>
     ) -> ConnectionAction? {
         let connectionCountLimitedByNumberOfRequests = min(
-                connectionCount,
+                connectionCount, 
                 self.configuration.maximumConcurrentConnectionRequests - Int(self.connections.stats.connecting)
             )
         let connectionCountLimitedByHardLimit = min(
@@ -775,14 +766,14 @@ struct PoolStateMachine<
             self.configuration.maximumConnectionHardLimit - Int(self.connections.stats.active)
         )
         guard connectionCountLimitedByHardLimit > 0 else { return nil }
-
+        
         var connectionRequests = TinyFastSequence<ConnectionRequest>()
         connectionRequests.reserveCapacity(connectionCountLimitedByHardLimit)
         for _ in 0..<connectionCountLimitedByHardLimit {
             connectionRequests.append(self.connections.createNewConnection())
         }
         return .makeConnectionsCancelAndScheduleTimers(connectionRequests, cancelledTimers, scheduledTimers)
-
+        
     }
 
     @inlinable
@@ -804,7 +795,7 @@ struct PoolStateMachine<
     }
 
     // Is connection pool shutdown.
-    public var isShutdown: Bool {
+    public var isShutdown: Bool { 
         if case .shutDown = self.poolState { return true }
         return false
     }
@@ -901,7 +892,7 @@ extension PoolStateMachine.ConnectionAction.Shutdown: Equatable where TimerCance
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 extension PoolStateMachine.RequestAction: Equatable where Request: Equatable {
-
+    
     @usableFromInline
     static func ==(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
