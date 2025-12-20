@@ -396,6 +396,9 @@ struct DNSChannelHandlerStateMachineTests {
     /// and never `initialized`.
     @available(swiftDNSApplePlatforms 10.15, *)
     @Test func cancelBeforeActivation() async {
+        /// Exit-tests are not yet supported in some platforms by swift-testing.
+        /// For example, in Android.
+        #if canImport(Darwin) || canImport(Linux)
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
         let stateMachine = StateMachine()
@@ -408,6 +411,7 @@ struct DNSChannelHandlerStateMachineTests {
             var stateMachine = StateMachine.__for_testing(state: .initialized)
             _ = stateMachine.cancel(requestID: .random(in: .min ... .max))
         }
+        #endif
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
