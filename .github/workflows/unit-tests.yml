@@ -301,14 +301,14 @@ jobs:
         with:
           swift-version: ${{ matrix.swift.version }}
           swift-build-flags: >
-            --build-tests \
-            --enable-code-coverage \
-            --explicit-target-dependency-import-check error \
-            -Xswiftc -require-explicit-sendable \
+            --build-tests
+            --enable-code-coverage
+            --explicit-target-dependency-import-check error
+            -Xswiftc -require-explicit-sendable
             -c ${{ matrix.config.mode }}
           swift-test-flag: >
-            --skip "IntegrationTests." \
-            --skip-build \
-            --enable-code-coverage \
-            -Xswiftc -require-explicit-sendable \
+            --skip "IntegrationTests."
+            --skip-build
+            --enable-code-coverage
+            -Xswiftc -require-explicit-sendable
             -c ${{ matrix.config.mode }}
