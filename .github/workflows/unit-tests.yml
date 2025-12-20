@@ -280,7 +280,7 @@ jobs:
       fail-fast: false
       matrix:
         swift:
-          - version: 6.2.3
+          - version: nightly-6.3
         config:
           - mode: "debug"
           - mode: "release"
