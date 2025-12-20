@@ -279,8 +279,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-version:
-          - 6.2
+        swift:
+          - version: 6.2.3
+        config:
+          - mode: "debug"
+          - mode: "release"
 
     runs-on: ubuntu-latest
 
@@ -296,4 +299,15 @@ jobs:
       - name: Run unit tests
         uses: skiptools/swift-android-action@v2
         with:
-          swift-version: ${{ matrix.swift-version }}
+          swift-version: ${{ matrix.swift.version }}
+          swift-configuration: ${{ matrix.config.mode }}
+          swift-build-flags: >
+            --build-tests \
+            --enable-code-coverage \
+            --explicit-target-dependency-import-check error \
+            -Xswiftc -require-explicit-sendable
+          swift-test-flag: >
+            --skip "IntegrationTests." \
+            --skip-build \
+            --enable-code-coverage \
+            -Xswiftc -require-explicit-sendable
