@@ -66,9 +66,12 @@ enum Resources: String {
     }
 
     func data() -> Data {
-        FileManager.default.contents(
-            atPath: self.qualifiedPath()
-        )!
+        let path = self.qualifiedPath()
+        if let data = FileManager.default.contents(atPath: path) {
+            return data
+        } else {
+            fatalError("Failed to load data for resource '\(self)' at path '\(path)'")
+        }
     }
 
     func qualifiedPath() -> String {
