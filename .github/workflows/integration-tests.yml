@@ -359,7 +359,7 @@ jobs:
         with:
           swift-version: ${{ matrix.swift.version }}
           swift-configuration: ${{ matrix.config.mode }}
-          copy-files: Tests/Resources/**
+          copy-files: .
           swift-build-flags: >-
             --build-tests
             --explicit-target-dependency-import-check error
