@@ -75,10 +75,16 @@ enum Resources: String {
     }
 
     func qualifiedPath() -> String {
-        var components = URL(fileURLWithPath: #filePath).pathComponents
+        let isRunningInAndroidCI = ProcessInfo.processInfo.environment["ANDROID_CI"] == "true"
+        var components: [String]
+        if isRunningInAndroidCI {
+            components = URL(fileURLWithPath: ".build/android-xctest").pathComponents
+        } else {
+            components = URL(fileURLWithPath: #filePath).pathComponents
 
-        while components.last != "swift-dns" {
-            components.removeLast()
+            while components.last != "swift-dns" {
+                components.removeLast()
+            }
         }
 
         components.append(contentsOf: ["Tests", "Resources"])

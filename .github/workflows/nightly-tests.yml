@@ -299,7 +299,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Replace symlinks with the actual files
-        run: find Tests/ -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
+        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
 
       - name: Run unit tests
         uses: skiptools/swift-android-action@v2
@@ -307,6 +307,7 @@ jobs:
           swift-version: ${{ matrix.swift.version }}
           swift-configuration: ${{ matrix.config.mode }}
           copy-files: Tests
+          test-env: ANDROID_CI=true
           swift-build-flags: >-
             --build-tests
             --explicit-target-dependency-import-check error
