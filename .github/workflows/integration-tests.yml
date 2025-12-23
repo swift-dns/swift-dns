@@ -360,10 +360,11 @@ jobs:
       - name: Run unit tests
         uses: skiptools/swift-android-action@v2
         with:
+          android-emulator-test-folder: /data/local/tmp/android-xctest
+          test-env: PROJECT_ROOT_FOR_TESTING=/data/local/tmp/android-xctest
           swift-version: ${{ matrix.swift.version }}
           swift-configuration: ${{ matrix.config.mode }}
           copy-files: Tests
-          test-env: ANDROID_CI=true
           swift-build-flags: >-
             --build-tests
             --explicit-target-dependency-import-check error

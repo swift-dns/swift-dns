@@ -75,10 +75,12 @@ enum Resources: String {
     }
 
     func qualifiedPath() -> String {
-        let isRunningInAndroidCI = ProcessInfo.processInfo.environment["ANDROID_CI"] == "true"
         var components: [String]
-        if isRunningInAndroidCI {
-            components = URL(fileURLWithPath: ".build/android-xctest").pathComponents
+        if let projectRootForTesting = ProcessInfo.processInfo
+            .environment["PROJECT_ROOT_FOR_TESTING"],
+            !projectRootForTesting.isEmpty
+        {
+            components = URL(fileURLWithPath: projectRootForTesting).pathComponents
         } else {
             components = URL(fileURLWithPath: #filePath).pathComponents
 
