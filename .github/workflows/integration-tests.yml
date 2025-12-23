@@ -326,3 +326,46 @@ jobs:
 
       - name: Exit with correct status
         run: exit ${{ steps.tests-run.outputs.exit-status }}
+
+  android-integration-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift:
+          - version: nightly-6.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 30
+
+    steps:
+      - name: Free disk space for emulator
+        run: |
+          sudo rm -rf /opt/microsoft /opt/google /opt/az /usr/share/miniconda /usr/share/az* /usr/share/glade* /usr/local/share/chromium /usr/local/share/powershell /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          docker image prune --all --force
+          docker builder prune -a
+
+      - name: Ensure zstd is available for faster caching
+        run: sudo apt-get update -yq && sudo apt-get install -yq zstd
+
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Replace symlinks with the actual files
+        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
+
+      - name: Run unit tests
+        uses: skiptools/swift-android-action@v2
+        with:
+          android-emulator-test-folder: /data/local/tmp/android-xctest
+          test-env: PROJECT_ROOT_FOR_TESTING=/data/local/tmp/android-xctest
+          swift-version: ${{ matrix.swift.version }}
+          swift-configuration: ${{ matrix.config.mode }}
+          copy-files: Tests
+          swift-build-flags: >-
+            --build-tests
+            --explicit-target-dependency-import-check error
+          swift-test-flags: --filter "IntegrationTests."

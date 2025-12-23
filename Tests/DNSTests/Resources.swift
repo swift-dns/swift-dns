@@ -66,16 +66,27 @@ enum Resources: String {
     }
 
     func data() -> Data {
-        FileManager.default.contents(
-            atPath: self.qualifiedPath()
-        )!
+        let path = self.qualifiedPath()
+        if let data = FileManager.default.contents(atPath: path) {
+            return data
+        } else {
+            fatalError("Failed to load data for resource '\(self)' at path '\(path)'")
+        }
     }
 
     func qualifiedPath() -> String {
-        var components = URL(fileURLWithPath: #filePath).pathComponents
+        var components: [String]
+        if let projectRootForTesting = ProcessInfo.processInfo
+            .environment["PROJECT_ROOT_FOR_TESTING"],
+            !projectRootForTesting.isEmpty
+        {
+            components = URL(fileURLWithPath: projectRootForTesting).pathComponents
+        } else {
+            components = URL(fileURLWithPath: #filePath).pathComponents
 
-        while components.last != "swift-dns" {
-            components.removeLast()
+            while components.last != "swift-dns" {
+                components.removeLast()
+            }
         }
 
         components.append(contentsOf: ["Tests", "Resources"])
