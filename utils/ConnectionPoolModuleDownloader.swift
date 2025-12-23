@@ -101,7 +101,14 @@ func downloadAndWriteFile(name: String, from url: String, to outputPath: String)
 
     let muslImportThenEndIf = Data("import Musl\n#endif".utf8)
     let muslImportThenBionicImportThenEndIf = Data(
-        "import Musl\n#elseif canImport(Bionic)\nimport Bionic\n#endif".utf8
+        """
+        import Musl
+        #elseif canImport(Bionic)
+        import Bionic
+        #elseif os(Windows)
+        import ucrt
+        #endif
+        """.utf8
     )
 
     replace(
