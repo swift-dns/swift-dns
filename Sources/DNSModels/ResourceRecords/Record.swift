@@ -79,14 +79,10 @@ extension [Record] {
         buffer: inout DNSBuffer,
         count: UInt16,
         isAdditional: Bool
-    ) throws -> (records: TinyFastSequence<Record>, edns: EDNS?, sigs: TinyFastSequence<Record>) {
-        var records = TinyFastSequence<Record>()
-        records.reserveCapacity(Int(count))
+    ) throws -> (records: TinyArray<1, Record>, edns: EDNS?, sigs: TinyArray<1, Record>) {
+        var records = TinyArray<1, Record>()
         var edns: EDNS? = nil
-        var sigs = TinyFastSequence<Record>()
-        if isAdditional {
-            sigs.reserveCapacity(1)
-        }
+        var sigs = TinyArray<1, Record>()
 
         // SIG0 must be last, once this is set, disable.
         var sawSIG0 = false
