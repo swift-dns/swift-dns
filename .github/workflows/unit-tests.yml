@@ -280,12 +280,12 @@ jobs:
       fail-fast: false
       matrix:
         swift-version:
-          - 6.2
+          - 6.2.3
         include:
           - {
-              swift-version: 6.2,
-              swift-branch: swift-6.2-release,
-              swift-tag: 6.2-RELEASE,
+              swift-version: 6.2.3,
+              swift-branch: swift-6.2.3-release,
+              swift-tag: 6.2.3-RELEASE,
             }
 
     runs-on: windows-latest
