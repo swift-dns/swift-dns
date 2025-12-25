@@ -318,6 +318,8 @@ jobs:
 
       - name: Run unit tests
         run: |
+          swift package edit swift-nio --branch Joannis/jo/winsock-fixes
+
           $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
