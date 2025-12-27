@@ -11,13 +11,13 @@ let package = Package(
         .default(enabledTraits: ["ServiceLifecycleSupport"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.4"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.3.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.88.0"),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),
-        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.20"),
-        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.9"),
+        .package(url: "https://github.com/swift-dns/swift-idna.git", from: "1.0.0-beta.22"),
+        .package(url: "https://github.com/swift-dns/swift-endpoint.git", from: "1.0.0-beta.11"),
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
     ],
     targets: [

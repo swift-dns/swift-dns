@@ -1,5 +1,5 @@
 {
-  "originHash" : "94bed976da39688068590cbb1ffa427b0213688d81e9928e3d623661cd9438a5",
+  "originHash" : "758234fdd00915590bf2b4fe7d4dab293e78e6a4b07b0e6781bf3c46b4a1e849",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-endpoint.git",
       "state" : {
-        "revision" : "dddb892867faa99a1884a0d2464c40ad45d91d58",
-        "version" : "1.0.0-beta.9"
+        "revision" : "a7e5cb16c53ec8e9071a249020fb0480466ad950",
+        "version" : "1.0.0-beta.11"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-dns/swift-idna.git",
       "state" : {
-        "revision" : "2730ace97e94a768383d49991bc77ae25b0e9bc0",
-        "version" : "1.0.0-beta.20"
+        "revision" : "be09eb86d6d05030d7d5ff6e0af26c8acc994f7c",
+        "version" : "1.0.0-beta.22"
       }
     },
     {
