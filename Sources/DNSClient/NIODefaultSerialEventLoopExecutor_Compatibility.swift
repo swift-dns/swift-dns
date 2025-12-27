@@ -2,16 +2,25 @@ public import NIOCore
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension EventLoop {
+    #if canImport(Darwin)
     @usableFromInline
+    #else
+    @inlinable
+    #endif
     var executor_Compatibility: any SerialExecutor {
+        #if canImport(Darwin)
         if #available(swiftDNSApplePlatforms 14, *) {
             return self.executor
         } else {
             return NIODefaultSerialEventLoopExecutor_Compatibility(self)
         }
+        #else
+        self.executor
+        #endif
     }
 }
 
+#if canImport(Darwin)
 @available(swiftDNSApplePlatforms 10.15, *)
 final class NIODefaultSerialEventLoopExecutor_Compatibility: SerialExecutor {
     let eventLoop: any EventLoop
@@ -40,3 +49,4 @@ final class NIODefaultSerialEventLoopExecutor_Compatibility: SerialExecutor {
         self.eventLoop === other.eventLoop
     }
 }
+#endif

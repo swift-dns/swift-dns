@@ -4,10 +4,15 @@ extension String {
     }
 
     @available(swiftDNSApplePlatforms 10.15, *)
-    @inline(__always)
+    #if canImport(Darwin)
+    @usableFromInline
+    #else
+    @inlinable
+    #endif
     mutating func withSpan_Compatibility<T, E: Error>(
         _ body: (Span<UInt8>) throws(E) -> T
     ) throws(E) -> T {
+        #if canImport(Darwin)
         if #available(swiftDNSApplePlatforms 26, *) {
             return try body(self.utf8Span.span)
         }
@@ -20,15 +25,23 @@ extension String {
         } catch {
             fatalError("Unexpected error: \(String(reflecting: error))")
         }
+        #else
+        return try body(self.utf8Span.span)
+        #endif
     }
 }
 
 @available(swiftDNSApplePlatforms 10.15, *)
 extension Substring {
-    @inline(__always)
+    #if canImport(Darwin)
+    @usableFromInline
+    #else
+    @inlinable
+    #endif
     mutating func withSpan_Compatibility<T, E: Error>(
         _ body: (Span<UInt8>) throws(E) -> T
     ) throws(E) -> T {
+        #if canImport(Darwin)
         if #available(swiftDNSApplePlatforms 26, *) {
             return try body(self.utf8Span.span)
         }
@@ -41,5 +54,8 @@ extension Substring {
         } catch {
             fatalError("Unexpected error: \(String(reflecting: error))")
         }
+        #else
+        return try body(self.utf8Span.span)
+        #endif
     }
 }
