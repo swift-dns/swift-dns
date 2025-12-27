@@ -12,12 +12,16 @@ extension String {
 
     #if canImport(Darwin)
     @usableFromInline
+    #else
+    @inlinable
+    #endif
     init(
         unsafeUninitializedCapacity_Compatibility capacity: Int,
         initializingUTF8With initializer: (
             _ buffer: UnsafeMutableBufferPointer<UInt8>
         ) throws -> Int
     ) rethrows {
+        #if canImport(Darwin)
         if #available(swiftDNSApplePlatforms 11, *) {
             try self.init(unsafeUninitializedCapacity: capacity) { buffer in
                 try initializer(buffer)
@@ -30,21 +34,10 @@ extension String {
             }
             self.init(decoding: array, as: UTF8.self)
         }
-    }
-    #else
-    /// @_transparent helps mitigate some performance regressions on Linux that happened when
-    /// moving from directly using the underlying initializer, to this compatibility initializer.
-    @_transparent
-    @inlinable
-    init(
-        unsafeUninitializedCapacity_Compatibility capacity: Int,
-        initializingWith initializer: (
-            _ buffer: UnsafeMutableBufferPointer<UInt8>
-        ) throws -> Int
-    ) rethrows {
+        #else
         try self.init(unsafeUninitializedCapacity: capacity) { buffer in
             try initializer(buffer)
         }
+        #endif
     }
-    #endif
 }
