@@ -274,3 +274,58 @@ jobs:
         with:
           build_parameters: "-c ${{ matrix.config.mode }}"
           codecov_token: "${{ secrets.CODECOV_TOKEN }}"
+
+  windows-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version:
+          - 6.2.3
+        include:
+          - {
+              swift-version: 6.2.3,
+              swift-branch: swift-6.2.3-release,
+              swift-tag: 6.2.3-RELEASE,
+            }
+
+    runs-on: windows-latest
+
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Install Windows Swift toolchain
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: ${{ matrix.swift-branch }}
+          swift-build: ${{ matrix.swift-tag }}
+          update-sdk-modules: true
+
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-version }}-windows-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-version }}-windows-${{ hashFiles('./Package.resolved') }}"
+
+      - name: Run unit tests
+        run: |
+          swift package edit swift-nio --branch Joannis/jo/winsock-fixes
+
+          $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
+          swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
+
+      - name: Cache .build
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-version }}-windows-${{ hashFiles('./Package.resolved') }}"
