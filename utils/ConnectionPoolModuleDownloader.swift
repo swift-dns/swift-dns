@@ -1,5 +1,4 @@
 #!/usr/bin/env swift
-
 import Foundation
 
 #if canImport(FoundationNetworking)

@@ -1,6 +1,6 @@
 public import DNSCore
 
-public import struct Collections.BitSet
+public import struct BitCollections.BitSet
 
 @usableFromInline
 package struct MessageIDGenerator: Sendable, ~Copyable {

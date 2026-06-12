@@ -1,2 +1,1 @@
-# Copied from PostgresNIO
-Sources/DNSConnectionPool/
+Sources/DNSConnectionPool/*
