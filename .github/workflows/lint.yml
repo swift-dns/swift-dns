@@ -16,7 +16,7 @@ jobs:
 
     timeout-minutes: 10
 
-    container: swift:6.2-noble
+    container: swift:6.3-noble
 
     permissions:
       contents: write # For committing formatting updates

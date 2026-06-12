@@ -27,7 +27,7 @@ jobs:
   export-benchmark-results:
     runs-on: [self-hosted, linux, x64]
 
-    container: swift:6.2-noble
+    container: swift:6.3-noble
 
     timeout-minutes: 1440
 

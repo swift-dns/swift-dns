@@ -1,6 +1,6 @@
 {
-  "name": "swift:6.2-noble",
-  "image": "swift:6.2-noble",
+  "name": "swift:6.3-noble",
+  "image": "swift:6.3-noble",
   "mounts": [
     "source=${localEnv:HOME}/.sourcekit-lsp/config.json,target=/root/.sourcekit-lsp/config.json,type=bind,consistency=cached"
   ],

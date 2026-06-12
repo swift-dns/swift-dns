@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - name: swiftlang/swift:nightly-6.3-jammy
+          - name: swiftlang/swift:nightly-main-noble
         config:
           - mode: "debug"
           - mode: "release"
@@ -78,7 +78,7 @@ jobs:
       fail-fast: false
       matrix:
         swift:
-          - version: 6.3-snapshot
+          - version: main-snapshot
 
     runs-on: macos-26
 
@@ -163,7 +163,7 @@ jobs:
         xcode:
           - version: latest-stable
         swift:
-          - version: 6.3-snapshot
+          - version: main-snapshot
         config:
           - mode: "debug"
           - mode: "release"
@@ -276,7 +276,7 @@ jobs:
       fail-fast: false
       matrix:
         swift:
-          - version: nightly-6.3
+          - version: nightly-main
         config:
           - mode: "debug"
           - mode: "release"

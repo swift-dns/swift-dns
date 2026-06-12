@@ -20,7 +20,7 @@
     <a href="https://swift.org">
         <img
             src="https://design.vapor.codes/images/swift623up.svg"
-            alt="Swift 6.2.3+"
+            alt="Swift 6.3+"
         >
     </a>
 </p>
