@@ -1,7 +1,7 @@
 import DNSCore
 
-public import struct Collections.OrderedSet
 public import struct NIOCore.ByteBuffer
+public import struct OrderedCollections.OrderedSet
 
 public struct RecordTypeSet: Sendable {
     public var types: OrderedSet<RecordType>
