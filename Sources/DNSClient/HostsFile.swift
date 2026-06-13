@@ -45,7 +45,7 @@ package struct HostsFile: Sendable, Hashable {
 
         try await fileSystem.withFileHandle(
             forReadingAt: path,
-            options: .init(followSymbolicLinks: true, closeOnExec: true)
+            options: .init(followSymbolicLinks: true)
         ) { fileHandle in
             let lines =
                 fileHandle
