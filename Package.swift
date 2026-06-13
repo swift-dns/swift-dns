@@ -10,7 +10,10 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.6.0"),
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
+        .package(
+            url: "https://github.com/apple/swift-nio.git",
+            revision: "3263350c88b44704a90b4d9bc0fda4828d470df5"
+        ),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.25.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.8.0"),

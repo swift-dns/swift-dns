@@ -1,5 +1,5 @@
 {
-  "originHash" : "939b9e875869698f8e0d9bb7e785cb1708aac97eba4e98b6dcf3c3d56433ca15",
+  "originHash" : "eba086bc7112a25523d195bf83afe022a175f98d341c82032e08a670d32570a9",
   "pins" : [
     {
       "identity" : "hdrhistogram-swift",
@@ -96,8 +96,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "77b84ac2cd2ac9e4ac67d19f045fd5b434f56967",
-        "version" : "2.101.0"
+        "revision" : "3263350c88b44704a90b4d9bc0fda4828d470df5"
       }
     },
     {
@@ -132,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "666fba77fc401d8e63aa37435b1257fc88c40518",
-        "version" : "1.7.1"
+        "revision" : "7502b711c92a17741fa625d722b0ccbd595d8ed1",
+        "version" : "1.7.2"
       }
     },
     {
