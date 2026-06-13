@@ -108,9 +108,6 @@ public final actor DNSConnection: Sendable {
     @inlinable
     func send(producedMessage: ProducedMessage) async throws -> Message {
         let requestID = producedMessage.messageID
-        /// TODO: use the other cancel function below when compiler bug is resolved
-        /// Then we can remove this whole unsafe line
-        nonisolated(unsafe) let channelHandler = self.channelHandler
         return try await withTaskCancellationHandler {
             if Task.isCancelled {
                 throw DNSClientError.cancelled
@@ -122,29 +119,18 @@ public final actor DNSConnection: Sendable {
                 )
             }
         } onCancel: {
-            self.cancel(requestID: requestID, channelHandler: channelHandler)
+            self.cancel(requestID: requestID)
         }
     }
 
     @usableFromInline
-    nonisolated func cancel(requestID: UInt16, channelHandler: DNSChannelHandler) {
-        /// TODO: use the other cancel function below when compiler bug is resolved
-        nonisolated(unsafe) let channelHandler = channelHandler
+    nonisolated func cancel(requestID: UInt16) {
         self.channel.eventLoop.execute {
-            channelHandler.cancel(requestID: requestID)
+            self.assumeIsolated {
+                $0.channelHandler.cancel(requestID: requestID)
+            }
         }
     }
-
-    // There is a compiler bug so this is commented out for now
-    // The bug happens when you run tests on macOS using Swiftly 6.2.0 toolchain
-    // @usableFromInline
-    // nonisolated func cancel(requestID: UInt16) {
-    //     self.channel.eventLoop.execute {
-    //         self.assumeIsolated {
-    //             $0.channelHandler.cancel(requestID: requestID)
-    //         }
-    //     }
-    // }
 }
 
 @available(swiftDNSApplePlatforms 13, *)
