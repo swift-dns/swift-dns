@@ -7,7 +7,7 @@ public struct TinyFastSequence<Element> {
     }
 
     @usableFromInline
-    private(set) var base: Base
+    var base: Base
 
     @inlinable
     public init() {
@@ -159,9 +159,9 @@ extension TinyFastSequence: Sequence {
 
     public struct Iterator: IteratorProtocol {
         @usableFromInline
-        private(set) var index: Int = 0
+        var index: Int = 0
         @usableFromInline
-        private(set) var backing: TinyFastSequence<Element>
+        var backing: TinyFastSequence<Element>
 
         @inlinable
         init(_ backing: TinyFastSequence<Element>) {
