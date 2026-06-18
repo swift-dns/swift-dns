@@ -121,7 +121,7 @@ jobs:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
 
-      - name: Format threshold files with jq
+      - name: Format and floor threshold files
         if: always()
         run: |
           echo "Processing threshold files..."
@@ -129,6 +129,7 @@ jobs:
             echo "Processing: ${file}"
             jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
+          .github/scripts/floor-thresholds.bash "${{ env.THRESHOLDS_PATH }}"
 
       - name: Check for modifications
         id: check-modifications

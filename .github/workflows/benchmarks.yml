@@ -160,7 +160,7 @@ jobs:
             --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
             --range
 
-      - name: Format threshold files with jq
+      - name: Format and floor threshold files
         if: steps.comparison.outputs.exit-status != '0'
         run: |
           echo "Processing threshold files..."
@@ -168,6 +168,7 @@ jobs:
             echo "Processing: ${file}"
             jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
           done
+          .github/scripts/floor-thresholds.bash "${{ env.THRESHOLDS_PATH }}"
 
       - name: Check for modifications
         if: steps.comparison.outputs.exit-status != '0'
