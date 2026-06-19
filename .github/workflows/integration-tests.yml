@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    shell: bash --noprofile --norc -e -u -o pipefail {0}
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
 
 jobs:
   linux-integration-tests:
@@ -32,11 +32,16 @@ jobs:
     steps:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - name: Install zstd for caching, curl for codecov, and tcpdump for packet capture
+      - name: Install dependencies
         run: |
           apt-get update -y
-          apt-get install -y zstd curl tcpdump
+          apt-get install -y zstd curl
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            apt-get install -y tcpdump
+          fi
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -62,11 +67,13 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests while capturing packets
+      - name: Run tests
         id: tests-run
         run: |
-          tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
-          TCPDUMP_PID=$!
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
+            TCPDUMP_PID=$!
+          fi
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -78,10 +85,13 @@ jobs:
           echo "exit-status=$?" >> $GITHUB_OUTPUT
           set -e
 
-          kill $TCPDUMP_PID
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            kill $TCPDUMP_PID
+          fi
 
       - name: Calculate capture file name
         id: calculate-capture-file-name
+        if: ${{ github.event.repository.name == 'swift-dns' }}
         run: |
           RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
           TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
@@ -94,6 +104,7 @@ jobs:
           mv dns.pcap "${FILE_NAME}.pcap"
 
       - name: Archive packet capture
+        if: ${{ github.event.repository.name == 'swift-dns' }}
         uses: actions/upload-artifact@v7
         with:
           name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
@@ -216,6 +227,8 @@ jobs:
 
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Restore swiftly home
         id: "restore-home"
@@ -332,7 +345,7 @@ jobs:
       fail-fast: false
       matrix:
         swift:
-          - version: nightly-main
+          - version: 6.3
         config:
           - mode: "debug"
           - mode: "release"
@@ -342,24 +355,22 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Free disk space for emulator
-        run: |
-          sudo rm -rf /opt/microsoft /opt/google /opt/az /usr/share/miniconda /usr/share/az* /usr/share/glade* /usr/local/share/chromium /usr/local/share/powershell /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          docker image prune --all --force
-          docker builder prune -a
-
       - name: Ensure zstd is available for faster caching
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
 
       - name: Check out code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Replace symlinks with the actual files
         run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
 
       - name: Run unit tests
-        uses: skiptools/swift-android-action@v2
+        uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5
         with:
+          # Ubuntu runners low on space causes the emulator to fail to install
+          free-disk-space: true
           android-emulator-test-folder: /data/local/tmp/android-xctest
           test-env: PROJECT_ROOT_FOR_TESTING=/data/local/tmp/android-xctest
           swift-version: ${{ matrix.swift.version }}
