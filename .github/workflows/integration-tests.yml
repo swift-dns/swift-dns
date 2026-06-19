@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    shell: bash --noprofile --norc -e -u -o pipefail {0}
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
 
 jobs:
   linux-integration-tests:
@@ -33,10 +33,13 @@ jobs:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
 
-      - name: Install zstd for caching, curl for codecov, and tcpdump for packet capture
+      - name: Install dependencies
         run: |
           apt-get update -y
-          apt-get install -y zstd curl tcpdump
+          apt-get install -y zstd curl
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            apt-get install -y tcpdump
+          fi
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -62,11 +65,13 @@ jobs:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
-      - name: Run tests while capturing packets
+      - name: Run tests
         id: tests-run
         run: |
-          tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
-          TCPDUMP_PID=$!
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
+            TCPDUMP_PID=$!
+          fi
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -78,10 +83,13 @@ jobs:
           echo "exit-status=$?" >> $GITHUB_OUTPUT
           set -e
 
-          kill $TCPDUMP_PID
+          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
+            kill $TCPDUMP_PID
+          fi
 
       - name: Calculate capture file name
         id: calculate-capture-file-name
+        if: ${{ github.event.repository.name == 'swift-dns' }}
         run: |
           RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
           TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
@@ -94,6 +102,7 @@ jobs:
           mv dns.pcap "${FILE_NAME}.pcap"
 
       - name: Archive packet capture
+        if: ${{ github.event.repository.name == 'swift-dns' }}
         uses: actions/upload-artifact@v7
         with:
           name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"

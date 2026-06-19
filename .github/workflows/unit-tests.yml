@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    shell: bash --noprofile --norc -e -u -o pipefail {0}
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
 
 jobs:
   linux-unit:
@@ -172,9 +172,9 @@ jobs:
 
     runs-on: ${{ matrix.macos.version }}
 
-    timeout-minutes: 20
-
     needs: cache-swiftly-toolchain-for-macos
+
+    timeout-minutes: 20
 
     env:
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"

@@ -30,7 +30,7 @@ on:
 
 defaults:
   run:
-    shell: bash --noprofile --norc -e -u -o pipefail {0}
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
 
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -46,10 +46,6 @@ jobs:
       contents: write # For the committing the changes
 
     steps:
-      # jemalloc is a dependency of the Benchmarking package
-      # actions/cache will detect zstd and will become much faster.
-      # jemalloc, zstd and jq are already installed in the self-hosted runner so we skip this step.
-
       - name: Enable full performance
         run: /usr/bin/ordo-performance
 

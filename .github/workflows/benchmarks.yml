@@ -10,7 +10,7 @@ on:
 
 defaults:
   run:
-    shell: bash --noprofile --norc -e -u -o pipefail {0}
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
 
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -26,10 +26,6 @@ jobs:
       contents: write # For committing threshold updates
 
     steps:
-      # jemalloc is a dependency of the Benchmarking package
-      # actions/cache will detect zstd and will become much faster.
-      # jemalloc, zstd and jq are already installed in the self-hosted runner so we skip this step.
-
       - name: Enable full performance
         run: /usr/bin/ordo-performance
 
@@ -201,6 +197,20 @@ jobs:
           git push -f origin "${NEW_BRANCH}"
 
           echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Commit threshold changes to the PR branch
+        if: steps.check-modifications.outputs.has-modifications == 'true' && steps.commit-info.outputs.pr_number != ''
+        run: |
+          CURRENT_BRANCH="${{ github.head_ref }}"
+
+          git checkout -B "${CURRENT_BRANCH}" "origin/${CURRENT_BRANCH}"
+          git checkout "${{ steps.commit-update.outputs.commit-sha }}" -- "${{ env.THRESHOLDS_PATH }}"
+          git add "${{ env.THRESHOLDS_PATH }}"
+          git commit -m "Update of benchmark thresholds with the deviated baseline
+
+          Committed to ${CURRENT_BRANCH} by ${RUN_LINK}"
+
+          git push origin "${CURRENT_BRANCH}" || echo "Failed to push threshold changes to '${CURRENT_BRANCH}'; continuing without failing the job."
 
       - name: Construct result comment if the benchmark-process succeeded
         run: |
