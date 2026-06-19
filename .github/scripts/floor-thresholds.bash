@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -euo pipefail
+set -Eeuo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
 
 log() { printf -- "** %s\n" "$*" >&2; }
 error() { printf -- "** ERROR: %s\n" "$*" >&2; }
@@ -11,7 +13,6 @@ readonly granularity=1000000 # 1ms
 readonly thresholds_path="${1:-Benchmarks/Thresholds}"
 [[ -d "${thresholds_path}" ]] || fatal "Thresholds directory not found: ${thresholds_path}"
 
-shopt -s nullglob
 readonly files=("${thresholds_path}"/*.json)
 [[ "${#files[@]}" -gt 0 ]] || fatal "No threshold files found in ${thresholds_path}"
 
