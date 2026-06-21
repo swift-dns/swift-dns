@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name: Set today's date
-        run: echo "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
 
       - name: Restore swiftly home
         if: ${{ runner.debug != '1' }}
@@ -129,7 +129,7 @@ jobs:
           . "${SWIFTLY_HOME_DIR}/env.sh"
 
           # Update GitHub PATH
-          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+          printf '%s\n' "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
 
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}
@@ -194,7 +194,7 @@ jobs:
           persist-credentials: false
 
       - name: Set today's date
-        run: echo "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
 
       - name: Restore swiftly home
         id: "restore-home"
@@ -222,10 +222,10 @@ jobs:
           # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
           BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
           if [[ "${BLOCK_SIZE}" -lt 1024 ]]; then
-            echo "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
+            printf '%s\n' "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
             rm -rf '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' '${{ env.SWIFTLY_BIN_DIR }}' '${{ env.SWIFTLY_HOME_DIR }}'
           else
-            echo "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
+            printf '%s\n' "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
           fi
 
           # Installation commands from https://www.swift.org/install/macos
@@ -235,7 +235,7 @@ jobs:
           . "${SWIFTLY_HOME_DIR}/env.sh"
 
           # Update GitHub PATH
-          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+          printf '%s\n' "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
 
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}

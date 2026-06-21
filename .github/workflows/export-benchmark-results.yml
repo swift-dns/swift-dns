@@ -90,23 +90,23 @@ jobs:
           FILE_NAME="swift-dns_benchmark_results_${TIMESTAMP}"
 
           if [[ -n '${{ inputs.target }}' ]]; then
-            TARGET="$(echo '${{ inputs.target }}' | tr ' ' '_')"
+            TARGET="$(printf '%s' '${{ inputs.target }}' | tr ' ' '_')"
             FILE_NAME="${FILE_NAME}_target_${TARGET}"
           fi
 
           if [[ -n '${{ inputs.filter }}' ]]; then
-            FILTER="$(echo '${{ inputs.filter }}' | tr ' ' '_')"
+            FILTER="$(printf '%s' '${{ inputs.filter }}' | tr ' ' '_')"
             FILE_NAME="${FILE_NAME}_filter_${FILTER}"
           fi
 
           if [[ -n '${{ inputs.skip }}' ]]; then
-            SKIP="$(echo '${{ inputs.skip }}' | tr ' ' '_')"
+            SKIP="$(printf '%s' '${{ inputs.skip }}' | tr ' ' '_')"
             FILE_NAME="${FILE_NAME}_skip_${SKIP}"
           fi
 
           FILE_NAME="${FILE_NAME}_${{ github.sha }}"
 
-          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+          printf '%s\n' "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Archive benchmark results
         uses: actions/upload-artifact@v7
