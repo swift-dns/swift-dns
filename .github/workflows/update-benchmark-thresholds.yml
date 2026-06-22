@@ -134,7 +134,7 @@ jobs:
       - name: Floor static thresholds and baselines
         if: always()
         run: |
-          .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
+          THRESHOLDS_PATH='${{ env.THRESHOLDS_PATH }}' .github/scripts/floor-thresholds.sh
 
       - name: Check for modifications
         id: check-modifications
