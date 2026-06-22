@@ -82,11 +82,11 @@ jobs:
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
-          printf '%s\n' "exit-status=$?" >> $GITHUB_OUTPUT
+          printf '%s\n' "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
           if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
-            kill $TCPDUMP_PID
+            kill "${TCPDUMP_PID}"
           fi
 
       - name: Calculate capture file name
@@ -313,10 +313,10 @@ jobs:
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
-          printf '%s\n' "exit-status=$?" >> $GITHUB_OUTPUT
+          printf '%s\n' "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
-          kill $TCPDUMP_PID
+          kill "${TCPDUMP_PID}"
 
       - name: Calculate capture file name
         id: calculate-capture-file-name
@@ -364,7 +364,7 @@ jobs:
           persist-credentials: false
 
       - name: Replace symlinks with the actual files
-        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
+        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "${LINKED}" "{}"' \;
 
       - name: Run unit tests
         uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5

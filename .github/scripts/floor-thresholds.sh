@@ -18,14 +18,24 @@ readonly files=("${thresholds_path}"/*.json)
 
 floored=0
 for file in "${files[@]}"; do
-  # Skip benchmarks with no proper cpuUser.min
-  jq -e '.cpuUser.min? | numbers' "${file}" >/dev/null || continue
-
   jq --argjson granularity "${granularity}" '
-    .cpuUser.min = (.cpuUser.min / $granularity | floor) * $granularity
+    def floorToGranularity: (. / $granularity | floor) * $granularity;
+    if (.cpuUser | type) == "number" then
+      .cpuUser |= floorToGranularity
+    elif (.cpuUser | type) == "object" then
+      (if (.cpuUser.min | type) == "number" then .cpuUser.min |= floorToGranularity else . end)
+      | (if (.cpuUser.max | type) == "number" then .cpuUser.max |= floorToGranularity else . end)
+    else . end
   ' "${file}" > "${file}.tmp"
   mv "${file}.tmp" "${file}"
-  floored=$((floored + 1))
+
+  if jq -e '
+    (.cpuUser | type) as $type
+    | $type == "number"
+      or ($type == "object" and ([.cpuUser.min, .cpuUser.max] | map(type == "number") | any))
+  ' "${file}" >/dev/null; then
+    floored=$((floored + 1))
+  fi
 done
 
-log "✅ Floored threshold mins to 1ms in ${floored} file(s)."
+log "✅ Floored cpuUser thresholds to 1ms in ${floored} file(s)."

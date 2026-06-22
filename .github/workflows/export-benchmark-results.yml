@@ -55,26 +55,32 @@ jobs:
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Run benchmarks
+        env:
+          TARGET: ${{ inputs.target }}
+          FILTER: ${{ inputs.filter }}
+          SKIP: ${{ inputs.skip }}
         run: |
-          COMMAND="swift package -c release \
-            --package-path Benchmarks \
-            --allow-writing-to-directory="$PWD" \
-            benchmark run \
-            --format histogram"
+          COMMAND=(
+            swift package -c release
+            --package-path Benchmarks
+            --allow-writing-to-directory="${PWD}"
+            benchmark run
+            --format histogram
+          )
 
-          if [[ -n '${{ inputs.target }}' ]]; then
-            COMMAND="$COMMAND --target '${{ inputs.target }}'"
+          if [[ -n "${TARGET}" ]]; then
+            COMMAND+=(--target "${TARGET}")
           fi
 
-          if [[ -n '${{ inputs.filter }}' ]]; then
-            COMMAND="$COMMAND --filter '${{ inputs.filter }}'"
+          if [[ -n "${FILTER}" ]]; then
+            COMMAND+=(--filter "${FILTER}")
           fi
 
-          if [[ -n '${{ inputs.skip }}' ]]; then
-            COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
+          if [[ -n "${SKIP}" ]]; then
+            COMMAND+=(--skip "${SKIP}")
           fi
 
-          eval "$COMMAND"
+          "${COMMAND[@]}"
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
