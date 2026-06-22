@@ -188,7 +188,8 @@ jobs:
 
       - name: Floor static thresholds and baselines before comparison
         run: |
-          .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
+          THRESHOLDS_PATH='${{ env.THRESHOLDS_PATH }}' .github/scripts/floor-thresholds.sh
+          PACKAGE_PATH=Benchmarks BASELINE_NAME='${{ steps.commit-info.outputs.title }}' .github/scripts/floor-baseline.sh
 
       - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
@@ -234,7 +235,7 @@ jobs:
       - name: Floor static thresholds and baselines
         if: steps.comparison.outputs.exit-status != '0'
         run: |
-          .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
+          THRESHOLDS_PATH='${{ env.THRESHOLDS_PATH }}' .github/scripts/floor-thresholds.sh
 
       - name: Check for modifications
         if: steps.comparison.outputs.exit-status != '0'
