@@ -29,6 +29,13 @@
 
 A high-performance Swift DNS library built on top of SwiftNIO; aiming to provide DNS client, resolver and server implementations.
 
+## Table of Contents
+
+- [Usage](#usage)
+- [Operators](#operators)
+- [Checklist](#checklist)
+- [Credits](#credits)
+
 ## Usage
 
 Initialize a `ForwardingDNSResolver`, then use the `query` methods:
