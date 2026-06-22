@@ -109,21 +109,21 @@ jobs:
 
           if [[ "${{ github.event_name }}" == *"pull_request"* ]]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            printf '%s\n' "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
-            printf '%s\n' "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "ref=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
             printf '%s\n' "title=Current-PR" >> "${GITHUB_OUTPUT}"
-            printf '%s\n' "pr_number=$PR_NUMBER" >> "${GITHUB_OUTPUT}"
-            SHORT_NAME="$(printf '%s' "$COMMIT_SHA" | cut -c 1-7)"
+            printf '%s\n' "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
+            SHORT_NAME="$(printf '%s' "${COMMIT_SHA}" | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
           elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" ]]; then
-            printf '%s\n' "ref=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
-            printf '%s\n' "sha=$COMMIT_SHA" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "ref=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
             printf '%s\n' "title=Current-Branch" >> "${GITHUB_OUTPUT}"
             printf '%s\n' "pr_number=" >> "${GITHUB_OUTPUT}"
-            SHORT_NAME="$(printf '%s' "$COMMIT_SHA" | cut -c 1-7)"
+            SHORT_NAME="$(printf '%s' "${COMMIT_SHA}" | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
           else
-            printf '%s\n' "$GITHUB_OBJECT"
+            printf '%s\n' "${GITHUB_OBJECT}"
             exit 1
           fi
 
@@ -186,13 +186,17 @@ jobs:
             --format markdown \
             >> benchmark.md
 
+      - name: Floor static thresholds and baselines before comparison
+        run: |
+          .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
+
       - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
         run: |
           TIMESTAMP="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
           ENCODED_TIMESTAMP="$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")"
-          TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=$ENCODED_TIMESTAMP"
-          printf '%s\n' "## Benchmark check running at [$TIMESTAMP]($TIMESTAMP_LINK)" >> comparison.md
+          TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=${ENCODED_TIMESTAMP}"
+          printf '%s\n' "## Benchmark check running at [${TIMESTAMP}](${TIMESTAMP_LINK})" >> comparison.md
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -201,7 +205,7 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
-            --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
+            --path "${PWD}/${{ env.THRESHOLDS_PATH }}" \
             --skip-loading-benchmark-targets \
             --no-progress \
             --format markdown \
@@ -224,17 +228,12 @@ jobs:
             --allow-writing-to-package-directory \
             benchmark thresholds update \
             '${{ steps.commit-info.outputs.title }}' \
-            --path "$PWD/${{ env.THRESHOLDS_PATH }}" \
+            --path "${PWD}/${{ env.THRESHOLDS_PATH }}" \
             --range
 
-      - name: Format and floor threshold files
+      - name: Floor static thresholds and baselines
         if: steps.comparison.outputs.exit-status != '0'
         run: |
-          printf '%s\n' "Processing threshold files..."
-          for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
-            printf '%s\n' "Processing: ${file}"
-            jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
-          done
           .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
 
       - name: Check for modifications
@@ -242,12 +241,12 @@ jobs:
         id: check-modifications
         run: |
           MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
-          if [ -n "$MODIFICATIONS" ]; then
-            printf '%s\n' "has-modifications=true" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=$(git status --porcelain "${{ env.THRESHOLDS_PATH }}" | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
+          if [[ -n "${MODIFICATIONS}" ]]; then
+            printf '%s\n' "has-modifications=true" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=$(printf '%s\n' "${MODIFICATIONS}" | awk '{print $2}' | uniq | wc -l)" >> "${GITHUB_OUTPUT}"
           else
-            printf '%s\n' "has-modifications=false" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=0" >> $GITHUB_OUTPUT
+            printf '%s\n' "has-modifications=false" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=0" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Commit threshold changes
@@ -273,7 +272,7 @@ jobs:
             printf '%s\n' "Last 3 commits on '${SOURCE_BRANCH}' are by '${BOT_NAME}'; diverting push to new branch '${TARGET_BRANCH}'."
           fi
 
-          printf '%s\n' "branch=${TARGET_BRANCH}" >> $GITHUB_OUTPUT
+          printf '%s\n' "branch=${TARGET_BRANCH}" >> "${GITHUB_OUTPUT}"
 
           git checkout -B "${TARGET_BRANCH}" "origin/${SOURCE_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
@@ -283,7 +282,7 @@ jobs:
 
           git push -f origin "${TARGET_BRANCH}" || printf '%s\n' "Failed to push threshold changes to '${TARGET_BRANCH}'; continuing without failing the job."
 
-          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
 
       - name: Construct result comment if the benchmark-process succeeded
         run: |
@@ -305,7 +304,7 @@ jobs:
                   printf '%s\n' '**❌ Benchmark results are better than the specified thresholds 📈**' >> comment.md
                   ;;
               *)
-                  printf '%s\n' "**❌ Benchmark comparison failed to complete properly with exit code $EXIT_CODE ❌**" >> comment.md
+                  printf '%s\n' "**❌ Benchmark comparison failed to complete properly with exit code ${EXIT_CODE} ❌**" >> comment.md
                   ;;
           esac
 

@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name: Set today's date
-        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> "${GITHUB_ENV}"
 
       - name: Restore swiftly home
         if: ${{ runner.debug != '1' }}
@@ -194,7 +194,7 @@ jobs:
           persist-credentials: false
 
       - name: Set today's date
-        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+        run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> "${GITHUB_ENV}"
 
       - name: Restore swiftly home
         id: "restore-home"
@@ -300,7 +300,7 @@ jobs:
           persist-credentials: false
 
       - name: Replace symlinks with the actual files
-        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "$LINKED" "{}"' \;
+        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "${LINKED}" "{}"' \;
 
       - name: Run unit tests
         uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5

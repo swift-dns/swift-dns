@@ -47,7 +47,7 @@ jobs:
 
       - name: Check config file
         run: |
-          if [ ! -f .swift-format ]; then
+          if [[ ! -f .swift-format ]]; then
             printf '%s\n' "No .swift-format file found."
             exit 1
           fi
@@ -64,12 +64,12 @@ jobs:
         id: check-modifications
         run: |
           MODIFICATIONS="$(git status --porcelain)"
-          if [ -n "$MODIFICATIONS" ]; then
-            printf '%s\n' "has-modifications=true" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=$(git status --porcelain | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
+          if [[ -n "${MODIFICATIONS}" ]]; then
+            printf '%s\n' "has-modifications=true" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=$(printf '%s\n' "${MODIFICATIONS}" | awk '{print $2}' | uniq | wc -l)" >> "${GITHUB_OUTPUT}"
           else
-            printf '%s\n' "has-modifications=false" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=0" >> $GITHUB_OUTPUT
+            printf '%s\n' "has-modifications=false" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=0" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Commit formatting changes to a new branch
@@ -79,7 +79,7 @@ jobs:
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           NEW_BRANCH="format-update/${{ github.run_id }}/${CURRENT_BRANCH}"
 
-          printf '%s\n' "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
+          printf '%s\n' "new-branch=${NEW_BRANCH}" >> "${GITHUB_OUTPUT}"
 
           git checkout -b "${NEW_BRANCH}"
           git add .
@@ -88,4 +88,4 @@ jobs:
           Committed to ${NEW_BRANCH} by ${RUN_LINK}"
           git push origin "${NEW_BRANCH}"
 
-          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"

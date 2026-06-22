@@ -94,30 +94,35 @@ jobs:
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Update benchmark thresholds
+        env:
+          TARGET: ${{ inputs.target }}
+          FILTER: ${{ inputs.filter }}
+          SKIP: ${{ inputs.skip }}
+          RUN_COUNT: ${{ inputs.run_count }}
         run: |
-          COMMAND="swift package -c release \
-            --package-path Benchmarks \
-            --allow-writing-to-package-directory \
-            benchmark thresholds update \
-            --path "${{ env.THRESHOLDS_PATH }}" \
-            --run-count ${{ inputs.run_count }} \
-            --range"
+          COMMAND=(
+            swift package -c release
+            --package-path Benchmarks
+            --allow-writing-to-package-directory
+            benchmark thresholds update
+            --path "${{ env.THRESHOLDS_PATH }}"
+            --run-count "${RUN_COUNT}"
+            --range
+          )
 
-          if [[ -n '${{ inputs.target }}' ]]; then
-            COMMAND="$COMMAND --target '${{ inputs.target }}'"
+          if [[ -n "${TARGET}" ]]; then
+            COMMAND+=(--target "${TARGET}")
           fi
 
-          if [[ -n '${{ inputs.filter }}' ]]; then
-            COMMAND="$COMMAND --filter '${{ inputs.filter }}'"
+          if [[ -n "${FILTER}" ]]; then
+            COMMAND+=(--filter "${FILTER}")
           fi
 
-          if [[ -n '${{ inputs.skip }}' ]]; then
-            COMMAND="$COMMAND --skip '${{ inputs.skip }}'"
+          if [[ -n "${SKIP}" ]]; then
+            COMMAND+=(--skip "${SKIP}")
           fi
 
-          COMMAND="$COMMAND 2>&1 | grep 'Running the command multiple times'"
-
-          eval "$COMMAND"
+          "${COMMAND[@]}" 2>&1 | grep 'Running the command multiple times'
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -126,14 +131,9 @@ jobs:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
 
-      - name: Format and floor threshold files
+      - name: Floor static thresholds and baselines
         if: always()
         run: |
-          printf '%s\n' "Processing threshold files..."
-          for file in "${{ env.THRESHOLDS_PATH }}"/*.json; do
-            printf '%s\n' "Processing: ${file}"
-            jq '.' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
-          done
           .github/scripts/floor-thresholds.sh "${{ env.THRESHOLDS_PATH }}"
 
       - name: Check for modifications
@@ -141,12 +141,12 @@ jobs:
         if: always()
         run: |
           MODIFICATIONS="$(git status --porcelain "${{ env.THRESHOLDS_PATH }}")"
-          if [ -n "$MODIFICATIONS" ]; then
-            printf '%s\n' "has-modifications=true" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=$(git status --porcelain "${{ env.THRESHOLDS_PATH }}" | awk '{print $2}' | uniq | wc -l)" >> $GITHUB_OUTPUT
+          if [[ -n "${MODIFICATIONS}" ]]; then
+            printf '%s\n' "has-modifications=true" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=$(printf '%s\n' "${MODIFICATIONS}" | awk '{print $2}' | uniq | wc -l)" >> "${GITHUB_OUTPUT}"
           else
-            printf '%s\n' "has-modifications=false" >> $GITHUB_OUTPUT
-            printf '%s\n' "changes-count=0" >> $GITHUB_OUTPUT
+            printf '%s\n' "has-modifications=false" >> "${GITHUB_OUTPUT}"
+            printf '%s\n' "changes-count=0" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Regenerate swift-dns-helper token
@@ -167,7 +167,7 @@ jobs:
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           NEW_BRANCH="auto-thr-update/${CURRENT_BRANCH}"
 
-          printf '%s\n' "new-branch=${NEW_BRANCH}" >> $GITHUB_OUTPUT
+          printf '%s\n' "new-branch=${NEW_BRANCH}" >> "${GITHUB_OUTPUT}"
 
           git checkout -B "${NEW_BRANCH}" "origin/${CURRENT_BRANCH}"
           git add "${{ env.THRESHOLDS_PATH }}"
@@ -182,7 +182,7 @@ jobs:
 
           git push -f origin "${NEW_BRANCH}"
 
-          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
 
       - name: Construct result comment
         if: always()
