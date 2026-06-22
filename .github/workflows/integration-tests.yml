@@ -82,7 +82,7 @@ jobs:
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
-          echo "exit-status=$?" >> $GITHUB_OUTPUT
+          printf '%s\n' "exit-status=$?" >> $GITHUB_OUTPUT
           set -e
 
           if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
@@ -95,11 +95,11 @@ jobs:
         run: |
           RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
           TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
-          SHORT_SHA="$(echo '${{ github.sha }}' | cut -c 1-7)"
+          SHORT_SHA="$(printf '%s' '${{ github.sha }}' | cut -c 1-7)"
           FILE_NAME="swift-dns_dns_capture_${TIMESTAMP}_${RESULT}_Linux_${{ matrix.swift-image.name }}_${{ matrix.config.mode }}_${SHORT_SHA}"
           FILE_NAME="${FILE_NAME//:/_}"
 
-          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+          printf '%s\n' "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
 
           mv dns.pcap "${FILE_NAME}.pcap"
 
@@ -163,7 +163,7 @@ jobs:
           . "${SWIFTLY_HOME_DIR}/env.sh"
 
           # Update GitHub PATH
-          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+          printf '%s\n' "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
 
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}
@@ -256,10 +256,10 @@ jobs:
           # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
           BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
           if [[ "${BLOCK_SIZE}" -lt 1024 ]]; then
-            echo "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
+            printf '%s\n' "Toolchain directory is too small (${BLOCK_SIZE} blocks), deleting all swiftly directories for fresh installation"
             rm -rf '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' '${{ env.SWIFTLY_BIN_DIR }}' '${{ env.SWIFTLY_HOME_DIR }}'
           else
-            echo "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
+            printf '%s\n' "Toolchain directory is large enough (${BLOCK_SIZE} blocks), will use the restored toolchain"
           fi
 
           # Installation commands from https://www.swift.org/install/macos
@@ -269,7 +269,7 @@ jobs:
           . "${SWIFTLY_HOME_DIR}/env.sh"
 
           # Update GitHub PATH
-          echo "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
+          printf '%s\n' "${SWIFTLY_BIN_DIR}" >>"${GITHUB_PATH}"
 
           # Update swift
           swiftly install --assume-yes ${{ matrix.swift.version }}
@@ -313,7 +313,7 @@ jobs:
             --skip-build \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
-          echo "exit-status=$?" >> $GITHUB_OUTPUT
+          printf '%s\n' "exit-status=$?" >> $GITHUB_OUTPUT
           set -e
 
           kill $TCPDUMP_PID
@@ -323,11 +323,11 @@ jobs:
         run: |
           RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
           TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
-          SHORT_SHA="$(echo '${{ github.sha }}' | cut -c 1-7)"
+          SHORT_SHA="$(printf '%s' '${{ github.sha }}' | cut -c 1-7)"
           FILE_NAME="swift-dns_dns_capture_${TIMESTAMP}_${RESULT}_${{ matrix.macos.version }}_${{ matrix.swift.version }}_${{ matrix.config.mode }}_${{ matrix.xcode.version }}_${SHORT_SHA}"
           FILE_NAME="${FILE_NAME//:/_}"
 
-          echo "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
+          printf '%s\n' "file_name=${FILE_NAME}" >> "${GITHUB_OUTPUT}"
 
           mv dns.pcap "${FILE_NAME}.pcap"
 
