@@ -5,7 +5,7 @@ import NIOEmbedded
 import Testing
 
 struct DNSResolverTests {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve A record where the original record is a CNAME`(
         connFactory: TestingDNSConnectionFactory,
@@ -107,7 +107,7 @@ struct DNSResolverTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve AAAA record where the original record is a CNAME`(
         connFactory: TestingDNSConnectionFactory,
@@ -206,7 +206,7 @@ struct DNSResolverTests {
     }
 
     /// I haven't actually caught this case in practice, but it sounds plausible.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(arguments: TestingDNSConnectionFactory.makeConnFactoryAndDNSResolvers())
     func `resolve AAAA record where there are multiple CNAME record layers`(
         connFactory: TestingDNSConnectionFactory,

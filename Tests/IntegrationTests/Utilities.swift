@@ -2,7 +2,7 @@ import DNSClient
 import Logging
 
 enum Utils {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     static func makeTestingDNSClients() -> [DNSClient] {
         [
             try! DNSClient(

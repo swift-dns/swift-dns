@@ -83,7 +83,7 @@ extension EDNSCode: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSCode {
     package init(from buffer: inout DNSBuffer) throws {
         let code = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -93,7 +93,7 @@ extension EDNSCode {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSCode {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
@@ -105,7 +105,7 @@ extension EDNSCode {
 /// `note: Not all EdnsOptions are supported at this time.`
 ///
 /// <https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-13>
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @nonexhaustive
 public enum EDNSOption: Sendable, Hashable {
     /// Used to specify the set of SupportedAlgorithms between a client and server
@@ -325,7 +325,7 @@ public enum EDNSOption: Sendable, Hashable {
     case unknown(UInt16, ByteBuffer)
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption {
     package init(from buffer: inout DNSBuffer, code: EDNSCode) throws {
         switch code {
@@ -343,7 +343,7 @@ extension EDNSOption {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption {
     package func encode(into buffer: inout DNSBuffer) throws {
         switch self {
@@ -373,7 +373,7 @@ extension EDNSOption {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.ClientSubnet {
     var lengthForWireProtocol: UInt16 {
         // FAMILY: 2 bytes
@@ -388,7 +388,7 @@ extension EDNSOption.ClientSubnet {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.SupportedAlgorithms {
     mutating func insert(_ algorithm: DNSSECAlgorithmEDNSSubset) {
         /// No unchecked math (&<<<) here because we might need to grow the size of algorithm in the
@@ -401,7 +401,7 @@ extension EDNSOption.SupportedAlgorithms {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.SupportedAlgorithms {
     package init(from buffer: inout DNSBuffer) {
         self.init()
@@ -417,7 +417,7 @@ extension EDNSOption.SupportedAlgorithms {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.SupportedAlgorithms {
     public consuming func makeSequence() -> Sequence {
         Self.Sequence(base: self)
@@ -459,7 +459,7 @@ extension EDNSOption.SupportedAlgorithms {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.SupportedAlgorithms {
     package func encode(into buffer: inout DNSBuffer) -> UInt16 {
         var count: UInt16 = 0
@@ -471,7 +471,7 @@ extension EDNSOption.SupportedAlgorithms {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.ClientSubnet {
     package init(from buffer: inout DNSBuffer) throws {
         let family = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -520,7 +520,7 @@ extension EDNSOption.ClientSubnet {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.ClientSubnet {
     package func encode(into buffer: inout DNSBuffer) throws {
         let addressLength = Self.addressLength(of: numericCast(self.sourcePrefix))
@@ -546,7 +546,7 @@ extension EDNSOption.ClientSubnet {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.Keepalive {
     package init(from buffer: inout DNSBuffer) throws {
         self.timeout = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -555,21 +555,21 @@ extension EDNSOption.Keepalive {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.Keepalive {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.timeout)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.Cookie {
     var lengthForWireProtocol: UInt16 {
         UInt16(exactly: self.clientCookie.readableBytes + self.serverCookie.readableBytes)!
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.Cookie {
     /// Will consume the entire buffer up to the end, so should only be provided with
     /// the portion of the buffer that contains the cookie, and nothing more.
@@ -583,7 +583,7 @@ extension EDNSOption.Cookie {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EDNSOption.Cookie {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeBuffer(self.clientCookie)

@@ -71,7 +71,7 @@ public struct SSHFP: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP {
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try Algorithm(from: &buffer)
@@ -80,7 +80,7 @@ extension SSHFP {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP {
     package func encode(into buffer: inout DNSBuffer) throws {
         self.algorithm.encode(into: &buffer)
@@ -113,7 +113,7 @@ extension SSHFP.FingerprintType: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP.FingerprintType {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -123,14 +123,14 @@ extension SSHFP.FingerprintType {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP.FingerprintType {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .SSHFP }
@@ -151,7 +151,7 @@ extension SSHFP: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SSHFP: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

@@ -2,7 +2,7 @@
 /// TODO: use with typed throws?
 /// TODO: take function and line?
 @usableFromInline
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 package enum ProtocolError: Error {
     case lengthLimitExceeded(StaticString, actual: Int, max: Int, DNSBuffer)
     case operationUnsupported(StaticString, DNSBuffer)

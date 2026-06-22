@@ -163,7 +163,7 @@ enum Resources: String {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     static func forQuery<QueryableType: Queryable>(
         queryableType: QueryableType.Type = QueryableType.self
     ) -> (query: Self, response: Self) {

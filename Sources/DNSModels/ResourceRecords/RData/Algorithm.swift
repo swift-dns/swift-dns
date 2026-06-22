@@ -219,7 +219,7 @@ extension Algorithm: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
         let rawValue = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -229,7 +229,7 @@ extension Algorithm {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Algorithm {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

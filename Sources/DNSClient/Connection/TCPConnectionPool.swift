@@ -1,6 +1,6 @@
 public import _DNSConnectionPool
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 typealias TCPConnectionPool = ConnectionPool<
     DNSConnection,

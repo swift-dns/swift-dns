@@ -14,7 +14,7 @@ extension SerializationNamespace {
 
 extension SerializationNamespace.DNSResolverIntegrationTests {
     /// Currently the upstream resolver responds with answers that start with a CNAME and the rest are the A records.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func `resolve A record where the original record is a CNAME`(client: DNSClient) async throws {
         try await withRunningDNSClient(client) { client in
@@ -96,7 +96,7 @@ extension SerializationNamespace.DNSResolverIntegrationTests {
     }
 
     /// Currently the upstream resolver responds with answers that start with a CNAME and the rest are the A records.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func `resolve AAAA record where the original record is a CNAME`(client: DNSClient) async throws
     {

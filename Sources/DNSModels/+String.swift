@@ -3,12 +3,12 @@ extension String {
         self.utf8.count + 1  // +1 for the length byte
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @inline(__always)
     mutating func withSpan_Compatibility<T, E: Error>(
         _ body: (Span<UInt8>) throws(E) -> T
     ) throws(E) -> T {
-        if #available(swiftDNSApplePlatforms 26, *) {
+        if #available(SwiftStdlib 6.2, *) {
             return try body(self.utf8Span.span)
         }
         do {
@@ -23,13 +23,13 @@ extension String {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Substring {
     @inline(__always)
     mutating func withSpan_Compatibility<T, E: Error>(
         _ body: (Span<UInt8>) throws(E) -> T
     ) throws(E) -> T {
-        if #available(swiftDNSApplePlatforms 26, *) {
+        if #available(SwiftStdlib 6.2, *) {
             return try body(self.utf8Span.span)
         }
         do {

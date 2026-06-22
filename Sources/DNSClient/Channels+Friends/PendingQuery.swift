@@ -2,7 +2,7 @@ public import struct DNSModels.Message
 public import struct NIOCore.EventLoopPromise
 public import struct NIOCore.NIODeadline
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @usableFromInline
 package struct PendingQuery: Sendable {
     @usableFromInline
@@ -49,14 +49,14 @@ package struct PendingQuery: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension PendingQuery: CustomDebugStringConvertible {
     public var debugDescription: String {
         "PendingQuery(promise: \(self.promise), requestID: \(self.requestID), deadline: \(self.deadline))"
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension PendingQuery.DynamicPromise: CustomStringConvertible {
     public var description: String {
         switch self {

@@ -1,7 +1,7 @@
 import DNSModels
 
 enum Utils {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     static func buffer(
         from resource: Resources,
         changingIDTo messageID: UInt16?
@@ -18,7 +18,7 @@ enum Utils {
         return buffer
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     static func bufferAndMessage(
         from resource: Resources,
         changingIDTo messageID: UInt16?

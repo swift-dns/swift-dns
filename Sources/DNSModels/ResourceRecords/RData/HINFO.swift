@@ -29,7 +29,7 @@ public struct HINFO: Sendable {
     public var os: String
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension HINFO {
     package init(from buffer: inout DNSBuffer) throws {
         self.cpu = try buffer.readLengthPrefixedStringAsString(name: "HINFO.cpu")
@@ -37,7 +37,7 @@ extension HINFO {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension HINFO {
     package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixedString(
@@ -55,7 +55,7 @@ extension HINFO {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension HINFO: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .HINFO }
@@ -76,7 +76,7 @@ extension HINFO: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension HINFO: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

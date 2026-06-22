@@ -114,22 +114,22 @@ var settings: [SwiftSetting] {
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .enableExperimentalFeature("Lifetimes"),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 26:macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26"
+            "AvailabilityMacro=SwiftStdlib 5.1:macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0"
         ),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 14:macOS 14, iOS 17, tvOS 17, watchOS 10"
+            "AvailabilityMacro=SwiftStdlib 5.3:macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0"
         ),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 15:macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2"
+            "AvailabilityMacro=SwiftStdlib 5.7:macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0"
         ),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 13:macOS 13, iOS 16, tvOS 16, watchOS 9"
+            "AvailabilityMacro=SwiftStdlib 5.9:macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0"
         ),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 11:macOS 11, iOS 14, tvOS 14, watchOS 7"
+            "AvailabilityMacro=SwiftStdlib 6.0:macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0"
         ),
         .enableExperimentalFeature(
-            "AvailabilityMacro=swiftDNSApplePlatforms 10.15:macOS 10.15, iOS 13, tvOS 13, watchOS 6"
+            "AvailabilityMacro=SwiftStdlib 6.2:macOS 26.0, iOS 26.0, watchOS 26.0, tvOS 26.0, visionOS 26.0"
         ),
     ]
 }

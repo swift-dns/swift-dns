@@ -24,7 +24,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
         performing function: @concurrent @Sendable () async throws -> Void
     ) async throws {
         let testName = test.displayName ?? test.name
-        if #available(swiftDNSApplePlatforms 15, *) {
+        if #available(SwiftStdlib 6.0, *) {
             await self.send(
                 subDomain: "test.start",
                 info: "\(testName)"
@@ -32,14 +32,14 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
         }
         do {
             try await function()
-            if #available(swiftDNSApplePlatforms 15, *) {
+            if #available(SwiftStdlib 6.0, *) {
                 await self.send(
                     subDomain: "test.end.with.success",
                     info: "\(testName)"
                 )
             }
         } catch {
-            if #available(swiftDNSApplePlatforms 15, *) {
+            if #available(SwiftStdlib 6.0, *) {
                 await self.send(
                     subDomain: "test.end.with.failure",
                     info: "\(testName)"
@@ -52,7 +52,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
     /// Send a dns message over udp to 240.1.2.3, with the edns part of
     /// the message populated with a message in utf8.
     /// This is so we can see the test boundaries in a packet capture.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func send(subDomain: String, info: String) async {
         do {
             try await self._send(
@@ -72,7 +72,7 @@ actor PacketCaptureMarkerTrait: TestScoping, TestTrait {
     /// Send a dns message over udp to 240.1.2.3, with the edns part of
     /// the message populated with a message in utf8.
     /// This is so we can see the test boundaries in a packet capture.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func _send(subDomain: String, info: String) async throws {
         var message = try MessageFactory<A>
             .forQuery(domainName: "\(subDomain).marker.packet.local.")

@@ -1,10 +1,10 @@
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension EventLoop {
     @usableFromInline
     var executor_Compatibility: any SerialExecutor {
-        if #available(swiftDNSApplePlatforms 14, *) {
+        if #available(SwiftStdlib 5.9, *) {
             return self.executor
         } else {
             return NIODefaultSerialEventLoopExecutor_Compatibility(self)
@@ -12,7 +12,7 @@ extension EventLoop {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 final class NIODefaultSerialEventLoopExecutor_Compatibility: SerialExecutor {
     let eventLoop: any EventLoop
 

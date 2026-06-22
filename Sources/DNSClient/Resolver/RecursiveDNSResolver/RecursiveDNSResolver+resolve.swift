@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension _RecursiveDNSResolver {
     public struct ResolutionFailure: Sendable, Error {
         @nonexhaustive

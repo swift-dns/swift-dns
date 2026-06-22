@@ -69,7 +69,7 @@ extension DNSClass {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSClass {
     package init(from buffer: inout DNSBuffer) throws {
         let dnsClass = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -79,7 +79,7 @@ extension DNSClass {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSClass {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

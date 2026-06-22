@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension ForwardingDNSResolver: _DNSClientProtocol {
     @inlinable
     public func _querySpecialized<RDataType: RDataConvertible>(

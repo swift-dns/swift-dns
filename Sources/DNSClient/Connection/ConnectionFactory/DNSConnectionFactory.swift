@@ -1,7 +1,7 @@
 public import Logging
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package struct DNSConnectionFactory: Sendable {
     @usableFromInline
@@ -43,7 +43,7 @@ package struct DNSConnectionFactory: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DNSConnectionFactory {
     @inlinable
     package func makeUDPConnection(

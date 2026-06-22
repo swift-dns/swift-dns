@@ -2,7 +2,7 @@
 ///
 /// This type implements ``@dynamicMemberLookup`` over the ``message``, then shadows ``message.answers`` which
 /// is of type ``[Record]``, by providing a ``answers`` property which is of the specialized type ``SpecializedRecords<RDataType>``.
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @dynamicMemberLookup
 public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
     public var message: Message
@@ -44,7 +44,7 @@ public struct SpecializedMessage<RDataType: RDataConvertible>: Sendable {
 ///
 /// What this type does is it filters out the CNAME records and only returns the A records to
 /// make the end user's life easier as they never requested CNAME records anyway.
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 public struct SpecializedRecords<RDataType: RDataConvertible>: Sendable {
     public let records: TinyFastSequence<Record>
 
@@ -53,7 +53,7 @@ public struct SpecializedRecords<RDataType: RDataConvertible>: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SpecializedRecords: Sequence {
     /// Complexity: O(n)
     @inlinable
@@ -128,7 +128,7 @@ extension SpecializedRecords: Sequence {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SpecializedRecords: Collection {
     public typealias Index = Int
 

@@ -197,7 +197,7 @@ public struct TSIG: Sendable {
 }
 
 extension TSIG {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     package init(from buffer: inout DNSBuffer) throws {
         self.algorithm = try TSIG.Algorithm(from: &buffer)
         let timeHigh = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -230,7 +230,7 @@ extension TSIG {
 }
 
 extension TSIG {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.algorithm.encode(into: &buffer)
         /// FIXME: Is this check needed, with `init(exactly:)`?
@@ -258,7 +258,7 @@ extension TSIG {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG.Algorithm: RawRepresentable {
     public init?(rawValue: String) {
         switch rawValue {
@@ -335,7 +335,7 @@ extension TSIG.Algorithm: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG.Algorithm: Hashable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue == rhs.rawValue
@@ -363,21 +363,21 @@ extension TSIG.Algorithm: CaseIterable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG.Algorithm {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(domainName: try DomainName(from: &buffer))
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG.Algorithm {
     func encode(into buffer: inout DNSBuffer) throws {
         try self.toDomainName().encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .TSIG }
@@ -398,7 +398,7 @@ extension TSIG: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TSIG: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

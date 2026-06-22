@@ -5,7 +5,7 @@ public import NIOCore
 import NIOPosix
 
 /// Single connection to a DNS server
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public final actor DNSConnection: Sendable {
     @usableFromInline
     let executor: any SerialExecutor
@@ -147,7 +147,7 @@ public final actor DNSConnection: Sendable {
     // }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package struct PreparedQuery: Sendable, ~Copyable {
     @usableFromInline

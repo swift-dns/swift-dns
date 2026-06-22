@@ -13,7 +13,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(value, sourceLocation: sourceLocation)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func orderOfPendingQueriesIsPreserved() throws {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -54,7 +54,7 @@ struct DNSChannelHandlerStateMachineTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func preflightCheckThrowsDoesNothingWhenProcessing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -69,7 +69,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func preflightCheckThrowsErrorWhenClosing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -116,7 +116,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func preflightCheckThrowsErrorWhenClosed() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -135,7 +135,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func sendQueryAndReceivedResponseWorks() {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -171,7 +171,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func sendQueryThrowsErrorWhenClosing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -244,7 +244,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func receivedResponseWorksWhenClosingAndReschedulesDeadline() {
         typealias StateMachine = DNSChannelHandler.StateMachine<Int>
         typealias State = StateMachine.State
@@ -319,7 +319,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelBeforeResponse() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -352,7 +352,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelBeforeQuery() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -394,7 +394,7 @@ struct DNSChannelHandlerStateMachineTests {
 
     /// Assumption is the channel handler is always `active` when it reaches a user,
     /// and never `initialized`.
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelBeforeActivation() async {
         /// Exit-tests are not yet supported in some platforms by swift-testing.
         /// For example, in Android.
@@ -414,7 +414,7 @@ struct DNSChannelHandlerStateMachineTests {
         #endif
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelBeforeResponseAndResponseArrivesLater() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -452,7 +452,7 @@ struct DNSChannelHandlerStateMachineTests {
         #expect(action3 == .doNothing)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelUnavailableQueryDoesNothingThenResponseArrivesLater() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -497,7 +497,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -572,7 +572,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelWhenClosingWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -662,7 +662,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func cancelWhenClosedDoesNothing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -679,7 +679,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseAfterActivationThenQueryThrowsError() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -704,7 +704,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseBeforeActivationDoesNothing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -715,7 +715,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == .closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseAfterCloseDoesNothing() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -733,7 +733,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == .closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseAfterQuery() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -769,7 +769,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseAfterResponse() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -808,7 +808,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == .closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseAfterMultipleQueries() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -893,7 +893,7 @@ struct DNSChannelHandlerStateMachineTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func forceCloseForcesConnectionCloseWhenClosingAndThereArePendingQueries() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -931,7 +931,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func hitDeadlineWorksForInflightQuery() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -957,7 +957,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func hitDeadlineDoesNothingWhenNoPendingQueries() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -971,7 +971,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func hitDeadlineDoesNotCancelQueryWithUnexpiredDeadline() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1015,7 +1015,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func hitDeadlineWithMultiplePendingQueriesWorksAndReschedulesDeadlineCorrectly() {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1090,7 +1090,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.processing(.init(context: "context!")))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func hitDeadlineClosesConnectionWhenClosingAndNoMorePendingQueries() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1128,7 +1128,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func gracefulShutdownClosesConnectionImmediatelyWhenNoPendingQueries() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1142,7 +1142,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func gracefulShutdownBeforeActivationClosesImmediately() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1153,7 +1153,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func gracefulShutdownWhenClosingDoesNothing() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1202,7 +1202,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func gracefulShutdownWhenClosedDoesNothing() async {
         typealias StateMachine = DNSChannelHandler.StateMachine<String>
         typealias State = StateMachine.State
@@ -1217,7 +1217,7 @@ struct DNSChannelHandlerStateMachineTests {
         expect(stateMachine._state == State.closed(nil))
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(arguments: [(queryCount: 1_000, latencyRange: 20...250)])
     func concurrentlySendingQueriesWorks(
         queryCount: Int,
@@ -1305,7 +1305,7 @@ struct DNSChannelHandlerStateMachineTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(arguments: [(queryCount: 30, latencyRange: 20...100)])
     func sequentiallySendingQueriesWorks(
         queryCount: Int,
@@ -1370,7 +1370,7 @@ struct DNSChannelHandlerStateMachineTests {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.State where Context: Equatable {
     static func == (_ lhs: borrowing Self, _ rhs: borrowing Self) -> Bool {
         switch lhs {
@@ -1410,7 +1410,7 @@ extension DNSChannelHandler.StateMachine.State where Context: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.ProcessingState where Context: Equatable {
     static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         lhs.context == rhs.context
@@ -1419,7 +1419,7 @@ extension DNSChannelHandler.StateMachine.ProcessingState where Context: Equatabl
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension PendingQuery: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.requestID == rhs.requestID
@@ -1427,7 +1427,7 @@ extension PendingQuery: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.SendQueryAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
@@ -1442,7 +1442,7 @@ extension DNSChannelHandler.StateMachine.SendQueryAction: Equatable where Contex
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.DeadlineCallbackAction: Equatable
 where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -1459,7 +1459,7 @@ where Context: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.ReceivedResponseAction: Equatable
 where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -1478,7 +1478,7 @@ where Context: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.CancelAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
@@ -1503,7 +1503,7 @@ extension DNSChannelHandler.StateMachine.CancelAction: Equatable where Context: 
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.CloseAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
@@ -1521,7 +1521,7 @@ extension DNSChannelHandler.StateMachine.CloseAction: Equatable where Context: E
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.HitDeadlineAction: Equatable where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
@@ -1542,7 +1542,7 @@ extension DNSChannelHandler.StateMachine.HitDeadlineAction: Equatable where Cont
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSChannelHandler.StateMachine.GracefulShutdownAction: Equatable
 where Context: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -1559,14 +1559,14 @@ where Context: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSClientError: Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.description == rhs.description
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension QueryProducer {
     mutating func produceFakeMessageAndPendingQuery() -> (Message, PendingQuery) {
         let factory = try! MessageFactory<A>.forQuery(domainName: "mahdibm.com")

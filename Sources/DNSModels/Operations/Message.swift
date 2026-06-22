@@ -39,7 +39,7 @@ import DNSCore
 /// which relate to the query, but are not strictly answers for the
 /// question.
 /// ```
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 public struct Message: Sendable {
     public var header: Header
     public var queries: TinyFastSequence<Query>
@@ -71,7 +71,7 @@ public struct Message: Sendable {
 
 // FIXME: read and write using a dedicated reader/writer
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Message {
     @usableFromInline
     package init(from buffer: inout DNSBuffer) throws {
@@ -112,7 +112,7 @@ extension Message {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Message {
     package consuming func encode(into buffer: inout DNSBuffer) throws {
         debugOnly {

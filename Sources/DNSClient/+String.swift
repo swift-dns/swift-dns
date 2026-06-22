@@ -1,5 +1,5 @@
 extension String {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     init(_uncheckedAssumingValidUTF8 span: Span<UInt8>) {
         self.init(unsafeUninitializedCapacity_Compatibility: span.count) { stringBuffer in
             let rawStringBuffer = UnsafeMutableRawBufferPointer(stringBuffer)
@@ -18,7 +18,7 @@ extension String {
             _ buffer: UnsafeMutableBufferPointer<UInt8>
         ) throws -> Int
     ) rethrows {
-        if #available(swiftDNSApplePlatforms 11, *) {
+        if #available(SwiftStdlib 5.3, *) {
             try self.init(unsafeUninitializedCapacity: capacity) { buffer in
                 try initializer(buffer)
             }

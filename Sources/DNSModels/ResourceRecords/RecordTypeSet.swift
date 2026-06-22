@@ -8,7 +8,7 @@ public struct RecordTypeSet: Sendable {
     public var originalEncoding: ByteBuffer?
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RecordTypeSet {
     enum BitMapReadingState: ~Copyable {
         case window
@@ -135,7 +135,7 @@ extension RecordTypeSet {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RecordTypeSet {
     package func encode(into buffer: inout DNSBuffer) {
         if case let .some(encodedBytes) = self.originalEncoding {

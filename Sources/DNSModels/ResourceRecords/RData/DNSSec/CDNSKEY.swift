@@ -13,7 +13,7 @@ public struct CDNSKEY: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CDNSKEY {
     package init(from buffer: inout DNSBuffer) throws {
         self.flags = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -31,7 +31,7 @@ extension CDNSKEY {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CDNSKEY {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(flags)
@@ -41,7 +41,7 @@ extension CDNSKEY {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CDNSKEY: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .CDNSKEY }
@@ -62,7 +62,7 @@ extension CDNSKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CDNSKEY: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

@@ -223,7 +223,7 @@ extension RecordType: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RecordType {
     package init(from buffer: inout DNSBuffer) throws {
         let recordType = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -233,7 +233,7 @@ extension RecordType {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RecordType {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.rawValue)

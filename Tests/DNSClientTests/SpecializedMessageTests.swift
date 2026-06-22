@@ -2,7 +2,7 @@ import DNSModels
 import Testing
 
 struct SpecializedMessageTests {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `SpecializedRecords filters out unrelated records`() throws {
         let (_, message) = Utils.bufferAndMessage(
             from: .dnsResponseAWwwExampleComPacket,

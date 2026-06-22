@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DNSClient: _DNSClientProtocol {
     @inlinable
     public func _querySpecialized<RDataType: RDataConvertible>(

@@ -10,7 +10,7 @@
 /// For more information, see [RFC 7828, The edns-tcp-keepalive EDNS0 Option, April 2016](https://datatracker.ietf.org/doc/html/rfc7828#section-3.2).
 ///
 /// Currently unused. Keep-alive is to be implemented in the future.
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct KeepAliveBehavior: Sendable {
     /// The amount of time that shall pass before an idle connection runs a keep-alive query.
     public var frequency: Duration

@@ -62,7 +62,7 @@ public struct DS: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DS {
     package init(from buffer: inout DNSBuffer) throws {
         self.keyTag = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -74,7 +74,7 @@ extension DS {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DS {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.keyTag)
@@ -84,7 +84,7 @@ extension DS {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DS: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .DS }
@@ -105,7 +105,7 @@ extension DS: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DS: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

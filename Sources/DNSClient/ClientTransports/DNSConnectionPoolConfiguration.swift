@@ -1,6 +1,6 @@
 public import _DNSConnectionPool
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct DNSConnectionPoolConfiguration: Sendable {
     /// The minimum number of connections to preserve in the pool.
     ///
@@ -50,7 +50,7 @@ public struct DNSConnectionPoolConfiguration: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DNSConnectionPoolConfiguration {
     @inlinable
     func toConnectionPoolConfig() -> _DNSConnectionPool.ConnectionPoolConfiguration {

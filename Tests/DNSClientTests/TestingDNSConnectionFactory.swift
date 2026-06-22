@@ -6,7 +6,7 @@ import Testing
 
 /// This is not supposed to be used concurrently, although it is Sendable to satisfy the
 /// ``AnyDNSConnectionFactory`` protocol.
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 actor TestingDNSConnectionFactory {
     typealias ChannelsKeyPath = ReferenceWritableKeyPath<
         TestingDNSConnectionFactory, [NIOAsyncTestingChannel]
@@ -96,7 +96,7 @@ extension TestingDNSConnectionFactory {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TestingDNSConnectionFactory {
     struct Expectation {
         private let stream: AsyncStream<Void>
@@ -160,7 +160,7 @@ extension TestingDNSConnectionFactory {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TestingDNSConnectionFactory: AnyDNSConnectionFactory {
     private func appendUDPChannel(_ channel: NIOAsyncTestingChannel) {
         self.udpChannels.append(channel)

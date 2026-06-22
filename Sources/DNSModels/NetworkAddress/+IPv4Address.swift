@@ -1,6 +1,6 @@
 import DNSCore
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension IPv4Address {
     package init(from buffer: inout DNSBuffer) throws {
         self.init(
@@ -43,7 +43,7 @@ extension IPv4Address {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension IPv4Address {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeInteger(self.address)

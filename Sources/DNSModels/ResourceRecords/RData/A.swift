@@ -29,21 +29,21 @@ public struct A: Sendable, Hashable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension A {
     package init(from buffer: inout DNSBuffer) throws {
         self.value = try IPv4Address(from: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension A {
     package func encode(into buffer: inout DNSBuffer) {
         self.value.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension A: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .A }
@@ -64,7 +64,7 @@ extension A: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension A: Queryable {
     /// TODO: check what do the other DNS classes do anyway, and if tying a type to a
     /// specific class is a good idea.

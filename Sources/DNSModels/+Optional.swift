@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Optional {
     /// Unwraps the optional, throwing `ProtocolError` if it is `nil`.
     ///

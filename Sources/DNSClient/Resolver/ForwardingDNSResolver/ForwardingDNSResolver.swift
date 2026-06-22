@@ -5,7 +5,7 @@ public import ServiceLifecycle
 /// The simplest form of a DNS resolver.
 /// This resolver simply asks another server for the answer, through the `DNSClient`.
 /// Performs caching of response when possible.
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct ForwardingDNSResolver<ClockType: Clock>:
     Sendable
 where ClockType.Duration == Duration {
@@ -43,6 +43,6 @@ where ClockType.Duration == Duration {
 }
 
 #if ServiceLifecycleSupport
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension ForwardingDNSResolver: Service {}
 #endif

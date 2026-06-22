@@ -4,13 +4,13 @@ import NIOPosix
 import ServiceLifecycle
 import Testing
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 func withRunningDNSClient<S: Service>(
     _ client: S,
     function: (S) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
-        if #available(swiftDNSApplePlatforms 26, *) {
+        if #available(SwiftStdlib 6.2, *) {
             taskGroup.addImmediateTask {
                 try await client.run()
             }

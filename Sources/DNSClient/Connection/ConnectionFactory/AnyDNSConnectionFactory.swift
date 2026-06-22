@@ -1,7 +1,7 @@
 public import Logging
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package protocol AnyDNSConnectionFactory: Sendable {
     @inlinable

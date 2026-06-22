@@ -15,21 +15,21 @@ public struct OPENPGPKEY: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension OPENPGPKEY {
     package init(from buffer: inout DNSBuffer) throws {
         self.publicKey = buffer.readToEnd()
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension OPENPGPKEY {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeBuffer(self.publicKey)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension OPENPGPKEY: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .OPENPGPKEY }
@@ -50,7 +50,7 @@ extension OPENPGPKEY: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension OPENPGPKEY: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

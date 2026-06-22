@@ -1,4 +1,4 @@
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @nonexhaustive
 public enum RData: Sendable {
     /// ```text
@@ -635,7 +635,7 @@ public enum RData: Sendable {
     case Update0(RecordType)
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RData {
     @inlinable
     public var recordType: RecordType {
@@ -668,7 +668,7 @@ extension RData {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RData {
     package init(from buffer: inout DNSBuffer, recordType: RecordType) throws {
         let length = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -769,7 +769,7 @@ extension RData {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension RData {
     package func encode(into buffer: inout DNSBuffer) throws {
         var valueBuffer = DNSBuffer()

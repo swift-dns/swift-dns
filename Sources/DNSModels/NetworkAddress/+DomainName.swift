@@ -2,7 +2,7 @@ import SwiftIDNA
 
 import struct NIOCore.ByteBuffer
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DomainName {
     package init(from buffer: inout DNSBuffer) throws {
         self.init()
@@ -162,7 +162,7 @@ extension DomainName {
         case containsInvalidASCIIByte
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func performCharacterCheck() -> CharacterCheckResult {
         var containsUppercased = false
 
@@ -206,7 +206,7 @@ extension DomainName {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DomainName {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeImmutableBuffer(self._data)

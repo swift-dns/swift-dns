@@ -1,7 +1,7 @@
 public import DNSModels
 public import SwiftIDNA
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 public struct MessageFactory<QueryType: Queryable>: ~Copyable, Sendable {
     /// private
     @usableFromInline

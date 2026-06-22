@@ -1,6 +1,6 @@
 public import struct NIOCore.ByteBuffer
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public final actor DNSCache<ClockType: Clock> where ClockType.Duration == Duration {
     @usableFromInline
     struct DictionaryWithExpiration: Sendable, ~Copyable {

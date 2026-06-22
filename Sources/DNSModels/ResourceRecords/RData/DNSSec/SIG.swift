@@ -192,7 +192,7 @@ public struct SIG: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SIG {
     package init(from buffer: inout DNSBuffer) throws {
         self.typeCovered = try RecordType(from: &buffer)
@@ -217,7 +217,7 @@ extension SIG {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SIG {
     func encode(into buffer: inout DNSBuffer) throws {
         typeCovered.encode(into: &buffer)
@@ -233,7 +233,7 @@ extension SIG {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SIG: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .SIG }
@@ -254,7 +254,7 @@ extension SIG: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SIG: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

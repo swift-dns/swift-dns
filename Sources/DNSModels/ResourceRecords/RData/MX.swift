@@ -25,7 +25,7 @@ public struct MX: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension MX {
     package init(from buffer: inout DNSBuffer) throws {
         self.preference = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -35,7 +35,7 @@ extension MX {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension MX {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.preference)
@@ -43,7 +43,7 @@ extension MX {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension MX: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .MX }
@@ -64,7 +64,7 @@ extension MX: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension MX: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

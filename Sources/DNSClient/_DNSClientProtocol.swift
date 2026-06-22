@@ -1,6 +1,6 @@
 /// NOT CONSIDERED PART OF THE PUBLIC API. NOT FOR PUBLIC USE.
 /// Used for synthesizing some query functions in DNS client and resolver types.
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 public protocol _DNSClientProtocol {
     @inlinable
     func _querySpecialized<RDataType: RDataConvertible>(
@@ -9,7 +9,7 @@ public protocol _DNSClientProtocol {
     ) async throws -> SpecializedMessage<RDataType>
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension _DNSClientProtocol {
     @inlinable
     public func queryA(

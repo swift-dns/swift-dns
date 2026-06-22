@@ -14,7 +14,7 @@ extension SerializationNamespace {
 }
 
 extension SerializationNamespace.DNSClientIntegrationTests {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -83,7 +83,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryANonASCIIDomain(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -151,7 +151,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryAAAA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -220,7 +220,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCAA(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -293,7 +293,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCERT(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -388,7 +388,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCNAMEWwwGithubCom(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -452,7 +452,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryCNAMERawGithubusercontentCom(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -525,7 +525,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
 
     @Test func queryHINFO() async throws {}
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryHTTPS(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -599,7 +599,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryMX(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -686,7 +686,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
 
     @Test func queryNAPTR() async throws {}
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryNS(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -774,7 +774,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
     /// OPT is used in every other query, so it's already well-tested.
     @Test func queryOPT() async throws {}
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryPTR(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -861,7 +861,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
 
     @Test func queryTLSA() async throws {}
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: Utils.makeTestingDNSClients())
     func queryTXT(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -934,7 +934,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
 
     @Test func queryUpdate0() async throws {}
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     private static func makeTestingDNSClientsForConcurrentTest() -> [any DNSClientService] {
         [
             try! DNSClient(
@@ -1022,7 +1022,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.packetCaptureMarker, arguments: makeTestingDNSClientsForConcurrentTest())
     func query100DomainsConcurrently(client: any DNSClientService) async throws {
         try await withRunningDNSClient(client) { client in
@@ -1070,7 +1070,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     private static func makeTestingDNSClientsForSequentialTest() -> [any DNSClientService] {
         [
             try! DNSClient(
@@ -1154,7 +1154,7 @@ extension SerializationNamespace.DNSClientIntegrationTests {
         ]
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(
         .packetCaptureMarker,
         .tags(.timeConsuming),

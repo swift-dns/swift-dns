@@ -10,7 +10,7 @@ public import protocol NIOCore.EventLoopGroup
 public import ServiceLifecycle
 #endif
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct TCPDNSClientTransportConfiguration: Sendable {
     /// Connection configuration
     public var connectionConfiguration: DNSConnectionConfiguration
@@ -36,7 +36,7 @@ public struct TCPDNSClientTransportConfiguration: Sendable {
 }
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package actor TCPDNSClientTransport {
     @usableFromInline
@@ -140,7 +140,7 @@ package actor TCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension TCPDNSClientTransport {
     @usableFromInline
     func query(

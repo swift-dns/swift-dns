@@ -83,7 +83,7 @@ public struct NSEC3PARAM: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NSEC3PARAM {
     package init(from buffer: inout DNSBuffer) throws {
         self.hashAlgorithm = try NSEC3.HashAlgorithm(from: &buffer)
@@ -102,7 +102,7 @@ extension NSEC3PARAM {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NSEC3PARAM {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.hashAlgorithm.encode(into: &buffer)
@@ -117,7 +117,7 @@ extension NSEC3PARAM {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NSEC3PARAM: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .NSEC3PARAM }
@@ -138,7 +138,7 @@ extension NSEC3PARAM: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NSEC3PARAM: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

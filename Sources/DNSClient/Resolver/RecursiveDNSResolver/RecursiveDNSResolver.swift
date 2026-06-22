@@ -2,7 +2,7 @@
 public import ServiceLifecycle
 #endif
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct _RecursiveDNSResolver {
     public let client: DNSClient
 
@@ -21,6 +21,6 @@ public struct _RecursiveDNSResolver {
 }
 
 #if ServiceLifecycleSupport
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension _RecursiveDNSResolver: Service {}
 #endif

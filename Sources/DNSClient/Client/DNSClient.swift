@@ -5,7 +5,7 @@ public import ServiceLifecycle
 #endif
 
 /// FIXME: The module and the type are both named `DNSClient`.
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 public struct DNSClient: Sendable {
     @usableFromInline
     package enum Transport: Sendable {
@@ -59,6 +59,6 @@ public struct DNSClient: Sendable {
 }
 
 #if ServiceLifecycleSupport
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DNSClient: Service {}
 #endif  // ServiceLifecycle

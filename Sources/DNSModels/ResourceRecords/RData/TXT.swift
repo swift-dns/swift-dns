@@ -19,7 +19,7 @@ public struct TXT: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TXT {
     /// Initialize a TXT record from a slice of a buffer.
     /// Due to how TXT record parsing works, this initializer will exhaust the buffer.
@@ -34,7 +34,7 @@ extension TXT {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TXT {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.reserveCapacity(
@@ -59,7 +59,7 @@ extension TXT: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TXT: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .TXT }
@@ -80,7 +80,7 @@ extension TXT: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension TXT: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

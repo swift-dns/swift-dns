@@ -1,5 +1,5 @@
 import DNSClient
 import ServiceLifecycle
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 typealias DNSClientService = _DNSClientProtocol & Sendable & Service

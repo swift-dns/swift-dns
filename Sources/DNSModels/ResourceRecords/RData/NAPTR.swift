@@ -54,7 +54,7 @@ public struct NAPTR: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NAPTR {
     package init(from buffer: inout DNSBuffer) throws {
         self.order = try buffer.readInteger(as: UInt16.self).unwrap(
@@ -70,7 +70,7 @@ extension NAPTR {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NAPTR {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.order)
@@ -97,7 +97,7 @@ extension NAPTR {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NAPTR: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .NAPTR }
@@ -118,7 +118,7 @@ extension NAPTR: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NAPTR: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

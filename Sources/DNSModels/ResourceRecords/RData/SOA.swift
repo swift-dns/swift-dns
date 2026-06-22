@@ -70,7 +70,7 @@ public struct SOA: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SOA {
     package init(from buffer: inout DNSBuffer) throws {
         self.mName = try DomainName(from: &buffer)
@@ -93,7 +93,7 @@ extension SOA {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SOA {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.mName.encode(into: &buffer)
@@ -106,7 +106,7 @@ extension SOA {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SOA: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .SOA }
@@ -127,7 +127,7 @@ extension SOA: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension SOA: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

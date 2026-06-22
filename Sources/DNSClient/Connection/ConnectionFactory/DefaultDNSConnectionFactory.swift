@@ -9,7 +9,7 @@ public import Network
 public import NIOTransportServices
 #endif
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package struct DefaultDNSConnectionFactory: Sendable, AnyDNSConnectionFactory {
     @usableFromInline
@@ -81,7 +81,7 @@ package struct DefaultDNSConnectionFactory: Sendable, AnyDNSConnectionFactory {
 }
 
 // MARK: - UDP
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DefaultDNSConnectionFactory {
     @inlinable
     func makeUDPBootstrap(
@@ -177,7 +177,7 @@ extension DefaultDNSConnectionFactory {
 }
 
 // MARK: - TCP
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DefaultDNSConnectionFactory {
     @inlinable
     func makeTCPBootstrap(
@@ -327,7 +327,7 @@ extension DefaultDNSConnectionFactory {
 }
 
 // MARK: - +NIOClientTCPBootstrapProtocol
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension NIOClientTCPBootstrapProtocol {
     func connect(target: DNSServerAddress) -> EventLoopFuture<any Channel> {
         switch target {

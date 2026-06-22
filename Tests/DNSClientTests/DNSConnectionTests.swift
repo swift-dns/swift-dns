@@ -9,7 +9,7 @@ import Testing
 
 @Suite
 struct DNSConnectionTests {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `query tests`() async throws {
         try await self.runQueryTests(
             queryableTypes: A.self,
@@ -26,7 +26,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func runQueryTests<each QueryableType: Queryable>(
         queryableTypes: repeat (each QueryableType).Type
     ) async throws {
@@ -40,7 +40,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func runQueryTest<QueryableType: Queryable>(
         queryableType: QueryableType.Type
     ) async throws {
@@ -71,7 +71,7 @@ struct DNSConnectionTests {
         #expect("\(response)" == "\(message)")
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `query cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -101,7 +101,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test
     func `query cancelled then response arrives later then continue using the channel`()
         async throws
@@ -184,7 +184,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `query does not run when task is already cancelled`() async throws {
         typealias QueryableType = TXT
 
@@ -208,7 +208,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `query timed out`() async throws {
         typealias QueryableType = TXT
 
@@ -241,7 +241,7 @@ struct DNSConnectionTests {
         #expect(channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test
     func `query timed out then response arrives later then continue using the channel`()
         async throws
@@ -320,7 +320,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `query does not run when connection is closed`() async throws {
         typealias QueryableType = TXT
 
@@ -340,7 +340,7 @@ struct DNSConnectionTests {
         #expect(!channel.isActive)
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test func `sequential A queries over one connection`() async throws {
         typealias QueryableType = A
 
@@ -354,7 +354,7 @@ struct DNSConnectionTests {
         )
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func runSequentialTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,
@@ -392,7 +392,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     @Test(.tags(.timeConsuming))
     func `concurrent MX queries over one connection`() async throws {
         typealias QueryableType = MX
@@ -410,7 +410,7 @@ struct DNSConnectionTests {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     func runConcurrentTestQueries<QueryableType: Queryable>(
         connection: DNSConnection,
         channel: NIOAsyncTestingChannel,

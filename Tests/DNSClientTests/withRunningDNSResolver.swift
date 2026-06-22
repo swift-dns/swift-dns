@@ -3,13 +3,13 @@ import Logging
 import NIOPosix
 import Testing
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 func withRunningDNSResolver(
     _ resolver: _RecursiveDNSResolver,
     function: (_RecursiveDNSResolver) async throws -> Void
 ) async throws {
     try await withThrowingDiscardingTaskGroup { taskGroup in
-        if #available(swiftDNSApplePlatforms 26, *) {
+        if #available(SwiftStdlib 6.2, *) {
             taskGroup.addImmediateTask {
                 try await resolver.run()
             }

@@ -11,12 +11,12 @@ public import protocol NIOCore.EventLoopGroup
 import ServiceLifecycle
 #endif
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 let _connectionIDGenerator = IncrementalIDGenerator()
 
 /// Configuration for the DNS client
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 @usableFromInline
 package actor PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
@@ -123,7 +123,7 @@ package actor PreferUDPOrUseTCPDNSClientTransport {
     }
 }
 
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension PreferUDPOrUseTCPDNSClientTransport {
     @usableFromInline
     func query(

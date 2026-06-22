@@ -23,21 +23,21 @@ public struct CNAME: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CNAME {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CNAME {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.domainName.encode(into: &buffer)
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CNAME: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .CNAME }
@@ -58,7 +58,7 @@ extension CNAME: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CNAME: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

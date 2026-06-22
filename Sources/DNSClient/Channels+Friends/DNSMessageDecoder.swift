@@ -1,7 +1,7 @@
 public import DNSModels
 public import NIOCore
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @usableFromInline
 package struct DNSMessageDecoder: Sendable, NIOSingleStepByteToMessageDecoder {
     @usableFromInline

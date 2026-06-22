@@ -7,7 +7,7 @@ public import enum NIOCore.Endianness
 
 /// FIXME: investigating making this non-copyable
 /// FXIME: CustomStringConvertible + Debug
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @usableFromInline
 package struct DNSBuffer: Sendable {
     @usableFromInline
@@ -373,7 +373,7 @@ package struct DNSBuffer: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSBuffer {
     @inlinable
     func rangeWithinReadableBytes(index: Int, length: Int) -> Range<Int>? {
@@ -396,7 +396,7 @@ extension DNSBuffer {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSBuffer: Equatable {
     @inlinable
     package static func == (lhs: DNSBuffer, rhs: DNSBuffer) -> Bool {
@@ -404,7 +404,7 @@ extension DNSBuffer: Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension DNSBuffer {
     package static func === (lhs: DNSBuffer, rhs: DNSBuffer) -> Bool {
         lhs._buffer == rhs._buffer
@@ -412,7 +412,7 @@ extension DNSBuffer {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension ByteBuffer {
     /// consuming doesn't do much here but that's what I expect (that the DNSBuffer is
     /// no longer touched after getting the underlying ByteBuffer)

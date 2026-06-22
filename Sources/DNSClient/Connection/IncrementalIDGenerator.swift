@@ -2,7 +2,7 @@ public import Atomics
 public import _DNSConnectionPool
 
 /// Connection id generator for DNS connection pool
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 @usableFromInline
 package final class IncrementalIDGenerator: ConnectionIDGeneratorProtocol {
     @usableFromInline

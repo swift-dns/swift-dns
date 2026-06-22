@@ -37,7 +37,7 @@ public struct Query: Sendable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Query {
     package init(from buffer: inout DNSBuffer) throws {
         self.domainName = try DomainName(from: &buffer)
@@ -46,7 +46,7 @@ extension Query {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension Query {
     package func encode(into buffer: inout DNSBuffer) throws {
         try self.domainName.encode(into: &buffer)

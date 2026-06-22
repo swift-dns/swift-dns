@@ -93,7 +93,7 @@ public struct CAA: Sendable, Equatable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA {
     package init(from buffer: inout DNSBuffer) throws {
         /// TODO: move flags to how Bytes3And4 handles flags
@@ -109,7 +109,7 @@ extension CAA {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA {
     package func encode(into buffer: inout DNSBuffer) throws {
         buffer.writeInteger(self.flags)
@@ -150,7 +150,7 @@ extension CAA.Property: RawRepresentable {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA.Property {
     package init(from buffer: inout DNSBuffer) throws {
         let length = try buffer.readInteger(as: UInt8.self).unwrap(
@@ -171,7 +171,7 @@ extension CAA.Property {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA.Property {
     package func encode(into buffer: inout DNSBuffer) throws {
         try buffer.writeLengthPrefixed(as: UInt8.self) {
@@ -181,7 +181,7 @@ extension CAA.Property {
 }
 
 extension CAA.Value {
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     package init(from buffer: inout DNSBuffer, tag: CAA.Property) throws {
         switch tag {
         case .issue, .issueWildcard:
@@ -207,7 +207,7 @@ extension CAA.Value {
             keyValues: [(key: String, value: String)]
         )
 
-        @available(swiftDNSApplePlatforms 10.15, *)
+        @available(SwiftStdlib 5.1, *)
         var keyValues: [(key: String, value: String)] {
             get throws {
                 switch self {
@@ -226,7 +226,7 @@ extension CAA.Value {
         }
     }
 
-    @available(swiftDNSApplePlatforms 10.15, *)
+    @available(SwiftStdlib 5.1, *)
     static func readIssuer(
         from buffer: inout DNSBuffer
     ) throws -> (DomainName?, [(key: String, value: String)]) {
@@ -346,7 +346,7 @@ extension CAA.Value {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA: RDataConvertible {
     @inlinable
     public static var recordType: RecordType { .CAA }
@@ -367,7 +367,7 @@ extension CAA: RDataConvertible {
     }
 }
 
-@available(swiftDNSApplePlatforms 10.15, *)
+@available(SwiftStdlib 5.1, *)
 extension CAA: Queryable {
     @inlinable
     public static var dnsClass: DNSClass { .IN }

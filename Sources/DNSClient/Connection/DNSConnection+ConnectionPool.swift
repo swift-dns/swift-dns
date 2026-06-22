@@ -4,7 +4,7 @@ import NIOCore
 public import _DNSConnectionPool
 
 /// Extend DNSConnection so we can use it with the connection pool
-@available(swiftDNSApplePlatforms 13, *)
+@available(SwiftStdlib 5.7, *)
 extension DNSConnection: PooledConnection {
     // connection id
     public typealias ID = Int
