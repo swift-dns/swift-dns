@@ -47,6 +47,23 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
+        "A_Response_Instructions",
+        configuration: .init(
+            metrics: [.instructions],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        var buffer = Resources.dnsResponseAExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        benchmark.startMeasurement()
+        let message = try Message(from: &buffer)
+        blackHole(message)
+    }
+
+    Benchmark(
         "A_Response_Memory_Leaked",
         configuration: .init(
             metrics: [.memoryLeaked],
@@ -102,6 +119,23 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     Benchmark(
+        "AAAA_Response_Instructions",
+        configuration: .init(
+            metrics: [.instructions],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        var buffer = Resources.dnsResponseAAAACloudflareComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        benchmark.startMeasurement()
+        let message = try Message(from: &buffer)
+        blackHole(message)
+    }
+
+    Benchmark(
         "TXT_Response_CPU_200K",
         configuration: .init(
             metrics: [.cpuUser],
@@ -126,6 +160,23 @@ let benchmarks: @Sendable () -> Void = {
         "TXT_Response_Malloc",
         configuration: .init(
             metrics: [.mallocCountTotal],
+            warmupIterations: 1,
+            maxIterations: 10
+        )
+    ) { benchmark in
+        var buffer = Resources.dnsResponseTXTExampleComPacket.buffer()
+        buffer.moveReaderIndex(forwardBy: 42)
+        buffer.moveDNSPortionStartIndex(forwardBy: 42)
+
+        benchmark.startMeasurement()
+        let message = try Message(from: &buffer)
+        blackHole(message)
+    }
+
+    Benchmark(
+        "TXT_Response_Instructions",
+        configuration: .init(
+            metrics: [.instructions],
             warmupIterations: 1,
             maxIterations: 10
         )
