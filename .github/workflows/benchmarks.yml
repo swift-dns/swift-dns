@@ -58,17 +58,26 @@ jobs:
         env:
           GITHUB_OBJECT: ${{ toJson(github) }}
         run: |
-          SHOULD_RUN="$(.github/scripts/check-benchmark-relevance.sh)"
+          HAS_BENCHMARKS="$([[ -d "Benchmarks" ]] && printf 'true' || printf 'false')"
+          BENCHMARKS_CHANGED="$(.github/scripts/check-benchmark-relevance.sh)"
+          SHOULD_RUN="$([[ "${HAS_BENCHMARKS}" == "true" && "${BENCHMARKS_CHANGED}" == "true" ]] && printf 'true' || printf 'false')"
+
+          printf '%s\n' "has-benchmarks=${HAS_BENCHMARKS}" >> "${GITHUB_OUTPUT}"
+          printf '%s\n' "benchmarks-changed=${BENCHMARKS_CHANGED}" >> "${GITHUB_OUTPUT}"
           printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
 
       - name: Construct skip comment
-        if: steps.decide.outputs.should-run == 'false'
+        if: steps.decide.outputs.should-run == 'false' && startsWith(github.event_name, 'pull_request')
         run: |
           printf '%s\n' "## [Benchmark](${RUN_LINK}) Report" >> skip-comment.md
-          printf '%s\n' '**⏭️ No benchmark-relevant changes — benchmarks skipped ⏭️**' >> skip-comment.md
+          if [[ '${{ steps.decide.outputs.has-benchmarks }}' == 'false' ]]; then
+            printf '%s\n' '**⏭️ No benchmarks present — benchmarks skipped ⏭️**' >> skip-comment.md
+          else
+            printf '%s\n' '**⏭️ No benchmark-relevant changes — benchmarks skipped ⏭️**' >> skip-comment.md
+          fi
 
       - name: Comment in PR
-        if: steps.decide.outputs.should-run == 'false'
+        if: steps.decide.outputs.should-run == 'false' && startsWith(github.event_name, 'pull_request')
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           github-token: ${{ steps.app-token.outputs.token }}
@@ -161,7 +170,7 @@ jobs:
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: restore-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
@@ -216,7 +225,7 @@ jobs:
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
