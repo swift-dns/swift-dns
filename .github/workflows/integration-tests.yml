@@ -12,8 +12,71 @@ defaults:
   run:
     shell: bash --noprofile --norc -Eeuo pipefail {0}
 
+env:
+  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
 jobs:
+  check-tests-relevance:
+    runs-on: ubuntu-latest
+
+    container: swift:6.3-noble
+
+    timeout-minutes: 10
+
+    permissions:
+      pull-requests: write # For the skip comment
+      contents: read
+
+    outputs:
+      should-run: ${{ steps.decide.outputs.should-run }}
+
+    steps:
+      - name: Generate swift-dns-helper token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.SWIFT_DNS_HELPER_CLIENT_ID }}
+          private-key: ${{ secrets.SWIFT_DNS_HELPER_PRIVATE_KEY }}
+
+      - name: Install jq
+        run: apt-get update -y && apt-get install -y jq
+
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Decide whether tests must run
+        id: decide
+        env:
+          GITHUB_OBJECT: ${{ toJson(github) }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-tests-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Construct skip comment
+        if: steps.decide.outputs.should-run == 'false'
+        run: |
+          printf '%s\n' "## [Integration Tests](${RUN_LINK}) Report" >> skip-comment.md
+          printf '%s\n' '**⏭️ No test-relevant changes — integration tests skipped ⏭️**' >> skip-comment.md
+
+      - name: Comment in PR
+        if: steps.decide.outputs.should-run == 'false'
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          pr-number: ${{ github.event.pull_request.number }}
+          file-path: skip-comment.md
+          comment-tag: integration-tests-ci-comment
+
   linux-integration-tests:
+    needs: check-tests-relevance
+    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +109,7 @@ jobs:
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: "restore-cache"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
@@ -62,7 +125,7 @@ jobs:
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
@@ -114,6 +177,9 @@ jobs:
         run: exit ${{ steps.tests-run.outputs.exit-status }}
 
   cache-swiftly-toolchain-for-macos:
+    needs: check-tests-relevance
+    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -133,7 +199,7 @@ jobs:
       - name: Restore swiftly home
         if: ${{ runner.debug != '1' }}
         id: "restore-home"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -141,7 +207,7 @@ jobs:
       - name: Restore swiftly bin
         if: ${{ runner.debug != '1' }}
         id: "restore-bin"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -149,7 +215,7 @@ jobs:
       - name: Restore swiftly toolchains
         if: ${{ runner.debug != '1' }}
         id: "restore-toolchains"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -171,21 +237,21 @@ jobs:
 
       - name: Cache swiftly home
         if: steps.restore-home.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly bin
         if: steps.restore-bin.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly toolchains
         if: steps.restore-toolchains.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -209,7 +275,8 @@ jobs:
 
     timeout-minutes: 20
 
-    needs: cache-swiftly-toolchain-for-macos
+    needs: [cache-swiftly-toolchain-for-macos, check-tests-relevance]
+    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
 
     env:
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
@@ -232,21 +299,21 @@ jobs:
 
       - name: Restore swiftly home
         id: "restore-home"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
         id: "restore-bin"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
         id: "restore-toolchains"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -278,7 +345,7 @@ jobs:
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: "restore-cache"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
@@ -295,7 +362,7 @@ jobs:
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
@@ -341,6 +408,9 @@ jobs:
         run: exit ${{ steps.tests-run.outputs.exit-status }}
 
   android-integration-tests:
+    needs: check-tests-relevance
+    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+
     strategy:
       fail-fast: false
       matrix:
