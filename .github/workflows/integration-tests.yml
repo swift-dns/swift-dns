@@ -46,7 +46,7 @@ jobs:
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: "restore-cache"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
@@ -62,7 +62,7 @@ jobs:
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
@@ -133,7 +133,7 @@ jobs:
       - name: Restore swiftly home
         if: ${{ runner.debug != '1' }}
         id: "restore-home"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -141,7 +141,7 @@ jobs:
       - name: Restore swiftly bin
         if: ${{ runner.debug != '1' }}
         id: "restore-bin"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -149,7 +149,7 @@ jobs:
       - name: Restore swiftly toolchains
         if: ${{ runner.debug != '1' }}
         id: "restore-toolchains"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -171,21 +171,21 @@ jobs:
 
       - name: Cache swiftly home
         if: steps.restore-home.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly bin
         if: steps.restore-bin.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly toolchains
         if: steps.restore-toolchains.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -232,21 +232,21 @@ jobs:
 
       - name: Restore swiftly home
         id: "restore-home"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
         id: "restore-bin"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
         id: "restore-toolchains"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
@@ -278,7 +278,7 @@ jobs:
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: "restore-cache"
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
@@ -295,7 +295,7 @@ jobs:
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-integration-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
