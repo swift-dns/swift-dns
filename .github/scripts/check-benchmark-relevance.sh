@@ -40,6 +40,8 @@ readonly force_run_paths=(
   "${package_path}/Package.resolved"
   "${package_path}/Thresholds"
   ".github/workflows/benchmarks.yml"
+  ".github/scripts/floor-baseline.sh"
+  ".github/scripts/floor-thresholds.sh"
 )
 
 forces_benchmark_run() {

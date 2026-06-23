@@ -124,7 +124,7 @@ run_self_test() {
   baseline_read_output="$(run_benchmark baseline read "${baseline_name}" --no-progress --format markdown 2>/dev/null || true)"
   mv "${backup_file}" "${baseline_file}"
 
-  if ! printf '%s\n' "${baseline_read_output}" | grep -q "917"; then
+  if ! grep -q "917" <<<"${baseline_read_output}"; then
     fatal "Self-test failed: the injected sentinel p90 (917ms) did not surface in 'baseline read'.
 The benchmark package no longer honors the percentile cache, so flooring the baseline would be silently ineffective."
   fi
