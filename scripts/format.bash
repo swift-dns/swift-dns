@@ -13,7 +13,7 @@
 
 # source: https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh
 
-set -euo pipefail
+set -Eeuo pipefail
 
 log() { printf -- "** %s\n" "$*" >&2; }
 error() { printf -- "** ERROR: %s\n" "$*" >&2; }

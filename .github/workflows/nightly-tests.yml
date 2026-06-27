@@ -12,71 +12,8 @@ defaults:
   run:
     shell: bash --noprofile --norc -Eeuo pipefail {0}
 
-env:
-  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
 jobs:
-  check-tests-relevance:
-    runs-on: ubuntu-latest
-
-    container: swift:6.3-noble
-
-    timeout-minutes: 10
-
-    permissions:
-      pull-requests: write # For the skip comment
-      contents: read
-
-    outputs:
-      should-run: ${{ steps.decide.outputs.should-run }}
-
-    steps:
-      - name: Generate swift-dns-helper token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.SWIFT_DNS_HELPER_CLIENT_ID }}
-          private-key: ${{ secrets.SWIFT_DNS_HELPER_PRIVATE_KEY }}
-
-      - name: Install jq
-        run: apt-get update -y && apt-get install -y jq
-
-      - name: Check out code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Decide whether tests must run
-        id: decide
-        env:
-          GITHUB_OBJECT: ${{ toJson(github) }}
-        run: |
-          SHOULD_RUN="$(.github/scripts/check-tests-relevance.sh)"
-          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
-
-      - name: Construct skip comment
-        if: steps.decide.outputs.should-run == 'false'
-        run: |
-          printf '%s\n' "## [Nightly Tests](${RUN_LINK}) Report" >> skip-comment.md
-          printf '%s\n' '**⏭️ No test-relevant changes — nightly tests skipped ⏭️**' >> skip-comment.md
-
-      - name: Comment in PR
-        if: steps.decide.outputs.should-run == 'false'
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          pr-number: ${{ github.event.pull_request.number }}
-          file-path: skip-comment.md
-          comment-tag: nightly-tests-ci-comment
-
   linux-nightly-tests:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -98,9 +35,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install zstd for faster caching, and curl for codecov action
+      - name: Install dependencies
         run: |
-          apt-get update -y
+          apt-get update
           apt-get install -y zstd curl
 
       - name: Restore .build
@@ -140,9 +77,6 @@ jobs:
             -c ${{ matrix.config.mode }}
 
   cache-swiftly-toolchain-for-macos:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -239,8 +173,7 @@ jobs:
 
     runs-on: ${{ matrix.macos.version }}
 
-    needs: [cache-swiftly-toolchain-for-macos, check-tests-relevance]
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+    needs: cache-swiftly-toolchain-for-macos
 
     timeout-minutes: 20
 
@@ -344,9 +277,6 @@ jobs:
             -c ${{ matrix.config.mode }}
 
   android-nightly-tests:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -361,8 +291,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Ensure zstd is available for faster caching
-        run: sudo apt-get update -yq && sudo apt-get install -yq zstd
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
 
       - name: Check out code
         uses: actions/checkout@v7
