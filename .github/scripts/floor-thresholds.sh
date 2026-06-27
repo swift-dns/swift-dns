@@ -42,6 +42,8 @@ floor_cpu_user_threshold() {
     elif (.cpuUser | type) == "object" then
       (if (.cpuUser.min | type) == "number" then .cpuUser.min |= floor_to_granularity else . end)
       | (if (.cpuUser.max | type) == "number" then .cpuUser.max |= floor_to_granularity else . end)
+      | (if (.cpuUser.min | type) == "number" and (.cpuUser.max | type) == "number" and .cpuUser.min == .cpuUser.max
+         then .cpuUser = .cpuUser.max else . end)
     else . end
   ' "${threshold_file}" > "${threshold_file}.tmp"
   mv "${threshold_file}.tmp" "${threshold_file}"

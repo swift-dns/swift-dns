@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -eu
+set -Eeuo pipefail
 
 # This script is in `./scripts` directory so `./scripts/..` would be the same as `./`.
-SCRIPT_PATH=$(readlink -f "$0")
-BASE_DIR=$(dirname "$SCRIPT_PATH")/..
+script_dir="$(dirname "${BASH_SOURCE[0]}")"
+base_dir="${script_dir}/.."
 
 swift package -c release \
-  --package-path "$BASE_DIR/Benchmarks" \
+  --package-path "${base_dir}/Benchmarks" \
   benchmark run \
-  --path "$BASE_DIR/Benchmarks/Thresholds" \
+  --path "${base_dir}/Benchmarks/Thresholds" \
   "$@"

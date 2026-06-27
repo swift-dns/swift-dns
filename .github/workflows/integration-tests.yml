@@ -12,70 +12,9 @@ defaults:
   run:
     shell: bash --noprofile --norc -Eeuo pipefail {0}
 
-env:
-  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
 jobs:
-  check-tests-relevance:
-    runs-on: ubuntu-latest
-
-    container: swift:6.3-noble
-
-    timeout-minutes: 10
-
-    permissions:
-      pull-requests: write # For the skip comment
-      contents: read
-
-    outputs:
-      should-run: ${{ steps.decide.outputs.should-run }}
-
-    steps:
-      - name: Generate swift-dns-helper token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.SWIFT_DNS_HELPER_CLIENT_ID }}
-          private-key: ${{ secrets.SWIFT_DNS_HELPER_PRIVATE_KEY }}
-
-      - name: Install jq
-        run: apt-get update -y && apt-get install -y jq
-
-      - name: Check out code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Decide whether tests must run
-        id: decide
-        env:
-          GITHUB_OBJECT: ${{ toJson(github) }}
-        run: |
-          SHOULD_RUN="$(.github/scripts/check-tests-relevance.sh)"
-          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
-
-      - name: Construct skip comment
-        if: steps.decide.outputs.should-run == 'false'
-        run: |
-          printf '%s\n' "## [Integration Tests](${RUN_LINK}) Report" >> skip-comment.md
-          printf '%s\n' '**⏭️ No test-relevant changes — integration tests skipped ⏭️**' >> skip-comment.md
-
-      - name: Comment in PR
-        if: steps.decide.outputs.should-run == 'false'
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          pr-number: ${{ github.event.pull_request.number }}
-          file-path: skip-comment.md
-          comment-tag: integration-tests-ci-comment
-
   linux-integration-tests:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+    if: ${{ github.event.repository.name == 'swift-dns' }}
 
     strategy:
       fail-fast: false
@@ -100,11 +39,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update -y
-          apt-get install -y zstd curl
-          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
-            apt-get install -y tcpdump
-          fi
+          apt-get update
+          apt-get install -y zstd curl tcpdump
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -133,10 +69,8 @@ jobs:
       - name: Run tests
         id: tests-run
         run: |
-          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
-            tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
-            TCPDUMP_PID=$!
-          fi
+          tcpdump -w dns.pcap 'port 53 and (host 8.8.4.4 or host 240.1.2.3)' &
+          TCPDUMP_PID=$!
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -148,13 +82,10 @@ jobs:
           printf '%s\n' "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
-          if [[ "${{ github.event.repository.name }}" == 'swift-dns' ]]; then
-            kill "${TCPDUMP_PID}"
-          fi
+          kill "${TCPDUMP_PID}"
 
       - name: Calculate capture file name
         id: calculate-capture-file-name
-        if: ${{ github.event.repository.name == 'swift-dns' }}
         run: |
           RESULT="${{ steps.tests-run.outputs.exit-status == 0 && 'success' || 'failure' }}"
           TIMESTAMP="$(date -u +"%Y-%m-%d-%H-%M-%S")"
@@ -167,7 +98,6 @@ jobs:
           mv dns.pcap "${FILE_NAME}.pcap"
 
       - name: Archive packet capture
-        if: ${{ github.event.repository.name == 'swift-dns' }}
         uses: actions/upload-artifact@v7
         with:
           name: "${{ steps.calculate-capture-file-name.outputs.file_name }}"
@@ -177,8 +107,7 @@ jobs:
         run: exit ${{ steps.tests-run.outputs.exit-status }}
 
   cache-swiftly-toolchain-for-macos:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+    if: ${{ github.event.repository.name == 'swift-dns' }}
 
     strategy:
       fail-fast: false
@@ -257,6 +186,8 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-toolchain-integration-tests-${{ matrix.swift.version }}-${{ runner.os }}"
 
   macos-integration-tests:
+    if: ${{ github.event.repository.name == 'swift-dns' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -275,8 +206,7 @@ jobs:
 
     timeout-minutes: 20
 
-    needs: [cache-swiftly-toolchain-for-macos, check-tests-relevance]
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+    needs: cache-swiftly-toolchain-for-macos
 
     env:
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
@@ -408,8 +338,7 @@ jobs:
         run: exit ${{ steps.tests-run.outputs.exit-status }}
 
   android-integration-tests:
-    needs: check-tests-relevance
-    if: ${{ !cancelled() && needs.check-tests-relevance.outputs.should-run != 'false' }}
+    if: ${{ github.event.repository.name == 'swift-dns' }}
 
     strategy:
       fail-fast: false
@@ -425,8 +354,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Ensure zstd is available for faster caching
-        run: sudo apt-get update -yq && sudo apt-get install -yq zstd
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
 
       - name: Check out code
         uses: actions/checkout@v7
