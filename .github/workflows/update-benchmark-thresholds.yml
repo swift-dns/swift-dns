@@ -173,7 +173,7 @@ jobs:
           git add "${{ env.THRESHOLDS_PATH }}"
           git commit -m "Update of benchmark thresholds with the new baselines
 
-          Run count: '${{ inputs.run_count }}'
+          Max run count: '${{ inputs.run_count }}'
           Target: '${{ inputs.target }}'
           Filter: '${{ inputs.filter }}'
           Skip: '${{ inputs.skip }}'
