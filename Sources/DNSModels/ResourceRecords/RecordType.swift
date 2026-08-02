@@ -223,6 +223,78 @@ extension RecordType: RawRepresentable {
     }
 }
 
+extension RecordType {
+    /// Whether this record type is a data RRTYPE, as opposed to a QTYPE or a Meta-TYPE.
+    ///
+    /// [RFC 6895, 3.1. RRTYPE IANA Considerations, April 2013](https://tools.ietf.org/html/rfc6895#section-3.1)
+    ///
+    /// ```text
+    /// There are three subcategories of RRTYPE numbers: data TYPEs, QTYPEs,
+    /// and Meta-TYPEs.
+    ///
+    /// Data TYPEs are the means of storing data.  QTYPES can only be used in
+    /// queries.  Meta-TYPEs designate transient data associated with a
+    /// particular DNS message and, in some cases, can also be used in
+    /// queries.  Thus far, data TYPEs have been assigned from 1 upward, plus
+    /// the block from 100 through 103, and from 32,768 upward, while Q and
+    /// Meta-TYPEs have been assigned from 255 downward except for the OPT
+    /// Meta-RR, which is assigned TYPE 41.  There have been DNS
+    /// implementations that made caching decisions based on the top bit of
+    /// the bottom byte of the RRTYPE.
+    ///
+    /// There are currently three Meta-TYPEs assigned: OPT [RFC6891], TSIG
+    /// [RFC2845], and TKEY [RFC2930].  There are currently five QTYPEs
+    /// assigned: * (ALL/ANY), MAILA, MAILB, AXFR, and IXFR.
+    ///
+    /// [...]
+    ///
+    /// Considerations for the allocation of new RRTYPEs are as follows:
+    ///
+    ///    Decimal
+    ///  Hexadecimal       Assignment Policy
+    ///
+    ///       0
+    ///  0x0000            RRTYPE zero is used as a special indicator for the
+    ///                    SIG(0) RR [RFC2931] [RFC4034] and in other
+    ///                    circumstances and must never be allocated for
+    ///                    ordinary use.
+    ///
+    ///       1 - 127
+    ///  0x0001 - 0x007F   Remaining RRTYPEs in this range are assigned for
+    ///                    data TYPEs by the DNS RRTYPE Allocation Policy as
+    ///                    specified in Section 3.1.1.
+    ///
+    ///       128 - 255
+    ///  0x0080 - 0x00FF   Remaining RRTYPEs in this range are assigned for Q
+    ///                    and Meta-TYPEs by the DNS RRTYPE Allocation Policy
+    ///                    as specified in Section 3.1.1.
+    ///
+    ///     256 - 61,439
+    ///  0x0100 - 0xEFFF   Remaining RRTYPEs in this range are assigned for
+    ///                    data RRTYPEs by the DNS RRTYPE Allocation Policy
+    ///                    as specified in Section 3.1.1.  (32,768 and 32,769
+    ///                    (0x8000 and 0x8001) have been assigned.)
+    ///
+    ///  61,440 - 65,279
+    ///  0xF000 - 0xFEFF   Reserved for future use.  IETF Review required to
+    ///                    define use.
+    ///
+    ///  65,280 - 65,534
+    ///  0xFF00 - 0xFFFE   Reserved for Private Use.
+    ///
+    ///  65,535
+    ///  0xFFFF            Reserved (Standards Action)
+    /// ```
+    public var isDataType: Bool {
+        switch self.rawValue {
+        case Self.OPT.rawValue: false
+        case 1...127: true
+        case 256...61_439: true
+        default: false
+        }
+    }
+}
+
 @available(SwiftStdlib 5.1, *)
 extension RecordType {
     package init(from buffer: inout DNSBuffer) throws {
