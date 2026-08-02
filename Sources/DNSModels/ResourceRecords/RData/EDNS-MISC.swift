@@ -33,6 +33,10 @@ public enum EDNSCode: Sendable, Hashable {
     case chain
     /// [RFC 8914, Extended DNS Errors](https://tools.ietf.org/html/rfc8914)
     case ednsError
+    /// [RFC 10029, DNS Multiple QTYPEs](https://datatracker.ietf.org/doc/html/rfc10029)
+    case mqtypeQuery
+    /// [RFC 10029, DNS Multiple QTYPEs](https://datatracker.ietf.org/doc/html/rfc10029)
+    case mqtypeResponse
     /// Unknown, used to deal with unknown or unsupported codes
     case unknown(UInt16)
 }
@@ -54,6 +58,8 @@ extension EDNSCode: RawRepresentable {
         case 12: self = .padding
         case 13: self = .chain
         case 15: self = .ednsError
+        case 20: self = .mqtypeQuery
+        case 21: self = .mqtypeResponse
         case let value: self = .unknown(value)
         }
     }
@@ -78,6 +84,8 @@ extension EDNSCode: RawRepresentable {
         case .padding: return 12
         case .chain: return 13
         case .ednsError: return 15
+        case .mqtypeQuery: return 20
+        case .mqtypeResponse: return 21
         case .unknown(let value): return value
         }
     }
@@ -313,6 +321,151 @@ public enum EDNSOption: Sendable, Hashable {
         }
     }
 
+    /// [RFC 10029, DNS Multiple QTYPEs, July 2026](https://datatracker.ietf.org/doc/html/rfc10029#section-3.1)
+    ///
+    /// ```text
+    /// The overall format of an EDNS option is shown for reference in
+    /// Figure 1, per [RFC6891], followed by the option-specific data.
+    ///
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///  0: |                          OPTION-CODE                          |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///  2: |                         OPTION-LENGTH                         |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///  4: |                                                               |
+    ///     :                          OPTION-DATA                          :
+    ///     |                                                               |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///
+    ///                   Figure 1: EDNS Option Format
+    ///
+    /// OPTION-CODE:  MQTYPE-Query (20) in queries and MQTYPE-Response (21)
+    ///    in responses.
+    ///
+    /// OPTION-LENGTH:  Size (in octets) of OPTION-DATA.
+    ///
+    /// OPTION-DATA:  Option specific, as depicted in Figure 2.
+    ///
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///  0: |                              QT1                              |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///  2: |                                                               |
+    ///     :                              ...                              :
+    ///     |                                                               |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///     |                              QTn                              |
+    ///     +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    ///
+    ///               Figure 2: MQTYPE OPTION-DATA Format
+    ///
+    /// The OPTION-DATA is a list of 2-octet values in network order, most
+    /// significant bit (MSB) first, and each specifying a DNS RRTYPE that
+    /// must be for a data RRTYPE as described in Section 3.1 of [RFC6895].
+    /// Individual values from the list (with unspecified index "x") are
+    /// referred to as "QTx" in the following sections.
+    /// ```
+    ///
+    /// An MQTYPE-Query option must not carry an empty list, but an MQTYPE-Response option
+    /// legitimately can, which is why the emptiness of the list is only validated where the
+    /// option code is known. See section 3.3 and section 3.4 of the RFC.
+    public struct MultipleQTypes: Sendable, Hashable {
+        public struct ValidationError: Error {
+            @nonexhaustive
+            public enum Reason: Sendable, Hashable {
+                case listMustNotBeEmpty
+                case listMustNotContainMoreThan32767RecordTypes(actualCount: Int)
+                case recordTypeMustBeADataType(RecordType)
+                case recordTypeMustNotBeRepeated(RecordType)
+            }
+
+            public let recordTypes: TinyFastSequence<RecordType>
+            public let reason: Reason
+        }
+
+        private(set) public var recordTypes: TinyFastSequence<RecordType> {
+            willSet {
+                debugOnly {
+                    /// Emptiness is not a property of the list itself, so it is deliberately allowed here.
+                    try! Self.validate(recordTypes: newValue, allowsEmptyList: true)
+                }
+            }
+        }
+
+        public mutating func setRecordTypes(
+            _ recordTypes: TinyFastSequence<RecordType>,
+            allowsEmptyList: Bool
+        ) throws(ValidationError) {
+            try Self.validate(recordTypes: recordTypes, allowsEmptyList: allowsEmptyList)
+            self.recordTypes = recordTypes
+        }
+
+        /// Beyond this count, scanning the already-visited record types for each new record type
+        /// costs more than hashing all of them into a set.
+        package static var maxCountForLinearDuplicateScan: Int {
+            32
+        }
+
+        static func validate(
+            recordTypes: TinyFastSequence<RecordType>,
+            allowsEmptyList: Bool
+        ) throws(ValidationError) {
+            let count = recordTypes.count
+
+            guard count > 0 || allowsEmptyList else {
+                throw ValidationError(
+                    recordTypes: recordTypes,
+                    reason: .listMustNotBeEmpty
+                )
+            }
+
+            /// Each record type takes up 2 octets, and OPTION-LENGTH is a `UInt16`.
+            guard count <= Int(UInt16.max / 2) else {
+                throw ValidationError(
+                    recordTypes: recordTypes,
+                    reason: .listMustNotContainMoreThan32767RecordTypes(actualCount: count)
+                )
+            }
+
+            for index in 0..<count where !recordTypes[index].isDataType {
+                throw ValidationError(
+                    recordTypes: recordTypes,
+                    reason: .recordTypeMustBeADataType(recordTypes[index])
+                )
+            }
+
+            switch count <= Self.maxCountForLinearDuplicateScan {
+            case true:
+                for index in 0..<count {
+                    let recordType = recordTypes[index]
+                    for previousIndex in 0..<index
+                    where recordTypes[previousIndex] == recordType {
+                        throw ValidationError(
+                            recordTypes: recordTypes,
+                            reason: .recordTypeMustNotBeRepeated(recordType)
+                        )
+                    }
+                }
+            case false:
+                var visitedRecordTypes = Set<RecordType>(minimumCapacity: count)
+                for index in 0..<count
+                where !visitedRecordTypes.insert(recordTypes[index]).inserted {
+                    throw ValidationError(
+                        recordTypes: recordTypes,
+                        reason: .recordTypeMustNotBeRepeated(recordTypes[index])
+                    )
+                }
+            }
+        }
+
+        public init(
+            recordTypes: TinyFastSequence<RecordType>,
+            allowsEmptyList: Bool
+        ) throws(ValidationError) {
+            try Self.validate(recordTypes: recordTypes, allowsEmptyList: allowsEmptyList)
+            self.recordTypes = recordTypes
+        }
+    }
+
     /// [RFC 6975, DNSSEC Algorithm Understood](https://tools.ietf.org/html/rfc6975)
     case dau(SupportedAlgorithms)
     /// [RFC 7871, Client Subnet, Optional](https://tools.ietf.org/html/rfc7871)
@@ -321,6 +474,10 @@ public enum EDNSOption: Sendable, Hashable {
     case keepalive(Keepalive)
     /// [RFC 7873, Domain Name System (DNS) Cookies](https://datatracker.ietf.org/doc/html/rfc7873#section-4)
     case cookie(Cookie)
+    /// [RFC 10029, DNS Multiple QTYPEs, July 2026](https://datatracker.ietf.org/doc/html/rfc10029#section-3.1)
+    case mqtypeQuery(MultipleQTypes)
+    /// [RFC 10029, DNS Multiple QTYPEs, July 2026](https://datatracker.ietf.org/doc/html/rfc10029#section-3.1)
+    case mqtypeResponse(MultipleQTypes)
     /// Unknown, used to deal with unknown or unsupported codes
     case unknown(UInt16, ByteBuffer)
 }
@@ -337,6 +494,10 @@ extension EDNSOption {
             self = .keepalive(try Keepalive(from: &buffer))
         case .cookie:
             self = .cookie(try Cookie(from: &buffer))
+        case .mqtypeQuery:
+            self = .mqtypeQuery(try MultipleQTypes(from: &buffer, allowsEmptyList: false))
+        case .mqtypeResponse:
+            self = .mqtypeResponse(try MultipleQTypes(from: &buffer, allowsEmptyList: true))
         default:
             self = .unknown(code.rawValue, buffer.readToEnd())
         }
@@ -362,6 +523,9 @@ extension EDNSOption {
         case .cookie(let cookie):
             buffer.writeInteger(cookie.lengthForWireProtocol)
             cookie.encode(into: &buffer)
+        case .mqtypeQuery(let multipleQTypes), .mqtypeResponse(let multipleQTypes):
+            buffer.writeInteger(multipleQTypes.lengthForWireProtocol)
+            multipleQTypes.encode(into: &buffer)
         case .unknown(_, let data):
             try buffer.writeLengthPrefixedString(
                 name: "EDNSOption.unknown",
@@ -588,6 +752,38 @@ extension EDNSOption.Cookie {
     package func encode(into buffer: inout DNSBuffer) {
         buffer.writeBuffer(self.clientCookie)
         buffer.writeBuffer(serverCookie)
+    }
+}
+
+@available(SwiftStdlib 5.1, *)
+extension EDNSOption.MultipleQTypes {
+    var lengthForWireProtocol: UInt16 {
+        /// `validate(recordTypes:allowsEmptyList:)` rejects lists that don't fit in a `UInt16`.
+        UInt16(exactly: self.recordTypes.count * 2)!
+    }
+}
+
+@available(SwiftStdlib 5.1, *)
+extension EDNSOption.MultipleQTypes {
+    /// Will consume the entire buffer up to the end, so should only be provided with
+    /// the portion of the buffer that contains the record types, and nothing more.
+    package init(from buffer: inout DNSBuffer, allowsEmptyList: Bool) throws {
+        var recordTypes = TinyFastSequence<RecordType>()
+        recordTypes.reserveCapacity(buffer.readableBytes / 2)
+        while buffer.readableBytes != 0 {
+            recordTypes.append(try RecordType(from: &buffer))
+        }
+        try Self.validate(recordTypes: recordTypes, allowsEmptyList: allowsEmptyList)
+        self.recordTypes = recordTypes
+    }
+}
+
+@available(SwiftStdlib 5.1, *)
+extension EDNSOption.MultipleQTypes {
+    package func encode(into buffer: inout DNSBuffer) {
+        for recordType in self.recordTypes {
+            recordType.encode(into: &buffer)
+        }
     }
 }
 
