@@ -8,6 +8,13 @@ on:
   push: { branches: [main] }
   schedule:
     - cron: "0 6 * * 6"
+  workflow_dispatch:
+    inputs:
+      swift_version:
+        description: "Swiftly Swift toolchain selector string to run benchmarks with. Empty uses the machine default. Example: '6.4.x-snapshot'. Must be pre-installed on the machine."
+        required: false
+        type: string
+        default: ""
 
 defaults:
   run:
@@ -19,81 +26,15 @@ env:
   THRESHOLDS_PATH: "Benchmarks/Thresholds/"
 
 jobs:
-  check-benchmark-relevance:
-    runs-on: ubuntu-latest
-
-    container: swift:6.3-noble
-
-    timeout-minutes: 10
-
-    permissions:
-      pull-requests: write # For the skip comment
-      contents: read
-
-    outputs:
-      should-run: ${{ steps.decide.outputs.should-run }}
-
-    steps:
-      - name: Generate swift-dns-helper token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.SWIFT_DNS_HELPER_CLIENT_ID }}
-          private-key: ${{ secrets.SWIFT_DNS_HELPER_PRIVATE_KEY }}
-
-      - name: Install jq
-        run: apt-get update -y && apt-get install -y jq
-
-      - name: Check out code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Decide whether benchmarks must run
-        id: decide
-        env:
-          GITHUB_OBJECT: ${{ toJson(github) }}
-        run: |
-          HAS_BENCHMARKS="$([[ -d "Benchmarks" ]] && printf 'true' || printf 'false')"
-          BENCHMARKS_CHANGED="$(.github/scripts/check-benchmark-relevance.sh)"
-          SHOULD_RUN="$([[ "${HAS_BENCHMARKS}" == "true" && "${BENCHMARKS_CHANGED}" == "true" ]] && printf 'true' || printf 'false')"
-
-          printf '%s\n' "has-benchmarks=${HAS_BENCHMARKS}" >> "${GITHUB_OUTPUT}"
-          printf '%s\n' "benchmarks-changed=${BENCHMARKS_CHANGED}" >> "${GITHUB_OUTPUT}"
-          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
-
-      - name: Construct skip comment
-        if: steps.decide.outputs.should-run == 'false' && startsWith(github.event_name, 'pull_request')
-        run: |
-          printf '%s\n' "## [Benchmark](${RUN_LINK}) Report" >> skip-comment.md
-          if [[ '${{ steps.decide.outputs.has-benchmarks }}' == 'false' ]]; then
-            printf '%s\n' '**⏭️ No benchmarks present — benchmarks skipped ⏭️**' >> skip-comment.md
-          else
-            printf '%s\n' '**⏭️ No benchmark-relevant changes — benchmarks skipped ⏭️**' >> skip-comment.md
-          fi
-
-      - name: Comment in PR
-        if: steps.decide.outputs.should-run == 'false' && startsWith(github.event_name, 'pull_request')
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          pr-number: ${{ github.event.pull_request.number }}
-          file-path: skip-comment.md
-          comment-tag: benchmark-ci-comment
-
   benchmark-vs-thresholds:
     runs-on: [self-hosted, linux, x64]
-
-    needs: check-benchmark-relevance
-    if: ${{ !cancelled() && needs.check-benchmark-relevance.outputs.should-run != 'false' }}
 
     permissions:
       pull-requests: write # For the comment action
       contents: write # For committing threshold updates
+
+    env:
+      TOOLCHAIN_MODIFIER: ${{ inputs.swift_version && format('+{0}', inputs.swift_version) || '' }}
 
     steps:
       - name: Generate swift-dns-helper token
@@ -124,7 +65,7 @@ jobs:
             printf '%s\n' "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(printf '%s' "${COMMIT_SHA}" | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${COMMIT_SHA}"
-          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" ]]; then
+          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             printf '%s\n' "ref=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
             printf '%s\n' "sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
             printf '%s\n' "title=Current-Branch" >> "${GITHUB_OUTPUT}"
@@ -167,18 +108,32 @@ jobs:
           git config --global user.email "${{ vars.SWIFT_DNS_HELPER_BOT_ID }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}.git"
 
+      - name: Resolve Swift toolchain for cache key
+        id: swift-toolchain
+        run: |
+          SWIFT_VERSION_OUTPUT="$(swiftly run swift ${TOOLCHAIN_MODIFIER} --version)"
+          TOOLCHAIN_ID="$(printf '%s\n' "${SWIFT_VERSION_OUTPUT}" | sed -n 's/.*Swift version \([^ ]*\).*/\1/p' | head -n 1)"
+          if [[ -z "${TOOLCHAIN_ID}" ]]; then
+            printf '%s\n' "Failed to resolve Swift toolchain version from 'swift --version' output:" >&2
+            printf '%s\n' "${SWIFT_VERSION_OUTPUT}" >&2
+            exit 1
+          fi
+          printf '%s\n' "version=${TOOLCHAIN_ID}" >> "${GITHUB_OUTPUT}"
+
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
         id: restore-cache
         uses: actions/cache/restore@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
-          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-${{ steps.commit-info.outputs.sha }}"
+          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-"
 
       - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
         run: |
-          swift package -c release \
+          swiftly run swift ${TOOLCHAIN_MODIFIER} \
+            package \
+            -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark baseline update \
@@ -186,7 +141,9 @@ jobs:
 
       - name: Read benchmark result
         run: |
-          swift package -c release \
+          swiftly run swift ${TOOLCHAIN_MODIFIER} \
+            package \
+            -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark baseline read \
@@ -208,9 +165,11 @@ jobs:
           TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=${ENCODED_TIMESTAMP}"
           printf '%s\n' "## Benchmark check running at [${TIMESTAMP}](${TIMESTAMP_LINK})" >> comparison.md
 
-          # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
+          # Disabpackage -c releasele 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
-          swift package -c release \
+          swiftly run swift ${TOOLCHAIN_MODIFIER} \
+            package \
+            -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark thresholds check \
@@ -228,12 +187,14 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-${{ steps.commit-info.outputs.sha }}"
 
       - name: Update thresholds based on the failed benchmark
         if: steps.comparison.outputs.exit-status != '0'
         run: |
-          swift package -c release \
+          swiftly run swift ${TOOLCHAIN_MODIFIER} \
+            package \
+            -c release \
             --package-path Benchmarks \
             --allow-writing-to-package-directory \
             benchmark thresholds update \
