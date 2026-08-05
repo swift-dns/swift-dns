@@ -29,6 +29,13 @@ jobs:
 
     timeout-minutes: 15
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    env:
+      ASAN_OPTIONS: "detect_leaks=1"
+
     steps:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
@@ -38,10 +45,19 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y zstd curl
+          apt-get install -y zstd curl jq
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
 
       - name: Restore .build
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-cache"
         uses: actions/cache/restore@v6
         with:
@@ -50,29 +66,35 @@ jobs:
           restore-keys: "${{ github.event.repository.name }}-nightly-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
 
       - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # keeping code coverage flag to check for regressions
           swift build \
             --build-tests \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address \
             --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-nightly-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # keeping code coverage flag to check for regressions
           swift test \
             --skip "IntegrationTests." \
             --skip-build \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -87,17 +109,36 @@ jobs:
 
     timeout-minutes: 20
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
     env:
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
       SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
       SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
 
     steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
       - name: Set today's date
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> "${GITHUB_ENV}"
 
       - name: Restore swiftly home
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-home"
         uses: actions/cache/restore@v6
         with:
@@ -105,7 +146,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-bin"
         uses: actions/cache/restore@v6
         with:
@@ -113,7 +154,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-toolchains"
         uses: actions/cache/restore@v6
         with:
@@ -121,6 +162,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
@@ -136,21 +178,21 @@ jobs:
           swiftly use --assume-yes ${{ matrix.swift.version }}
 
       - name: Cache swiftly home
-        if: steps.restore-home.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-home.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Cache swiftly bin
-        if: steps.restore-bin.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-bin.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Cache swiftly toolchains
-        if: steps.restore-toolchains.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-toolchains.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
@@ -177,26 +219,44 @@ jobs:
 
     timeout-minutes: 20
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
     env:
+      ASAN_OPTIONS: "detect_leaks=1"
+      UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
       SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
       SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
 
     steps:
-      - name: Setup appropriate Xcode version
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ matrix.xcode.version }}
-
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup appropriate Xcode version
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode.version }}
+
       - name: Set today's date
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: printf '%s\n' "TODAY=$(date "+%Y-%m-%d")" >> "${GITHUB_ENV}"
 
       - name: Restore swiftly home
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-home"
         uses: actions/cache/restore@v6
         with:
@@ -204,6 +264,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-bin"
         uses: actions/cache/restore@v6
         with:
@@ -211,6 +272,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-toolchains"
         uses: actions/cache/restore@v6
         with:
@@ -218,6 +280,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ env.TODAY }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
           BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
@@ -242,7 +305,7 @@ jobs:
           swiftly use --assume-yes ${{ matrix.swift.version }}
 
       - name: Restore .build
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-cache"
         uses: actions/cache/restore@v6
         with:
@@ -251,28 +314,34 @@ jobs:
           restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-"
 
       - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           swift build \
             --build-tests \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address --sanitize=undefined \
             --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # keeping code coverage flag to check for regressions
           swift test \
             --skip "IntegrationTests." \
             --skip-build \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address --sanitize=undefined \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
@@ -290,21 +359,37 @@ jobs:
 
     timeout-minutes: 30
 
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zstd
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
 
+    steps:
       - name: Check out code
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install dependencies
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
+
       - name: Replace symlinks with the actual files
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "${LINKED}" "{}"' \;
 
       - name: Run unit tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5
         with:
           # Ubuntu runners low on space causes the emulator to fail to install
