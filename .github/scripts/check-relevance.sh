@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 shopt -s failglob
@@ -8,205 +8,135 @@ log() { printf -- "** %s\n" "$*" >&2; }
 error() { printf -- "** ERROR: %s\n" "$*" >&2; }
 fatal() { error "$@"; exit 1; }
 
-readonly target_kind="${TARGET_KIND:?a short description of the checked targets shown in logs, e.g. 'BenchmarkPlugin' or 'test'}"
-readonly target_filter="${TARGET_FILTER:?a jq filter that picks the checked targets out of .targets[], e.g. select(.type == \"test\")}"
-readonly package_path="${PACKAGE_PATH:?the path of the SwiftPM package, e.g. 'Benchmarks' or '.'}"
-readonly github_context_json="${GITHUB_OBJECT:?the toJson(github) context}"
+readonly repository="${GITHUB_REPOSITORY:?the 'owner/repo' slug, e.g. 'swift-dns/swift-dns'}"
+readonly workflow_ref="${GITHUB_WORKFLOW_REF:?the workflow ref, e.g. 'swift-dns/swift-dns/.github/workflows/unit-tests.yml@refs/heads/main'}"
+readonly head_sha="${HEAD_SHA:?the sha of the commit this workflow is running for}"
+readonly run_id="${GITHUB_RUN_ID:?the id of the current workflow run}"
+readonly run_attempt="${GITHUB_RUN_ATTEMPT:?the attempt number of the current workflow run}"
+readonly runner_name="${RUNNER_NAME:-}"
+readonly github_token="${GITHUB_TOKEN:?a token with 'contents: read' and 'actions: read' permissions}"
+readonly job_keys="${JOB_KEYS:-}"
+readonly scripts_dir="${BASH_SOURCE[0]%/*}"
 
-# Optional: newline-separated extra repo-relative paths that force a run when changed.
-extra_force_run_paths=()
-if [[ -n "${FORCE_RUN_PATHS:-}" ]]; then
-  mapfile -t extra_force_run_paths <<< "${FORCE_RUN_PATHS}"
-fi
-readonly extra_force_run_paths
+# Both the benchmark and the threshold-update workflows commit with this subject prefix.
+readonly benchmark_update_subject_prefix="Update of benchmark thresholds"
 
-if [[ "${package_path}" == "." ]]; then
-  readonly package_prefix=""
-else
-  readonly package_prefix="${package_path}/"
-fi
+readonly workflow_path="${workflow_ref%%@*}"
+readonly workflow_file="${workflow_path##*/}"
 
-# Require a pull request event
-event_name="$(jq -r '.event_name' <<< "${github_context_json}")"
-readonly event_name
+run_and_exit() {
+  local reason="${1:?run_and_exit requires a reason}"
 
-if [[ "${event_name}" != pull_request* ]]; then
-  log "Not a Pull request event: '${event_name}'; Won't check for relevance."
+  log "${reason}; will run."
   printf 'true\n'
   exit 0
-fi
+}
 
-base_sha="$(jq -r '.event.pull_request.base.sha' <<< "${github_context_json}")"
-head_sha="$(jq -r '.event.pull_request.head.sha' <<< "${github_context_json}")"
-readonly base_sha head_sha
-[[ "${base_sha}" =~ ^[0-9a-f]{40}$ && "${head_sha}" =~ ^[0-9a-f]{40}$ ]] \
-  || fatal "could not read base/head sha from github context.
-base_sha: '${base_sha}'
-head_sha: '${head_sha}'"
+github_api() {
+  local endpoint="${1:?github_api requires an api endpoint}"
 
-mapfile -d '' -t changed_files < <(
-  git diff -z --name-only "${base_sha}...${head_sha}"
-)
-readonly changed_files
+  curl --silent --show-error --fail --location \
+    --header "Accept: application/vnd.github+json" \
+    --header "Authorization: Bearer ${github_token}" \
+    --header "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/${endpoint}" \
+    || return 1
+  return 0
+}
 
-# - Check force-run paths
-readonly force_run_paths=(
-  "${package_prefix}Package.swift"
-  "${package_prefix}Package.resolved"
-  ".github/scripts/check-relevance.sh"
-  "${extra_force_run_paths[@]}"
-)
+is_benchmark_update_commit() {
+  local commit_json="${1:?is_benchmark_update_commit requires a commit json}"
+  local description="${2:?is_benchmark_update_commit requires a description of the commit}"
+  local author subject
 
-forces_run() {
-  local changed_file="${1:?forces_run requires a changed file path}"
-  local force_path
+  author="$(jq -r '.commit.author.name // ""' <<< "${commit_json}")"
+  subject="$(jq -r '(.commit.message // "") | split("\n")[0]' <<< "${commit_json}")"
+  log "${description} commit is authored by '${author}' with subject '${subject}'."
 
-  for force_path in "${force_run_paths[@]}"; do
-    if [[ "${changed_file}" == "${force_path}" || "${changed_file}" == "${force_path}"/* ]]; then
-      return 0
-    fi
-  done
+  if [[ "${author}" == *"[bot]" && "${subject}" == "${benchmark_update_subject_prefix}"* ]]; then
+    return 0
+  fi
   return 1
 }
 
-for changed_file in "${changed_files[@]}"; do
-  [[ -n "${changed_file}" ]] || continue
-
-  if forces_run "${changed_file}"; then
-    log "Force-run path changed: '${changed_file}'; will run."
-    printf 'true\n'
-    exit 0
-  fi
-done
-
-# - Set up to check SwiftPM target graph for modified dependencies
-repo_root="$(git rev-parse --show-toplevel)"
-readonly repo_root
-
-package_dump_json="$(swift package --package-path "${package_path}" dump-package)"
-readonly package_dump_json
-
-mapfile -d '' -t local_target_names < <(
-  jq --raw-output0 '.targets[].name' <<< "${package_dump_json}"
-)
-readonly local_target_names
-[[ "${#local_target_names[@]}" -gt 0 ]] \
-  || fatal "swift package dump-package found no targets in package path '${package_path}'"
-
-is_local_target() {
-  local candidate_name="${1:?is_local_target requires a target name}"
-  local target_name
-
-  for target_name in "${local_target_names[@]}"; do
-    if [[ "${target_name}" == "${candidate_name}" ]]; then
-      return 0
-    fi
-  done
-  return 1
-}
-
-get_target_dependencies() {
-  local target_name="${1:?get_target_dependencies requires a target name}"
-
-  jq --raw-output0 --arg t "${target_name}" '
-    .targets[]
-    | select(.name == $t)
-    | (.dependencies[]? | (.byName[0]? // .target[0]?) // empty),
-      (.pluginUsages[]?.plugin[0] // empty)
-  ' <<< "${package_dump_json}"
-}
-
-# - Get all targets selected by the caller-provided filter
-# SwiftPM dumps each plugin usage as {"plugin": [name, package]}, so .plugin[0] is the plugin name.
-readonly target_filter_program='.targets[] | '"${target_filter}"' | .name'
-mapfile -d '' -t checked_targets < <(jq --raw-output0 "${target_filter_program}" <<< "${package_dump_json}")
-
-if [[ "${#checked_targets[@]}" -eq 0 ]]; then
-  log "No ${target_kind} targets found among ${#local_target_names[@]} target(s) in '${package_path}': $(IFS=' '; printf '%s' "${local_target_names[*]}"); will return true just to be safe."
-  printf 'true\n'
-  exit 0
+if ! job_is_enabled="$(JOB_KEYS="${job_keys}" "${scripts_dir}/ci-config.sh")"; then
+  fatal "Failed to read the ci config of '${repository}'"
 fi
+readonly job_is_enabled
 
-# - Find all local dependencies of the checked targets
-declare -A seen=()
-declare -a targets_to_visit=()
-for target_name in "${checked_targets[@]}"; do
-  seen["${target_name}"]=1
-  targets_to_visit+=("${target_name}")
-done
-
-for (( i = 0; i < ${#targets_to_visit[@]}; i++ )); do
-  target_name="${targets_to_visit[i]}"
-
-  while IFS= read -r -d '' dependency; do
-    [[ -n "${dependency}" ]] || continue
-
-    if [[ -z "${seen[${dependency}]:-}" ]] && is_local_target "${dependency}"; then
-      seen["${dependency}"]=1
-      targets_to_visit+=("${dependency}")
-    fi
-  done < <(get_target_dependencies "${target_name}")
-done
-
-# - Find relevant directories to targets_to_visit
-declare -A relevant_directories=()
-for target_name in "${targets_to_visit[@]}"; do
-  target_subpath="$(
-    jq -r \
-      --arg t "${target_name}" \
-      '.targets[] | select(.name == $t) | .path // ""' <<< "${package_dump_json}"
-  )"
-  target_type="$(
-    jq -r \
-      --arg t "${target_name}" \
-      '.targets[] | select(.name == $t) | .type' <<< "${package_dump_json}"
-  )"
-
-  # Skip non-local binary targets
-  if [[ "${target_type}" == "binary" && -z "${target_subpath}" ]]; then
-    continue
-  fi
-
-  if [[ "${target_subpath}" == "." ]]; then
-    target_dir="${package_path}"
-  elif [[ -n "${target_subpath}" ]]; then
-    target_dir="${package_prefix}${target_subpath}"
-  elif [[ "${target_type}" == "plugin" ]]; then
-    target_dir="${package_prefix}Plugins/${target_name}"
-  elif [[ "${target_type}" == "test" ]]; then
-    target_dir="${package_prefix}Tests/${target_name}"
-  else
-    target_dir="${package_prefix}Sources/${target_name}"
-  fi
-  [[ -d "${target_dir}" ]] || fatal "source directory not found for target '${target_name}': ${target_dir}"
-  absolute_target_dir="$(realpath "${target_dir}")"
-  relative_target_dir="${absolute_target_dir#"${repo_root}"/}"
-  relevant_directories["${relative_target_dir}"]=1
-done
-
-log "Relevant directories (${#relevant_directories[@]}), derived from ${target_kind} targets in '${package_path}':"
-for relevant_dir in "${!relevant_directories[@]}"; do log "  ${relevant_dir}/"; done
-
-# - See if any of the directories have had any changes
-declare -a matched_files=()
-for changed_file in "${changed_files[@]}"; do
-  [[ -n "${changed_file}" ]] || continue
-
-  for relevant_dir in "${!relevant_directories[@]}"; do
-    if [[ "${changed_file}" == "${relevant_dir}" || "${changed_file}" == "${relevant_dir}"/* ]]; then
-      matched_files+=("${changed_file}")
-      continue 2
-    fi
-  done
-done
-
-if [[ "${#matched_files[@]}" -eq 0 ]]; then
-  log "No relevant changes among ${#changed_files[@]} changed file(s) in ${base_sha:0:7}...${head_sha:0:7}; skipping."
+if [[ "${job_is_enabled}" != "true" ]]; then
+  log "This job is turned off for '${repository}'; skipping."
   printf 'false\n'
   exit 0
 fi
 
-log "Relevant changes detected (${#matched_files[@]} of ${#changed_files[@]} changed file(s) in ${base_sha:0:7}...${head_sha:0:7}):"
-for changed_file in "${matched_files[@]}"; do log "  ${changed_file}"; done
-printf 'true\n'
-exit 0
+head_commit_json="$(github_api "repos/${repository}/commits/${head_sha}")" \
+  || fatal "could not fetch commit '${head_sha}' of '${repository}'"
+readonly head_commit_json
+
+is_benchmark_update_commit "${head_commit_json}" "Head ${head_sha:0:7}" \
+  || run_and_exit "Head commit ${head_sha:0:7} is not a benchmark thresholds update"
+
+parent_sha="$(jq -r '.parents[0].sha // ""' <<< "${head_commit_json}")"
+readonly parent_sha
+[[ "${parent_sha}" =~ ^[0-9a-f]{40}$ ]] \
+  || run_and_exit "Head commit ${head_sha:0:7} has no parent commit to compare against"
+
+parent_commit_json="$(github_api "repos/${repository}/commits/${parent_sha}")" \
+  || fatal "could not fetch commit '${parent_sha}' of '${repository}'"
+readonly parent_commit_json
+
+is_benchmark_update_commit "${parent_commit_json}" "Parent ${parent_sha:0:7}" \
+  || run_and_exit "Parent commit ${parent_sha:0:7} is not a benchmark thresholds update"
+
+[[ -n "${runner_name}" ]] \
+  || run_and_exit "RUNNER_NAME is not set, so the current job cannot be identified"
+
+current_run_jobs_json="$(
+  github_api "repos/${repository}/actions/runs/${run_id}/attempts/${run_attempt}/jobs?per_page=100"
+)" || run_and_exit "Could not fetch the jobs of the current run ${run_id}"
+readonly current_run_jobs_json
+
+# A GitHub runner only ever hosts one running job at a time, so this identifies the current job,
+# matrix values included, without having to reconstruct its display name by hand.
+job_name="$(
+  jq -r --arg runner_name "${runner_name}" '
+    [.jobs[] | select(.runner_name == $runner_name and .status == "in_progress") | .name]
+    | if length == 1 then .[0] else "" end
+  ' <<< "${current_run_jobs_json}"
+)"
+readonly job_name
+[[ -n "${job_name}" ]] \
+  || run_and_exit "Could not identify the current job among the jobs of run ${run_id} using runner '${runner_name}'"
+
+parent_runs_json="$(
+  github_api "repos/${repository}/actions/workflows/${workflow_file}/runs?head_sha=${parent_sha}&per_page=100"
+)" || run_and_exit "Could not fetch the '${workflow_file}' runs of parent commit ${parent_sha:0:7}"
+readonly parent_runs_json
+
+mapfile -t parent_run_ids < <(jq -r '.workflow_runs[].id' <<< "${parent_runs_json}")
+readonly parent_run_ids
+[[ "${#parent_run_ids[@]}" -gt 0 ]] \
+  || run_and_exit "No '${workflow_file}' run found for parent commit ${parent_sha:0:7}"
+
+# A run is cancelled as a whole when a newer commit supersedes it, even though the jobs that had
+# already finished did succeed, so this looks at the job instead of at the run that contains it.
+for parent_run_id in "${parent_run_ids[@]}"; do
+  parent_run_jobs_json="$(
+    github_api "repos/${repository}/actions/runs/${parent_run_id}/jobs?per_page=100"
+  )" || continue
+
+  succeeded="$(
+    jq --arg job_name "${job_name}" \
+      '[.jobs[] | select(.name == $job_name and .conclusion == "success")] | length' \
+      <<< "${parent_run_jobs_json}"
+  )"
+
+  if [[ "${succeeded}" -gt 0 ]]; then
+    log "Both ${head_sha:0:7} and its parent ${parent_sha:0:7} are benchmark thresholds updates, and '${job_name}' succeeded on the parent in run ${parent_run_id}; skipping."
+    printf 'false\n'
+    exit 0
+  fi
+done
+
+run_and_exit "No successful '${job_name}' job found for parent commit ${parent_sha:0:7} in ${#parent_run_ids[@]} '${workflow_file}' run(s)"

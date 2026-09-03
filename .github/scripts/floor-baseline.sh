@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 shopt -s nullglob
@@ -94,6 +94,16 @@ build_raw_p90_lookup() {
   return 0
 }
 
+# Reports whether a baseline results file carries any cpuUser measurement at all.
+carries_cpu_user_results() {
+  local baseline_file="${1:?carries_cpu_user_results requires a baseline results file}"
+
+  jq -e '
+    [.results[] | arrays | .[] | select(.metric | has("cpuUser"))] | length > 0
+  ' "${baseline_file}" >/dev/null
+  return $?
+}
+
 # Confirms the injection landed: every cpuUser result must carry a floored numeric p90 whose cache
 # count matches the histogram, otherwise our assumptions about the baseline format no longer hold.
 verify_injection() {
@@ -115,7 +125,7 @@ verify_injection() {
 # would be silently ineffective and sub-ms comparisons would quietly start failing again.
 run_self_test() {
   local lookup_json="${1:?run_self_test requires the raw p90 lookup JSON}"
-  local baseline_file="${baseline_files[0]}"
+  local baseline_file="${2:?run_self_test requires a baseline results file carrying cpuUser}"
   local backup_file="${baseline_file}.selftest.bak"
   local baseline_read_output=""
 
@@ -132,6 +142,22 @@ The benchmark package no longer honors the percentile cache, so flooring the bas
   return 0
 }
 
+cpu_user_files=()
+for baseline_file in "${baseline_files[@]}"; do
+  jq -e . "${baseline_file}" >/dev/null || fatal "Invalid JSON in baseline file: '${baseline_file}'"
+  if carries_cpu_user_results "${baseline_file}"; then
+    cpu_user_files+=("${baseline_file}")
+  fi
+done
+readonly cpu_user_files
+
+# Repos whose benchmarks only track e.g. malloc or instructions have nothing to floor, and the
+# cache self-test below has nothing to assert on, so stop before the costly raw p90 export.
+if [[ "${#cpu_user_files[@]}" -eq 0 ]]; then
+  log "✅ No cpuUser results in the '${baseline_name}' baseline; nothing to floor."
+  exit 0
+fi
+
 raw_p90_dir="$(mktemp -d)"
 readonly raw_p90_dir
 trap 'rm -rf "${raw_p90_dir}"' EXIT
@@ -139,11 +165,10 @@ trap 'rm -rf "${raw_p90_dir}"' EXIT
 raw_p90_lookup="$(build_raw_p90_lookup "${raw_p90_dir}")"
 readonly raw_p90_lookup
 
-run_self_test "${raw_p90_lookup}"
+run_self_test "${raw_p90_lookup}" "${cpu_user_files[0]}"
 
 floored_count=0
-for baseline_file in "${baseline_files[@]}"; do
-  jq -e . "${baseline_file}" >/dev/null || fatal "Invalid JSON in baseline file: '${baseline_file}'"
+for baseline_file in "${cpu_user_files[@]}"; do
   inject_cpu_user_p90 "${baseline_file}" true 0 "${raw_p90_lookup}"
   verify_injection "${baseline_file}"
   floored_count=$((floored_count + 1))

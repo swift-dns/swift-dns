@@ -29,6 +29,13 @@ jobs:
 
     timeout-minutes: 15
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    env:
+      ASAN_OPTIONS: "detect_leaks=1"
+
     steps:
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
@@ -38,10 +45,19 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y zstd curl
+          apt-get install -y zstd curl jq
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
 
       - name: Restore .build
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-cache"
         uses: actions/cache/restore@v6
         with:
@@ -50,32 +66,39 @@ jobs:
           restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
 
       - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           swift build \
             --build-tests \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address \
             --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           swift test \
             --skip "IntegrationTests." \
             --skip-build \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Submit code coverage
-        uses: vapor/swift-codecov-action@v0.3
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: vapor/swift-codecov-action@2f478f2fd22e06ca363967d0fb6c6593a8548cee # v0.3.5
         with:
           build_parameters: "-c ${{ matrix.config.mode }}"
           codecov_token: "${{ secrets.CODECOV_TOKEN }}"
@@ -91,14 +114,35 @@ jobs:
 
     timeout-minutes: 20
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
     env:
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
       SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
       SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
 
     steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Update bash via Homebrew
+        run: brew install bash
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
       - name: Restore swiftly home
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-home"
         uses: actions/cache/restore@v6
         with:
@@ -106,7 +150,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-bin"
         uses: actions/cache/restore@v6
         with:
@@ -114,7 +158,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-toolchains"
         uses: actions/cache/restore@v6
         with:
@@ -122,6 +166,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # Installation commands from https://www.swift.org/install/macos
           curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
@@ -137,21 +182,21 @@ jobs:
           swiftly use --assume-yes ${{ matrix.swift.version }}
 
       - name: Cache swiftly home
-        if: steps.restore-home.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-home.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_HOME_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly bin
-        if: steps.restore-bin.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-bin.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_BIN_DIR }}"
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Cache swiftly toolchains
-        if: steps.restore-toolchains.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-toolchains.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: "${{ env.SWIFTLY_TOOLCHAINS_DIR }}"
@@ -178,23 +223,44 @@ jobs:
 
     timeout-minutes: 20
 
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
     env:
+      ASAN_OPTIONS: "detect_leaks=1"
+      LSAN_OPTIONS: "suppressions=.github/lsan-suppressions.txt:print_suppressions=1"
+      UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
       SWIFTLY_HOME_DIR: "/Users/runner/.swiftly"
       SWIFTLY_BIN_DIR: "/Users/runner/.swiftly/bin"
       SWIFTLY_TOOLCHAINS_DIR: "/Users/runner/Library/Developer/Toolchains"
 
     steps:
-      - name: Setup appropriate Xcode version
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ matrix.xcode.version }}
-
       - name: Check out ${{ github.event.repository.name }}
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
+      - name: Update bash via Homebrew
+        run: brew install bash
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup appropriate Xcode version
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: ${{ matrix.xcode.version }}
+
       - name: Restore swiftly home
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-home"
         uses: actions/cache/restore@v6
         with:
@@ -202,6 +268,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-home-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly bin
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-bin"
         uses: actions/cache/restore@v6
         with:
@@ -209,6 +276,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-bin-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Restore swiftly toolchains
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         id: "restore-toolchains"
         uses: actions/cache/restore@v6
         with:
@@ -216,6 +284,7 @@ jobs:
           key: "${{ github.event.repository.name }}-swiftly-toolchain-${{ matrix.swift.version }}-${{ runner.os }}"
 
       - name: Update swift via Swiftly
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           # Workaround some kind of GitHub caching issue where it struggles to restore or cache the swiftly toolchain
           BLOCK_SIZE="$(du -s '${{ env.SWIFTLY_TOOLCHAINS_DIR }}' | awk '{print $1}')"
@@ -240,7 +309,7 @@ jobs:
           swiftly use --assume-yes ${{ matrix.swift.version }}
 
       - name: Restore .build
-        if: ${{ runner.debug != '1' }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
         id: "restore-cache"
         uses: actions/cache/restore@v6
         with:
@@ -249,32 +318,454 @@ jobs:
           restore-keys: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-"
 
       - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           swift build \
             --build-tests \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address --sanitize=undefined \
             --explicit-target-dependency-import-check error \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: .build
           key: "${{ github.event.repository.name }}-unit-tests-${{ matrix.config.mode }}-build-${{ matrix.swift.version }}-${{ matrix.macos.version }}-${{ hashFiles('./Package.resolved') }}"
 
       - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
         run: |
           swift test \
             --skip "IntegrationTests." \
             --skip-build \
+            --disable-xctest \
             --enable-code-coverage \
+            --sanitize=address --sanitize=undefined \
             -Xswiftc -require-explicit-sendable \
             -c ${{ matrix.config.mode }}
 
       - name: Submit code coverage
-        uses: vapor/swift-codecov-action@v0.3
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: vapor/swift-codecov-action@2f478f2fd22e06ca363967d0fb6c6593a8548cee # v0.3.5
         with:
           build_parameters: "-c ${{ matrix.config.mode }}"
           codecov_token: "${{ secrets.CODECOV_TOKEN }}"
+
+  windows-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        windows:
+          - version: windows-2025
+        swift:
+          - version: 6.3.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ${{ matrix.windows.version }}
+
+    timeout-minutes: 20
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "windows"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Update swift
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: compnerd/gha-setup-swift@eeda069c5bc95ac8a9ac5cea7d4f588ae5420ca5 # v0.4.0
+        with:
+          swift-version: swift-${{ matrix.swift.version }}-release
+          swift-build: ${{ matrix.swift.version }}-RELEASE
+
+      - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: |
+          swift build \
+            --build-tests \
+            --explicit-target-dependency-import-check error \
+            -Xswiftc -require-explicit-sendable \
+            -c ${{ matrix.config.mode }}
+
+      - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: |
+          swift test \
+            --skip "IntegrationTests." \
+            --skip-build \
+            --disable-xctest \
+            -Xswiftc -require-explicit-sendable \
+            -c ${{ matrix.config.mode }}
+
+  android-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift:
+          - version: 6.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 30
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "android"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install dependencies
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
+
+      - name: Replace symlinks with the actual files
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: find . -type l -exec sh -c 'LINKED="$(readlink -f "{}")"; rm "{}"; cp -a "${LINKED}" "{}"' \;
+
+      - name: Run tests
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5
+        with:
+          # Ubuntu runners low on space causes the emulator to fail to install
+          free-disk-space: true
+          android-emulator-test-folder: /data/local/tmp/android-xctest
+          test-env: PROJECT_ROOT_FOR_TESTING=/data/local/tmp/android-xctest
+          swift-version: ${{ matrix.swift.version }}
+          swift-configuration: ${{ matrix.config.mode }}
+          copy-files: Tests
+          swift-build-flags: >-
+            --build-tests
+            --explicit-target-dependency-import-check error
+          swift-test-flags: --skip "IntegrationTests."
+
+  musl-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swift:6.3-noble
+        swift:
+          - version: 6.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 30
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y zstd curl jq
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "musl"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-musl-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-musl-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      # The Static Linux SDK ships no static swift-testing or XCTest, so the tests can only be compiled for glibc.
+      - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        env:
+          SDK: static
+          SWIFT_VERSION: ${{ matrix.swift.version }}
+          BUILD_MODE: ${{ matrix.config.mode }}
+          BUILD_FLAGS: >-
+            --explicit-target-dependency-import-check error
+            -Xswiftc -require-explicit-sendable
+        run: .github/scripts/build-with-sdk.sh
+
+      - name: Cache .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-musl-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+
+  wasi-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swift:6.3-noble
+        swift:
+          - version: 6.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 30
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y zstd curl jq xz-utils
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "wasm"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-wasi-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-wasi-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        env:
+          SDK: wasm
+          SWIFT_VERSION: ${{ matrix.swift.version }}
+          BUILD_MODE: ${{ matrix.config.mode }}
+          BUILD_FLAGS: >-
+            --build-tests
+            --explicit-target-dependency-import-check error
+            -Xswiftc -require-explicit-sendable
+        run: .github/scripts/build-with-sdk.sh
+
+      - name: Cache .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-wasi-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+
+      - name: Run tests with wasmtime
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        env:
+          BUILD_MODE: ${{ matrix.config.mode }}
+          WASMTIME_VERSION: "48.0.1"
+          WASMTIME_SHA256: "4c2e31b68ad99e0a519f225a261fda099eb15f056d4a24fdb3c2a46517bde1df"
+          TEST_FLAGS: >-
+            --skip IntegrationTests.
+        run: .github/scripts/test-with-wasmtime.sh
+
+  embedded-wasm-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swift:6.3-noble
+        swift:
+          - version: 6.3
+        config:
+          - mode: "debug"
+          - mode: "release"
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 30
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y zstd curl jq
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "wasm embedded"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-embedded-wasm-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-embedded-wasm-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      # Embedded Swift has no swift-testing or XCTest, so only the library is compiled.
+      - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        env:
+          SDK: embedded-wasm
+          SWIFT_VERSION: ${{ matrix.swift.version }}
+          BUILD_MODE: ${{ matrix.config.mode }}
+          BUILD_FLAGS: >-
+            --explicit-target-dependency-import-check error
+            -Xswiftc -require-explicit-sendable
+        run: .github/scripts/build-with-sdk.sh
+
+      - name: Cache .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-embedded-wasm-${{ matrix.config.mode }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+
+  embedded-baremetal-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-image:
+          - name: swift:6.3-noble
+        triple:
+          - name: armv7em-none-none-eabi
+          - name: aarch64-none-none-elf
+          - name: riscv32-none-none-eabi
+
+    runs-on: ubuntu-latest
+
+    container: ${{ matrix.swift-image.name }}
+
+    timeout-minutes: 30
+
+    permissions:
+      actions: read # For reading the previous commit's workflow runs
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y zstd curl jq
+
+      - name: Check relevance
+        id: check-relevance
+        env:
+          JOB_KEYS: "embedded"
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          SHOULD_RUN="$(.github/scripts/check-relevance.sh)"
+          printf '%s\n' "should-run=${SHOULD_RUN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-embedded-baremetal-${{ matrix.triple.name }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-unit-tests-embedded-baremetal-${{ matrix.triple.name }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-"
+
+      # Embedded Swift needs whole-module optimization, which only the release configuration turns on.
+      - name: Build ${{ github.event.repository.name }}
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' }}
+        run: |
+          swift build \
+            --build-system native \
+            --triple ${{ matrix.triple.name }} \
+            --toolset .github/toolsets/embedded.json \
+            --explicit-target-dependency-import-check error \
+            -Xswiftc -require-explicit-sendable \
+            -c release
+
+      - name: Cache .build
+        if: ${{ steps.check-relevance.outputs.should-run == 'true' && steps.restore-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-unit-tests-embedded-baremetal-${{ matrix.triple.name }}-build-${{ matrix.swift-image.name }}-${{ runner.os }}-${{ hashFiles('./Package.resolved') }}"
