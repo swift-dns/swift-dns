@@ -27,6 +27,11 @@ on:
         description: "Regex filter for benchmark names to skip. If not provided, no benchmarks will be skipped."
         required: false
         type: string
+      swift_version:
+        description: "Swiftly Swift toolchain selector string to run benchmarks with. Empty uses the machine default. Example: '6.4.x-snapshot'. Must be pre-installed on the machine."
+        required: false
+        type: string
+        default: ""
 
 defaults:
   run:
@@ -36,7 +41,32 @@ env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   THRESHOLDS_PATH: "Benchmarks/Thresholds/"
 jobs:
+  check-ci-config:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 5
+
+    outputs:
+      enabled: ${{ steps.ci-config.outputs.enabled }}
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check the ci config
+        id: ci-config
+        env:
+          JOB_KEYS: "benchmarks"
+        run: |
+          ENABLED="$(.github/scripts/ci-config.sh)"
+          printf '%s\n' "enabled=${ENABLED}" >> "${GITHUB_OUTPUT}"
+
   update-benchmark-thresholds:
+    needs: check-ci-config
+    if: ${{ needs.check-ci-config.outputs.enabled == 'true' }}
+
     runs-on: [self-hosted, linux, x64]
 
     timeout-minutes: 1440
@@ -44,6 +74,9 @@ jobs:
     permissions:
       pull-requests: write # For the comment action
       contents: write # For the committing the changes
+
+    env:
+      TOOLCHAIN_MODIFIER: ${{ inputs.swift_version && format('+{0}', inputs.swift_version) || '' }}
 
     steps:
       - name: Generate swift-dns-helper token
@@ -54,7 +87,7 @@ jobs:
           private-key: ${{ secrets.SWIFT_DNS_HELPER_PRIVATE_KEY }}
 
       - name: Enable full performance
-        run: /usr/bin/ordo-performance
+        run: set-perf-mode performance
 
       - name: Construct in-progress comment
         if: ${{ inputs.pr_number != '' }}
@@ -80,9 +113,19 @@ jobs:
       - name: Configure git
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          git config --global user.name "${{ steps.app-token-initial.outputs.app-slug }}[bot]"
-          git config --global user.email "${{ vars.SWIFT_DNS_HELPER_BOT_ID }}+${{ steps.app-token-initial.outputs.app-slug }}[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${{ steps.app-token-initial.outputs.token }}@github.com/${{ github.repository }}.git"
+
+      - name: Resolve Swift toolchain for cache key
+        id: swift-toolchain
+        run: |
+          SWIFT_VERSION_OUTPUT="$(swiftly run swift ${TOOLCHAIN_MODIFIER} --version)"
+          TOOLCHAIN_ID="$(printf '%s\n' "${SWIFT_VERSION_OUTPUT}" | sed -n 's/.*Swift version \([^ ]*\).*/\1/p' | head -n 1)"
+          if [[ -z "${TOOLCHAIN_ID}" ]]; then
+            printf '%s\n' "Failed to resolve Swift toolchain version from 'swift --version' output:" >&2
+            printf '%s\n' "${SWIFT_VERSION_OUTPUT}" >&2
+            exit 1
+          fi
+          printf '%s\n' "version=${TOOLCHAIN_ID}" >> "${GITHUB_OUTPUT}"
 
       - name: Restore .build
         if: ${{ runner.debug != '1' }}
@@ -90,8 +133,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
-          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-${{ github.sha }}"
+          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-"
 
       - name: Update benchmark thresholds
         env:
@@ -101,7 +144,10 @@ jobs:
           RUN_COUNT: ${{ inputs.run_count }}
         run: |
           COMMAND=(
-            swift package -c release
+            run-with-priority
+            swiftly run swift ${TOOLCHAIN_MODIFIER}
+            package
+            -c release
             --package-path Benchmarks
             --allow-writing-to-package-directory
             benchmark thresholds update
@@ -129,7 +175,11 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.sha }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.version }}-${{ github.sha }}"
+
+      - name: Wait for swift processes to exit
+        if: always()
+        run: .github/scripts/wait-for-swift-exit.sh
 
       - name: Floor static thresholds and baselines
         if: always()
@@ -149,6 +199,12 @@ jobs:
             printf '%s\n' "changes-count=0" >> "${GITHUB_OUTPUT}"
           fi
 
+      - name: Log threshold changes against main as backup
+        if: always()
+        env:
+          BASE_BRANCH: main
+        run: .github/scripts/log-threshold-changes.sh
+
       - name: Regenerate swift-dns-helper token
         if: always()
         id: app-token
@@ -160,29 +216,36 @@ jobs:
       - name: Commit threshold changes to another branch
         if: always() && (steps.check-modifications.outputs.has-modifications == 'true')
         id: commit-update
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          WORK_DIR: "."
+          PATHSPEC: ${{ env.THRESHOLDS_PATH }}
         run: |
-          # Re-point the remote at the fresh token
-          git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}.git"
-
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           NEW_BRANCH="auto-thr-update/${CURRENT_BRANCH}"
 
           printf '%s\n' "new-branch=${NEW_BRANCH}" >> "${GITHUB_OUTPUT}"
 
+          BASE_SHA="$(git rev-parse "origin/${CURRENT_BRANCH}")"
           git checkout -B "${NEW_BRANCH}" "origin/${CURRENT_BRANCH}"
-          git add "${{ env.THRESHOLDS_PATH }}"
-          git commit -m "Update of benchmark thresholds with the new baselines
 
-          Run count: '${{ inputs.run_count }}'
-          Target: '${{ inputs.target }}'
-          Filter: '${{ inputs.filter }}'
-          Skip: '${{ inputs.skip }}'
+          BENCHMARKED_COMMIT="$(START_REF="${BASE_SHA}" .github/scripts/latest-non-bot-commit.sh)"
+          COMMIT_MESSAGE="$(
+            printf -- '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n' \
+              "Update of benchmark thresholds with the new baselines" \
+              "Max run count: '${{ inputs.run_count }}'" \
+              "Target: '${{ inputs.target }}'" \
+              "Filter: '${{ inputs.filter }}'" \
+              "Skip: '${{ inputs.skip }}'" \
+              "Benchmarked commit: ${BENCHMARKED_COMMIT}" \
+              "Committed to ${NEW_BRANCH} by ${RUN_LINK}"
+          )"
+          BRANCH="${NEW_BRANCH}"
+          OUTPUT_FILE="${GITHUB_OUTPUT}"
+          export BRANCH BASE_SHA COMMIT_MESSAGE OUTPUT_FILE
 
-          Committed to ${NEW_BRANCH} by ${RUN_LINK}"
-
-          git push -f origin "${NEW_BRANCH}"
-
-          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          .github/scripts/commit-signed.sh
 
       - name: Construct result comment
         if: always()
@@ -190,9 +253,10 @@ jobs:
           printf '%s\n' "## [Benchmark Thresholds Update](${RUN_LINK}) Report" >> comment.md
           printf '%s\n' 'Thresholds update completed with ${{ steps.check-modifications.outputs.changes-count }} files changed.' >> comment.md
 
-          if [[ '${{ steps.check-modifications.outputs.has-modifications }}' == 'true' ]]; then
-            SHORT_SHA="$(printf '%s' '${{ steps.commit-update.outputs.commit-sha }}' | cut -c 1-7)"
-            COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${{ steps.commit-update.outputs.commit-sha }}"
+          COMMIT_SHA='${{ steps.commit-update.outputs.commit-sha }}'
+          if [[ -n "${COMMIT_SHA}" ]]; then
+            SHORT_SHA="$(printf '%s' "${COMMIT_SHA}" | cut -c 1-7)"
+            COMMIT_LINK="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
             BRANCH_NAME="${{ steps.commit-update.outputs.new-branch }}"
             BRANCH_LINK="https://github.com/${{ github.repository }}/tree/${BRANCH_NAME}"
             printf '\n' >> comment.md
@@ -219,4 +283,4 @@ jobs:
 
       - name: Enable powersave mode
         if: always()
-        run: /usr/bin/ordo-performance powersave
+        run: set-perf-mode powersave
