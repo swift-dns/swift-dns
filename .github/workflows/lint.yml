@@ -10,6 +10,9 @@ defaults:
   run:
     shell: bash --noprofile --norc -Eeuo pipefail {0}
 
+env:
+  RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -41,9 +44,6 @@ jobs:
       - name: Configure git
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          git config --global user.name "${{ steps.app-token.outputs.app-slug }}[bot]"
-          git config --global user.email "${{ vars.SWIFT_DNS_HELPER_BOT_ID }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}.git"
 
       - name: Check config file
         run: |
@@ -55,7 +55,7 @@ jobs:
       - name: Lint
         id: lint
         run: |
-          apt -q update && apt -yq install curl
+          apt -q update && apt -yq install curl jq
           curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
           printf '%s\n' "exit-status=$?" >> "${GITHUB_OUTPUT}"
 
@@ -75,17 +75,24 @@ jobs:
       - name: Commit formatting changes to a new branch
         if: steps.check-modifications.outputs.has-modifications == 'true'
         id: commit-update
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          WORK_DIR: "."
         run: |
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           NEW_BRANCH="format-update/${{ github.run_id }}/${CURRENT_BRANCH}"
 
           printf '%s\n' "new-branch=${NEW_BRANCH}" >> "${GITHUB_OUTPUT}"
 
-          git checkout -b "${NEW_BRANCH}"
-          git add .
-          git commit -m "Formatting update
+          BASE_SHA="$(git rev-parse HEAD)"
+          COMMIT_MESSAGE="$(
+            printf -- '%s\n\n%s\n' \
+              "Formatting update" \
+              "Committed to ${NEW_BRANCH} by ${RUN_LINK}"
+          )"
+          BRANCH="${NEW_BRANCH}"
+          OUTPUT_FILE="${GITHUB_OUTPUT}"
+          export BRANCH BASE_SHA COMMIT_MESSAGE OUTPUT_FILE
 
-          Committed to ${NEW_BRANCH} by ${RUN_LINK}"
-          git push origin "${NEW_BRANCH}"
-
-          printf '%s\n' "commit-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          .github/scripts/commit-signed.sh

@@ -1,0 +1,46 @@
+name: clean-up-dependent-branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.ref }}
+  cancel-in-progress: false
+
+on:
+  delete:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
+
+env:
+  SUMMARY_FILE: summary.md
+
+jobs:
+  clean-up-dependent-branches:
+    if: ${{ github.event.ref_type == 'branch' }}
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 10
+
+    permissions:
+      contents: write # For cleaning up the branches
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Clean up the branches derived from ${{ github.event.ref }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          DELETED_BRANCH: ${{ github.event.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: .github/scripts/clean-up-dependent-branches.sh
+
+      - name: Output the report as job summary
+        if: always()
+        run: |
+          if [[ -f "${SUMMARY_FILE}" ]]; then
+            cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+          fi

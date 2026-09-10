@@ -1,0 +1,44 @@
+name: clean-up-caches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: false
+
+on:
+  pull_request_target:
+    types: [closed]
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
+
+env:
+  SUMMARY_FILE: summary.md
+
+jobs:
+  clean-up-caches:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 10
+
+    permissions:
+      actions: write # For deleting the caches the pull request left behind
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Clean up the caches of pull request #${{ github.event.number }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          CACHE_REF: "refs/pull/${{ github.event.number }}/merge"
+        run: .github/scripts/clean-up-caches.sh
+
+      - name: Output the report as job summary
+        if: always()
+        run: |
+          if [[ -f "${SUMMARY_FILE}" ]]; then
+            cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
