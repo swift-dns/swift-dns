@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 shopt -s nullglob
@@ -29,8 +29,9 @@ readonly baselines_dir="${package_path}/.benchmarkBaselines"
 [[ -d "${baselines_dir}" ]] || fatal "No baselines directory at '${baselines_dir}'"
 
 readonly baseline_files=("${baselines_dir}"/*/"${baseline_name}"/*results.json)
-[[ "${#baseline_files[@]}" -gt 0 ]] \
-  || fatal "No baseline results found for '${baseline_name}' under '${baselines_dir}'"
+if [[ "${#baseline_files[@]}" -eq 0 ]]; then
+  fatal "No baseline results found for '${baseline_name}' under '${baselines_dir}'"
+fi
 
 # Sets the cpuUser percentile cache so that 'statistics.percentiles()' returns a known p90 instead of
 # recomputing it from the histogram. When 'from_lookup' is true the raw p90 is read from the lookup
@@ -78,12 +79,19 @@ inject_cpu_user_p90() {
 build_raw_p90_lookup() {
   local raw_dir="${1:?build_raw_p90_lookup requires an output directory}"
 
-  run_benchmark thresholds update "${baseline_name}" --path "${raw_dir}" --no-progress >/dev/null \
-    || fatal "Failed to export raw p90 via 'thresholds update'; the baseline may be unreadable or the package format changed."
+  local -a update_arguments=(
+    thresholds update "${baseline_name}" --path "${raw_dir}" --no-progress
+  )
+  if ! run_benchmark "${update_arguments[@]}" > /dev/null; then
+    fatal "Failed to export raw p90 via 'thresholds update';" \
+      "the baseline may be unreadable or the package format changed."
+  fi
 
   local raw_files=("${raw_dir}"/*.json)
-  [[ "${#raw_files[@]}" -gt 0 ]] \
-    || fatal "Raw p90 export produced no files; the benchmark package output format may have changed."
+  if [[ "${#raw_files[@]}" -eq 0 ]]; then
+    fatal "Raw p90 export produced no files;" \
+      "the benchmark package output format may have changed."
+  fi
 
   local raw_file key
   for raw_file in "${raw_files[@]}"; do
@@ -94,20 +102,32 @@ build_raw_p90_lookup() {
   return 0
 }
 
+# Reports whether a baseline results file carries any cpuUser measurement at all.
+carries_cpu_user_results() {
+  local baseline_file="${1:?carries_cpu_user_results requires a baseline results file}"
+
+  jq -e '
+    [.results[] | arrays | .[] | select(.metric | has("cpuUser"))] | length > 0
+  ' "${baseline_file}" >/dev/null
+  return $?
+}
+
 # Confirms the injection landed: every cpuUser result must carry a floored numeric p90 whose cache
 # count matches the histogram, otherwise our assumptions about the baseline format no longer hold.
 verify_injection() {
   local baseline_file="${1:?verify_injection requires a baseline results file}"
 
-  jq -e --argjson p90_index "${p90_index}" --argjson granularity "${granularity}" '
+  if ! jq -e --argjson p90_index "${p90_index}" --argjson granularity "${granularity}" '
     [.results[] | arrays | .[] | select(.metric | has("cpuUser"))] as $cpu_user_results
     | ($cpu_user_results | length) > 0
       and ($cpu_user_results | all(
         (.statistics._cachedPercentiles[$p90_index] | type) == "number"
         and (.statistics._cachedPercentiles[$p90_index] % $granularity) == 0
         and .statistics._cachedPercentilesHistogramCount == .statistics.histogram._totalCount))
-  ' "${baseline_file}" >/dev/null \
-    || fatal "Post-injection check failed for '${baseline_file}'; cpuUser p90 was not floored as expected."
+  ' "${baseline_file}" > /dev/null; then
+    fatal "Post-injection check failed for '${baseline_file}';" \
+      "cpuUser p90 was not floored as expected."
+  fi
   return 0
 }
 
@@ -115,7 +135,7 @@ verify_injection() {
 # would be silently ineffective and sub-ms comparisons would quietly start failing again.
 run_self_test() {
   local lookup_json="${1:?run_self_test requires the raw p90 lookup JSON}"
-  local baseline_file="${baseline_files[0]}"
+  local baseline_file="${2:?run_self_test requires a baseline results file carrying cpuUser}"
   local backup_file="${baseline_file}.selftest.bak"
   local baseline_read_output=""
 
@@ -132,6 +152,22 @@ The benchmark package no longer honors the percentile cache, so flooring the bas
   return 0
 }
 
+cpu_user_files=()
+for baseline_file in "${baseline_files[@]}"; do
+  jq -e . "${baseline_file}" >/dev/null || fatal "Invalid JSON in baseline file: '${baseline_file}'"
+  if carries_cpu_user_results "${baseline_file}"; then
+    cpu_user_files+=("${baseline_file}")
+  fi
+done
+readonly cpu_user_files
+
+# Repos whose benchmarks only track e.g. malloc or instructions have nothing to floor, and the
+# cache self-test below has nothing to assert on, so stop before the costly raw p90 export.
+if [[ "${#cpu_user_files[@]}" -eq 0 ]]; then
+  log "✅ No cpuUser results in the '${baseline_name}' baseline; nothing to floor."
+  exit 0
+fi
+
 raw_p90_dir="$(mktemp -d)"
 readonly raw_p90_dir
 trap 'rm -rf "${raw_p90_dir}"' EXIT
@@ -139,11 +175,10 @@ trap 'rm -rf "${raw_p90_dir}"' EXIT
 raw_p90_lookup="$(build_raw_p90_lookup "${raw_p90_dir}")"
 readonly raw_p90_lookup
 
-run_self_test "${raw_p90_lookup}"
+run_self_test "${raw_p90_lookup}" "${cpu_user_files[0]}"
 
 floored_count=0
-for baseline_file in "${baseline_files[@]}"; do
-  jq -e . "${baseline_file}" >/dev/null || fatal "Invalid JSON in baseline file: '${baseline_file}'"
+for baseline_file in "${cpu_user_files[@]}"; do
   inject_cpu_user_p90 "${baseline_file}" true 0 "${raw_p90_lookup}"
   verify_injection "${baseline_file}"
   floored_count=$((floored_count + 1))
