@@ -1,0 +1,75 @@
+name: sbom
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize] }
+  push: { branches: [main] }
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -Eeuo pipefail {0}
+
+env:
+  SBOM_DIR: "docs/sboms"
+
+jobs:
+  sbom:
+    runs-on: ubuntu-26.04
+
+    timeout-minutes: 15
+
+    container: swift:6.4-resolute
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out ${{ github.event.repository.name }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y zstd jq
+
+      - name: Resolve Swift toolchain for cache key
+        id: swift-toolchain
+        env:
+          SOURCE_DESCRIPTION: "swift --version"
+        run: swift --version | .github/scripts/swift-toolchain-id.sh >> "${GITHUB_OUTPUT}"
+
+      - name: Restore .build
+        if: ${{ runner.debug != '1' }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-sbom-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.toolchain-id }}-${{ hashFiles('./Package.resolved') }}"
+          restore-keys: "${{ github.event.repository.name }}-sbom-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.toolchain-id }}-"
+
+      # The runner's user owns the workspace, so git refuses it to the container's root until
+      # 'safe.directory' covers it, and SwiftPM records the version of the package as 'unknown'.
+      - name: Build ${{ github.event.repository.name }} and generate its SBOMs
+        run: |
+          swift build \
+            --sbom-spec cyclonedx1 \
+            --sbom-spec spdx3 \
+            --sbom-output-dir "${SBOM_DIR}"
+
+      - name: Cache .build
+        if: ${{ steps.restore-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .build
+          key: "${{ github.event.repository.name }}-sbom-build-${{ runner.os }}-${{ steps.swift-toolchain.outputs.toolchain-id }}-${{ hashFiles('./Package.resolved') }}"
+
+      - name: Configure git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Check the SBOMs
+        env:
+          SBOM_NAME: ${{ github.event.repository.name }}
+        run: .github/scripts/check-sboms.sh
