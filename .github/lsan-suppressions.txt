@@ -1,0 +1,41 @@
+# LeakSanitizer suppressions for macOS.
+#
+# Every entry is Darwin runtime state that is per-thread or per-image and is
+# never freed by design: libdispatch worker threads outlive exit(), so their
+# thread-local state is still reachable-but-unfreed when LSan runs at exit.
+# None of these are reachable from library code.
+#
+# A `leak:` pattern is matched as a substring against every frame of the
+# allocation stack. Run with `print_suppressions=1` to see which entries
+# actually fire; entries that stop firing should be deleted.
+
+# ObjC autorelease pool pages.
+leak:AutoreleasePoolPage
+leak:objc_object::rootAutorelease2
+
+# ObjC per-thread class-initialization bookkeeping.
+leak:_setThisThreadIsInitializingClass
+leak:_fetchInitializingClassList
+leak:fetch_cache
+leak:id2data
+
+# CoreFoundation thread-specific data table.
+leak:__CFTSDGetTable
+leak:_CFGetTSDCreateIfNeeded
+
+# CFRunLoop mach port bookkeeping.
+leak:__CFRunLoopServiceMachPort
+
+# Foundation platform initialization, at image load.
+leak:_NSInitializePlatform
+
+# dyld thread-local variable instantiation.
+leak:instantiateVariable
+leak:_tlv_get_addr
+
+# Swift runtime per-thread task context.
+leak:SwiftTLSContext
+
+# libdispatch source handler continuations.
+leak:_dispatch_continuation_alloc_from_heap
+leak:_dispatch_source_set_handler
